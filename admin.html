@@ -520,7 +520,8 @@ tr.user-row-blocked{background:rgba(227,27,27,.045)}
             <input
               id="pCategory"
               list="categoryList"
-              placeholder="Kategori seç veya yeni kategori yaz">
+              placeholder="Kategori seç veya yeni kategori yaz"
+              oninput="updateProductCategoryFields()">
 
             <datalist id="categoryList">
               <option value="Fiziksel Ürün">
@@ -543,6 +544,33 @@ tr.user-row-blocked{background:rgba(227,27,27,.045)}
             </select>
           </div>
 
+        </div>
+
+        <div id="pTournamentFields" class="field hidden" style="border:1px solid #3a2727;border-radius:12px;padding:14px;background:#120c0c;">
+          <label class="title">🏆 Turnuva Ürün Ayarları</label>
+          <div class="muted" style="margin-bottom:10px;">
+            Kategori <b>Turnuva</b> olduğunda bu ürün aynı zamanda Turnuva sekmesine bağlanır.
+            Stok <b>1 veya daha büyükse</b> turnuva yayındadır; stok <b>0</b> olduğunda marketten gizlenir ve admin Turnuva bölümünde <b>OYNANDI</b> görünür.
+          </div>
+          <div class="grid2">
+            <div>
+              <label class="title">Takım Boyutu</label>
+              <select id="pTournamentTeamSize">
+                <option value="1">1v1 / Solo</option>
+                <option value="2">2v2</option>
+                <option value="3">3v3</option>
+                <option value="4">4v4</option>
+                <option value="5" selected>5v5</option>
+              </select>
+            </div>
+            <div>
+              <label class="title">Kontenjan</label>
+              <input id="pTournamentCapacity" type="number" min="1" max="512" step="1" value="16">
+            </div>
+          </div>
+          <div class="muted" style="margin-top:8px;">
+            Katılım türü (TL / Abonelik / Ücretsiz), kayıt aç/kapat ve turnuva tarihi Turnuva sekmesinden ayarlanır.
+          </div>
         </div>
 
         <div class="grid2">
@@ -585,6 +613,7 @@ tr.user-row-blocked{background:rgba(227,27,27,.045)}
               min="0"
               step="1"
               value="1">
+            <div id="pStockHint" class="muted" style="margin-top:6px;"></div>
           </div>
 
         </div>
@@ -2119,10 +2148,15 @@ function renderProducts(){
         ? 'Sınırsız'
         : String(p.stock ?? 0);
 
+    const isTournament =
+      String(p.category || '').trim().toLocaleLowerCase('tr-TR') === 'turnuva';
+
     const active =
-      p.active
-        ? '<span class="badge ok">AKTİF</span>'
-        : '<span class="badge bad">PASİF</span>';
+      !p.active
+        ? '<span class="badge bad">PASİF</span>'
+        : (isTournament && !p.unlimited && Number(p.stock || 0) <= 0)
+          ? '<span class="badge warn">OYNANDI</span>'
+          : '<span class="badge ok">AKTİF</span>';
 
     tr.innerHTML = `
       <td>${esc(p.id)}</td>
@@ -2155,6 +2189,15 @@ function renderProducts(){
           )">
           ${p.active ? 'Pasife Al' : 'Aktif Et'}
         </button>
+
+        ${isTournament ? `
+          <button
+            class="smallBtn danger"
+            style="margin-top:6px"
+            onclick="deleteProduct('${encodeURIComponent(p.id)}', true)">
+            Turnuvayı Sil
+          </button>
+        ` : ''}
       </td>
     `;
 
@@ -2196,6 +2239,54 @@ function updateCategoryList(){
       .join('');
 }
 
+function isTournamentProductCategory(){
+  return String(document.getElementById('pCategory')?.value || '')
+    .trim()
+    .toLocaleLowerCase('tr-TR') === 'turnuva';
+}
+
+function updateProductCategoryFields(){
+  const isTournament = isTournamentProductCategory();
+  const tournamentBox = document.getElementById('pTournamentFields');
+  const paymentType = document.getElementById('pPaymentType');
+  const unlimited = document.getElementById('pUnlimited');
+  const webPurchase = document.getElementById('pWebPurchase');
+  const deliveryType = document.getElementById('pDeliveryType');
+  const stockHint = document.getElementById('pStockHint');
+
+  if(tournamentBox) tournamentBox.classList.toggle('hidden', !isTournament);
+
+  if(isTournament){
+    if(paymentType){
+      paymentType.value = 'free';
+      paymentType.disabled = true;
+    }
+    if(unlimited){
+      unlimited.checked = false;
+      unlimited.disabled = true;
+    }
+    if(webPurchase){
+      webPurchase.checked = false;
+      webPurchase.disabled = true;
+    }
+    if(deliveryType){
+      deliveryType.value = 'manual';
+      deliveryType.disabled = true;
+    }
+    if(stockHint){
+      stockHint.innerHTML = '<b>Turnuva:</b> 1+ = markette yayında · 0 = OYNANDI / marketten gizli.';
+    }
+  }else{
+    if(paymentType) paymentType.disabled = false;
+    if(unlimited) unlimited.disabled = false;
+    if(deliveryType) deliveryType.disabled = false;
+    if(stockHint) stockHint.innerHTML = '';
+  }
+
+  updatePriceFields();
+  updateStockField();
+}
+
 function updatePriceFields(){
 
   const type =
@@ -2226,7 +2317,10 @@ function updatePriceFields(){
 
   const webPurchase = document.getElementById('pWebPurchase');
   if(webPurchase){
-    if(type === 'stream'){
+    if(isTournamentProductCategory()){
+      webPurchase.checked = false;
+      webPurchase.disabled = true;
+    }else if(type === 'stream'){
       webPurchase.checked = false;
       webPurchase.disabled = true;
     }else{
@@ -2238,17 +2332,20 @@ function updatePriceFields(){
 
 function updateStockField(){
 
-  const unlimited =
-    document.getElementById(
-      'pUnlimited'
-    ).checked;
+  const unlimitedEl =
+    document.getElementById('pUnlimited');
 
   const stock =
-    document.getElementById(
-      'pStock'
-    );
+    document.getElementById('pStock');
 
-  stock.disabled = unlimited;
+  if(isTournamentProductCategory()){
+    if(unlimitedEl) unlimitedEl.checked = false;
+    if(stock) stock.disabled = false;
+    return;
+  }
+
+  const unlimited = !!unlimitedEl?.checked;
+  if(stock) stock.disabled = unlimited;
 }
 
 function resetProductForm(){
@@ -2284,9 +2381,10 @@ document.getElementById(
   document.getElementById('pDeliveryType').value = 'physical';
   document.getElementById('pDescription').value = '';
   document.getElementById('pImages').value = '';
+  document.getElementById('pTournamentTeamSize').value = '5';
+  document.getElementById('pTournamentCapacity').value = '16';
 
-  updatePriceFields();
-  updateStockField();
+  updateProductCategoryFields();
 
   hideStatus('productFormStatus');
 }
@@ -2361,8 +2459,13 @@ document.getElementById(
       ? p.metadata.images.join('\n')
       : '';
 
-  updatePriceFields();
-  updateStockField();
+  document.getElementById('pTournamentTeamSize').value =
+    String(Number(p.metadata?.tournamentTeamSize || 5));
+
+  document.getElementById('pTournamentCapacity').value =
+    String(Number(p.metadata?.tournamentCapacity || 16));
+
+  updateProductCategoryFields();
 
   window.scrollTo({
     top:0,
@@ -2372,10 +2475,16 @@ document.getElementById(
 
 async function saveProduct(){
 
-  const paymentType =
+  const tournamentCategory = isTournamentProductCategory();
+
+  let paymentType =
     document
       .getElementById('pPaymentType')
       .value;
+
+  if(tournamentCategory){
+    paymentType = 'free';
+  }
 
   const unlimited =
     document
@@ -2415,12 +2524,17 @@ async function saveProduct(){
               .value
           ),
 
-    unlimited,
+    unlimited:
+      tournamentCategory
+        ? false
+        : unlimited,
 
     webPurchase:
-      document
-        .getElementById('pWebPurchase')
-        .checked,
+      tournamentCategory
+        ? false
+        : document
+            .getElementById('pWebPurchase')
+            .checked,
 
     active:
       document
@@ -2428,9 +2542,11 @@ async function saveProduct(){
         .checked,
 
     deliveryType:
-      document
-        .getElementById('pDeliveryType')
-        .value,
+      tournamentCategory
+        ? 'manual'
+        : document
+            .getElementById('pDeliveryType')
+            .value,
 
     description:
       document
@@ -2444,7 +2560,17 @@ async function saveProduct(){
         .value
         .split('\n')
         .map(x => x.trim())
-        .filter(Boolean)
+        .filter(Boolean),
+
+    tournamentTeamSize:
+      tournamentCategory
+        ? Number(document.getElementById('pTournamentTeamSize').value || 5)
+        : null,
+
+    tournamentCapacity:
+      tournamentCategory
+        ? Number(document.getElementById('pTournamentCapacity').value || 16)
+        : null
   };
 
   if(paymentType === 'points'){
@@ -2527,6 +2653,11 @@ async function saveProduct(){
     resetProductForm();
     await loadProducts();
 
+    if(tournamentCategory){
+      tournamentCatalogCache = [];
+      await loadTournamentList(true);
+    }
+
   }catch(error){
 
     showStatus(
@@ -2587,7 +2718,13 @@ async function toggleProduct(
       );
     }
 
+    const changed = productsCache.find(p => p.id === id);
     await loadProducts();
+
+    if(changed && String(changed.category || '').toLocaleLowerCase('tr-TR') === 'turnuva'){
+      tournamentCatalogCache = [];
+      await loadTournamentList(true);
+    }
 
   }catch(error){
 
@@ -2597,6 +2734,42 @@ async function toggleProduct(
       false
     );
 
+  }
+}
+
+async function deleteProduct(encodedId,isTournament=false){
+  const id = decodeURIComponent(encodedId);
+
+  const message = isTournament
+    ? 'Bu turnuva ürünlerden kaldırılacak, kayıtları kapatılacak ve Turnuva sekmesinden gizlenecek. Geçmiş turnuva kayıtları güvenlik için veritabanında korunur. Devam edilsin mi?'
+    : 'Bu ürün tamamen silinsin mi?';
+
+  if(!confirm(message)) return;
+
+  try{
+    const {r,d} = await api('/admin/product/delete',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id})
+    });
+
+    if(!r.ok || !d?.success){
+      throw new Error(d?.error || `HTTP ${r.status}`);
+    }
+
+    await loadProducts();
+    tournamentCatalogCache = [];
+    await loadTournamentList(true);
+
+    showStatus(
+      'productsStatus',
+      isTournament
+        ? '✅ Turnuva kaldırıldı ve Turnuva sekmesinden gizlendi.'
+        : '✅ Ürün silindi.',
+      true
+    );
+  }catch(error){
+    showStatus('productsStatus','❌ ' + esc(error.message || error),false);
   }
 }
 
@@ -4336,7 +4509,7 @@ async function loadTournamentList(force=false){
       return;
     }
 
-    const {r,d} = await api(`/tournaments?_=${Date.now()}`);
+    const {r,d} = await api(`/admin/tournaments?_=${Date.now()}`);
     if(!r.ok || !d?.success || !Array.isArray(d.tournaments)){
       throw new Error(d?.error || `HTTP ${r.status}`);
     }
@@ -4363,7 +4536,16 @@ function renderTournamentOptions(){
   const list = [...tournamentCatalogCache];
 
   select.innerHTML = list.length
-    ? list.map(t => `<option value="${esc(t.id)}">${esc(t.name)} · ${Number(t.teamSize||1)}v${Number(t.teamSize||1)}</option>`).join('')
+    ? list.map(t => {
+        const state =
+          t.lifecycleStatus === 'played'
+            ? 'OYNANDI'
+            : t.lifecycleStatus === 'registration_open'
+              ? 'KAYIT AÇIK'
+              : 'KAYIT KAPALI';
+
+        return `<option value="${esc(t.id)}">${esc(t.name)} · ${Number(t.teamSize||1)}v${Number(t.teamSize||1)} · ${state}</option>`;
+      }).join('')
     : '<option value="">Aktif turnuva bulunamadı</option>';
 
   if(previous && list.some(t => String(t.id) === String(previous))){
@@ -4426,14 +4608,28 @@ async function loadTournamentConfig(){
     document.getElementById('tGameIdLabel').value = rule.gameIdLabel || 'VALORANT ID';
 
     const teamMode = String(t.mode || '') !== 'solo';
+    const catalogItem = tournamentCatalogCache.find(x => String(x.id) === String(id)) || {};
+    const lifecycle = catalogItem.lifecycleStatus === 'played'
+      ? '⚫ OYNANDI'
+      : t.registrationOpen
+        ? '🟢 Kayıt Açık'
+        : '🔴 Kayıt Kapalı';
+
     const quick = document.getElementById('tournamentQuickInfo');
     if(quick){
       quick.innerHTML = `
         <span class="tournamentPill">${esc(t.name)}</span>
         <span class="tournamentPill">${teamMode ? `${Number(t.teamSize||0)}v${Number(t.teamSize||0)} Takımlı` : '1v1 Solo'}</span>
         <span class="tournamentPill">Kontenjan: ${Number(t.capacity||0)}</span>
-        <span class="tournamentPill">${t.registrationOpen ? '🟢 Kayıt Açık' : '🔴 Kayıt Kapalı'}</span>
+        <span class="tournamentPill">${lifecycle}</span>
       `;
+    }
+
+    const played = catalogItem.lifecycleStatus === 'played';
+    const registrationToggle = document.getElementById('tRegistrationOpen');
+    if(registrationToggle){
+      registrationToggle.disabled = played;
+      if(played) registrationToggle.checked = false;
     }
 
     const drawButton = document.getElementById('tDrawButton');
@@ -4544,6 +4740,7 @@ async function saveTournamentConfig(){
     currentTournamentRule = v2.d.rule || currentTournamentRule;
     tournamentCatalogCache = [];
     await loadTournamentList(true);
+    await loadProducts();
     showStatus('tournamentStatus','✅ Turnuva ve katılım sistemi ayarları kaydedildi.',true);
   }catch(error){
     showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
