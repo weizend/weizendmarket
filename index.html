@@ -1054,6 +1054,7 @@
                 <div id="purchaseStatusBox" class="purchase-status-box">
                     <div id="purchaseSpinner" class="purchase-spinner"></div>
                     <div id="purchaseStatusText">İşleminiz hazırlanıyor...</div>
+                    <button id="purchaseCancelPendingButton" class="cancel-btn" style="display:none;margin-top:12px;" onclick="cancelPendingPurchase()">İŞLEMİ İPTAL ET</button>
                 </div>
 
                 <div id="purchaseDeliveryCode" class="purchase-code" onclick="copyPurchaseCode()" title="Kodu kopyalamak için dokun"></div>
@@ -3484,6 +3485,8 @@
             document.getElementById('purchaseDeliveryNote').style.display = 'none';
             document.getElementById('purchaseSpinner').style.display = 'block';
             document.getElementById('purchaseStatusText').innerText = 'İşleminiz hazırlanıyor...';
+            const cancelPendingBtn = document.getElementById('purchaseCancelPendingButton');
+            if (cancelPendingBtn) cancelPendingBtn.style.display = 'none';
             document.getElementById('purchaseCloseButton').disabled = false;
 
             const flowNote = document.getElementById('purchaseFlowNote');
@@ -3645,7 +3648,10 @@
                         `✅ <b>Sipariş oluşturuldu.</b><br>` +
                         `Ödeme kodun: <b>${escapeHtml(reference)}</b><br>` +
                         `Tutar: <b>${formatTlFromCents(data.totalTlCents)}</b><br>` +
-                        `<span style="color:var(--text-muted);font-size:.86rem;">Kod panoya kopyalandı. Aynı kod Mesaj Kutuna da gönderildi.</span>`;
+                        `<span style="color:var(--text-muted);font-size:.86rem;">Kod panoya kopyalandı. Stok ödeme doğrulanana kadar fiziksel olarak düşmez; ancak bu işlem için sistemde ayrılmıştır.</span>`;
+
+                    const cancelPendingBtn = document.getElementById('purchaseCancelPendingButton');
+                    if (cancelPendingBtn) cancelPendingBtn.style.display = 'inline-flex';
 
                     showBynoGameRedirect(reference);
                     startTlPaymentWatcher();
@@ -3756,6 +3762,10 @@
             if (purchaseModal && purchaseModal.style.display === 'flex') {
                 document.getElementById('purchaseStatusBox').style.display = 'block';
                 document.getElementById('purchaseSpinner').style.display = payment.status === 'paid' ? 'none' : 'block';
+                const cancelPendingBtn = document.getElementById('purchaseCancelPendingButton');
+                if (cancelPendingBtn) {
+                    cancelPendingBtn.style.display = payment.status === 'pending' && Number(payment.receivedAmountCents || 0) === 0 ? 'inline-flex' : 'none';
+                }
 
                 if (payment.status === 'partial_payment') {
                     document.getElementById('purchaseStatusText').innerHTML =
@@ -3774,6 +3784,8 @@
             }
 
             if (payment.status === 'paid') {
+                const cancelPendingBtn = document.getElementById('purchaseCancelPendingButton');
+                if (cancelPendingBtn) cancelPendingBtn.style.display = 'none';
                 localStorage.removeItem(PENDING_TL_PAYMENT_KEY);
                 stopTlPaymentWatcher();
                 await checkPurchaseStatusOnce();
@@ -3782,6 +3794,8 @@
             }
 
             if (payment.status === 'manual_review' || payment.status === 'cancelled' || payment.status === 'expired') {
+                const cancelPendingBtn = document.getElementById('purchaseCancelPendingButton');
+                if (cancelPendingBtn) cancelPendingBtn.style.display = 'none';
                 stopTlPaymentWatcher();
                 purchaseInFlight = false;
                 document.getElementById('purchaseCloseButton').disabled = false;
@@ -3789,6 +3803,54 @@
             }
 
             return false;
+        }
+
+        async function cancelPendingPurchase() {
+            const token = localStorage.getItem(SESSION_STORAGE_KEY) || '';
+            let saved = null;
+            try { saved = JSON.parse(localStorage.getItem(PENDING_TL_PAYMENT_KEY) || 'null'); } catch (_) {}
+            const orderId = String(saved?.orderId || currentPurchaseOrderId || '').trim();
+
+            if (!token || !orderId) {
+                showStatusToast('⚠️ İptal edilecek bekleyen işlem bulunamadı.',3500);
+                return;
+            }
+
+            if (!confirm('Bekleyen BynoGame işlemi iptal edilsin mi? Tek kullanımlık ödeme kodu kalıcı olarak geçersiz olur.')) return;
+
+            const btn = document.getElementById('purchaseCancelPendingButton');
+            if (btn) btn.disabled = true;
+
+            try {
+                const r = await fetch(`${MARKET_WORKER}/purchase/cancel`,{
+                    method:'POST',
+                    headers:{
+                        'Accept':'application/json',
+                        'Content-Type':'application/json',
+                        'Authorization':`Bearer ${token}`
+                    },
+                    cache:'no-store',
+                    body:JSON.stringify({orderId})
+                });
+                let d = null;
+                try { d = await r.json(); } catch (_) {}
+                if (!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+
+                localStorage.removeItem(PENDING_TL_PAYMENT_KEY);
+                stopTlPaymentWatcher();
+                purchaseInFlight = false;
+                currentPurchasePaymentId = '';
+                document.getElementById('purchaseSpinner').style.display = 'none';
+                document.getElementById('purchaseCloseButton').disabled = false;
+                if (btn) btn.style.display = 'none';
+                document.getElementById('purchaseStatusText').innerHTML =
+                    '✅ <b>İşlem iptal edildi.</b><br>Tek kullanımlık ödeme kodu artık geçersiz.';
+                syncCatalogStock().catch(()=>{});
+                showStatusToast('✅ Bekleyen işlem iptal edildi.',3200);
+            } catch (error) {
+                showStatusToast(`⚠️ ${error.message || error}`,5000);
+                if (btn) btn.disabled = false;
+            }
         }
 
         function stopTlPaymentWatcher() {
@@ -4314,13 +4376,24 @@
         const list = document.getElementById('tournamentMarketGrid');
         if (!section || !list) return;
 
-        const visible = tv2Catalog.filter(tv2SearchMatch);
+        const searched = tv2Catalog.filter(tv2SearchMatch);
+        const visible = aktifKategori === 'Turnuva'
+            ? searched
+            : searched.filter(item => String(item?.tournament?.lifecycleStatus || '').toLowerCase() !== 'completed');
 
         const shouldShow =
             forceVisible &&
-            (aktifKategori === 'Tümü' || aktifKategori === 'Turnuva');
+            (aktifKategori === 'Tümü' || aktifKategori === 'Turnuva') &&
+            (aktifKategori === 'Turnuva' || visible.length > 0);
 
         section.style.display = shouldShow ? 'block' : 'none';
+
+        const heading = section.querySelector('.tv2-section-heading h2');
+        const description = section.querySelector('.tv2-section-heading p');
+        if (heading) heading.textContent = aktifKategori === 'Turnuva' ? 'Turnuvalar' : 'Aktif Turnuvalar';
+        if (description) description.textContent = aktifKategori === 'Turnuva'
+            ? 'Aktif turnuvaları, tamamlanan turnuvaları, katılanları ve sonuçları burada görebilirsin.'
+            : 'Takımını oluştur, kadronu yaz, katılım şartını tamamla ve turnuvaya hazırlan.';
 
         if (!shouldShow) return;
 
@@ -5237,6 +5310,7 @@
             <div class="tv2-payment-box">
                 <b>${p.status === 'paid' ? '✅ Katılım şartı tamamlandı' : '⏳ İşlem devam ediyor'}</b>
                 <div class="tv2-muted" style="margin-top:5px;">
+                    Üstlenen: <b>${tv2Esc(p.payerUsername || currentUsername || '-')}</b><br>
                     ${directRequired ? `Normal abonelik: <b>${directReceived}/${directRequired}</b><br>` : ''}
                     ${giftsRequired ? `Abonelik hediyesi: <b>${giftsReceived}/${giftsRequired}</b><br>` : ''}
                     Son tarih: <b>${tv2Esc(tv2Date(p.expiresAt))}</b>
@@ -5246,6 +5320,9 @@
                     <div class="tv2-actions">
                         <button class="tv2-btn" onclick="tv2OpenKickChannel()">⭐ KICK KANALINI AÇ</button>
                         <button class="tv2-btn secondary" onclick="tv2RefreshSubscription('${tv2Esc(p.id)}')">🔄 Şimdi Kontrol Et</button>
+                        ${directReceived === 0 && giftsReceived === 0
+                            ? `<button class="tv2-btn danger" onclick="tv2CancelPendingPayment('${tv2Esc(p.id)}','subscription')">İŞLEMİ İPTAL ET</button>`
+                            : ''}
                     </div>
                 ` : ''}
             </div>
@@ -5356,6 +5433,9 @@
                             <b>💳 BynoGame ödeme kodun hazır</b>
                             <div class="tv2-code" onclick="copyTextReliable('${tv2Esc(reference)}')">${tv2Esc(reference)}</div>
                             <div class="tv2-muted">Tutar: <b>${tv2Esc(formatTlFromCents(payment.expectedAmountCents || 0))}</b><br>Kod panoya kopyalandı. Bağış mesajına yalnızca bu kodu yapıştır.</div>
+                            <div class="tv2-actions">
+                                <button class="tv2-btn danger" onclick="tv2CancelPendingPayment('${tv2Esc(payment.id)}','tl')">İŞLEMİ İPTAL ET</button>
+                            </div>
                         </div>
                     `;
                 }
@@ -5414,6 +5494,7 @@
                 <div class="tv2-actions">
                     <button class="tv2-btn" onclick="showBynoGameRedirect('${tv2Esc(pending.reference || '')}')">BynoGame'e Git</button>
                     <button class="tv2-btn secondary" onclick="tv2CheckTlPayment('${tv2Esc(pending.paymentId)}',true)">🔄 Ödemeyi Kontrol Et</button>
+                    <button class="tv2-btn danger" onclick="tv2CancelPendingPayment('${tv2Esc(pending.paymentId)}','tl')">İŞLEMİ İPTAL ET</button>
                 </div>
             </div>
         `;
@@ -5453,6 +5534,43 @@
             }
         } catch (error) {
             if (notify) showStatusToast(`⚠️ ${error.message || error}`,4000);
+        }
+    }
+
+    async function tv2CancelPendingPayment(paymentId,kind) {
+        if (!paymentId || !['tl','subscription'].includes(String(kind))) return;
+        const label = kind === 'tl' ? 'BynoGame ödeme kodu' : 'abonelik / gift işlemi';
+        if (!confirm(`Bekleyen ${label} iptal edilsin mi?`)) return;
+
+        try {
+            const d = await tv2AuthFetch('/tournament/v2/payment/cancel',{
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({paymentId,kind})
+            });
+
+            if (kind === 'tl') {
+                let pending = null;
+                try { pending = JSON.parse(localStorage.getItem(TV2_PENDING_TL_KEY) || 'null'); } catch (_) {}
+                if (!pending || pending.paymentId === paymentId) {
+                    localStorage.removeItem(TV2_PENDING_TL_KEY);
+                }
+                if (tv2State.tlTimer) clearInterval(tv2State.tlTimer);
+                tv2State.tlTimer = null;
+            } else {
+                if (tv2State.subTimer) clearInterval(tv2State.subTimer);
+                tv2State.subTimer = null;
+            }
+
+            showStatusToast(`✅ ${d?.message || 'Bekleyen işlem iptal edildi.'}`,4200);
+            if (String(tv2State.publicData?.tournament?.mode || '') === 'solo') {
+                await tv2LoadSoloMe();
+            } else {
+                await tv2ReloadMe();
+            }
+            await tv2LoadCatalog(false);
+        } catch (error) {
+            showStatusToast(`⚠️ ${error.message || error}`,5000);
         }
     }
 
@@ -5572,6 +5690,9 @@
                         <div class="tv2-actions">
                             <button class="tv2-btn" onclick="window.open('${TV2_KICK_CHANNEL_URL}','_blank','noopener,noreferrer')">⭐ KICK KANALINI AÇ</button>
                             <button class="tv2-btn secondary" onclick="tv2RefreshSubscription('${tv2Esc(subscriptionPayment.id)}',true)">🔄 ABONELİĞİ KONTROL ET</button>
+                            ${Number(subscriptionPayment.receivedDirectSubs||0)===0 && Number(subscriptionPayment.receivedGifts||0)===0
+                                ? `<button class="tv2-btn danger" onclick="tv2CancelPendingPayment('${tv2Esc(subscriptionPayment.id)}','subscription')">İŞLEMİ İPTAL ET</button>`
+                                : ''}
                         </div>
                     ` : ''}
                 `;
