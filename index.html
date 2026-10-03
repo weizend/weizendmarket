@@ -3096,14 +3096,21 @@
                 const productId = String(serverProduct.id || '').toLowerCase();
                 if (!productId) continue;
 
+                // Turnuva ürünleri normal ürün kartı olarak çizilmez.
+                // Bunlar aşağıdaki özel Turnuvalar bölümünde Worker /tournaments verisiyle gösterilir.
+                const isTournamentCatalogProduct =
+                    String(serverProduct.category || '').trim().toLocaleLowerCase('tr-TR') === 'turnuva';
+
+                if (isTournamentCatalogProduct) continue;
+
                 let urun = URUNLER.find(
                     item => String(item.productId || '').toLowerCase() === productId
                 );
 
                 const metadata = serverProduct.metadata || {};
-                const images = Array.isArray(metadata.images) && metadata.images.length
-                    ? metadata.images
-                    : ['https://i.hizliresim.com/fo5evkh4.png'];
+                const serverImages = Array.isArray(metadata.images)
+                    ? metadata.images.filter(Boolean)
+                    : [];
 
                 if (!urun) {
                     urun = {
@@ -3113,7 +3120,9 @@
                         ad: serverProduct.name || productId,
                         puan: catalogPriceText(serverProduct),
                         komut: metadata.streamCommand || '',
-                        gorseller: images,
+                        gorseller: serverImages.length
+                            ? serverImages
+                            : ['https://i.hizliresim.com/fo5evkh4.png'],
                         ozellikler: metadata.description
                             ? `<p>${escapeHtml(metadata.description).replaceAll('\\n','<br>')}</p>`
                             : '<p>Ürün detayları için yöneticiyle iletişime geçebilirsiniz.</p>',
@@ -3133,7 +3142,16 @@
                 urun.streamCommand = String(metadata.streamCommand || urun.komut || '').trim();
                 urun.komut = urun.streamCommand || urun.komut || '';
                 urun.puan = catalogPriceText(serverProduct);
-                urun.gorseller = images;
+
+                // Admin/Worker tarafında görsel URL'si varsa onu kullan.
+                // Görsel metadata'sı boşsa index.html içindeki mevcut ürün görselini KORU.
+                // Önceki sürüm burada logoyu zorla atadığı için bütün ürünler W logosuna dönüyordu.
+                if (serverImages.length) {
+                    urun.gorseller = serverImages;
+                } else if (!Array.isArray(urun.gorseller) || !urun.gorseller.length) {
+                    urun.gorseller = ['https://i.hizliresim.com/fo5evkh4.png'];
+                }
+
                 if (metadata.description) {
                     urun.ozellikler = `<p>${escapeHtml(metadata.description).replaceAll('\\n','<br>')}</p>`;
                 }
