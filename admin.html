@@ -1291,6 +1291,10 @@ tr.user-row-blocked{background:rgba(227,27,27,.045)}
           <div class="field">
             <label class="title">Turnuva Tarihi</label>
             <input id="tcEventDate" type="datetime-local">
+            <label class="checkline" style="margin-top:9px;">
+              <input id="tcComingSoon" type="checkbox" onchange="updateCreateTournamentDateField()">
+              <span>Yakında · tarih yerine sadece YAKINDA göster</span>
+            </label>
           </div>
 
           <div class="field">
@@ -1383,6 +1387,10 @@ tr.user-row-blocked{background:rgba(227,27,27,.045)}
           <div class="field">
             <label class="title">Turnuva Tarihi</label>
             <input id="tEventDate" type="datetime-local">
+            <label class="checkline" style="margin-top:9px;">
+              <input id="tComingSoon" type="checkbox" onchange="updateTournamentDateField()">
+              <span>Yakında · tarih yerine sadece YAKINDA göster</span>
+            </label>
           </div>
 
           <div class="field">
@@ -2126,7 +2134,11 @@ function renderGiftCodes(items){
 
   for(const item of items){
     const status = String(item.status || 'unused');
-    const statusText = status === 'unused' ? 'Kullanılmadı' : status === 'redeemed' ? 'Kullanıldı' : 'Devre Dışı';
+    const statusText = status === 'unused'
+      ? 'Kullanılmadı'
+      : status === 'redeemed'
+        ? 'Kullanıldı'
+        : 'SİLİNDİ / GEÇERSİZ';
     const badge = status === 'unused' ? 'ok' : status === 'redeemed' ? 'warn' : 'bad';
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -2137,17 +2149,27 @@ function renderGiftCodes(items){
       <td>${esc(dateText(item.created_at))}</td>
       <td>${esc(dateText(item.redeemed_at))}</td>
       <td>
-        ${status === 'disabled'
-          ? '<span class="muted">Silindi / Geçersiz</span>'
-          : `<button class="smallBtn danger" onclick="deleteGiftCode('${encodeURIComponent(item.id)}')">🗑 Sil</button>`}
+        <div class="inlineActions">
+          ${status === 'disabled'
+            ? '<span class="muted">SİLİNDİ / GEÇERSİZ</span>'
+            : ''}
+          <button class="smallBtn iconDanger" title="${status === 'disabled' ? 'Listeden tamamen kaldır' : 'Geçersiz hale getir'}" onclick="deleteGiftCode('${encodeURIComponent(item.id)}','${esc(status)}')">🗑</button>
+        </div>
       </td>`;
     body.appendChild(tr);
   }
 }
 
-async function deleteGiftCode(encodedId){
+async function deleteGiftCode(encodedId,currentStatus=''){
   const id = decodeURIComponent(encodedId || '');
-  if(!id || !confirm('Bu hediye kodu silinsin ve kalıcı olarak geçersiz hale getirilsin mi?')) return;
+  if(!id) return;
+
+  const secondDelete = String(currentStatus || '') === 'disabled';
+  const question = secondDelete
+    ? 'Bu hediye kodu zaten geçersiz. Admin listesinden tamamen kaldırılsın mı?'
+    : 'Bu hediye kodu geçersiz hale getirilsin mi? İlk silmeden sonra kod artık kullanılamaz.';
+
+  if(!confirm(question)) return;
 
   try{
     const {r,d} = await api('/admin/gift-codes/delete',{
@@ -2157,7 +2179,14 @@ async function deleteGiftCode(encodedId){
     });
     if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
     await loadGiftCodes();
-    showStatus('giftCodeStatus','✅ Hediye kodu silindi ve artık geçersiz.',true);
+
+    showStatus(
+      'giftCodeStatus',
+      d?.action === 'deleted'
+        ? '✅ Hediye kodu admin listesinden tamamen kaldırıldı.'
+        : '✅ Hediye kodu SİLİNDİ / GEÇERSİZ durumuna alındı ve artık kullanılamaz.',
+      true
+    );
   }catch(error){
     showStatus('giftCodeStatus','❌ '+esc(error.message || error),false);
   }
@@ -3883,14 +3912,12 @@ function renderAdminOrders(){
                 onclick="openAdminOrder('${encodeURIComponent(o.id)}')">
                 Detayları Aç
               </button>`}
-          ${o.paymentType !== 'gift_code' && Number(o.adminArchived || o.admin_archived || 0) === 1
-            ? `
-              <button class="smallBtn iconRestore" title="Arşivden çıkar" onclick="archiveAdminOrder('${encodeURIComponent(o.id)}',false)">↩</button>
-              <button class="smallBtn iconDanger" title="Tamamen sil" onclick="openOrderDeleteChoice('${encodeURIComponent(o.id)}',true)">🗑</button>
-            `
-            : (o.paymentType !== 'gift_code' && ['delivered','cancelled','expired','failed'].includes(o.status)
-              ? `<button class="smallBtn iconDanger" title="Arşivle veya tamamen sil" onclick="openOrderDeleteChoice('${encodeURIComponent(o.id)}',false)">🗑</button>`
-              : '')}
+          <button
+            class="smallBtn iconDanger"
+            title="Satın Alınanlar geçmişinden kaldır"
+            onclick="hideAdminPurchase('${encodeURIComponent(o.id)}','${esc(o.sourceType || (o.paymentType === 'gift_code' ? 'gift_code' : 'order'))}')">
+            🗑
+          </button>
         </div>
       </td>
     `;
@@ -3898,6 +3925,45 @@ function renderAdminOrders(){
     body.appendChild(tr);
   }
 }
+
+async function hideAdminPurchase(encodedId,sourceType='order'){
+  const sourceId = decodeURIComponent(encodedId || '');
+  const type = String(sourceType || 'order').trim().toLowerCase();
+
+  if(!sourceId) return;
+  if(!confirm('Bu işlem Satın Alınanlar geçmişinden kaldırılsın mı?')) return;
+
+  try{
+    const {r,d} = await api('/admin/purchase/hide',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        sourceId,
+        sourceType:type
+      })
+    });
+
+    if(!r.ok || !d?.success){
+      throw new Error(d?.error || `HTTP ${r.status}`);
+    }
+
+    adminOrdersCache = adminOrdersCache.filter(o => String(o.id) !== String(sourceId));
+    renderAdminOrders();
+
+    showStatus(
+      'adminOrdersStatus',
+      '✅ İşlem Satın Alınanlar geçmişinden kaldırıldı.',
+      true
+    );
+  }catch(error){
+    showStatus(
+      'adminOrdersStatus',
+      '❌ ' + esc(error.message || error),
+      false
+    );
+  }
+}
+
 
 function openOrderDeleteChoice(
   encodedId,
@@ -4632,6 +4698,25 @@ function updateCreateTournamentEntryFields(){
   }
 }
 
+function updateCreateTournamentDateField(){
+  const comingSoon = document.getElementById('tcComingSoon')?.checked === true;
+  const dateInput = document.getElementById('tcEventDate');
+  if(!dateInput) return;
+
+  dateInput.disabled = comingSoon;
+  if(comingSoon) dateInput.value = '';
+}
+
+function updateTournamentDateField(){
+  const comingSoon = document.getElementById('tComingSoon')?.checked === true;
+  const dateInput = document.getElementById('tEventDate');
+  if(!dateInput) return;
+
+  dateInput.disabled = comingSoon;
+  if(comingSoon) dateInput.value = '';
+}
+
+
 async function createTournament(){
   const button = document.getElementById('createTournamentButton');
 
@@ -4642,7 +4727,8 @@ async function createTournament(){
   const feePerPlayerTl = entryMode === 'tl'
     ? Number(document.getElementById('tcFee')?.value || 0)
     : 0;
-  const eventDate = tournamentDateToIso('tcEventDate');
+  const comingSoon = document.getElementById('tcComingSoon')?.checked === true;
+  const eventDate = comingSoon ? null : tournamentDateToIso('tcEventDate');
   const registrationClosesAt = tournamentDateToIso('tcRegistrationClosesAt');
   const gameName = document.getElementById('tcGameName')?.value.trim() || 'VALORANT';
   const gameIdLabel = document.getElementById('tcGameIdLabel')?.value.trim() || 'VALORANT ID';
@@ -4685,6 +4771,7 @@ async function createTournament(){
         entryMode,
         feePerPlayerTl,
         eventDate,
+        comingSoon,
         registrationClosesAt,
         gameName,
         gameIdLabel,
@@ -4701,6 +4788,8 @@ async function createTournament(){
 
     document.getElementById('tcName').value = '';
     document.getElementById('tcRegistrationOpen').checked = false;
+    document.getElementById('tcComingSoon').checked = false;
+    updateCreateTournamentDateField();
 
     tournamentCatalogCache = [];
     await loadTournamentList(true);
@@ -4847,7 +4936,11 @@ async function loadTournamentConfig(){
     document.getElementById('tRegistrationOpen').checked = !!t.registrationOpen;
     document.getElementById('tFee').value = t.feePerPlayerTl ?? 0;
     document.getElementById('tCapacity').value = t.capacity ?? 1;
-    document.getElementById('tEventDate').value = toLocalInputValue(t.eventDate);
+    document.getElementById('tComingSoon').checked = rule.comingSoon === true;
+    document.getElementById('tEventDate').value = rule.comingSoon === true
+      ? ''
+      : toLocalInputValue(t.eventDate);
+    updateTournamentDateField();
     document.getElementById('tEntryMode').value =
       rule.entryMode ||
       catalogItem.entryMode ||
@@ -4881,6 +4974,7 @@ async function loadTournamentConfig(){
         <span class="tournamentPill">${Number(t.teamSize||1) <= 1 ? '1v1 Solo' : `${Number(t.teamSize)}v${Number(t.teamSize)} Takımlı`}</span>
         <span class="tournamentPill">Kontenjan: ${Number(catalogItem.registeredCount||0)} / ${Number(t.capacity||0)}</span>
         <span class="tournamentPill">${esc(tournamentEntryModeText(rule.entryMode || catalogItem.entryMode))}</span>
+        <span class="tournamentPill">${rule.comingSoon === true ? 'YAKINDA' : esc(dateText(t.eventDate))}</span>
         <span class="tournamentPill">${esc(tournamentLifecycleText(lifecycle))}</span>
       `;
     }
@@ -4980,7 +5074,8 @@ async function saveTournamentConfig(){
   const teamSize = Number(document.getElementById('tTeamSize')?.value || 1);
   const registrationOpen = document.getElementById('tRegistrationOpen')?.checked === true;
   const capacity = Number(document.getElementById('tCapacity')?.value || 0);
-  const eventDate = tournamentDateToIso('tEventDate');
+  const comingSoon = document.getElementById('tComingSoon')?.checked === true;
+  const eventDate = comingSoon ? null : tournamentDateToIso('tEventDate');
   const entryMode = document.getElementById('tEntryMode')?.value || 'free';
   const feePerPlayerTl = entryMode === 'tl'
     ? Number(document.getElementById('tFee')?.value || 0)
@@ -5024,6 +5119,7 @@ async function saveTournamentConfig(){
         registrationOpen,
         capacity,
         eventDate,
+        comingSoon,
         entryMode,
         feePerPlayerTl,
         registrationClosesAt,
@@ -6118,9 +6214,18 @@ async function invalidateAllUserSessions(){
       throw new Error(d?.error || `HTTP ${r.status}`);
     }
 
+    currentAdminUser = null;
+    currentAdminThread = null;
+    document.getElementById('userDetailCard')?.classList.add('hidden');
+
+    usersCache = [];
+    renderUsers();
+    await loadUsers();
+    refreshAdminMessagesBadge().catch(() => {});
+
     showStatus(
       'usersStatus',
-      '✅ Tüm kullanıcı oturumları sonlandırıldı. Kullanıcılar markete girdiklerinde bir kez yeniden doğrulama yapacak.',
+      `✅ Tüm kullanıcı oturumları sonlandırıldı ve kullanıcı listesi sıfırlandı.${Number(d?.clearedUsers || 0) ? ` ${Number(d.clearedUsers)} kullanıcı listeden temizlendi.` : ''} Yeniden doğrulama yapanlar listeye sıfırdan eklenecek.`,
       true
     );
   }catch(error){
