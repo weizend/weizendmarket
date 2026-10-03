@@ -197,15 +197,15 @@
         .details-content li { margin-bottom: 6px; }
 
         /* MODAL TASARIMLARI */
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.95); z-index: 999; justify-content: center; align-items: center; padding: 20px; }
-        .modal-content { background: var(--card-bg); width: 100%; max-width: 900px; border-radius: 12px; border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden;}
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.95); z-index: 999; justify-content: center; align-items: center; padding: 20px; overflow:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
+        .modal-content { background: var(--card-bg); width: 100%; max-width: 900px; max-height:calc(100dvh - 40px); border-radius: 12px; border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; overscroll-behavior:contain;}
         
         .modal-header { padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; z-index: 10; background: var(--card-bg); }
         .modal-header h3 { margin: 0; font-size: 1.2rem; }
         .close-icon { background: none; border: none; color: var(--weizend-white); font-size: 1.5rem; cursor: pointer; transition: 0.2s; line-height: 1; }
         .close-icon:hover { color: var(--weizend-red); }
 
-        .modal-body { padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .modal-body { padding: 20px; display: flex; flex-direction: column; align-items: center; overflow:auto; min-height:0; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
         .main-slider { position: relative; width: 100%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; overflow: hidden; cursor: zoom-in;}
         .main-slider img { width: 100%; max-height: 70vh; object-fit: contain; border-radius: 8px; transition: transform 0.15s ease-out; transform-origin: center; }
         
@@ -221,7 +221,7 @@
         .modal-thumb:hover { opacity: 1; }
         .modal-thumb.active { border-color: var(--weizend-red); opacity: 1; }
 
-        .redirect-modal-body { padding: 30px; text-align: center; }
+        .redirect-modal-body { padding: 30px; text-align: center; overflow:auto; min-height:0; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
         .redirect-command-box { background: #000; border: 2px dashed var(--weizend-red); padding: 15px; border-radius: 8px; font-size: 1.4rem; color: var(--weizend-red); font-family: monospace; margin: 20px 0; font-weight: bold; }
         .redirect-timer { color: var(--weizend-white); font-size: 1rem; margin-top: 15px; }
         .cancel-btn { background: #222; color: var(--text-muted); border: 1px solid var(--border-color); padding: 10px 25px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 20px; width: 100%; }
@@ -231,7 +231,8 @@
         .verify-wait-overlay {
             display: none; position: fixed; inset: 0; z-index: 5000;
             background: rgba(0,0,0,.97); align-items: center; justify-content: center;
-            padding: 20px; box-sizing: border-box;
+            padding: 20px; box-sizing: border-box; overflow:auto; overscroll-behavior:contain;
+            -webkit-overflow-scrolling:touch;
         }
         .verify-wait-card {
             width: 100%; max-width: 520px; background: linear-gradient(145deg,#111,#080808);
@@ -252,7 +253,7 @@
 
         /* SITE ÜZERİNDEN SATIN ALMA */
         .purchase-modal-content { max-width: 520px; }
-        .purchase-body { padding: 24px; text-align: center; }
+        .purchase-body { padding: 24px; text-align: center; overflow:auto; min-height:0; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
         .purchase-product-name { font-size: 1.25rem; font-weight: 900; margin-bottom: 8px; }
         .purchase-price { color: var(--weizend-red); font-size: 1.15rem; font-weight: 900; margin-bottom: 18px; }
         .purchase-summary { background:#090909; border:1px solid #292929; border-radius:12px; padding:14px; margin:14px 0; text-align:left; line-height:1.8; }
@@ -1244,7 +1245,82 @@
         let inboxBadgeWatchTimer = null;
         let sessionGraceUntil = 0;
         let verificationWaitTimer = null;
+        let verificationPollTimer = null;
         let verificationFinishRunning = false;
+
+        const MARKET_MODAL_IDS = [
+            'imageModal',
+            'redirectModal',
+            'purchaseModal',
+            'giftRedeemModal',
+            'inboxModal',
+            'tv2Modal',
+            'verificationWaitModal'
+        ];
+        let marketScrollLocked = false;
+        let marketLockedScrollY = 0;
+        let marketModalObserver = null;
+
+        function isMarketModalVisible(element) {
+            if (!element) return false;
+            const style = window.getComputedStyle(element);
+            return style.display !== 'none' && style.visibility !== 'hidden';
+        }
+
+        function lockMarketPageScroll() {
+            if (marketScrollLocked) return;
+            marketLockedScrollY = window.scrollY || window.pageYOffset || 0;
+            marketScrollLocked = true;
+
+            document.body.style.position = 'fixed';
+            document.body.style.top = `-${marketLockedScrollY}px`;
+            document.body.style.left = '0';
+            document.body.style.right = '0';
+            document.body.style.width = '100%';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function unlockMarketPageScroll() {
+            if (!marketScrollLocked) return;
+            marketScrollLocked = false;
+
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.left = '';
+            document.body.style.right = '';
+            document.body.style.width = '';
+            document.body.style.overflow = '';
+
+            window.scrollTo(0, marketLockedScrollY);
+        }
+
+        function syncMarketModalScrollLock() {
+            const hasOpenModal = MARKET_MODAL_IDS
+                .map(id => document.getElementById(id))
+                .some(isMarketModalVisible);
+
+            if (hasOpenModal) lockMarketPageScroll();
+            else unlockMarketPageScroll();
+        }
+
+        function setupMarketModalScrollLock() {
+            if (marketModalObserver) return;
+
+            marketModalObserver = new MutationObserver(() => {
+                requestAnimationFrame(syncMarketModalScrollLock);
+            });
+
+            for (const id of MARKET_MODAL_IDS) {
+                const element = document.getElementById(id);
+                if (!element) continue;
+                marketModalObserver.observe(element, {
+                    attributes:true,
+                    attributeFilter:['style','class']
+                });
+            }
+
+            syncMarketModalScrollLock();
+        }
 
         document.addEventListener("DOMContentLoaded", () => {
             // Eski doğrulama sistemiyle açılmış oturumları bu sürümde geçersiz say.
@@ -1261,6 +1337,7 @@
             // Sunucudaki gerçek stokları tek sefer al. Sürekli polling yapılmaz.
             syncCatalogStock().catch(error => console.warn('CATALOG SYNC ERROR:', error));
 
+            setupMarketModalScrollLock();
             restoreVerificationWaitModal();
             initializeMarketAccount();
         });
@@ -1877,7 +1954,7 @@
                 if (data.status !== 'verified' || !data.sessionToken) {
                     if (manual) {
                         document.getElementById('accessTitle').innerText = '⏳ Doğrulama İşlemi Bekleniyor';
-                        document.getElementById('accessText').innerHTML = 'Henüz doğrulama yanıtı gelmedi. Kick sohbetinde <b>!doğrula KOD</b> komutunu gönderdiysen lütfen bekle. BotRix doğrulamayı gönderdiği anda market realtime bildirimle tek sefer kontrol edecek.';
+                        document.getElementById('accessText').innerHTML = 'Henüz doğrulama yanıtı gelmedi. Kick sohbetinde <b>!doğrula KOD</b> komutunu gönderdiysen bekleyebilirsin; sistem 60 saniye boyunca otomatik olarak tekrar kontrol ediyor.';
                     }
                     return false;
                 }
@@ -2735,9 +2812,9 @@
             setTimeout(() => document.getElementById('kickUsernameInput').focus(), 50);
         }
 
-        // Periyodik profil ve doğrulama polling'i kaldırıldı.
-        // Güncellemeler yalnızca weizend-realtime WebSocket bildirimi geldiğinde
-        // veya kullanıcı açıkça "Doğrulamayı Kontrol Et" butonuna bastığında yapılır.
+        // Profil polling'i sürekli çalışmaz. Doğrulama için ise kullanıcı
+        // "Doğrulamayı Kontrol Et" butonuna bastığında en fazla 60 saniyelik,
+        // yalnızca aktif challenge'a özel kısa polling başlatılır.
 
         function getVerificationWaitState() {
             try {
@@ -2767,10 +2844,26 @@
 
             if (verificationWaitTimer) clearInterval(verificationWaitTimer);
             verificationWaitTimer = setInterval(() => {
-                // Bu interval yalnızca ekrandaki saniye/progress animasyonunu günceller.
-                // Sunucuya hiçbir profil veya doğrulama isteği göndermez.
                 updateVerificationWaitUI();
             }, 1000);
+
+            if (verificationPollTimer) clearInterval(verificationPollTimer);
+
+            // İlk tıklamada hemen kontrol et; yanıt henüz gelmediyse 60 saniye boyunca
+            // aynı challenge için otomatik polling devam eder. İkinci tıklama gerekmez.
+            checkAuthStatus({ manual:true, silent:true }).catch(() => {});
+
+            verificationPollTimer = setInterval(() => {
+                const state = getVerificationWaitState();
+                if (!state || verificationFinishRunning || localStorage.getItem(SESSION_STORAGE_KEY)) {
+                    return;
+                }
+
+                const elapsed = Math.max(0, Math.floor((Date.now() - Number(state.startedAt)) / 1000));
+                if (elapsed >= VERIFY_WAIT_MAX_SECONDS) return;
+
+                checkAuthStatus({ manual:true, silent:true }).catch(() => {});
+            }, 1500);
         }
 
         function restoreVerificationWaitModal() {
@@ -2888,10 +2981,14 @@
                 clearInterval(verificationWaitTimer);
                 verificationWaitTimer = null;
             }
+            if (verificationPollTimer) {
+                clearInterval(verificationPollTimer);
+                verificationPollTimer = null;
+            }
             if (clearState) localStorage.removeItem(VERIFY_WAIT_STATE_KEY);
             const modal = document.getElementById('verificationWaitModal');
             if (modal) modal.style.display = 'none';
-            document.body.style.overflow = '';
+            requestAnimationFrame(syncMarketModalScrollLock);
         }
 
         function copyVerifyAndRedirect() {
@@ -4318,6 +4415,7 @@
                         rule:{
                             entryMode:tournament.entryMode || (Number(tournament.feePerPlayerCents || 0) > 0 ? 'tl' : 'free'),
                             registrationClosesAt:tournament.registrationClosesAt || null,
+                            comingSoon:tournament.comingSoon === true,
                             gameName:tournament.gameName || 'VALORANT',
                             gameIdLabel:tournament.gameIdLabel || 'VALORANT ID'
                         },
@@ -4470,10 +4568,13 @@
                 ? `${Number(t.teamSize || 0)}v${Number(t.teamSize || 0)} · Takımlı`
                 : '1v1 · Solo';
 
+            const comingSoon = rule.comingSoon === true || t.comingSoon === true;
             const dateText =
-                t.eventDate
-                    ? tv2Date(t.eventDate)
-                    : 'Daha sonra duyurulacak';
+                comingSoon
+                    ? 'YAKINDA'
+                    : t.eventDate
+                        ? tv2Date(t.eventDate)
+                        : 'Daha sonra duyurulacak';
 
             const closeText =
                 rule.registrationClosesAt
@@ -4514,8 +4615,9 @@
                         </div>
 
                         <div class="tv2-meta-box">
-                            <span class="tv2-meta-label">Turnuva Tarihi</span>
-                            <span class="tv2-meta-value">${tv2Esc(dateText)}</span>
+                            ${comingSoon
+                                ? `<span class="tv2-meta-value">YAKINDA</span>`
+                                : `<span class="tv2-meta-label">Turnuva Tarihi</span><span class="tv2-meta-value">${tv2Esc(dateText)}</span>`}
                         </div>
 
                         <div class="tv2-meta-box">
@@ -4658,6 +4760,7 @@
             const rule = item.rule || {
                 entryMode:t.entryMode,
                 registrationClosesAt:t.registrationClosesAt,
+                comingSoon:t.comingSoon === true,
                 gameName:t.gameName,
                 gameIdLabel:t.gameIdLabel
             };
@@ -4687,6 +4790,7 @@
                     ? 'registration_open'
                     : 'registration_closed'
             ));
+        const comingSoon = rule?.comingSoon === true || t?.comingSoon === true;
 
         return `
             <div class="tv2-hero">
@@ -4697,7 +4801,9 @@
                             ? '1v1 Solo'
                             : `${Number(t?.teamSize)}v${Number(t?.teamSize)} Takımlı`}<br>
                         Katılım: <b>${tv2Esc(tv2EntryLabel(rule,t))}</b><br>
-                        Tarih: <b>${tv2Esc(t?.eventDate ? tv2Date(t.eventDate) : 'Daha sonra duyurulacak')}</b>
+                        ${comingSoon
+                            ? '<b>YAKINDA</b>'
+                            : `Tarih: <b>${tv2Esc(t?.eventDate ? tv2Date(t.eventDate) : 'Daha sonra duyurulacak')}</b>`}
                     </div>
                 </div>
                 <div class="tv2-panel">
@@ -4921,6 +5027,7 @@
 
         const closed = tv2RegistrationClosed({tournament:t,rule});
         const statusClass = closed ? 'bad' : 'ok';
+        const comingSoon = rule?.comingSoon === true || t?.comingSoon === true;
 
         let content = `
             <div class="tv2-hero">
@@ -4929,7 +5036,9 @@
                     <div class="tv2-muted">
                         ${Number(t.teamSize || 0)}v${Number(t.teamSize || 0)} · ${tv2Esc(rule.gameName || 'Oyun')}<br>
                         Katılım: <b>${tv2Esc(tv2EntryLabel(rule,t))}</b><br>
-                        Turnuva tarihi: <b>${tv2Esc(t.eventDate ? tv2Date(t.eventDate) : 'Daha sonra duyurulacak')}</b>
+                        ${comingSoon
+                            ? '<b>YAKINDA</b>'
+                            : `Turnuva tarihi: <b>${tv2Esc(t.eventDate ? tv2Date(t.eventDate) : 'Daha sonra duyurulacak')}</b>`}
                     </div>
                 </div>
                 <div class="tv2-panel">
