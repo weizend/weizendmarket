@@ -4119,6 +4119,7 @@
     let tv2State = {
         tournamentId: '',
         publicData: null,
+        publicDetail: null,
         me: null,
         soloData: null,
         form: '',
@@ -4188,6 +4189,17 @@
         return '🎁 Ücretsiz';
     }
 
+    function tv2LifecycleLabel(status) {
+        const map = {
+            completed:'🏁 TAMAMLANDI',
+            in_progress:'🎮 TURNUVA BAŞLADI',
+            registration_complete:'✅ KAYITLAR TAMAMLANDI',
+            registration_open:'🟢 KAYITLAR AÇIK',
+            registration_closed:'🔴 KAYITLAR KAPALI'
+        };
+        return map[status] || '🔴 KAYITLAR KAPALI';
+    }
+
     function tv2TeamStatusLabel(status) {
         const map = {
             forming:'Kadro Oluşturuluyor',
@@ -4219,6 +4231,8 @@
     }
 
     function tv2RegistrationClosed(item) {
+        const lifecycle = String(item?.tournament?.lifecycleStatus || '').toLowerCase();
+        if (['completed','in_progress','registration_complete','registration_closed'].includes(lifecycle)) return true;
         if (!item?.tournament?.registrationOpen) return true;
         const close = item?.rule?.registrationClosesAt;
         return Boolean(close && Number.isFinite(Date.parse(close)) && Date.now() >= Date.parse(close));
@@ -4240,10 +4254,10 @@
                     result.push({
                         tournament,
                         rule:{
-                            entryMode:Number(tournament.feePerPlayerCents || 0) > 0 ? 'tl' : 'free',
-                            registrationClosesAt:null,
-                            gameName:'VALORANT',
-                            gameIdLabel:'VALORANT ID'
+                            entryMode:tournament.entryMode || (Number(tournament.feePerPlayerCents || 0) > 0 ? 'tl' : 'free'),
+                            registrationClosesAt:tournament.registrationClosesAt || null,
+                            gameName:tournament.gameName || 'VALORANT',
+                            gameIdLabel:tournament.gameIdLabel || 'VALORANT ID'
                         },
                         teams:[],
                         legacySolo:true
@@ -4302,7 +4316,10 @@
 
         const visible = tv2Catalog.filter(tv2SearchMatch);
 
-        const shouldShow = forceVisible && (aktifKategori === 'Tümü' || aktifKategori === 'Turnuva');
+        const shouldShow =
+            forceVisible &&
+            (aktifKategori === 'Tümü' || aktifKategori === 'Turnuva');
+
         section.style.display = shouldShow ? 'block' : 'none';
 
         if (!shouldShow) return;
@@ -4315,74 +4332,133 @@
         }
 
         if (!visible.length) {
-            list.innerHTML = `<div class="tv2-empty">🏆 ${productSearchQuery ? 'Aramana uygun aktif turnuva bulunamadı.' : 'Şu anda aktif turnuva bulunmuyor.'}</div>`;
+            list.innerHTML =
+                `<div class="tv2-empty">🏆 ${
+                    productSearchQuery
+                        ? 'Aramana uygun turnuva bulunamadı.'
+                        : 'Şu anda yayınlanan turnuva bulunmuyor.'
+                }</div>`;
             return;
         }
 
         list.innerHTML = visible.map(item => {
-            const t = item.tournament;
+            const t = item.tournament || {};
             const rule = item.rule || {};
-            const closed = tv2RegistrationClosed(item);
             const teamMode = String(t.mode || '') !== 'solo';
-            const used = teamMode ? item.teams.length : Number(t.registeredCount || 0);
+            const used = Number(t.registeredCount || (teamMode ? item.teams.length : 0));
             const capacity = Number(t.capacity || 0);
             const full = capacity > 0 && used >= capacity;
-            const blocked = marketAuthenticated && currentAccountStatus === 'blocked';
+            const blocked =
+                marketAuthenticated &&
+                currentAccountStatus === 'blocked';
 
-            let btnText = teamMode ? 'TAKIM İŞLEMLERİ' : 'KAYIT OL';
+            const lifecycle =
+                String(t.lifecycleStatus || (
+                    t.registrationOpen
+                        ? 'registration_open'
+                        : full
+                            ? 'registration_complete'
+                            : 'registration_closed'
+                ));
+
+            const completed = lifecycle === 'completed';
+            const inProgress = lifecycle === 'in_progress';
+            const registrationsComplete =
+                lifecycle === 'registration_complete' || full;
+            const closed =
+                completed ||
+                inProgress ||
+                registrationsComplete ||
+                tv2RegistrationClosed(item);
+
+            let btnText =
+                teamMode
+                    ? 'TAKIM İŞLEMLERİ / DETAYLAR'
+                    : 'KAYIT / DETAYLAR';
+
             let disabled = false;
 
             if (blocked) {
                 btnText = '⛔ HESABIN KISITLANDI';
                 disabled = true;
-            } else if (!marketAuthenticated) {
-                btnText = '🔒 HESABINI DOĞRULA';
+            } else if (completed) {
+                btnText = '🏁 SONUÇLARI GÖR';
+            } else if (inProgress) {
+                btnText = '🎮 FİKSTÜRÜ GÖR';
+            } else if (registrationsComplete) {
+                btnText = '✅ KATILANLARI GÖR';
             } else if (closed) {
-                btnText = 'KAYITLAR KAPALI';
-                disabled = true;
-            } else if (full) {
-                btnText = 'KONTENJAN DOLU';
-                disabled = true;
+                btnText = '👥 DETAYLARI GÖR';
+            } else if (!marketAuthenticated) {
+                btnText = '🔒 HESABINI DOĞRULA / DETAYLAR';
             }
 
             const modeText = teamMode
                 ? `${Number(t.teamSize || 0)}v${Number(t.teamSize || 0)} · Takımlı`
                 : '1v1 · Solo';
 
-            const dateText = t.eventDate ? tv2Date(t.eventDate) : 'Daha sonra duyurulacak';
-            const closeText = rule.registrationClosesAt ? tv2Date(rule.registrationClosesAt) : (t.registrationOpen ? 'Kayıtlar açık' : 'Kayıtlar kapalı');
+            const dateText =
+                t.eventDate
+                    ? tv2Date(t.eventDate)
+                    : 'Daha sonra duyurulacak';
+
+            const closeText =
+                rule.registrationClosesAt
+                    ? tv2Date(rule.registrationClosesAt)
+                    : (
+                        lifecycle === 'registration_open'
+                            ? 'Kayıtlar açık'
+                            : tv2LifecycleLabel(lifecycle)
+                    );
 
             return `
                 <article class="tv2-market-card">
                     <div class="tv2-card-top">
-                        <div class="tv2-card-title">${tv2Esc(t.name)}</div>
+                        <div>
+                            <div class="tv2-card-title">${tv2Esc(t.name)}</div>
+                            <div style="margin-top:7px;">
+                                <span class="tv2-status-pill ${
+                                    completed
+                                        ? 'bad'
+                                        : lifecycle === 'registration_open'
+                                            ? 'ok'
+                                            : ''
+                                }">${tv2Esc(tv2LifecycleLabel(lifecycle))}</span>
+                            </div>
+                        </div>
                         <span class="tv2-card-badge">${tv2Esc(modeText)}</span>
                     </div>
+
                     <div class="tv2-card-meta">
                         <div class="tv2-meta-box">
                             <span class="tv2-meta-label">Katılım Şartı</span>
                             <span class="tv2-meta-value">${tv2Esc(tv2EntryLabel(rule,t))}</span>
                         </div>
+
                         <div class="tv2-meta-box">
                             <span class="tv2-meta-label">${teamMode ? 'Takım Kontenjanı' : 'Oyuncu Kontenjanı'}</span>
                             <span class="tv2-meta-value">${used} / ${capacity || '-'}</span>
                         </div>
+
                         <div class="tv2-meta-box">
                             <span class="tv2-meta-label">Turnuva Tarihi</span>
                             <span class="tv2-meta-value">${tv2Esc(dateText)}</span>
                         </div>
+
                         <div class="tv2-meta-box">
-                            <span class="tv2-meta-label">Kayıt Bitişi</span>
+                            <span class="tv2-meta-label">Kayıt / Durum</span>
                             <span class="tv2-meta-value">${tv2Esc(closeText)}</span>
                         </div>
                     </div>
+
                     <div class="tv2-card-note">
                         ${teamMode
-                            ? `Kaptan takım adını, oyuncuların tam Kick kullanıcı adlarını ve ${tv2Esc(rule.gameIdLabel || 'oyun içi isimlerini')} eksiksiz girer.`
-                            : `Doğrulanmış Kick hesabın ve ${tv2Esc(rule.gameIdLabel || 'oyun içi hesabın')} ile kayıt ol.`}
+                            ? `Kayıtlı takımlar ve oyuncular turnuva detayında görülebilir. Kaptan takım oluştururken tam Kick kullanıcı adlarını ve ${tv2Esc(rule.gameIdLabel || 'oyun içi isimleri')} girer.`
+                            : `Kayıtlı oyuncuları, fikstürü ve sonuçları turnuva detayından görebilirsin.`}
                     </div>
+
                     <button class="tv2-card-action" ${disabled ? 'disabled' : ''}
-                        onclick="${marketAuthenticated ? `tv2Open('${tv2Esc(t.id)}')` : 'goToVerification()'}">
+                        onclick="${marketAuthenticated ? `tv2Open('${tv2Esc(t.id)}')` : `tv2OpenPublic('${tv2Esc(t.id)}')`}">
                         ${tv2Esc(btnText)}
                     </button>
                 </article>
@@ -4431,6 +4507,7 @@
         tv2StopTimers();
         tv2State.tournamentId = String(tournamentId);
         tv2State.publicData = item;
+        tv2State.publicDetail = null;
         tv2State.me = null;
         tv2State.form = '';
         tv2State.busy = false;
@@ -4449,6 +4526,251 @@
         } else {
             await tv2ReloadMe();
         }
+    }
+
+
+    async function tv2FetchPublicDetail(tournamentId) {
+        const response = await fetch(
+            `${MARKET_WORKER}/tournament/public?id=${encodeURIComponent(tournamentId)}&_=${Date.now()}`,
+            {
+                headers:{'Accept':'application/json'},
+                cache:'no-store'
+            }
+        );
+
+        const data = await response.json();
+
+        if(!response.ok || !data?.success){
+            throw new Error(data?.error || `HTTP ${response.status}`);
+        }
+
+        return data;
+    }
+
+    async function tv2OpenPublic(tournamentId) {
+        const item =
+            tv2Catalog.find(
+                x => String(x.tournament?.id) === String(tournamentId)
+            );
+
+        if(!item){
+            showStatusToast('⚠️ Turnuva bulunamadı. Listeyi yenile.',3500);
+            return;
+        }
+
+        tv2StopTimers();
+        tv2State.tournamentId = String(tournamentId);
+        tv2State.publicData = item;
+        tv2State.publicDetail = null;
+        tv2State.me = null;
+        tv2State.form = '';
+
+        document.getElementById('tv2ModalTitle').textContent =
+            `🏆 ${item.tournament.name}`;
+
+        document.getElementById('tv2ModalSubtitle').textContent =
+            Number(item.tournament.teamSize || 1) <= 1
+                ? 'Solo turnuva detayları'
+                : `${item.tournament.teamSize}v${item.tournament.teamSize} turnuva detayları`;
+
+        document.getElementById('tv2ModalBody').innerHTML =
+            '<div class="tv2-empty">Turnuva detayları yükleniyor...</div>';
+
+        document.getElementById('tv2Modal').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+
+        try{
+            const detail = await tv2FetchPublicDetail(tournamentId);
+            const t = detail.tournament || item.tournament || {};
+            const rule = item.rule || {
+                entryMode:t.entryMode,
+                registrationClosesAt:t.registrationClosesAt,
+                gameName:t.gameName,
+                gameIdLabel:t.gameIdLabel
+            };
+
+            document.getElementById('tv2ModalBody').innerHTML = `
+                ${tv2PublicHeroHtml(t,rule)}
+                ${tv2PublicParticipantsHtml(detail)}
+                ${tv2PublicBracketHtml(detail)}
+                <div class="tv2-panel">
+                    <div class="tv2-muted">
+                        Turnuvaya kayıt olmak veya takım işlemlerini yapmak için Kick hesabını doğrulamalısın.
+                    </div>
+                    <div class="tv2-actions">
+                        <button class="tv2-btn" onclick="tv2Close();goToVerification();">🔒 HESABINI DOĞRULA</button>
+                    </div>
+                </div>
+            `;
+        }catch(error){
+            tv2ModalError(error);
+        }
+    }
+
+    function tv2PublicHeroHtml(t,rule){
+        const lifecycle =
+            String(t?.lifecycleStatus || (
+                t?.registrationOpen
+                    ? 'registration_open'
+                    : 'registration_closed'
+            ));
+
+        return `
+            <div class="tv2-hero">
+                <div class="tv2-panel">
+                    <div class="tv2-big-title">${tv2Esc(t?.name || 'Turnuva')}</div>
+                    <div class="tv2-muted">
+                        ${Number(t?.teamSize || 1) <= 1
+                            ? '1v1 Solo'
+                            : `${Number(t?.teamSize)}v${Number(t?.teamSize)} Takımlı`}<br>
+                        Katılım: <b>${tv2Esc(tv2EntryLabel(rule,t))}</b><br>
+                        Tarih: <b>${tv2Esc(t?.eventDate ? tv2Date(t.eventDate) : 'Daha sonra duyurulacak')}</b>
+                    </div>
+                </div>
+                <div class="tv2-panel">
+                    <span class="tv2-status-pill ${lifecycle==='registration_open'?'ok':lifecycle==='completed'?'bad':''}">
+                        ${tv2Esc(tv2LifecycleLabel(lifecycle))}
+                    </span>
+                    <div class="tv2-muted" style="margin-top:9px;">
+                        Kayıt: <b>${Number(t?.registeredCount || 0)} / ${Number(t?.capacity || 0) || '-'}</b>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function tv2PublicParticipantsHtml(detail){
+        const t = detail?.tournament || {};
+        const teamMode = Number(t.teamSize || 1) > 1;
+
+        if(!teamMode){
+            const participants =
+                Array.isArray(detail?.participants)
+                    ? detail.participants
+                    : [];
+
+            return `
+                <div class="tv2-panel">
+                    <h4>👥 Kayıt Olan Oyuncular</h4>
+                    ${participants.length
+                        ? `
+                            <div class="tv2-roster-grid">
+                                ${participants.map((p,index)=>`
+                                    <div class="tv2-roster-row">
+                                        <div class="tv2-slot-no">${index+1}</div>
+                                        <div>
+                                            <b>${tv2Esc(p.username || '-')}</b>
+                                            <div class="tv2-muted">${tv2Esc(p.riotId || '-')}</div>
+                                            <div class="tv2-muted">${p.status === 'active' ? '✅ Kayıt tamamlandı' : '⏳ Katılım şartı bekleniyor'}</div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `
+                        : '<div class="tv2-empty">Henüz tamamlanmış kayıt yok.</div>'}
+                </div>
+            `;
+        }
+
+        const teams =
+            Array.isArray(detail?.teams)
+                ? detail.teams
+                : [];
+
+        return `
+            <div class="tv2-panel">
+                <h4>👥 Kayıt Olan Takımlar ve Oyuncular</h4>
+                ${teams.length
+                    ? teams.map(team=>`
+                        <div class="tv2-panel" style="margin-top:10px;">
+                            <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;">
+                                <b>${tv2Esc(team.name || '-')}</b>
+                                <span class="tv2-status-pill">${tv2Esc(tv2TeamStatusLabel(team.status))}</span>
+                            </div>
+                            <div class="tv2-roster-grid" style="margin-top:10px;">
+                                ${(team.members || []).map((m,index)=>`
+                                    <div class="tv2-roster-row">
+                                        <div class="tv2-slot-no">${index===0?'👑':index+1}</div>
+                                        <div>
+                                            <b>${tv2Esc(m.username || m.plannedUsername || '-')}</b>
+                                            <div class="tv2-muted">${tv2Esc(m.gameId || m.riotId || '-')}</div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `).join('')
+                    : '<div class="tv2-empty">Henüz takım kaydı yok.</div>'}
+            </div>
+        `;
+    }
+
+    function tv2PublicBracketHtml(detail){
+        const matches =
+            Array.isArray(detail?.matches)
+                ? detail.matches
+                : [];
+
+        if(!matches.length){
+            return `
+                <div class="tv2-panel">
+                    <h4>🎮 Fikstür</h4>
+                    <div class="tv2-empty">Fikstür henüz oluşturulmadı.</div>
+                </div>
+            `;
+        }
+
+        const rounds = new Map();
+
+        for(const match of matches){
+            const round = Number(match.roundNumber || 0);
+            if(!rounds.has(round)) rounds.set(round,[]);
+            rounds.get(round).push(match);
+        }
+
+        const totalRounds = rounds.size;
+
+        return `
+            <div class="tv2-panel">
+                <h4>🎮 Fikstür ve Sonuçlar</h4>
+                ${[...rounds.entries()]
+                    .sort((a,b)=>a[0]-b[0])
+                    .map(([round,roundMatches])=>`
+                        <div class="tv2-panel" style="margin-top:10px;">
+                            <b>${tv2Esc(tv2RoundLabel(round,totalRounds))}</b>
+                            <div style="margin-top:8px;">
+                                ${roundMatches.map(match=>{
+                                    const score =
+                                        typeof match.result === 'object' && match.result
+                                            ? (match.result.score || '')
+                                            : '';
+
+                                    return `
+                                        <div class="tv2-message" style="margin-top:8px;">
+                                            <b>${tv2Esc(match.participantAName || 'Bekleniyor')}</b>
+                                            <span class="tv2-muted"> vs </span>
+                                            <b>${tv2Esc(match.participantBName || 'Bekleniyor')}</b>
+                                            ${match.winnerName
+                                                ? `<br>🏆 Kazanan: <b>${tv2Esc(match.winnerName)}</b>`
+                                                : ''}
+                                            ${score
+                                                ? `<br>Skor: <b>${tv2Esc(score)}</b>`
+                                                : ''}
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
+            </div>
+        `;
+    }
+
+    function tv2RoundLabel(round,totalRounds){
+        if(round === totalRounds) return '🏆 Final';
+        if(round === totalRounds - 1) return '🔥 Yarı Final';
+        if(round === totalRounds - 2) return '⚔️ Çeyrek Final';
+        return `${round}. Tur`;
     }
 
     async function tv2AuthFetch(path, options={}) {
@@ -4473,7 +4795,7 @@
     async function tv2ReloadMe(showToast=false) {
         const id = tv2State.tournamentId;
         try {
-            const [pub, me] = await Promise.all([
+            const [pub, me, detail] = await Promise.all([
                 fetch(`${MARKET_WORKER}/tournament/v2/public?id=${encodeURIComponent(id)}&_=${Date.now()}`, {
                     headers:{'Accept':'application/json'},cache:'no-store'
                 }).then(async r => {
@@ -4481,7 +4803,8 @@
                     if (!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
                     return d;
                 }),
-                tv2AuthFetch(`/tournament/v2/me?id=${encodeURIComponent(id)}&_=${Date.now()}`)
+                tv2AuthFetch(`/tournament/v2/me?id=${encodeURIComponent(id)}&_=${Date.now()}`),
+                tv2FetchPublicDetail(id)
             ]);
 
             tv2State.publicData = {
@@ -4491,6 +4814,7 @@
                 legacySolo:false
             };
             tv2State.me = me;
+            tv2State.publicDetail = detail;
             tv2RenderModal();
             tv2RestorePendingTl();
             tv2StartSubscriptionWatch();
@@ -4569,6 +4893,11 @@
 
         if (team) {
             content += tv2TeamHtml(team, slots, requests, joinRequest, rule, subs);
+        }
+
+        if (tv2State.publicDetail) {
+            content += tv2PublicParticipantsHtml(tv2State.publicDetail);
+            content += tv2PublicBracketHtml(tv2State.publicDetail);
         }
 
         document.getElementById('tv2ModalBody').innerHTML = content;
@@ -5129,7 +5458,17 @@
 
     function tv2StartSubscriptionWatch() {
         if (tv2State.subTimer) clearInterval(tv2State.subTimer);
-        const pending = (tv2State.me?.subscriptionPayments || []).find(p => p.status === 'pending');
+
+        const teamPending =
+            (tv2State.me?.subscriptionPayments || [])
+                .find(p => p.status === 'pending');
+
+        const soloPending =
+            tv2State.soloData?.me?.subscriptionPayment?.status === 'pending'
+                ? tv2State.soloData.me.subscriptionPayment
+                : null;
+
+        const pending = teamPending || soloPending;
         if (!pending?.id) return;
 
         tv2State.subTimer = setInterval(() => {
@@ -5146,7 +5485,11 @@
                 if (tv2State.subTimer) clearInterval(tv2State.subTimer);
                 tv2State.subTimer = null;
                 showStatusToast('✅ Gerekli abonelik / gift adedi tamamlandı.',4200);
-                await tv2ReloadMe();
+                if (String(tv2State.publicData?.tournament?.mode || '') === 'solo') {
+                    await tv2LoadSoloMe();
+                } else {
+                    await tv2ReloadMe();
+                }
                 await tv2LoadCatalog(false);
                 refreshInboxBadge().catch(()=>{});
                 return;
@@ -5156,7 +5499,11 @@
                     `⭐ Kalan: ${Number(p.remainingDirectSubs || 0)} normal abonelik + ${Number(p.remainingGifts || 0)} gift`,
                     4200
                 );
-                await tv2ReloadMe();
+                if (String(tv2State.publicData?.tournament?.mode || '') === 'solo') {
+                    await tv2LoadSoloMe();
+                } else {
+                    await tv2ReloadMe();
+                }
             }
         } catch (error) {
             if (notify) showStatusToast(`⚠️ ${error.message || error}`,4000);
@@ -5176,7 +5523,9 @@
                 tv2AuthFetch(`/tournament/me?id=${encodeURIComponent(id)}&_=${Date.now()}`)
             ]);
             tv2State.soloData = {detail,me};
+            tv2State.publicDetail = detail;
             tv2RenderSolo();
+            tv2StartSubscriptionWatch();
         } catch (error) {
             tv2ModalError(error);
         }
@@ -5184,32 +5533,88 @@
 
     function tv2RenderSolo() {
         const item = tv2State.publicData;
-        const t = item.tournament || {};
+        const detail = tv2State.soloData?.detail || tv2State.publicDetail || null;
+        const t = detail?.tournament || item?.tournament || {};
+        const rule = item?.rule || {
+            entryMode:t.entryMode,
+            registrationClosesAt:t.registrationClosesAt,
+            gameName:t.gameName,
+            gameIdLabel:t.gameIdLabel
+        };
         const me = tv2State.soloData?.me || {};
         const membership = me.membership || null;
-        const closed = !t.registrationOpen;
+        const subscriptionPayment = me.subscriptionPayment || null;
+        const subscriptionInstruction = me.subscriptionInstruction || null;
+        const closed = tv2RegistrationClosed({tournament:t,rule});
+        const entryMode = String(rule?.entryMode || t?.entryMode || 'free').toLowerCase();
+        const lifecycle = String(t.lifecycleStatus || (closed ? 'registration_closed' : 'registration_open'));
 
         let action = '';
+
         if (membership) {
+            let paymentInfo = '';
+
+            if (entryMode === 'subscription' && subscriptionPayment) {
+                const directLeft = Number(subscriptionPayment.remainingDirectSubs || 0);
+                const giftsLeft = Number(subscriptionPayment.remainingGifts || 0);
+                const paid = subscriptionPayment.status === 'paid';
+                paymentInfo = `
+                    <div class="tv2-message ${paid?'success':''}" style="margin-top:10px;">
+                        <b>${paid ? '✅ Abonelik şartı tamamlandı' : '⭐ Abonelik şartı bekleniyor'}</b><br>
+                        ${paid
+                            ? 'Turnuva katılım şartın doğrulandı.'
+                            : `Kalan: ${directLeft} normal abonelik + ${giftsLeft} abonelik hediyesi.`}
+                        ${subscriptionInstruction?.text
+                            ? `<br><span class="tv2-muted">${tv2Esc(subscriptionInstruction.text)}</span>`
+                            : ''}
+                    </div>
+                    ${!paid ? `
+                        <div class="tv2-actions">
+                            <button class="tv2-btn" onclick="window.open('${TV2_KICK_CHANNEL_URL}','_blank','noopener,noreferrer')">⭐ KICK KANALINI AÇ</button>
+                            <button class="tv2-btn secondary" onclick="tv2RefreshSubscription('${tv2Esc(subscriptionPayment.id)}',true)">🔄 ABONELİĞİ KONTROL ET</button>
+                        </div>
+                    ` : ''}
+                `;
+            }
+
             action = `
                 <div class="tv2-message ${membership.status==='active'?'success':''}">
-                    Kayıt durumun: <b>${tv2Esc(membership.status)}</b>
-                    ${membership.riotId ? `<br>VALORANT ID: <b>${tv2Esc(membership.riotId)}</b>` : ''}
+                    Kayıt durumun: <b>${tv2Esc(membership.status==='active' ? 'KAYIT TAMAMLANDI' : 'KATILIM ŞARTI BEKLENİYOR')}</b>
+                    ${membership.riotId ? `<br>${tv2Esc(rule.gameIdLabel || 'Oyun İçi Ad')}: <b>${tv2Esc(membership.riotId)}</b>` : ''}
                 </div>
+                ${paymentInfo}
             `;
-        } else {
+        } else if (!closed) {
+            const subscriptionChoice = entryMode === 'subscription'
+                ? `
+                    <div class="tv2-field">
+                        <label>Kick Abonelik Durumun</label>
+                        <select id="tv2SoloSubscriptionState" class="tv2-input">
+                            <option value="not_subscribed">Abone değilim — 1 normal abonelik yapacağım</option>
+                            <option value="already_subscribed">Zaten aboneyim — 1 abonelik hediyesi göndereceğim</option>
+                        </select>
+                        <div class="tv2-muted" style="margin-top:6px;">
+                            Katılım işlemin kayıt kapanış tarihine kadar açık kalır. Gift alıcısı önemli değildir; gönderen doğrulanmış Kick hesabı ve adet kontrol edilir.
+                        </div>
+                    </div>
+                `
+                : '';
+
             action = `
                 <div class="tv2-field">
-                    <label>VALORANT ID</label>
-                    <input id="tv2SoloRiotId" class="tv2-input" maxlength="40" placeholder="Örn: Weizend#WZND">
+                    <label>${tv2Esc(rule.gameIdLabel || 'Oyun İçi Kullanıcı Adı')}</label>
+                    <input id="tv2SoloRiotId" class="tv2-input" maxlength="80" placeholder="${String(rule.gameName||'').toLowerCase().includes('valorant') ? 'Örn: Weizend#WZND' : 'Oyun içi kullanıcı adın'}">
                 </div>
+                ${subscriptionChoice}
                 <label class="tv2-terms">
                     <input id="tv2SoloTerms" type="checkbox">
                     <span>Oyun içi hesabımı doğru yazdığımı ve turnuva kurallarını kabul ediyorum.</span>
                 </label>
-                <div class="tv2-actions"><button class="tv2-btn" ${closed?'disabled':''} onclick="tv2RegisterSolo()">KAYIT OL</button></div>
+                <div class="tv2-actions"><button class="tv2-btn" onclick="tv2RegisterSolo()">KAYIT OL</button></div>
                 <div id="tv2SoloStatus"></div>
             `;
+        } else {
+            action = `<div class="tv2-message">Bu turnuvada yeni kayıt alınmıyor. Katılanları ve fikstürü aşağıdan takip edebilirsin.</div>`;
         }
 
         document.getElementById('tv2ModalBody').innerHTML = `
@@ -5217,34 +5622,56 @@
                 <div class="tv2-panel">
                     <div class="tv2-big-title">${tv2Esc(t.name)}</div>
                     <div class="tv2-muted">
-                        Solo Turnuva · Kontenjan ${Number(t.registeredCount || 0)} / ${Number(t.capacity || 0)}<br>
-                        Katılım: <b>${Number(t.feePerPlayerCents || 0)>0 ? tv2Esc(formatTlFromCents(t.feePerPlayerCents)) : 'Ücretsiz'}</b>
+                        1v1 Solo · Kontenjan ${Number(t.registeredCount || 0)} / ${Number(t.capacity || 0)}<br>
+                        Katılım: <b>${tv2Esc(tv2EntryLabel(rule,t))}</b><br>
+                        ${rule.registrationClosesAt ? `Kayıt bitişi: <b>${tv2Esc(tv2Date(rule.registrationClosesAt))}</b>` : ''}
                     </div>
                 </div>
                 <div class="tv2-panel">
-                    <span class="tv2-status-pill ${closed?'bad':'ok'}">${closed?'🔒 Kayıt Kapalı':'🟢 Kayıt Açık'}</span>
+                    <span class="tv2-status-pill ${lifecycle==='registration_open'?'ok':lifecycle==='completed'?'bad':''}">${tv2Esc(tv2LifecycleLabel(lifecycle))}</span>
                 </div>
             </div>
             <div class="tv2-panel">${action}</div>
             <div id="tv2PendingTlHost"></div>
+            ${detail ? tv2PublicParticipantsHtml(detail) : ''}
+            ${detail ? tv2PublicBracketHtml(detail) : ''}
         `;
         tv2RestorePendingTl();
     }
 
     async function tv2RegisterSolo() {
-        const riotId = document.getElementById('tv2SoloRiotId')?.value.trim() || '';
+        const gameId = document.getElementById('tv2SoloRiotId')?.value.trim() || '';
         const termsAccepted = document.getElementById('tv2SoloTerms')?.checked === true;
         const status = document.getElementById('tv2SoloStatus');
-        if (!riotId || !termsAccepted) {
-            if (status) status.innerHTML = '<div class="tv2-message error">VALORANT ID gir ve şartları kabul et.</div>';
+        const rule = tv2State.publicData?.rule || {};
+        const entryMode = String(rule.entryMode || tv2State.publicData?.tournament?.entryMode || 'free').toLowerCase();
+        const selfSubscriptionState = document.getElementById('tv2SoloSubscriptionState')?.value || '';
+
+        if (!gameId || !termsAccepted) {
+            if (status) status.innerHTML = `<div class="tv2-message error">${tv2Esc(rule.gameIdLabel || 'Oyun içi kullanıcı adı')} gir ve şartları kabul et.</div>`;
             return;
         }
+
+        if (entryMode === 'subscription' && !['not_subscribed','already_subscribed'].includes(selfSubscriptionState)) {
+            if (status) status.innerHTML = '<div class="tv2-message error">Abonelik durumunu seç.</div>';
+            return;
+        }
+
         try {
+            if (status) status.innerHTML = '<div class="tv2-message">⏳ Turnuva kaydın oluşturuluyor...</div>';
+
             const data = await tv2AuthFetch('/tournament/register',{
                 method:'POST',
                 headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({tournamentId:tv2State.tournamentId,riotId,termsAccepted:true})
+                body:JSON.stringify({
+                    tournamentId:tv2State.tournamentId,
+                    riotId:gameId,
+                    gameId,
+                    termsAccepted:true,
+                    selfSubscriptionState:entryMode === 'subscription' ? selfSubscriptionState : undefined
+                })
             });
+
             if (data.payment?.id) {
                 const reference = data.instructions?.reference || data.payment.reference;
                 localStorage.setItem(TV2_PENDING_TL_KEY,JSON.stringify({
@@ -5257,9 +5684,16 @@
                 await copyTextReliable(reference);
                 showBynoGameRedirect(reference);
                 tv2StartTlWatch(data.payment.id);
+            } else if (data.subscriptionPayment?.id) {
+                const p = data.subscriptionPayment;
+                const directLeft = Number(p.remainingDirectSubs || 0);
+                const giftsLeft = Number(p.remainingGifts || 0);
+                showStatusToast(`⭐ Kayıt oluşturuldu. Kalan: ${directLeft} normal abonelik + ${giftsLeft} gift.`,5000);
+                window.open(TV2_KICK_CHANNEL_URL,'_blank','noopener,noreferrer');
             } else {
                 showStatusToast('✅ Turnuva kaydın tamamlandı.',3500);
             }
+
             await tv2LoadSoloMe();
             await tv2LoadCatalog(false);
         } catch (error) {
