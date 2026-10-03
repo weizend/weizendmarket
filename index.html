@@ -376,6 +376,170 @@
             .inbox-send-btn { width:100%; min-height:44px; }
         }
 
+
+        /* =========================================================
+           TURNUVA V2 - TAKIM / KADRO / ÖDEME ARAYÜZÜ
+           ========================================================= */
+        .tv2-market-section{
+            margin:0 0 26px;
+            padding:18px;
+            border:1px solid rgba(255,255,255,.10);
+            border-radius:18px;
+            background:linear-gradient(180deg,rgba(255,35,35,.08),rgba(0,0,0,.18));
+            box-shadow:0 16px 40px rgba(0,0,0,.18);
+        }
+        .tv2-section-heading{
+            display:flex;
+            gap:16px;
+            align-items:center;
+            justify-content:space-between;
+            margin-bottom:16px;
+        }
+        .tv2-section-heading h2{margin:3px 0 4px;font-size:1.45rem}
+        .tv2-section-heading p{margin:0;color:var(--text-muted);font-size:.92rem}
+        .tv2-section-kicker{font-size:.76rem;font-weight:900;letter-spacing:.09em;color:#ff4b4b}
+        .tv2-refresh-btn{
+            border:1px solid rgba(255,255,255,.12);background:#141414;color:#fff;
+            border-radius:10px;padding:10px 12px;font-weight:800;cursor:pointer;white-space:nowrap;
+        }
+        .tv2-market-grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+            gap:14px;
+        }
+        .tv2-market-card{
+            border:1px solid rgba(255,255,255,.10);
+            border-radius:16px;
+            background:#0f0f0f;
+            padding:16px;
+            display:flex;
+            flex-direction:column;
+            gap:12px;
+            min-width:0;
+        }
+        .tv2-card-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+        .tv2-card-title{font-size:1.08rem;font-weight:900;line-height:1.25}
+        .tv2-card-badge{
+            flex:0 0 auto;border-radius:999px;padding:5px 9px;font-size:.72rem;font-weight:900;
+            background:rgba(255,43,43,.14);border:1px solid rgba(255,70,70,.35);color:#ff6b6b;
+        }
+        .tv2-card-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+        .tv2-meta-box{
+            background:#161616;border:1px solid rgba(255,255,255,.07);border-radius:11px;padding:9px;
+        }
+        .tv2-meta-label{display:block;color:var(--text-muted);font-size:.72rem;margin-bottom:3px}
+        .tv2-meta-value{font-weight:900;font-size:.88rem;word-break:break-word}
+        .tv2-card-note{font-size:.82rem;color:var(--text-muted);line-height:1.45}
+        .tv2-card-action{
+            width:100%;border:0;border-radius:11px;padding:12px 14px;font-weight:1000;cursor:pointer;
+            background:var(--weizend-red);color:#fff;
+        }
+        .tv2-card-action.secondary{background:#202020;border:1px solid rgba(255,255,255,.10)}
+        .tv2-card-action:disabled{opacity:.5;cursor:not-allowed}
+        .tv2-empty{
+            grid-column:1/-1;padding:26px;text-align:center;color:var(--text-muted);
+            border:1px dashed rgba(255,255,255,.12);border-radius:14px;
+        }
+
+        .tv2-modal-content{
+            width:min(980px,calc(100vw - 26px));
+            max-width:980px;
+            max-height:92vh;
+            overflow:hidden;
+            display:flex;
+            flex-direction:column;
+        }
+        .tv2-modal-body{padding:16px;overflow:auto;min-height:0}
+        .tv2-hero{
+            display:grid;grid-template-columns:1.4fr .8fr;gap:12px;margin-bottom:14px;
+        }
+        .tv2-panel{
+            background:#121212;border:1px solid rgba(255,255,255,.09);
+            border-radius:14px;padding:14px;
+        }
+        .tv2-panel h4{margin:0 0 10px;font-size:1rem}
+        .tv2-big-title{font-size:1.28rem;font-weight:1000;margin:0 0 8px}
+        .tv2-muted{color:var(--text-muted);font-size:.86rem;line-height:1.5}
+        .tv2-status-pill{
+            display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 10px;
+            font-size:.76rem;font-weight:900;border:1px solid rgba(255,255,255,.10);background:#1a1a1a;
+        }
+        .tv2-status-pill.ok{color:#8dff9d;border-color:rgba(80,255,110,.28);background:rgba(40,180,70,.10)}
+        .tv2-status-pill.warn{color:#ffd66b;border-color:rgba(255,200,60,.28);background:rgba(200,150,20,.10)}
+        .tv2-status-pill.bad{color:#ff7777;border-color:rgba(255,70,70,.28);background:rgba(220,40,40,.10)}
+        .tv2-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+        .tv2-btn{
+            border:0;border-radius:10px;padding:10px 13px;font-weight:900;cursor:pointer;
+            background:var(--weizend-red);color:#fff;
+        }
+        .tv2-btn.secondary{background:#232323;border:1px solid rgba(255,255,255,.11)}
+        .tv2-btn.success{background:#18863c}
+        .tv2-btn.danger{background:#7a1e1e}
+        .tv2-btn:disabled{opacity:.5;cursor:not-allowed}
+        .tv2-field{margin-bottom:11px}
+        .tv2-field label{display:block;font-size:.78rem;color:var(--text-muted);font-weight:800;margin-bottom:5px}
+        .tv2-input,.tv2-select{
+            width:100%;box-sizing:border-box;border:1px solid rgba(255,255,255,.12);
+            border-radius:10px;background:#0b0b0b;color:#fff;padding:11px 12px;outline:none;
+        }
+        .tv2-input:focus,.tv2-select:focus{border-color:rgba(255,70,70,.7);box-shadow:0 0 0 3px rgba(255,40,40,.08)}
+        .tv2-roster-grid{display:grid;gap:9px}
+        .tv2-roster-row{
+            display:grid;grid-template-columns:52px 1fr 1fr;gap:9px;align-items:end;
+            padding:10px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:#0d0d0d;
+        }
+        .tv2-slot-no{font-weight:1000;text-align:center;padding:10px 0}
+        .tv2-team-slots{display:grid;gap:8px}
+        .tv2-slot-card{
+            display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1.2fr) auto;gap:10px;
+            align-items:center;background:#0d0d0d;border:1px solid rgba(255,255,255,.08);
+            border-radius:12px;padding:10px;
+        }
+        .tv2-slot-main{min-width:0}
+        .tv2-slot-name{font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .tv2-slot-game{color:var(--text-muted);font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .tv2-slot-state{display:flex;gap:5px;flex-wrap:wrap}
+        .tv2-pay-select{
+            display:flex;gap:9px;align-items:center;padding:10px;border:1px solid rgba(255,255,255,.08);
+            border-radius:11px;background:#0d0d0d;margin-bottom:7px;
+        }
+        .tv2-pay-select input{width:18px;height:18px;accent-color:#e92a2a}
+        .tv2-pay-select.disabled{opacity:.6}
+        .tv2-request{
+            display:flex;gap:10px;align-items:center;justify-content:space-between;
+            padding:10px;border:1px solid rgba(255,255,255,.08);border-radius:11px;background:#0d0d0d;margin-bottom:7px;
+        }
+        .tv2-payment-box{
+            margin-top:12px;padding:12px;border-radius:12px;
+            border:1px solid rgba(255,210,70,.24);background:rgba(180,130,20,.08);
+        }
+        .tv2-code{
+            margin:9px 0;padding:12px;border-radius:10px;background:#060606;border:1px dashed rgba(255,255,255,.22);
+            text-align:center;font-weight:1000;letter-spacing:.08em;word-break:break-all;cursor:pointer;
+        }
+        .tv2-progress{height:9px;border-radius:999px;background:#242424;overflow:hidden;margin:7px 0}
+        .tv2-progress > div{height:100%;background:#2aa34c}
+        .tv2-form-card{margin-top:12px}
+        .tv2-terms{
+            display:flex;gap:9px;align-items:flex-start;padding:10px;border-radius:11px;
+            background:#0d0d0d;border:1px solid rgba(255,255,255,.08);font-size:.82rem;color:var(--text-muted);
+        }
+        .tv2-terms input{margin-top:3px;accent-color:#e52a2a}
+        .tv2-message{
+            padding:11px 12px;border-radius:11px;background:#171717;border:1px solid rgba(255,255,255,.08);
+            font-size:.86rem;line-height:1.5;
+        }
+        .tv2-message.error{border-color:rgba(255,60,60,.35);color:#ff8a8a;background:rgba(170,20,20,.08)}
+        .tv2-message.success{border-color:rgba(60,220,100,.30);color:#9cffae;background:rgba(30,140,60,.08)}
+        @media(max-width:760px){
+            .tv2-section-heading{align-items:flex-start;flex-direction:column}
+            .tv2-hero{grid-template-columns:1fr}
+            .tv2-roster-row{grid-template-columns:42px 1fr}
+            .tv2-roster-row .tv2-game-field{grid-column:2}
+            .tv2-slot-card{grid-template-columns:1fr}
+            .tv2-request{align-items:flex-start;flex-direction:column}
+            .tv2-actions .tv2-btn{flex:1 1 140px}
+        }
     </style>
 </head>
 <body>
@@ -671,21 +835,7 @@
              ozellikler: `<ul><li>Anında teslim.</li></ul>` },
             
             // --- TURNUVA ---
-            {
-                durum: "on", stok: 0, kategori: "Turnuva",
-                ad: "1 VS 1 Valorant Turnuva Katılım Bileti",
-                puan: "ÜCRETSİZ", komut: "!alturnuva1vs1",
-                tukenmeZamani: "2024-05-15",
-                gorseller: ["https://i.hizliresim.com/joby9cul.png"],
-                ozellikler: `<ul><li>Sıradaki turnuvaya katılım hakkı sağlar.</li><li>Discord ve İnstagram üzerinden duyuru yapılır.</li></ul>`},
-            {
-                durum: "on", stok: 0, kategori: "Turnuva",
-                ad: "2 VS 2 Valorant Turnuva Katılım Bileti",
-                puan: "200 TL", komut: "!alturnuva2vs2",
-                tukenmeZamani: "2024-06-15",
-                gorseller: ["https://i.hizliresim.com/9asvvsvl.png"],
-                ozellikler: `<ul><li>Sıradaki turnuvaya katılım hakkı sağlar.</li><li>Discord ve İnstagram üzerinden duyuru yapılır.</li></ul>`
-            },
+            // Turnuvalar artık Worker'daki gerçek turnuva kayıtlarından dinamik olarak yüklenir.
             
             // ---ÇEKİLİŞ---
             {
@@ -815,6 +965,18 @@
             <!-- KATEGORİ BUTONLARI -->
             <div class="category-filters" id="filters"></div>
 
+            <section id="tournamentMarketSection" class="tv2-market-section" style="display:none;">
+                <div class="tv2-section-heading">
+                    <div>
+                        <div class="tv2-section-kicker">🏆 WEIZEND TURNUVALARI</div>
+                        <h2>Aktif Turnuvalar</h2>
+                        <p>Takımını oluştur, kadronu yaz, katılım şartını tamamla ve turnuvaya hazırlan.</p>
+                    </div>
+                    <button class="tv2-refresh-btn" type="button" onclick="tv2LoadCatalog(true)">🔄 Yenile</button>
+                </div>
+                <div id="tournamentMarketGrid" class="tv2-market-grid"></div>
+            </section>
+
             <div class="grid" id="urunGrid"></div>
         </div>
     </div>
@@ -882,8 +1044,8 @@
                         <div class="purchase-row"><span>Toplam</span><strong id="purchaseTotal">0 Puan</strong></div>
                     </div>
 
-                    <div class="purchase-note">
-                        İşlemi onayladığında puan düşümü sistem tarafından otomatik yapılır. Kick sohbetine komut yazmana gerek yoktur.
+                    <div id="purchaseFlowNote" class="purchase-note">
+                        İşlemi onayladığında sistem seçilen ödeme türüne göre otomatik devam eder.
                     </div>
 
                     <button id="purchaseConfirmButton" class="purchase-confirm-btn" onclick="confirmSitePurchase()">İŞLEMİ ONAYLA</button>
@@ -994,6 +1156,23 @@
         </div>
     </div>
 
+
+    <!-- MODAL: TURNUVA V2 -->
+    <div id="tv2Modal" class="modal-overlay" onclick="tv2CloseFromOutside(event)">
+        <div class="modal-content tv2-modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div style="min-width:0;">
+                    <h3 id="tv2ModalTitle" style="margin:0;">🏆 Turnuva</h3>
+                    <div id="tv2ModalSubtitle" class="tv2-muted" style="margin-top:3px;"></div>
+                </div>
+                <button class="close-icon" onclick="tv2Close()">✖</button>
+            </div>
+            <div id="tv2ModalBody" class="tv2-modal-body">
+                <div class="tv2-empty">Turnuva bilgileri yükleniyor...</div>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL 3: KAPATILAMAYAN DOĞRULAMA KONTROL PENCERESİ -->
     <div id="verificationWaitModal" class="verify-wait-overlay" aria-live="polite" aria-modal="true" role="dialog">
         <div class="verify-wait-card">
@@ -1019,7 +1198,9 @@
         let currentPurchaseProductId = "";
         let currentPurchaseQuantity = 1;
         let currentPurchaseOrderId = "";
+        let currentPurchasePaymentId = "";
         let purchasePollTimer = null;
+        let tlPaymentWatchTimer = null;
         let purchaseInFlight = false;
         let productSearchQuery = '';
 
@@ -1027,6 +1208,10 @@
         const MARKET_WORKER = 'https://weizend-botrix.weizendtv.workers.dev';
         const REALTIME_WS_URL = 'wss://weizend-realtime.weizendtv.workers.dev/ws';
         const KICK_CHAT_URL = 'https://kick.com/weizend/chat';
+        // KANKA: Buraya kendi BynoGame bağış sayfanın tam adresini yaz.
+        // Sistem ödeme kodunu kopyaladıktan 3 saniye sonra bu adresi yeni sekmede açar.
+        const BYNOGAME_DONATION_URL = 'https://www.bynogame.com/';
+        const PENDING_TL_PAYMENT_KEY = 'weizend_pending_tl_payment_v1';
         const USER_STORAGE_KEY = 'weizend_market_username';
         const SESSION_STORAGE_KEY = 'weizend_market_session_secure_v2';
         const AUTH_STATE_KEY = 'weizend_market_auth_state_secure_v2';
@@ -1080,12 +1265,16 @@
         });
 
         window.addEventListener('focus', () => {
-            if (marketAuthenticated) refreshInboxBadge().catch(() => {});
+            if (marketAuthenticated) {
+                refreshInboxBadge().catch(() => {});
+                resumePendingTlPayment().catch(() => {});
+            }
         });
 
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden && marketAuthenticated) {
                 refreshInboxBadge().catch(() => {});
+                resumePendingTlPayment().catch(() => {});
             }
         });
 
@@ -1497,6 +1686,7 @@
 
             refreshInboxBadge().catch(() => {});
             startInboxBadgeWatcher();
+            resumePendingTlPayment().catch(() => {});
 
             if (!marketInitialized) {
                 urunleriYukle('Tümü');
@@ -2873,6 +3063,18 @@
                 : '';
         }
 
+        function catalogPriceText(product) {
+            const type = String(product?.paymentType || '').toLowerCase();
+            if (type === 'points') return formatPoints(product?.pricePoints || 0);
+            if (type === 'tl') {
+                const tl = (Number(product?.priceTlCents || 0) / 100);
+                return tl.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' TL';
+            }
+            if (type === 'stream') return 'Yayın Ürünü';
+            if (type === 'free') return 'Ücretsiz';
+            return '-';
+        }
+
         async function syncCatalogStock() {
             const response = await fetch(`${MARKET_WORKER}/catalog?_=${Date.now()}`, {
                 method: 'GET',
@@ -2885,20 +3087,63 @@
                 throw new Error(data?.error || `HTTP ${response.status}`);
             }
 
-            const byId = new Map(data.products.map(item => [String(item.id || '').toLowerCase(), item]));
+            let nextOriginalId = URUNLER.reduce(
+                (max, item) => Math.max(max, Number(item.orijinalId) || 0),
+                0
+            ) + 1;
 
-            URUNLER.forEach(urun => {
-                const serverProduct = byId.get(String(urun.productId || '').toLowerCase());
-                if (!serverProduct) return;
+            for (const serverProduct of data.products) {
+                const productId = String(serverProduct.id || '').toLowerCase();
+                if (!productId) continue;
 
+                let urun = URUNLER.find(
+                    item => String(item.productId || '').toLowerCase() === productId
+                );
+
+                const metadata = serverProduct.metadata || {};
+                const images = Array.isArray(metadata.images) && metadata.images.length
+                    ? metadata.images
+                    : ['https://i.hizliresim.com/fo5evkh4.png'];
+
+                if (!urun) {
+                    urun = {
+                        durum: serverProduct.active === false ? 'off' : 'on',
+                        stok: serverProduct.stock,
+                        kategori: serverProduct.category || 'Diğer',
+                        ad: serverProduct.name || productId,
+                        puan: catalogPriceText(serverProduct),
+                        komut: metadata.streamCommand || '',
+                        gorseller: images,
+                        ozellikler: metadata.description
+                            ? `<p>${escapeHtml(metadata.description).replaceAll('\\n','<br>')}</p>`
+                            : '<p>Ürün detayları için yöneticiyle iletişime geçebilirsiniz.</p>',
+                        orijinalId: nextOriginalId++,
+                        productId
+                    };
+                    URUNLER.push(urun);
+                }
+
+                urun.durum = serverProduct.active === false ? 'off' : 'on';
+                urun.ad = serverProduct.name || urun.ad;
+                urun.kategori = serverProduct.category || urun.kategori;
                 urun.webPurchase = serverProduct.webPurchase === true;
+                urun.paymentType = String(serverProduct.paymentType || '').toLowerCase();
+                urun.pricePoints = serverProduct.pricePoints == null ? null : Number(serverProduct.pricePoints);
+                urun.priceTlCents = serverProduct.priceTlCents == null ? null : Number(serverProduct.priceTlCents);
+                urun.streamCommand = String(metadata.streamCommand || urun.komut || '').trim();
+                urun.komut = urun.streamCommand || urun.komut || '';
+                urun.puan = catalogPriceText(serverProduct);
+                urun.gorseller = images;
+                if (metadata.description) {
+                    urun.ozellikler = `<p>${escapeHtml(metadata.description).replaceAll('\\n','<br>')}</p>`;
+                }
 
                 if (serverProduct.stock === 'Sınırsız') {
                     urun.stok = 'Sınırsız';
                 } else if (Number.isFinite(Number(serverProduct.stock))) {
                     urun.stok = Math.max(0, Number(serverProduct.stock));
                 }
-            });
+            }
 
             if (marketInitialized) {
                 urunleriYukle(aktifKategori || 'Tümü');
@@ -3037,24 +3282,37 @@
 
                 const komutClass = tukendiMi ? "command disabled" : "command";
                 const accountRestricted = marketAuthenticated && currentAccountStatus === 'blocked';
+                const paymentType = String(urun.paymentType || (webPurchase ? 'points' : 'stream')).toLowerCase();
+                const streamCommand = String(urun.streamCommand || urun.komut || '').trim();
+                const isStreamProduct = paymentType === 'stream';
+                const isSiteProduct = ['points','tl','free'].includes(paymentType) && webPurchase;
+
                 const actionBtnClass = accountRestricted
                     ? "action-btn disabled account-blocked"
                     : (tukendiMi
                         ? "action-btn disabled"
                         : (marketAuthenticated ? "action-btn" : "action-btn auth-required"));
+
                 const actionBtnText = accountRestricted
                     ? "⛔ HESABIN KISITLANDI"
                     : (tukendiMi
                         ? "TÜKENDİ"
                         : (marketAuthenticated
-                            ? (webPurchase ? "SATIN AL" : "İşlem Yap")
+                            ? (paymentType === 'free'
+                                ? 'ÜCRETSİZ AL'
+                                : isStreamProduct
+                                    ? 'İŞLEM YAP'
+                                    : 'SATIN AL')
                             : "🔒 Doğrulama Gerekiyor"));
+
                 const actionBtnClick = (accountRestricted || tukendiMi)
                     ? ""
                     : (marketAuthenticated
-                        ? (webPurchase
-                            ? `onclick="startSitePurchase('${urun.productId}')"`
-                            : `onclick="islemYapBaslat('${urun.komut}')"`)
+                        ? (isStreamProduct
+                            ? `onclick="islemYapBaslat('${streamCommand.replaceAll("'","\\'")}')"`
+                            : isSiteProduct
+                                ? `onclick="startSitePurchase('${urun.productId}')"`
+                                : "")
                         : `onclick="goToVerification()"`);
 
                 const kartClass = tukendiMi ? "card out-of-stock" : "card";
@@ -3076,7 +3334,7 @@
 
                         <div class="price-command">
                             <span class="price">${urun.puan}</span>
-                            <span class="${komutClass}">${tukendiMi ? 'TÜKENDİ' : (webPurchase ? 'SİTE ÜZERİNDEN' : urun.komut)}</span>
+                            <span class="${komutClass}">${tukendiMi ? 'TÜKENDİ' : (isStreamProduct ? streamCommand : 'SİTE ÜZERİNDEN')}</span>
                         </div>
 
                         <button class="${actionBtnClass}" ${actionBtnClick}>${actionBtnText}</button>
@@ -3136,6 +3394,18 @@
             return number.toLocaleString('tr-TR') + ' Puan';
         }
 
+        function formatTlFromCents(value) {
+            const tl = Number(value || 0) / 100;
+            return tl.toLocaleString('tr-TR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }) + ' TL';
+        }
+
+        function productPaymentType(urun) {
+            return String(urun?.paymentType || (urun?.webPurchase ? 'points' : 'stream')).toLowerCase();
+        }
+
         function startSitePurchase(productId) {
             if (currentAccountStatus === 'blocked') {
                 showStatusToast(`⛔ HESABIN KISITLANDI${currentBlockedReason ? ': ' + currentBlockedReason : ''}`, 5000);
@@ -3148,7 +3418,24 @@
             }
 
             const urun = getMarketProduct(productId);
-            if (!urun || urun.webPurchase !== true) {
+            if (!urun) {
+                showStatusToast('⚠️ Ürün bulunamadı.', 3500);
+                return;
+            }
+
+            const paymentType = productPaymentType(urun);
+
+            if (paymentType === 'stream') {
+                const command = String(urun.streamCommand || urun.komut || '').trim();
+                if (!command) {
+                    showStatusToast('⚠️ Bu yayın ürünü için Kick komutu tanımlanmamış.', 4000);
+                    return;
+                }
+                islemYapBaslat(command);
+                return;
+            }
+
+            if (urun.webPurchase !== true || !['points','tl','free'].includes(paymentType)) {
                 showStatusToast('⚠️ Bu ürün site üzerinden satın almaya açık değil.', 4000);
                 return;
             }
@@ -3158,6 +3445,8 @@
                 return;
             }
 
+            stopTlPaymentWatcher();
+
             if (purchasePollTimer) {
                 clearTimeout(purchasePollTimer);
                 purchasePollTimer = null;
@@ -3166,10 +3455,10 @@
             currentPurchaseProductId = urun.productId;
             currentPurchaseQuantity = 1;
             currentPurchaseOrderId = '';
+            currentPurchasePaymentId = '';
             purchaseInFlight = false;
 
             document.getElementById('purchaseProductName').innerText = urun.ad;
-            document.getElementById('purchaseUnitPrice').innerText = formatPoints(pointNumber(urun.puan)) + ' / adet';
             document.getElementById('purchaseFormArea').style.display = 'block';
             document.getElementById('purchaseStatusBox').style.display = 'none';
             document.getElementById('purchaseDeliveryCode').style.display = 'none';
@@ -3178,6 +3467,23 @@
             document.getElementById('purchaseSpinner').style.display = 'block';
             document.getElementById('purchaseStatusText').innerText = 'İşleminiz hazırlanıyor...';
             document.getElementById('purchaseCloseButton').disabled = false;
+
+            const flowNote = document.getElementById('purchaseFlowNote');
+            const balanceRow = document.getElementById('purchaseBalance')?.parentElement;
+
+            if (paymentType === 'points') {
+                document.getElementById('purchaseUnitPrice').innerText = formatPoints(Number(urun.pricePoints ?? pointNumber(urun.puan))) + ' / adet';
+                if (flowNote) flowNote.innerHTML = 'Onayladığında puan düşümü BotRix üzerinden otomatik doğrulanır. Kick sohbetine ayrıca komut yazmana gerek yoktur.';
+                if (balanceRow) balanceRow.style.display = '';
+            } else if (paymentType === 'tl') {
+                document.getElementById('purchaseUnitPrice').innerText = formatTlFromCents(urun.priceTlCents) + ' / adet';
+                if (flowNote) flowNote.innerHTML = 'Onayladığında sana özel <b>tek kullanımlık BynoGame ödeme kodu</b> oluşturulur, otomatik kopyalanır ve 3 saniye sonra bağış sayfası açılır. Bağış mesajına bu kodu yapıştır.';
+                if (balanceRow) balanceRow.style.display = 'none';
+            } else {
+                document.getElementById('purchaseUnitPrice').innerText = 'Ücretsiz';
+                if (flowNote) flowNote.innerHTML = 'Bu ürün ücretsizdir. Onayladığında stok uygunsa siparişin doğrudan oluşturulur.';
+                if (balanceRow) balanceRow.style.display = 'none';
+            }
 
             updatePurchaseSummary();
             document.getElementById('purchaseModal').style.display = 'flex';
@@ -3206,19 +3512,34 @@
             const urun = getMarketProduct(currentPurchaseProductId);
             if (!urun) return;
 
-            const unitPrice = pointNumber(urun.puan);
-            const total = unitPrice * currentPurchaseQuantity;
-
+            const type = productPaymentType(urun);
             document.getElementById('purchaseQuantity').innerText = currentPurchaseQuantity;
             document.getElementById('purchaseSummaryQuantity').innerText = currentPurchaseQuantity;
             document.getElementById('purchaseBalance').innerText = formatPoints(currentMarketPoints);
-            document.getElementById('purchaseTotal').innerText = formatPoints(total);
+
+            let totalText = '-';
+            let buttonText = 'İŞLEMİ ONAYLA';
+
+            if (type === 'points') {
+                const unit = Number(urun.pricePoints ?? pointNumber(urun.puan)) || 0;
+                const total = unit * currentPurchaseQuantity;
+                totalText = formatPoints(total);
+                buttonText = currentMarketPoints >= total
+                    ? 'İŞLEMİ ONAYLA'
+                    : 'BAKİYEYİ KONTROL ET VE ONAYLA';
+            } else if (type === 'tl') {
+                totalText = formatTlFromCents((Number(urun.priceTlCents) || 0) * currentPurchaseQuantity);
+                buttonText = 'ÖDEME KODU OLUŞTUR';
+            } else if (type === 'free') {
+                totalText = 'Ücretsiz';
+                buttonText = 'ÜCRETSİZ SİPARİŞİ OLUŞTUR';
+            }
+
+            document.getElementById('purchaseTotal').innerText = totalText;
 
             const button = document.getElementById('purchaseConfirmButton');
             button.disabled = purchaseInFlight;
-            button.innerText = currentMarketPoints >= total
-                ? 'İŞLEMİ ONAYLA'
-                : 'BAKİYEYİ KONTROL ET VE ONAYLA';
+            button.innerText = buttonText;
         }
 
         async function confirmSitePurchase() {
@@ -3233,14 +3554,25 @@
                 return;
             }
 
+            const paymentType = productPaymentType(urun);
+
             purchaseInFlight = true;
             document.getElementById('purchaseConfirmButton').disabled = true;
             document.getElementById('purchaseCloseButton').disabled = true;
             document.getElementById('purchaseFormArea').style.display = 'none';
             document.getElementById('purchaseStatusBox').style.display = 'block';
             document.getElementById('purchaseSpinner').style.display = 'block';
-            document.getElementById('purchaseStatusText').innerHTML =
-                '⏳ Siparişiniz hazırlanıyor.<br>BotRix puan düşümünü doğruluyor...';
+
+            if (paymentType === 'points') {
+                document.getElementById('purchaseStatusText').innerHTML =
+                    '⏳ Siparişiniz hazırlanıyor.<br>BotRix puan düşümünü doğruluyor...';
+            } else if (paymentType === 'tl') {
+                document.getElementById('purchaseStatusText').innerHTML =
+                    '⏳ Siparişiniz oluşturuluyor.<br>Tek kullanımlık BynoGame ödeme kodunuz hazırlanıyor...';
+            } else {
+                document.getElementById('purchaseStatusText').innerHTML =
+                    '⏳ Ücretsiz siparişiniz oluşturuluyor...';
+            }
 
             try {
                 const response = await fetch(`${MARKET_WORKER}/purchase/start`, {
@@ -3265,6 +3597,59 @@
                 }
 
                 currentPurchaseOrderId = data.orderId;
+
+                if (data.paymentType === 'tl') {
+                    currentPurchasePaymentId = String(data?.payment?.id || '');
+                    const reference = String(data?.instructions?.reference || data?.payment?.reference || '').trim();
+
+                    if (!currentPurchasePaymentId || !reference) {
+                        throw new Error('BynoGame ödeme kodu oluşturulamadı.');
+                    }
+
+                    localStorage.setItem(
+                        PENDING_TL_PAYMENT_KEY,
+                        JSON.stringify({
+                            paymentId: currentPurchasePaymentId,
+                            orderId: currentPurchaseOrderId,
+                            productId: urun.productId,
+                            productName: urun.ad,
+                            reference,
+                            expectedAmountCents: Number(data.totalTlCents || data?.payment?.expectedAmountCents || 0),
+                            createdAt: new Date().toISOString()
+                        })
+                    );
+
+                    copyTextReliable(reference);
+                    await refreshInboxBadge().catch(() => {});
+
+                    document.getElementById('purchaseSpinner').style.display = 'none';
+                    document.getElementById('purchaseStatusText').innerHTML =
+                        `✅ <b>Sipariş oluşturuldu.</b><br>` +
+                        `Ödeme kodun: <b>${escapeHtml(reference)}</b><br>` +
+                        `Tutar: <b>${formatTlFromCents(data.totalTlCents)}</b><br>` +
+                        `<span style="color:var(--text-muted);font-size:.86rem;">Kod panoya kopyalandı. Aynı kod Mesaj Kutuna da gönderildi.</span>`;
+
+                    showBynoGameRedirect(reference);
+                    startTlPaymentWatcher();
+                    return;
+                }
+
+                if (data.paymentType === 'free') {
+                    purchaseInFlight = false;
+                    document.getElementById('purchaseCloseButton').disabled = false;
+                    document.getElementById('purchaseSpinner').style.display = 'none';
+                    document.getElementById('purchaseStatusText').innerHTML =
+                        `✅ <b>Ücretsiz sipariş oluşturuldu!</b><br>${escapeHtml(urun.ad)} × ${Number(data.quantity) || 1}`;
+
+                    const codeBox = document.getElementById('purchaseDeliveryCode');
+                    codeBox.innerText = data.deliveryCode || '';
+                    codeBox.style.display = data.deliveryCode ? 'block' : 'none';
+                    document.getElementById('purchaseDeliveryNote').style.display = data.deliveryCode ? 'block' : 'none';
+                    syncCatalogStock().catch(() => {});
+                    refreshInboxBadge().catch(() => {});
+                    return;
+                }
+
                 document.getElementById('purchaseStatusText').innerHTML =
                     `⏳ <b>${escapeHtml(urun.ad)}</b> için puan düşümü bekleniyor...<br><span style="color:var(--text-muted);font-size:.85rem;">Sipariş: ${escapeHtml(data.orderId)}</span>`;
 
@@ -3278,6 +3663,148 @@
                 document.getElementById('purchaseStatusText').innerHTML =
                     `❌ <b>Satın alma tamamlanamadı.</b><br>${escapeHtml(error?.message || 'Bilinmeyen hata')}`;
             }
+        }
+
+        function showBynoGameRedirect(reference) {
+            document.getElementById('redirectModalTitle').innerText = 'BynoGame Ödeme Kodu';
+            document.getElementById('redirectStatusText').innerText = 'Tek kullanımlık ödeme kodu kopyalandı. BynoGame bağış mesajına bu kodu yapıştır:';
+            document.getElementById('modalCommandText').innerText = reference;
+            document.getElementById('redirectModal').style.display = 'flex';
+
+            let kalanSaniye = 3;
+            document.getElementById('timerText').innerText = `${kalanSaniye} saniye içinde BynoGame bağış sayfası açılacak...`;
+
+            if (redirectTimer) clearInterval(redirectTimer);
+            redirectTimer = setInterval(() => {
+                kalanSaniye--;
+                if (kalanSaniye > 0) {
+                    document.getElementById('timerText').innerText = `${kalanSaniye} saniye içinde BynoGame bağış sayfası açılacak...`;
+                    return;
+                }
+
+                clearInterval(redirectTimer);
+                redirectTimer = null;
+                document.getElementById('redirectModal').style.display = 'none';
+
+                const opened = window.open(BYNOGAME_DONATION_URL, '_blank', 'noopener,noreferrer');
+                if (!opened) {
+                    showStatusToast('⚠️ BynoGame sekmesi tarayıcı tarafından engellendi. Ödeme kodun panoda; bağış sayfasını manuel açabilirsin.', 6000);
+                } else {
+                    showStatusToast(`✅ ${reference} kopyalandı · BynoGame yeni sekmede açıldı`, 4500);
+                }
+            }, 1000);
+        }
+
+        async function checkTlPaymentOnce() {
+            const savedRaw = localStorage.getItem(PENDING_TL_PAYMENT_KEY);
+            const token = localStorage.getItem(SESSION_STORAGE_KEY) || '';
+            if (!savedRaw || !token) return true;
+
+            let saved;
+            try { saved = JSON.parse(savedRaw); } catch (_) { return true; }
+            if (!saved?.paymentId || !saved?.orderId) return true;
+
+            currentPurchasePaymentId = saved.paymentId;
+            currentPurchaseOrderId = saved.orderId;
+            currentPurchaseProductId = saved.productId || currentPurchaseProductId;
+
+            const response = await fetch(`${MARKET_WORKER}/payment/check`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                cache: 'no-store',
+                body: JSON.stringify({ paymentId: saved.paymentId })
+            });
+
+            let data = null;
+            try { data = await response.json(); } catch (_) {}
+
+            if (!response.ok || !data?.payment) {
+                if (response.status === 410) {
+                    localStorage.removeItem(PENDING_TL_PAYMENT_KEY);
+                    stopTlPaymentWatcher();
+                    purchaseInFlight = false;
+                    showStatusToast('⚠️ BynoGame ödeme süresi doldu.', 4500);
+                    return true;
+                }
+                return false;
+            }
+
+            const payment = data.payment;
+            const purchaseModal = document.getElementById('purchaseModal');
+            if (purchaseModal && purchaseModal.style.display === 'flex') {
+                document.getElementById('purchaseStatusBox').style.display = 'block';
+                document.getElementById('purchaseSpinner').style.display = payment.status === 'paid' ? 'none' : 'block';
+
+                if (payment.status === 'partial_payment') {
+                    document.getElementById('purchaseStatusText').innerHTML =
+                        `⏳ <b>Eksik ödeme algılandı.</b><br>` +
+                        `Gelen: <b>${formatTlFromCents(payment.receivedAmountCents)}</b><br>` +
+                        `Kalan: <b>${formatTlFromCents(payment.remainingAmountCents)}</b>`;
+                } else if (payment.status === 'manual_review') {
+                    document.getElementById('purchaseStatusText').innerHTML =
+                        '⚠️ <b>Ödeme incelemeye alındı.</b><br>Beklenen tutardan farklı bir ödeme algılandı. Yönetici kontrol edecek.';
+                } else if (payment.status !== 'paid') {
+                    document.getElementById('purchaseStatusText').innerHTML =
+                        `⏳ <b>BynoGame bağışı bekleniyor.</b><br>` +
+                        `Kod: <b>${escapeHtml(saved.reference || payment.reference || '')}</b><br>` +
+                        `Beklenen: <b>${formatTlFromCents(payment.expectedAmountCents)}</b>`;
+                }
+            }
+
+            if (payment.status === 'paid') {
+                localStorage.removeItem(PENDING_TL_PAYMENT_KEY);
+                stopTlPaymentWatcher();
+                await checkPurchaseStatusOnce();
+                await refreshInboxBadge().catch(() => {});
+                return true;
+            }
+
+            if (payment.status === 'manual_review' || payment.status === 'cancelled' || payment.status === 'expired') {
+                stopTlPaymentWatcher();
+                purchaseInFlight = false;
+                document.getElementById('purchaseCloseButton').disabled = false;
+                return true;
+            }
+
+            return false;
+        }
+
+        function stopTlPaymentWatcher() {
+            if (tlPaymentWatchTimer) {
+                clearTimeout(tlPaymentWatchTimer);
+                tlPaymentWatchTimer = null;
+            }
+        }
+
+        function startTlPaymentWatcher() {
+            stopTlPaymentWatcher();
+
+            const tick = async () => {
+                if (!localStorage.getItem(PENDING_TL_PAYMENT_KEY)) {
+                    stopTlPaymentWatcher();
+                    return;
+                }
+
+                try {
+                    const done = await checkTlPaymentOnce();
+                    if (done) return;
+                } catch (error) {
+                    console.warn('TL PAYMENT WATCH ERROR:', error);
+                }
+
+                tlPaymentWatchTimer = setTimeout(tick, 10000);
+            };
+
+            tlPaymentWatchTimer = setTimeout(tick, 3500);
+        }
+
+        async function resumePendingTlPayment() {
+            if (!marketAuthenticated || !localStorage.getItem(PENDING_TL_PAYMENT_KEY)) return;
+            startTlPaymentWatcher();
         }
 
         async function pollPurchaseUntilComplete() {
@@ -3326,7 +3853,7 @@
 
             const order = data.order;
 
-            if (order.status === 'pending') {
+            if (order.status === 'pending' || order.status === 'payment_pending') {
                 return false;
             }
 
@@ -3335,36 +3862,48 @@
                 document.getElementById('purchaseCloseButton').disabled = false;
                 document.getElementById('purchaseSpinner').style.display = 'none';
                 document.getElementById('purchaseStatusText').innerHTML =
-                    `❌ <b>İşlem tamamlanamadı.</b><br>${escapeHtml(order.error || 'Puan düşümü onaylanamadı.')}`;
+                    `❌ <b>İşlem tamamlanamadı.</b><br>${escapeHtml(order.error || order.manualReviewReason || 'İşlem onaylanamadı.')}`;
                 return true;
             }
 
             if (
-    order.status === 'paid' ||
-    order.status === 'delivery_pending' ||
-    order.status === 'delivered'
-) {
+                order.status === 'paid' ||
+                order.status === 'delivery_pending' ||
+                order.status === 'delivered'
+            ) {
                 purchaseInFlight = false;
-                currentMarketPoints = Number(order.pointsAfter ?? currentMarketPoints) || 0;
-
                 document.getElementById('purchaseCloseButton').disabled = false;
                 document.getElementById('purchaseSpinner').style.display = 'none';
-                const urun = getMarketProduct(order.productId || currentPurchaseProductId);
-                const urunAdi = urun?.ad || order.productId || 'Ürün';
 
-                document.getElementById('purchaseStatusText').innerHTML =
-                    `✅ <b>Satın alma başarılı!</b><br>${escapeHtml(urunAdi)} × ${Number(order.quantity) || 1}<br>Harcanan: <b>${formatPoints(order.totalPoints)}</b><br>Kalan bakiye: <b>${formatPoints(order.pointsAfter)}</b>`;
+                const urun = getMarketProduct(order.productId || currentPurchaseProductId);
+                const urunAdi = urun?.ad || order.productName || order.productId || 'Ürün';
+                const paymentType = String(order.paymentType || productPaymentType(urun)).toLowerCase();
+
+                if (paymentType === 'points') {
+                    currentMarketPoints = Number(order.pointsAfter ?? currentMarketPoints) || 0;
+                    document.getElementById('purchaseStatusText').innerHTML =
+                        `✅ <b>Satın alma başarılı!</b><br>${escapeHtml(urunAdi)} × ${Number(order.quantity) || 1}<br>` +
+                        `Harcanan: <b>${formatPoints(order.totalPoints)}</b><br>` +
+                        `Kalan bakiye: <b>${formatPoints(order.pointsAfter)}</b>`;
+                    document.getElementById('walletPoints').innerText = formatPoints(currentMarketPoints);
+                } else if (paymentType === 'tl') {
+                    document.getElementById('purchaseStatusText').innerHTML =
+                        `✅ <b>BynoGame ödemen doğrulandı, siparişin onaylandı!</b><br>` +
+                        `${escapeHtml(urunAdi)} × ${Number(order.quantity) || 1}<br>` +
+                        `Ödenen: <b>${formatTlFromCents(order.totalTlCents)}</b>`;
+                } else {
+                    document.getElementById('purchaseStatusText').innerHTML =
+                        `✅ <b>Sipariş oluşturuldu!</b><br>${escapeHtml(urunAdi)} × ${Number(order.quantity) || 1}`;
+                }
 
                 const codeBox = document.getElementById('purchaseDeliveryCode');
                 codeBox.innerText = order.deliveryCode || '';
                 codeBox.style.display = order.deliveryCode ? 'block' : 'none';
-                document.getElementById('purchaseDeliveryNote').style.display =
-                    order.deliveryCode ? 'block' : 'none';
-
-                document.getElementById('walletPoints').innerText = formatPoints(currentMarketPoints);
+                document.getElementById('purchaseDeliveryNote').style.display = order.deliveryCode ? 'block' : 'none';
 
                 checkSession({ silent: true }).catch(() => {});
                 syncCatalogStock().catch(() => {});
+                refreshInboxBadge().catch(() => {});
                 return true;
             }
 
@@ -3380,7 +3919,9 @@
         }
 
         function closePurchaseModal(force = false) {
-            if (purchaseInFlight && !force) {
+            // TL ödeme beklerken modal kapatılabilir; takip arka planda devam eder.
+            const pendingTl = !!localStorage.getItem(PENDING_TL_PAYMENT_KEY);
+            if (purchaseInFlight && !force && !pendingTl) {
                 showStatusToast('⏳ Satın alma işlemi devam ediyor. Lütfen tamamlanmasını bekle.', 3500);
                 return;
             }
@@ -3549,5 +4090,1180 @@
         });
 
     </script>
+
+    <script>
+    // =========================================================
+    // WEIZEND TURNUVA V2 - MARKET ARAYÜZÜ
+    // =========================================================
+    const TV2_KICK_CHANNEL_URL = 'https://kick.com/weizend';
+    const TV2_PENDING_TL_KEY = 'weizend_tv2_pending_tl_v1';
+    let tv2Catalog = [];
+    let tv2State = {
+        tournamentId: '',
+        publicData: null,
+        me: null,
+        soloData: null,
+        form: '',
+        busy: false,
+        tlTimer: null,
+        subTimer: null
+    };
+
+    const tv2BaseCategoryBuilder = kategorileriOlustur;
+    kategorileriOlustur = function() {
+        tv2BaseCategoryBuilder();
+
+        if (!tv2Catalog.length) return;
+        const filterContainer = document.getElementById('filters');
+        if (!filterContainer) return;
+
+        let btn = Array.from(filterContainer.querySelectorAll('button'))
+            .find(el => el.textContent.trim() === 'Turnuva');
+
+        if (!btn) {
+            btn = document.createElement('button');
+            btn.className = 'filter-btn';
+            btn.textContent = 'Turnuva';
+            btn.onclick = () => filtrele('Turnuva');
+            const depleted = filterContainer.querySelector('.tukenenler-btn');
+            if (depleted) filterContainer.insertBefore(btn, depleted);
+            else filterContainer.appendChild(btn);
+        }
+
+        btn.classList.toggle('active', aktifKategori === 'Turnuva');
+    };
+
+    const tv2BaseGridRender = urunleriYukle;
+    urunleriYukle = function(filtreKategori) {
+        if (filtreKategori === 'Turnuva') {
+            aktifKategori = 'Turnuva';
+            kategorileriOlustur();
+            grid.innerHTML = '';
+            tv2RenderMarketCards(true);
+            return;
+        }
+
+        tv2BaseGridRender(filtreKategori);
+        tv2RenderMarketCards(filtreKategori === 'Tümü');
+    };
+
+    function tv2Esc(value) {
+        return escapeHtml(String(value ?? ''));
+    }
+
+    function tv2Date(value) {
+        if (!value) return '-';
+        const d = new Date(value);
+        return Number.isNaN(d.getTime())
+            ? String(value)
+            : d.toLocaleString('tr-TR', {dateStyle:'medium', timeStyle:'short'});
+    }
+
+    function tv2EntryLabel(rule, tournament) {
+        const mode = String(rule?.entryMode || '').toLowerCase();
+        if (mode === 'subscription') return '⭐ Abonelik / Hediye';
+        if (mode === 'tl') return `${formatTlFromCents(tournament?.feePerPlayerCents || 0)} / oyuncu`;
+        if (mode === 'free') return '🎁 Ücretsiz';
+        if (Number(tournament?.feePerPlayerCents || 0) > 0) {
+            return `${formatTlFromCents(tournament.feePerPlayerCents)} / oyuncu`;
+        }
+        return '🎁 Ücretsiz';
+    }
+
+    function tv2TeamStatusLabel(status) {
+        const map = {
+            forming:'Kadro Oluşturuluyor',
+            waiting_players:'Oyuncular Bekleniyor',
+            waiting_payment:'Katılım Şartı Bekleniyor',
+            ready:'Takım Hazır',
+            locked:'Kadro Kilitli',
+            cancelled:'İptal'
+        };
+        return map[status] || status || '-';
+    }
+
+    function tv2JoinLabel(status) {
+        const map = {
+            captain:'Kaptan',
+            planned:'Oyuncu Onayı Bekleniyor',
+            joined:'Takıma Katıldı'
+        };
+        return map[status] || status || '-';
+    }
+
+    function tv2PaymentLabel(status, via) {
+        if (status === 'paid') {
+            const m = {tl:'BynoGame',subscription:'Abonelik',free:'Ücretsiz'};
+            return `✅ Tamamlandı${via ? ' · ' + (m[via] || via) : ''}`;
+        }
+        if (status === 'pending') return '⏳ İşlem Bekleniyor';
+        return '❌ Tamamlanmadı';
+    }
+
+    function tv2RegistrationClosed(item) {
+        if (!item?.tournament?.registrationOpen) return true;
+        const close = item?.rule?.registrationClosesAt;
+        return Boolean(close && Number.isFinite(Date.parse(close)) && Date.now() >= Date.parse(close));
+    }
+
+    async function tv2LoadCatalog(showToast=false) {
+        try {
+            const r = await fetch(`${MARKET_WORKER}/tournaments?_=${Date.now()}`, {
+                headers:{'Accept':'application/json'}, cache:'no-store'
+            });
+            const d = await r.json();
+            if (!r.ok || !d?.success || !Array.isArray(d.tournaments)) {
+                throw new Error(d?.error || `HTTP ${r.status}`);
+            }
+
+            const result = [];
+            for (const tournament of d.tournaments) {
+                if (String(tournament.mode || '') === 'solo') {
+                    result.push({
+                        tournament,
+                        rule:{
+                            entryMode:Number(tournament.feePerPlayerCents || 0) > 0 ? 'tl' : 'free',
+                            registrationClosesAt:null,
+                            gameName:'VALORANT',
+                            gameIdLabel:'VALORANT ID'
+                        },
+                        teams:[],
+                        legacySolo:true
+                    });
+                    continue;
+                }
+
+                try {
+                    const pr = await fetch(
+                        `${MARKET_WORKER}/tournament/v2/public?id=${encodeURIComponent(tournament.id)}&_=${Date.now()}`,
+                        {headers:{'Accept':'application/json'},cache:'no-store'}
+                    );
+                    const pd = await pr.json();
+                    if (pr.ok && pd?.success) {
+                        result.push({
+                            tournament:pd.tournament || tournament,
+                            rule:pd.rule || null,
+                            teams:Array.isArray(pd.teams) ? pd.teams : [],
+                            legacySolo:false
+                        });
+                    }
+                } catch (error) {
+                    console.warn('TV2 PUBLIC LOAD:', tournament.id, error);
+                }
+            }
+
+            tv2Catalog = result;
+            urunleriYukle(aktifKategori || 'Tümü');
+            if (showToast) showStatusToast('✅ Turnuva bilgileri güncellendi.', 2600);
+        } catch (error) {
+            console.error('TV2 CATALOG ERROR:', error);
+            const section = document.getElementById('tournamentMarketSection');
+            const list = document.getElementById('tournamentMarketGrid');
+            if (section && list) {
+                section.style.display = 'block';
+                list.innerHTML = `<div class="tv2-empty">⚠️ Turnuva bilgileri alınamadı.<br>${tv2Esc(error.message || error)}</div>`;
+            }
+        }
+    }
+
+    function tv2SearchMatch(item) {
+        if (!productSearchQuery) return true;
+        const t = item.tournament || {};
+        const r = item.rule || {};
+        const text = normalizeProductSearch([
+            t.name, 'Turnuva', t.mode, `${t.teamSize || ''}v${t.teamSize || ''}`,
+            r.entryMode, r.gameName, r.gameIdLabel, tv2EntryLabel(r,t)
+        ].join(' '));
+        return text.includes(productSearchQuery);
+    }
+
+    function tv2RenderMarketCards(forceVisible=false) {
+        const section = document.getElementById('tournamentMarketSection');
+        const list = document.getElementById('tournamentMarketGrid');
+        if (!section || !list) return;
+
+        const visible = tv2Catalog.filter(tv2SearchMatch);
+
+        const shouldShow = forceVisible && (aktifKategori === 'Tümü' || aktifKategori === 'Turnuva');
+        section.style.display = shouldShow ? 'block' : 'none';
+
+        if (!shouldShow) return;
+
+        if (aktifKategori === 'Turnuva') {
+            updateProductSearchInfo(visible.length);
+        } else if (productSearchQuery) {
+            const normalCount = grid.querySelectorAll('.card').length;
+            updateProductSearchInfo(normalCount + visible.length);
+        }
+
+        if (!visible.length) {
+            list.innerHTML = `<div class="tv2-empty">🏆 ${productSearchQuery ? 'Aramana uygun aktif turnuva bulunamadı.' : 'Şu anda aktif turnuva bulunmuyor.'}</div>`;
+            return;
+        }
+
+        list.innerHTML = visible.map(item => {
+            const t = item.tournament;
+            const rule = item.rule || {};
+            const closed = tv2RegistrationClosed(item);
+            const teamMode = String(t.mode || '') !== 'solo';
+            const used = teamMode ? item.teams.length : Number(t.registeredCount || 0);
+            const capacity = Number(t.capacity || 0);
+            const full = capacity > 0 && used >= capacity;
+            const blocked = marketAuthenticated && currentAccountStatus === 'blocked';
+
+            let btnText = teamMode ? 'TAKIM İŞLEMLERİ' : 'KAYIT OL';
+            let disabled = false;
+
+            if (blocked) {
+                btnText = '⛔ HESABIN KISITLANDI';
+                disabled = true;
+            } else if (!marketAuthenticated) {
+                btnText = '🔒 HESABINI DOĞRULA';
+            } else if (closed) {
+                btnText = 'KAYITLAR KAPALI';
+                disabled = true;
+            } else if (full) {
+                btnText = 'KONTENJAN DOLU';
+                disabled = true;
+            }
+
+            const modeText = teamMode
+                ? `${Number(t.teamSize || 0)}v${Number(t.teamSize || 0)} · Takımlı`
+                : '1v1 · Solo';
+
+            const dateText = t.eventDate ? tv2Date(t.eventDate) : 'Daha sonra duyurulacak';
+            const closeText = rule.registrationClosesAt ? tv2Date(rule.registrationClosesAt) : (t.registrationOpen ? 'Kayıtlar açık' : 'Kayıtlar kapalı');
+
+            return `
+                <article class="tv2-market-card">
+                    <div class="tv2-card-top">
+                        <div class="tv2-card-title">${tv2Esc(t.name)}</div>
+                        <span class="tv2-card-badge">${tv2Esc(modeText)}</span>
+                    </div>
+                    <div class="tv2-card-meta">
+                        <div class="tv2-meta-box">
+                            <span class="tv2-meta-label">Katılım Şartı</span>
+                            <span class="tv2-meta-value">${tv2Esc(tv2EntryLabel(rule,t))}</span>
+                        </div>
+                        <div class="tv2-meta-box">
+                            <span class="tv2-meta-label">${teamMode ? 'Takım Kontenjanı' : 'Oyuncu Kontenjanı'}</span>
+                            <span class="tv2-meta-value">${used} / ${capacity || '-'}</span>
+                        </div>
+                        <div class="tv2-meta-box">
+                            <span class="tv2-meta-label">Turnuva Tarihi</span>
+                            <span class="tv2-meta-value">${tv2Esc(dateText)}</span>
+                        </div>
+                        <div class="tv2-meta-box">
+                            <span class="tv2-meta-label">Kayıt Bitişi</span>
+                            <span class="tv2-meta-value">${tv2Esc(closeText)}</span>
+                        </div>
+                    </div>
+                    <div class="tv2-card-note">
+                        ${teamMode
+                            ? `Kaptan takım adını, oyuncuların tam Kick kullanıcı adlarını ve ${tv2Esc(rule.gameIdLabel || 'oyun içi isimlerini')} eksiksiz girer.`
+                            : `Doğrulanmış Kick hesabın ve ${tv2Esc(rule.gameIdLabel || 'oyun içi hesabın')} ile kayıt ol.`}
+                    </div>
+                    <button class="tv2-card-action" ${disabled ? 'disabled' : ''}
+                        onclick="${marketAuthenticated ? `tv2Open('${tv2Esc(t.id)}')` : 'goToVerification()'}">
+                        ${tv2Esc(btnText)}
+                    </button>
+                </article>
+            `;
+        }).join('');
+    }
+
+    function tv2StopTimers() {
+        if (tv2State.tlTimer) {
+            clearInterval(tv2State.tlTimer);
+            tv2State.tlTimer = null;
+        }
+        if (tv2State.subTimer) {
+            clearInterval(tv2State.subTimer);
+            tv2State.subTimer = null;
+        }
+    }
+
+    function tv2Close() {
+        tv2StopTimers();
+        document.getElementById('tv2Modal').style.display = 'none';
+        document.body.style.overflow = '';
+        tv2State.form = '';
+    }
+
+    function tv2CloseFromOutside(event) {
+        if (event.target?.id === 'tv2Modal') tv2Close();
+    }
+
+    async function tv2Open(tournamentId) {
+        if (currentAccountStatus === 'blocked') {
+            showStatusToast(`⛔ HESABIN KISITLANDI${currentBlockedReason ? ': ' + currentBlockedReason : ''}`, 5000);
+            return;
+        }
+        if (!marketAuthenticated || !localStorage.getItem(SESSION_STORAGE_KEY)) {
+            goToVerification();
+            return;
+        }
+
+        const item = tv2Catalog.find(x => String(x.tournament?.id) === String(tournamentId));
+        if (!item) {
+            showStatusToast('⚠️ Turnuva bulunamadı. Listeyi yenile.', 3500);
+            return;
+        }
+
+        tv2StopTimers();
+        tv2State.tournamentId = String(tournamentId);
+        tv2State.publicData = item;
+        tv2State.me = null;
+        tv2State.form = '';
+        tv2State.busy = false;
+
+        document.getElementById('tv2ModalTitle').textContent = `🏆 ${item.tournament.name}`;
+        document.getElementById('tv2ModalSubtitle').textContent =
+            String(item.tournament.mode || '') === 'solo'
+                ? 'Solo turnuva kaydı'
+                : `${item.tournament.teamSize}v${item.tournament.teamSize} takım turnuvası`;
+        document.getElementById('tv2ModalBody').innerHTML = '<div class="tv2-empty">Turnuva hesabın yükleniyor...</div>';
+        document.getElementById('tv2Modal').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+
+        if (String(item.tournament.mode || '') === 'solo') {
+            await tv2LoadSoloMe();
+        } else {
+            await tv2ReloadMe();
+        }
+    }
+
+    async function tv2AuthFetch(path, options={}) {
+        const token = localStorage.getItem(SESSION_STORAGE_KEY) || '';
+        const headers = {
+            'Accept':'application/json',
+            ...(options.headers || {}),
+            'Authorization':`Bearer ${token}`
+        };
+        const response = await fetch(`${MARKET_WORKER}${path}`, {...options, headers, cache:'no-store'});
+        let data = null;
+        try { data = await response.json(); } catch (_) {}
+        if (!response.ok || !data?.success) {
+            const err = new Error(data?.error || `HTTP ${response.status}`);
+            err.status = response.status;
+            err.data = data;
+            throw err;
+        }
+        return data;
+    }
+
+    async function tv2ReloadMe(showToast=false) {
+        const id = tv2State.tournamentId;
+        try {
+            const [pub, me] = await Promise.all([
+                fetch(`${MARKET_WORKER}/tournament/v2/public?id=${encodeURIComponent(id)}&_=${Date.now()}`, {
+                    headers:{'Accept':'application/json'},cache:'no-store'
+                }).then(async r => {
+                    const d = await r.json();
+                    if (!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+                    return d;
+                }),
+                tv2AuthFetch(`/tournament/v2/me?id=${encodeURIComponent(id)}&_=${Date.now()}`)
+            ]);
+
+            tv2State.publicData = {
+                tournament:pub.tournament,
+                rule:pub.rule,
+                teams:Array.isArray(pub.teams) ? pub.teams : [],
+                legacySolo:false
+            };
+            tv2State.me = me;
+            tv2RenderModal();
+            tv2RestorePendingTl();
+            tv2StartSubscriptionWatch();
+            if (showToast) showStatusToast('✅ Turnuva durumu güncellendi.', 2200);
+        } catch (error) {
+            tv2ModalError(error);
+        }
+    }
+
+    function tv2ModalError(error) {
+        const body = document.getElementById('tv2ModalBody');
+        if (!body) return;
+        body.innerHTML = `
+            <div class="tv2-message error">❌ ${tv2Esc(error?.message || error)}</div>
+            <div class="tv2-actions"><button class="tv2-btn secondary" onclick="tv2ReloadMe()">Tekrar Dene</button></div>
+        `;
+    }
+
+    function tv2RenderModal() {
+        const item = tv2State.publicData;
+        const me = tv2State.me || {};
+        if (!item) return;
+
+        const t = item.tournament || {};
+        const rule = me.rule || item.rule || {};
+        const team = me.team || null;
+        const slots = Array.isArray(me.slots) ? me.slots : [];
+        const requests = Array.isArray(me.captainRequests) ? me.captainRequests : [];
+        const joinRequest = me.joinRequest || null;
+        const subs = Array.isArray(me.subscriptionPayments) ? me.subscriptionPayments : [];
+
+        const closed = tv2RegistrationClosed({tournament:t,rule});
+        const statusClass = closed ? 'bad' : 'ok';
+
+        let content = `
+            <div class="tv2-hero">
+                <div class="tv2-panel">
+                    <div class="tv2-big-title">${tv2Esc(t.name)}</div>
+                    <div class="tv2-muted">
+                        ${Number(t.teamSize || 0)}v${Number(t.teamSize || 0)} · ${tv2Esc(rule.gameName || 'Oyun')}<br>
+                        Katılım: <b>${tv2Esc(tv2EntryLabel(rule,t))}</b><br>
+                        Turnuva tarihi: <b>${tv2Esc(t.eventDate ? tv2Date(t.eventDate) : 'Daha sonra duyurulacak')}</b>
+                    </div>
+                </div>
+                <div class="tv2-panel">
+                    <span class="tv2-status-pill ${statusClass}">${closed ? '🔒 Kayıt Kapalı' : '🟢 Kayıt Açık'}</span>
+                    <div class="tv2-muted" style="margin-top:9px;">
+                        Kayıt bitişi:<br><b>${tv2Esc(rule.registrationClosesAt ? tv2Date(rule.registrationClosesAt) : 'Belirtilmedi')}</b>
+                    </div>
+                    <div class="tv2-actions">
+                        <button class="tv2-btn secondary" onclick="tv2ReloadMe(true)">🔄 Yenile</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        if (!team && !joinRequest) {
+            content += `
+                <div class="tv2-panel">
+                    <h4>Takım İşlemleri</h4>
+                    <div class="tv2-muted">
+                        Kaptansan takımını oluştur. Başka bir kaptanın kadrosundaysan takım adını yazarak yalnızca bir kez katılma isteği gönder.
+                    </div>
+                    <div class="tv2-actions">
+                        <button class="tv2-btn" ${closed?'disabled':''} onclick="tv2ShowCreateForm()">👑 TAKIM OLUŞTUR</button>
+                        <button class="tv2-btn secondary" ${closed?'disabled':''} onclick="tv2ShowJoinForm()">➕ TAKIMA KATIL</button>
+                    </div>
+                    <div id="tv2InlineForm"></div>
+                </div>
+            `;
+        }
+
+        if (joinRequest && !team) {
+            content += tv2JoinRequestStatusHtml(joinRequest, slots);
+        }
+
+        if (team) {
+            content += tv2TeamHtml(team, slots, requests, joinRequest, rule, subs);
+        }
+
+        document.getElementById('tv2ModalBody').innerHTML = content;
+
+        if (tv2State.form === 'create') tv2ShowCreateForm(true);
+        if (tv2State.form === 'join') tv2ShowJoinForm(true);
+    }
+
+    function tv2ShowCreateForm(keep=false) {
+        tv2State.form = 'create';
+        const host = document.getElementById('tv2InlineForm');
+        if (!host) {
+            if (!keep) tv2RenderModal();
+            return;
+        }
+
+        const item = tv2State.publicData;
+        const t = item.tournament;
+        const rule = item.rule || {};
+        const size = Number(t.teamSize || 0);
+
+        let rows = '';
+        for (let i=0;i<size;i++) {
+            const captain = i===0;
+            rows += `
+                <div class="tv2-roster-row">
+                    <div class="tv2-slot-no">${captain ? '👑' : (i+1)}</div>
+                    <div class="tv2-field" style="margin:0;">
+                        <label>Kick Kullanıcı Adı ${captain ? '(Kaptan)' : ''}</label>
+                        <input class="tv2-input tv2-roster-kick" data-index="${i}" maxlength="40"
+                            value="${captain ? tv2Esc(currentUsername) : ''}" ${captain ? 'readonly' : ''}
+                            placeholder="Tam Kick kullanıcı adı">
+                    </div>
+                    <div class="tv2-field tv2-game-field" style="margin:0;">
+                        <label>${tv2Esc(rule.gameIdLabel || 'Oyun İçi Kullanıcı Adı')}</label>
+                        <input class="tv2-input tv2-roster-game" data-index="${i}" maxlength="80"
+                            placeholder="${String(rule.gameName||'').toLowerCase().includes('valorant') ? 'Örn: Weizend#WZND' : 'Oyun içi ad'}">
+                    </div>
+                </div>
+            `;
+        }
+
+        host.innerHTML = `
+            <div class="tv2-panel tv2-form-card">
+                <h4>👑 Takımını Oluştur</h4>
+                <div class="tv2-field">
+                    <label>Takım Adı</label>
+                    <input id="tv2TeamName" class="tv2-input" maxlength="32" placeholder="Örn: OYNAMAYI UNUTTUK">
+                </div>
+                <div class="tv2-roster-grid">${rows}</div>
+                <label class="tv2-terms" style="margin-top:10px;">
+                    <input id="tv2TermsCreate" type="checkbox">
+                    <span>Takım adını, tüm Kick kullanıcı adlarını ve oyun içi isimleri doğru girdiğimi; yanlış bilgilerin turnuva kaydını etkileyebileceğini kabul ediyorum.</span>
+                </label>
+                <div id="tv2FormStatus" style="margin-top:10px;"></div>
+                <div class="tv2-actions">
+                    <button class="tv2-btn" onclick="tv2SubmitCreate()">TAKIMI OLUŞTUR</button>
+                    <button class="tv2-btn secondary" onclick="tv2CancelInlineForm()">İptal</button>
+                </div>
+            </div>
+        `;
+    }
+
+    function tv2ShowJoinForm(keep=false) {
+        tv2State.form = 'join';
+        const host = document.getElementById('tv2InlineForm');
+        if (!host) {
+            if (!keep) tv2RenderModal();
+            return;
+        }
+
+        host.innerHTML = `
+            <div class="tv2-panel tv2-form-card">
+                <h4>➕ Takıma Katılma İsteği</h4>
+                <div class="tv2-muted" style="margin-bottom:10px;">
+                    Kaptanın seni oluşturduğu kadroya <b>tam Kick kullanıcı adınla</b> önceden eklemiş olması gerekir.
+                </div>
+                <div class="tv2-field">
+                    <label>Takım Adı</label>
+                    <input id="tv2JoinTeamName" class="tv2-input" maxlength="32" placeholder="Takım adını eksiksiz yaz">
+                </div>
+                <div id="tv2FormStatus"></div>
+                <div class="tv2-actions">
+                    <button class="tv2-btn" onclick="tv2SubmitJoinRequest()">İSTEK GÖNDER</button>
+                    <button class="tv2-btn secondary" onclick="tv2CancelInlineForm()">İptal</button>
+                </div>
+            </div>
+        `;
+    }
+
+    function tv2CancelInlineForm() {
+        tv2State.form = '';
+        tv2RenderModal();
+    }
+
+    function tv2SetFormStatus(message, ok=false) {
+        const el = document.getElementById('tv2FormStatus');
+        if (!el) return;
+        el.innerHTML = `<div class="tv2-message ${ok?'success':'error'}">${tv2Esc(message)}</div>`;
+    }
+
+    async function tv2SubmitCreate() {
+        if (tv2State.busy) return;
+        const teamName = document.getElementById('tv2TeamName')?.value.trim() || '';
+        const termsAccepted = document.getElementById('tv2TermsCreate')?.checked === true;
+        const kicks = Array.from(document.querySelectorAll('.tv2-roster-kick'));
+        const games = Array.from(document.querySelectorAll('.tv2-roster-game'));
+
+        const roster = kicks.map((input,index)=>({
+            kickUsername:input.value.trim(),
+            gameId:(games[index]?.value || '').trim()
+        }));
+
+        if (!teamName || roster.some(r=>!r.kickUsername || !r.gameId)) {
+            tv2SetFormStatus('Takım adı ile tüm Kick ve oyun içi kullanıcı adlarını eksiksiz doldur.');
+            return;
+        }
+        if (!termsAccepted) {
+            tv2SetFormStatus('Devam etmek için turnuva şartlarını kabul etmelisin.');
+            return;
+        }
+
+        tv2State.busy = true;
+        try {
+            await tv2AuthFetch('/tournament/v2/team/create', {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({
+                    tournamentId:tv2State.tournamentId,
+                    teamName,
+                    roster,
+                    termsAccepted:true
+                })
+            });
+            tv2State.form = '';
+            showStatusToast('✅ Takım oluşturuldu. Şimdi katılım şartlarını oyuncular için tamamlayabilirsin.', 4500);
+            await tv2ReloadMe();
+            await tv2LoadCatalog(false);
+        } catch (error) {
+            tv2SetFormStatus(error.message || error);
+        } finally {
+            tv2State.busy = false;
+        }
+    }
+
+    async function tv2SubmitJoinRequest() {
+        if (tv2State.busy) return;
+        const teamName = document.getElementById('tv2JoinTeamName')?.value.trim() || '';
+        if (!teamName) {
+            tv2SetFormStatus('Takım adını yaz.');
+            return;
+        }
+
+        tv2State.busy = true;
+        try {
+            await tv2AuthFetch('/tournament/v2/team/join-request', {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({tournamentId:tv2State.tournamentId,teamName})
+            });
+            tv2State.form = '';
+            showStatusToast('✅ Katılma isteğin kaptana gönderildi.', 3500);
+            await tv2ReloadMe();
+            refreshInboxBadge().catch(()=>{});
+        } catch (error) {
+            tv2SetFormStatus(error.message || error);
+        } finally {
+            tv2State.busy = false;
+        }
+    }
+
+    function tv2JoinRequestStatusHtml(req, slots) {
+        const own = (slots || []).find(s => s.id === req.slotId) || null;
+        let action = '';
+        if (req.status === 'approved' && own) {
+            action = `<button class="tv2-btn success" onclick="tv2ClaimSlot('${tv2Esc(req.id)}','${tv2Esc(own.id)}')">✅ KATILIMI TAMAMLA</button>`;
+        }
+        return `
+            <div class="tv2-panel">
+                <h4>Takıma Katılma İsteğin</h4>
+                <div class="tv2-message">
+                    Takım: <b>${tv2Esc(req.teamName || '-')}</b><br>
+                    Durum: <b>${tv2Esc(req.status === 'pending' ? 'Kaptan Onayı Bekleniyor' : req.status === 'approved' ? 'Kabul Edildi' : req.status)}</b>
+                    ${own ? `<br>Oyun içi adın: <b>${tv2Esc(own.gameId)}</b>` : ''}
+                </div>
+                <div class="tv2-actions">${action}<button class="tv2-btn secondary" onclick="tv2ReloadMe(true)">🔄 Kontrol Et</button></div>
+            </div>
+        `;
+    }
+
+    function tv2TeamHtml(team, slots, requests, joinRequest, rule, subs) {
+        const isCaptain = String(team.captainUsername || '').toLocaleLowerCase('tr-TR') === String(currentUsername || '').toLocaleLowerCase('tr-TR');
+        const ownSlot = slots.find(s =>
+            String(s.joinedUsername || '').toLocaleLowerCase('tr-TR') === String(currentUsername || '').toLocaleLowerCase('tr-TR') ||
+            (s.joinStatus === 'captain' && String(s.plannedUsername || '').toLocaleLowerCase('tr-TR') === String(currentUsername || '').toLocaleLowerCase('tr-TR'))
+        );
+        const plannedOwn = slots.find(s =>
+            String(s.plannedUsername || '').toLocaleLowerCase('tr-TR') === String(currentUsername || '').toLocaleLowerCase('tr-TR')
+        );
+
+        const slotsHtml = slots.map(slot => {
+            const joinOk = ['captain','joined'].includes(slot.joinStatus);
+            const payOk = slot.paymentStatus === 'paid';
+            return `
+                <div class="tv2-slot-card">
+                    <div class="tv2-slot-main">
+                        <div class="tv2-slot-name">${slot.slotNo === 1 ? '👑 ' : ''}${tv2Esc(slot.plannedUsername)}</div>
+                        <div class="tv2-slot-game">${tv2Esc(slot.gameId)}</div>
+                    </div>
+                    <div class="tv2-slot-state">
+                        <span class="tv2-status-pill ${joinOk?'ok':'warn'}">${joinOk?'✅':'⏳'} ${tv2Esc(tv2JoinLabel(slot.joinStatus))}</span>
+                        <span class="tv2-status-pill ${payOk?'ok':slot.paymentStatus==='pending'?'warn':'bad'}">${tv2Esc(tv2PaymentLabel(slot.paymentStatus,slot.paidVia))}</span>
+                    </div>
+                    <div>${slot.paidAt ? `<span class="tv2-muted">${tv2Esc(tv2Date(slot.paidAt))}</span>` : ''}</div>
+                </div>
+            `;
+        }).join('');
+
+        let requestHtml = '';
+        if (isCaptain && requests.length) {
+            requestHtml = `
+                <div class="tv2-panel" style="margin-top:12px;">
+                    <h4>📨 Katılma İstekleri</h4>
+                    ${requests.map(req => `
+                        <div class="tv2-request">
+                            <div>
+                                <b>${tv2Esc(req.requesterUsername)}</b>
+                                <div class="tv2-muted">${req.status === 'pending' ? 'Takıma katılmak için onay bekliyor.' : 'Kabul edildi; oyuncunun katılımı tamamlaması bekleniyor.'}</div>
+                            </div>
+                            <div class="tv2-actions" style="margin:0;">
+                                ${req.status === 'pending' ? `
+                                    <button class="tv2-btn success" onclick="tv2DecideRequest('${tv2Esc(req.id)}','approve')">Kabul Et</button>
+                                    <button class="tv2-btn danger" onclick="tv2DecideRequest('${tv2Esc(req.id)}','reject')">Reddet</button>
+                                ` : `<span class="tv2-status-pill ok">✅ Kabul Edildi</span>`}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        let claimHtml = '';
+        if (!isCaptain && joinRequest?.status === 'approved' && plannedOwn?.joinStatus === 'planned') {
+            claimHtml = `
+                <div class="tv2-panel" style="margin-top:12px;">
+                    <h4>✅ Kaptan İsteğini Kabul Etti</h4>
+                    <div class="tv2-muted">Sana ayrılan oyuncu satırı: <b>${tv2Esc(plannedOwn.plannedUsername)}</b> · ${tv2Esc(plannedOwn.gameId)}</div>
+                    <div class="tv2-actions">
+                        <button class="tv2-btn success" onclick="tv2ClaimSlot('${tv2Esc(joinRequest.id)}','${tv2Esc(plannedOwn.id)}')">TAKIMA KATILIMI TAMAMLA</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        const payCandidates = isCaptain
+            ? slots.filter(s => s.paymentStatus === 'unpaid')
+            : (ownSlot && ownSlot.joinStatus === 'joined' && ownSlot.paymentStatus === 'unpaid' ? [ownSlot] : []);
+
+        let paymentHtml = '';
+        if (payCandidates.length) {
+            paymentHtml = `
+                <div class="tv2-panel" style="margin-top:12px;">
+                    <h4>${rule.entryMode === 'subscription' ? '⭐ Abonelik Şartını Tamamla' : rule.entryMode === 'tl' ? '💳 Katılım Ücretini Öde' : '🎁 Katılımı Tamamla'}</h4>
+                    <div class="tv2-muted" style="margin-bottom:10px;">
+                        ${isCaptain
+                            ? 'Katılım şartını üstlenmek istediğin oyuncuları seç. Seçtiğin oyuncular tek işlem altında işaretlenir.'
+                            : 'Yalnızca kendi oyuncu satırın için işlem yapabilirsin.'}
+                    </div>
+                    ${payCandidates.map(slot => `
+                        <label class="tv2-pay-select">
+                            <input class="tv2-pay-slot" type="checkbox" value="${tv2Esc(slot.id)}"
+                                ${!isCaptain ? 'checked disabled' : ''}>
+                            <span><b>${tv2Esc(slot.plannedUsername)}</b><br><span class="tv2-muted">${tv2Esc(slot.gameId)}</span></span>
+                        </label>
+                    `).join('')}
+                    ${rule.entryMode === 'subscription' ? `
+                        <div class="tv2-field" style="margin-top:10px;">
+                            <label>Kendi oyuncu satırını da seçiyorsan mevcut abonelik durumun</label>
+                            <select id="tv2SelfSubscriptionState" class="tv2-select">
+                                <option value="">Kendi satırım seçili değil / Seçiniz</option>
+                                <option value="not_subscribed">Abone değilim — önce normal abone olacağım</option>
+                                <option value="already_subscribed">Zaten aboneyim — kendi hakkım için de 1 gift göndereceğim</option>
+                            </select>
+                            <div class="tv2-muted" style="margin-top:6px;">
+                                Giftlerin kime gönderildiği önemli değildir. Sistem gönderen doğrulanmış Kick hesabını ve toplam adedi takip eder.
+                            </div>
+                        </div>
+                    ` : ''}
+                    <div id="tv2PaymentStatus"></div>
+                    <div class="tv2-actions">
+                        <button class="tv2-btn" onclick="tv2StartPayment()">${rule.entryMode === 'subscription' ? 'ABONELİK İŞLEMİNİ BAŞLAT' : rule.entryMode === 'tl' ? 'ÖDEME KODU OLUŞTUR' : 'KATILIMI TAMAMLA'}</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        let pendingHtml = '';
+        const pendingSubs = (subs || []).filter(p => p.status === 'pending' || p.status === 'paid');
+        if (pendingSubs.length) {
+            pendingHtml = `
+                <div class="tv2-panel" style="margin-top:12px;">
+                    <h4>⭐ Abonelik / Gift Takibi</h4>
+                    ${pendingSubs.map(p => tv2SubscriptionPaymentHtml(p)).join('')}
+                </div>
+            `;
+        }
+
+        return `
+            <div class="tv2-panel">
+                <div style="display:flex;gap:10px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;">
+                    <div>
+                        <h4 style="margin-bottom:4px;">${isCaptain?'👑':'👥'} ${tv2Esc(team.name)}</h4>
+                        <div class="tv2-muted">Kaptan: <b>${tv2Esc(team.captainUsername)}</b></div>
+                    </div>
+                    <span class="tv2-status-pill ${team.status==='ready'?'ok':team.status==='locked'?'ok':'warn'}">${tv2Esc(tv2TeamStatusLabel(team.status))}</span>
+                </div>
+                <div style="margin-top:12px;" class="tv2-team-slots">${slotsHtml}</div>
+            </div>
+            ${requestHtml}
+            ${claimHtml}
+            ${paymentHtml}
+            ${pendingHtml}
+            <div id="tv2PendingTlHost"></div>
+        `;
+    }
+
+    function tv2SubscriptionPaymentHtml(p) {
+        const directRequired = Number(p.requiredDirectSubs || 0);
+        const directReceived = Number(p.receivedDirectSubs || 0);
+        const giftsRequired = Number(p.requiredGifts || 0);
+        const giftsReceived = Number(p.receivedGifts || 0);
+        const totalRequired = directRequired + giftsRequired;
+        const totalReceived = Math.min(totalRequired, directReceived + giftsReceived);
+        const pct = totalRequired ? Math.max(0,Math.min(100,Math.round(totalReceived*100/totalRequired))) : 100;
+
+        return `
+            <div class="tv2-payment-box">
+                <b>${p.status === 'paid' ? '✅ Katılım şartı tamamlandı' : '⏳ İşlem devam ediyor'}</b>
+                <div class="tv2-muted" style="margin-top:5px;">
+                    ${directRequired ? `Normal abonelik: <b>${directReceived}/${directRequired}</b><br>` : ''}
+                    ${giftsRequired ? `Abonelik hediyesi: <b>${giftsReceived}/${giftsRequired}</b><br>` : ''}
+                    Son tarih: <b>${tv2Esc(tv2Date(p.expiresAt))}</b>
+                </div>
+                <div class="tv2-progress"><div style="width:${pct}%"></div></div>
+                ${p.status === 'pending' ? `
+                    <div class="tv2-actions">
+                        <button class="tv2-btn" onclick="tv2OpenKickChannel()">⭐ KICK KANALINI AÇ</button>
+                        <button class="tv2-btn secondary" onclick="tv2RefreshSubscription('${tv2Esc(p.id)}')">🔄 Şimdi Kontrol Et</button>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    async function tv2DecideRequest(requestId, decision) {
+        if (tv2State.busy) return;
+        tv2State.busy = true;
+        try {
+            await tv2AuthFetch('/tournament/v2/team/request/decision',{
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({requestId,decision})
+            });
+            showStatusToast(decision==='approve' ? '✅ Oyuncunun isteği kabul edildi.' : '✅ İstek reddedildi.',3000);
+            await tv2ReloadMe();
+            refreshInboxBadge().catch(()=>{});
+        } catch (error) {
+            showStatusToast(`❌ ${error.message || error}`,4500);
+        } finally {
+            tv2State.busy = false;
+        }
+    }
+
+    async function tv2ClaimSlot(requestId, slotId) {
+        if (tv2State.busy) return;
+        tv2State.busy = true;
+        try {
+            await tv2AuthFetch('/tournament/v2/team/claim-slot',{
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({requestId,slotId})
+            });
+            showStatusToast('✅ Takıma katılımın tamamlandı.',3200);
+            await tv2ReloadMe();
+        } catch (error) {
+            showStatusToast(`❌ ${error.message || error}`,4500);
+        } finally {
+            tv2State.busy = false;
+        }
+    }
+
+    function tv2SelectedSlotIds() {
+        return Array.from(document.querySelectorAll('.tv2-pay-slot'))
+            .filter(el => el.checked)
+            .map(el => el.value)
+            .filter(Boolean);
+    }
+
+    async function tv2StartPayment() {
+        if (tv2State.busy) return;
+        const me = tv2State.me || {};
+        const team = me.team;
+        const rule = me.rule || tv2State.publicData?.rule || {};
+        const slotIds = tv2SelectedSlotIds();
+
+        if (!team || !slotIds.length) {
+            showStatusToast('⚠️ En az bir oyuncu seçmelisin.',3500);
+            return;
+        }
+
+        const body = {teamId:team.id,slotIds};
+
+        if (rule.entryMode === 'subscription') {
+            const ownSlot = (me.slots || []).find(s =>
+                String(s.plannedUsername || '').toLocaleLowerCase('tr-TR') === String(currentUsername || '').toLocaleLowerCase('tr-TR')
+            );
+            if (ownSlot && slotIds.includes(ownSlot.id)) {
+                const state = document.getElementById('tv2SelfSubscriptionState')?.value || '';
+                if (!state) {
+                    showStatusToast('⚠️ Kendi katılımın seçili. Abone olup olmadığını seçmelisin.',4500);
+                    return;
+                }
+                body.selfSubscriptionState = state;
+            }
+        }
+
+        tv2State.busy = true;
+        const statusEl = document.getElementById('tv2PaymentStatus');
+        if (statusEl) statusEl.innerHTML = '<div class="tv2-message">⏳ İşlem oluşturuluyor...</div>';
+
+        try {
+            const data = await tv2AuthFetch('/tournament/v2/team/payment/start',{
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify(body)
+            });
+
+            if (data.mode === 'tl') {
+                const payment = data.payment;
+                const reference = data?.instructions?.reference || payment?.reference || '';
+                if (!payment?.id || !reference) throw new Error('BynoGame ödeme kodu oluşturulamadı.');
+
+                localStorage.setItem(TV2_PENDING_TL_KEY, JSON.stringify({
+                    tournamentId:tv2State.tournamentId,
+                    teamId:team.id,
+                    paymentId:payment.id,
+                    reference,
+                    expectedAmountCents:Number(payment.expectedAmountCents || 0),
+                    expiresAt:payment.expiresAt || null
+                }));
+
+                await copyTextReliable(reference);
+                if (statusEl) {
+                    statusEl.innerHTML = `
+                        <div class="tv2-payment-box">
+                            <b>💳 BynoGame ödeme kodun hazır</b>
+                            <div class="tv2-code" onclick="copyTextReliable('${tv2Esc(reference)}')">${tv2Esc(reference)}</div>
+                            <div class="tv2-muted">Tutar: <b>${tv2Esc(formatTlFromCents(payment.expectedAmountCents || 0))}</b><br>Kod panoya kopyalandı. Bağış mesajına yalnızca bu kodu yapıştır.</div>
+                        </div>
+                    `;
+                }
+                showBynoGameRedirect(reference);
+                tv2StartTlWatch(payment.id);
+                return;
+            }
+
+            if (data.mode === 'subscription') {
+                const p = data.subscriptionPayment;
+                const instruction = data.instruction || {};
+                showStatusToast('⭐ Abonelik işlemi oluşturuldu. Kayıt kapanışına kadar parça parça tamamlayabilirsin.',5000);
+                await tv2ReloadMe();
+                if (p?.id) tv2RefreshSubscription(p.id);
+                tv2OpenKickChannel();
+                return;
+            }
+
+            if (data.mode === 'free') {
+                showStatusToast('✅ Seçilen oyuncular için katılım şartı tamamlandı.',3500);
+                await tv2ReloadMe();
+                await tv2LoadCatalog(false);
+                return;
+            }
+
+        } catch (error) {
+            if (statusEl) statusEl.innerHTML = `<div class="tv2-message error">❌ ${tv2Esc(error.message || error)}</div>`;
+        } finally {
+            tv2State.busy = false;
+        }
+    }
+
+    function tv2OpenKickChannel() {
+        const opened = window.open(TV2_KICK_CHANNEL_URL,'_blank','noopener,noreferrer');
+        if (!opened) showStatusToast('⚠️ Kick sekmesi tarayıcı tarafından engellendi. Kanalı manuel açabilirsin.',4000);
+    }
+
+    function tv2RestorePendingTl() {
+        const host = document.getElementById('tv2PendingTlHost');
+        if (!host) return;
+        let pending = null;
+        try { pending = JSON.parse(localStorage.getItem(TV2_PENDING_TL_KEY) || 'null'); } catch (_) {}
+        if (!pending || pending.tournamentId !== tv2State.tournamentId || !pending.paymentId) {
+            host.innerHTML = '';
+            return;
+        }
+
+        host.innerHTML = `
+            <div class="tv2-panel" style="margin-top:12px;">
+                <h4>💳 Bekleyen BynoGame Ödemesi</h4>
+                <div class="tv2-code" onclick="copyTextReliable('${tv2Esc(pending.reference || '')}')">${tv2Esc(pending.reference || '-')}</div>
+                <div class="tv2-muted">
+                    Tutar: <b>${tv2Esc(formatTlFromCents(pending.expectedAmountCents || 0))}</b>
+                    ${pending.expiresAt ? `<br>Son kontrol süresi: <b>${tv2Esc(tv2Date(pending.expiresAt))}</b>` : ''}
+                </div>
+                <div class="tv2-actions">
+                    <button class="tv2-btn" onclick="showBynoGameRedirect('${tv2Esc(pending.reference || '')}')">BynoGame'e Git</button>
+                    <button class="tv2-btn secondary" onclick="tv2CheckTlPayment('${tv2Esc(pending.paymentId)}',true)">🔄 Ödemeyi Kontrol Et</button>
+                </div>
+            </div>
+        `;
+        tv2StartTlWatch(pending.paymentId);
+    }
+
+    function tv2StartTlWatch(paymentId) {
+        if (!paymentId) return;
+        if (tv2State.tlTimer) clearInterval(tv2State.tlTimer);
+        tv2State.tlTimer = setInterval(() => {
+            if (document.getElementById('tv2Modal')?.style.display !== 'flex') return;
+            tv2CheckTlPayment(paymentId,false).catch(()=>{});
+        },10000);
+    }
+
+    async function tv2CheckTlPayment(paymentId, notify=false) {
+        try {
+            const data = await tv2AuthFetch('/payment/check',{
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({paymentId})
+            });
+            const p = data.payment || null;
+            if (p?.status === 'paid' || data.alreadyPaid === true) {
+                localStorage.removeItem(TV2_PENDING_TL_KEY);
+                if (tv2State.tlTimer) clearInterval(tv2State.tlTimer);
+                tv2State.tlTimer = null;
+                showStatusToast('✅ BynoGame ödemen doğrulandı. Seçilen oyuncular ödendi olarak işaretlendi.',4500);
+                await tv2ReloadMe();
+                await tv2LoadCatalog(false);
+                refreshInboxBadge().catch(()=>{});
+            } else if (notify) {
+                const remaining = Number(p?.remainingAmountCents || 0);
+                showStatusToast(remaining > 0
+                    ? `⏳ Ödeme henüz tamamlanmadı. Kalan: ${formatTlFromCents(remaining)}`
+                    : '⏳ Ödeme henüz doğrulanmadı.',3500);
+            }
+        } catch (error) {
+            if (notify) showStatusToast(`⚠️ ${error.message || error}`,4000);
+        }
+    }
+
+    function tv2StartSubscriptionWatch() {
+        if (tv2State.subTimer) clearInterval(tv2State.subTimer);
+        const pending = (tv2State.me?.subscriptionPayments || []).find(p => p.status === 'pending');
+        if (!pending?.id) return;
+
+        tv2State.subTimer = setInterval(() => {
+            if (document.getElementById('tv2Modal')?.style.display !== 'flex') return;
+            tv2RefreshSubscription(pending.id,false).catch(()=>{});
+        },15000);
+    }
+
+    async function tv2RefreshSubscription(paymentId, notify=true) {
+        try {
+            const d = await tv2AuthFetch(`/tournament/v2/subscription/status?id=${encodeURIComponent(paymentId)}&_=${Date.now()}`);
+            const p = d.subscriptionPayment;
+            if (p?.status === 'paid') {
+                if (tv2State.subTimer) clearInterval(tv2State.subTimer);
+                tv2State.subTimer = null;
+                showStatusToast('✅ Gerekli abonelik / gift adedi tamamlandı.',4200);
+                await tv2ReloadMe();
+                await tv2LoadCatalog(false);
+                refreshInboxBadge().catch(()=>{});
+                return;
+            }
+            if (notify && p) {
+                showStatusToast(
+                    `⭐ Kalan: ${Number(p.remainingDirectSubs || 0)} normal abonelik + ${Number(p.remainingGifts || 0)} gift`,
+                    4200
+                );
+                await tv2ReloadMe();
+            }
+        } catch (error) {
+            if (notify) showStatusToast(`⚠️ ${error.message || error}`,4000);
+        }
+    }
+
+    // ---------------------------------------------------------
+    // SOLO TURNUVA - ESKİ GÜVENLİ AKIŞI KORUR
+    // ---------------------------------------------------------
+    async function tv2LoadSoloMe() {
+        const id = tv2State.tournamentId;
+        try {
+            const [detail, me] = await Promise.all([
+                fetch(`${MARKET_WORKER}/tournament/public?id=${encodeURIComponent(id)}&_=${Date.now()}`,{
+                    headers:{'Accept':'application/json'},cache:'no-store'
+                }).then(async r=>{const d=await r.json(); if(!r.ok||!d?.success) throw new Error(d?.error||`HTTP ${r.status}`); return d;}),
+                tv2AuthFetch(`/tournament/me?id=${encodeURIComponent(id)}&_=${Date.now()}`)
+            ]);
+            tv2State.soloData = {detail,me};
+            tv2RenderSolo();
+        } catch (error) {
+            tv2ModalError(error);
+        }
+    }
+
+    function tv2RenderSolo() {
+        const item = tv2State.publicData;
+        const t = item.tournament || {};
+        const me = tv2State.soloData?.me || {};
+        const membership = me.membership || null;
+        const closed = !t.registrationOpen;
+
+        let action = '';
+        if (membership) {
+            action = `
+                <div class="tv2-message ${membership.status==='active'?'success':''}">
+                    Kayıt durumun: <b>${tv2Esc(membership.status)}</b>
+                    ${membership.riotId ? `<br>VALORANT ID: <b>${tv2Esc(membership.riotId)}</b>` : ''}
+                </div>
+            `;
+        } else {
+            action = `
+                <div class="tv2-field">
+                    <label>VALORANT ID</label>
+                    <input id="tv2SoloRiotId" class="tv2-input" maxlength="40" placeholder="Örn: Weizend#WZND">
+                </div>
+                <label class="tv2-terms">
+                    <input id="tv2SoloTerms" type="checkbox">
+                    <span>Oyun içi hesabımı doğru yazdığımı ve turnuva kurallarını kabul ediyorum.</span>
+                </label>
+                <div class="tv2-actions"><button class="tv2-btn" ${closed?'disabled':''} onclick="tv2RegisterSolo()">KAYIT OL</button></div>
+                <div id="tv2SoloStatus"></div>
+            `;
+        }
+
+        document.getElementById('tv2ModalBody').innerHTML = `
+            <div class="tv2-hero">
+                <div class="tv2-panel">
+                    <div class="tv2-big-title">${tv2Esc(t.name)}</div>
+                    <div class="tv2-muted">
+                        Solo Turnuva · Kontenjan ${Number(t.registeredCount || 0)} / ${Number(t.capacity || 0)}<br>
+                        Katılım: <b>${Number(t.feePerPlayerCents || 0)>0 ? tv2Esc(formatTlFromCents(t.feePerPlayerCents)) : 'Ücretsiz'}</b>
+                    </div>
+                </div>
+                <div class="tv2-panel">
+                    <span class="tv2-status-pill ${closed?'bad':'ok'}">${closed?'🔒 Kayıt Kapalı':'🟢 Kayıt Açık'}</span>
+                </div>
+            </div>
+            <div class="tv2-panel">${action}</div>
+            <div id="tv2PendingTlHost"></div>
+        `;
+        tv2RestorePendingTl();
+    }
+
+    async function tv2RegisterSolo() {
+        const riotId = document.getElementById('tv2SoloRiotId')?.value.trim() || '';
+        const termsAccepted = document.getElementById('tv2SoloTerms')?.checked === true;
+        const status = document.getElementById('tv2SoloStatus');
+        if (!riotId || !termsAccepted) {
+            if (status) status.innerHTML = '<div class="tv2-message error">VALORANT ID gir ve şartları kabul et.</div>';
+            return;
+        }
+        try {
+            const data = await tv2AuthFetch('/tournament/register',{
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({tournamentId:tv2State.tournamentId,riotId,termsAccepted:true})
+            });
+            if (data.payment?.id) {
+                const reference = data.instructions?.reference || data.payment.reference;
+                localStorage.setItem(TV2_PENDING_TL_KEY,JSON.stringify({
+                    tournamentId:tv2State.tournamentId,
+                    paymentId:data.payment.id,
+                    reference,
+                    expectedAmountCents:Number(data.payment.expectedAmountCents || 0),
+                    expiresAt:data.payment.expiresAt || null
+                }));
+                await copyTextReliable(reference);
+                showBynoGameRedirect(reference);
+                tv2StartTlWatch(data.payment.id);
+            } else {
+                showStatusToast('✅ Turnuva kaydın tamamlandı.',3500);
+            }
+            await tv2LoadSoloMe();
+            await tv2LoadCatalog(false);
+        } catch (error) {
+            if (status) status.innerHTML = `<div class="tv2-message error">❌ ${tv2Esc(error.message || error)}</div>`;
+        }
+    }
+
+    // Sayfa açıldığında gerçek turnuva listesini yükle.
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => tv2LoadCatalog(false), 0);
+    });
+
+    window.addEventListener('focus', () => {
+        if (marketAuthenticated && tv2State.tournamentId && document.getElementById('tv2Modal')?.style.display === 'flex') {
+            if (String(tv2State.publicData?.tournament?.mode || '') === 'solo') {
+                tv2LoadSoloMe().catch(()=>{});
+            } else {
+                tv2ReloadMe().catch(()=>{});
+            }
+        }
+    });
+    </script>
+
 </body>
 </html>
