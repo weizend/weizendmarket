@@ -2084,6 +2084,7 @@ async function createGiftCode(){
 
     showStatus('giftCodeStatus','✅ Tek kullanımlık hediye kodu oluşturuldu. Bu kod yalnızca bir kez kullanılabilir.',true);
     await loadGiftCodes();
+    showStatus('giftCodeStatus','✅ Hediye kodu silindi ve artık geçersiz.',true);
   }catch(error){
     showStatus('giftCodeStatus','❌ '+esc(error.message || error),false);
   }
@@ -2136,26 +2137,27 @@ function renderGiftCodes(items){
       <td>${esc(dateText(item.created_at))}</td>
       <td>${esc(dateText(item.redeemed_at))}</td>
       <td>
-        ${status === 'unused'
-          ? `<button class="smallBtn danger" onclick="disableGiftCode('${encodeURIComponent(item.id)}')">Devre Dışı Bırak</button>`
-          : '<span class="muted">-</span>'}
+        ${status === 'disabled'
+          ? '<span class="muted">Silindi / Geçersiz</span>'
+          : `<button class="smallBtn danger" onclick="deleteGiftCode('${encodeURIComponent(item.id)}')">🗑 Sil</button>`}
       </td>`;
     body.appendChild(tr);
   }
 }
 
-async function disableGiftCode(encodedId){
+async function deleteGiftCode(encodedId){
   const id = decodeURIComponent(encodedId || '');
-  if(!id || !confirm('Bu hediye kodu devre dışı bırakılsın mı?')) return;
+  if(!id || !confirm('Bu hediye kodu silinsin ve kalıcı olarak geçersiz hale getirilsin mi?')) return;
 
   try{
-    const {r,d} = await api('/admin/gift-codes/disable',{
+    const {r,d} = await api('/admin/gift-codes/delete',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({id})
     });
     if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
     await loadGiftCodes();
+    showStatus('giftCodeStatus','✅ Hediye kodu silindi ve artık geçersiz.',true);
   }catch(error){
     showStatus('giftCodeStatus','❌ '+esc(error.message || error),false);
   }
@@ -2219,7 +2221,8 @@ function renderProducts(){
 
   const normalProducts =
     productsCache.filter(p =>
-      String(p.category || '').trim().toLocaleLowerCase('tr-TR') !== 'turnuva'
+      String(p.category || '').trim().toLocaleLowerCase('tr-TR') !== 'turnuva' &&
+      p.deleted !== true
     );
 
   const items =
@@ -2298,6 +2301,13 @@ function renderProducts(){
             ${p.active ? 'false' : 'true'}
           )">
           ${p.active ? 'Pasife Al' : 'Aktif Et'}
+        </button>
+
+        <button
+          class="smallBtn danger"
+          style="margin-top:6px"
+          onclick="deleteProduct('${encodeURIComponent(p.id)}',false)">
+          🗑 Sil
         </button>
 
       </td>
@@ -2808,7 +2818,7 @@ async function deleteProduct(encodedId,isTournament=false){
 
   const message = isTournament
     ? 'Bu turnuva ürünlerden kaldırılacak, kayıtları kapatılacak ve Turnuva sekmesinden gizlenecek. Geçmiş turnuva kayıtları güvenlik için veritabanında korunur. Devam edilsin mi?'
-    : 'Bu ürün tamamen silinsin mi?';
+    : 'Bu ürün marketten kaldırılsın mı? Eski sipariş geçmişi korunacaktır.';
 
   if(!confirm(message)) return;
 
@@ -5232,9 +5242,12 @@ function renderTournamentV2Entries(data){
                   ${Number(team.paidCount||0)}/${Number(team.teamSize||0)} şart tamamlandı
                 </div>
               </div>
-              <span class="tournamentState ${['ready','locked'].includes(team.status)?'ok':team.status==='cancelled'?'bad':'warn'}">
-                ${esc(tournamentStatusText(team.status))}
-              </span>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+                <span class="tournamentState ${['ready','locked'].includes(team.status)?'ok':team.status==='cancelled'?'bad':'warn'}">
+                  ${esc(tournamentStatusText(team.status))}
+                </span>
+                <button class="smallBtn danger" onclick="deleteTournamentTeam('${encodeURIComponent(team.id)}')">🗑 Takımı Sil</button>
+              </div>
             </div>
 
             <div class="tableWrap tournamentSlotTable">
@@ -5246,6 +5259,7 @@ function renderTournamentV2Entries(data){
                     <th>Oyun İçi Ad</th>
                     <th>Takım Durumu</th>
                     <th>Katılım Şartı</th>
+                    <th>İşlem</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -5261,6 +5275,12 @@ function renderTournamentV2Entries(data){
                       <td>${esc(s.gameId || '-')}</td>
                       <td>${esc(tournamentJoinText(s.joinStatus))}</td>
                       <td>${esc(tournamentPaymentText(s.paymentStatus,s.paidVia))}</td>
+                      <td>
+                        <button class="smallBtn secondary" onclick="editTournamentSlot('${encodeURIComponent(s.id)}','${encodeURIComponent(s.plannedUsername || '')}','${encodeURIComponent(s.gameId || '')}')">✏️ Düzenle</button>
+                        ${Number(s.slotNo||0) === 1 || s.joinStatus === 'captain'
+                          ? '<div class="muted" style="margin-top:5px;">Kaptan</div>'
+                          : `<button class="smallBtn danger" style="margin-top:6px" onclick="deleteTournamentSlot('${encodeURIComponent(s.id)}')">🗑 Oyuncuyu Sil</button>`}
+                      </td>
                     </tr>
                   `).join('')}
                 </tbody>
@@ -5275,6 +5295,7 @@ function renderTournamentV2Entries(data){
 }
 
 function renderTournamentSoloEntries(rows){
+  rows = Array.isArray(rows) ? rows.filter(r => String(r?.status || '') !== 'cancelled') : [];
   const summary = document.getElementById('tournamentEntrySummary');
   const host = document.getElementById('tournamentEntriesView');
 
@@ -5303,6 +5324,7 @@ function renderTournamentSoloEntries(rows){
             <th>Oyun İçi Ad</th>
             <th>Durum</th>
             <th>Kayıt Tarihi</th>
+            <th>İşlem</th>
           </tr>
         </thead>
         <tbody>
@@ -5312,12 +5334,109 @@ function renderTournamentSoloEntries(rows){
               <td>${esc(r.riot_id||'-')}</td>
               <td>${esc(r.status==='active'?'✅ Kayıt Tamamlandı':r.status==='pending_payment'?'⏳ Katılım Şartı Bekleniyor':r.status||'-')}</td>
               <td>${esc(formatTournamentDate(r.created_at))}</td>
+              <td>
+                <button class="smallBtn secondary" onclick="editSoloTournamentPlayer('${encodeURIComponent(r.id)}','${encodeURIComponent(r.riot_id || '')}')">✏️ Oyun Adını Düzenle</button>
+                <button class="smallBtn danger" style="margin-top:6px" onclick="deleteSoloTournamentPlayer('${encodeURIComponent(r.id)}')">🗑 Oyuncuyu Sil</button>
+              </td>
             </tr>
           `).join('')}
         </tbody>
       </table>
     </div>
   `;
+}
+
+async function deleteTournamentTeam(encodedTeamId){
+  const teamId = decodeURIComponent(encodedTeamId || '');
+  if(!teamId || !confirm('Bu takım turnuvadan silinsin mi? Takımın bekleyen işlemleri de iptal edilir.')) return;
+
+  try{
+    const {r,d} = await api('/admin/tournament/v2/team/delete',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({teamId})
+    });
+    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+    await loadTournamentEntries(true);
+    await loadTournamentConfig();
+    showStatus('tournamentStatus','✅ Takım turnuvadan silindi.',true);
+  }catch(error){
+    showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
+  }
+}
+
+async function editTournamentSlot(encodedSlotId,encodedUsername,encodedGameId){
+  const slotId = decodeURIComponent(encodedSlotId || '');
+  const currentUsernameValue = decodeURIComponent(encodedUsername || '');
+  const currentGameIdValue = decodeURIComponent(encodedGameId || '');
+  if(!slotId) return;
+
+  const plannedUsername = prompt('Kick kullanıcı adını düzelt:',currentUsernameValue);
+  if(plannedUsername === null) return;
+  const gameId = prompt('Oyun içi adı / ID bilgisini düzelt:',currentGameIdValue);
+  if(gameId === null) return;
+
+  try{
+    const {r,d} = await api('/admin/tournament/v2/slot/update',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slotId,plannedUsername,gameId})
+    });
+    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+    await loadTournamentEntries(true);
+    showStatus('tournamentStatus','✅ Oyuncu bilgileri güncellendi.',true);
+  }catch(error){
+    showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
+  }
+}
+
+async function deleteTournamentSlot(encodedSlotId){
+  const slotId = decodeURIComponent(encodedSlotId || '');
+  if(!slotId || !confirm('Bu oyuncu takımdan silinsin mi? Takım bu oyuncu olmadan devam edebilir.')) return;
+
+  try{
+    const {r,d} = await api('/admin/tournament/v2/slot/delete',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slotId})
+    });
+    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+    await loadTournamentEntries(true);
+    await loadTournamentConfig();
+    showStatus('tournamentStatus','✅ Oyuncu silindi. Takımın gerekli oyuncu sayısı yeniden hesaplandı.',true);
+  }catch(error){
+    showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
+  }
+}
+
+async function editSoloTournamentPlayer(encodedMembershipId,encodedGameId){
+  const membershipId = decodeURIComponent(encodedMembershipId || '');
+  const currentGameId = decodeURIComponent(encodedGameId || '');
+  if(!membershipId) return;
+  const gameId = prompt('Oyun içi adı / ID bilgisini düzelt:',currentGameId);
+  if(gameId === null) return;
+
+  try{
+    const {r,d} = await api('/admin/tournament/solo/update',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({membershipId,gameId})
+    });
+    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+    await loadTournamentEntries(true);
+    showStatus('tournamentStatus','✅ Oyuncu bilgisi güncellendi.',true);
+  }catch(error){
+    showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
+  }
+}
+
+async function deleteSoloTournamentPlayer(encodedMembershipId){
+  const membershipId = decodeURIComponent(encodedMembershipId || '');
+  if(!membershipId || !confirm('Bu oyuncu turnuvadan silinsin mi?')) return;
+
+  try{
+    const {r,d} = await api('/admin/tournament/solo/delete',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({membershipId})
+    });
+    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+    await loadTournamentEntries(true);
+    await loadTournamentConfig();
+    showStatus('tournamentStatus','✅ Oyuncu turnuvadan silindi.',true);
+  }catch(error){
+    showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
+  }
 }
 
 function renderTournamentSubscriptionPayments(subs){
@@ -5342,9 +5461,9 @@ function renderTournamentSubscriptionPayments(subs){
         <table>
           <thead>
             <tr>
-              <th>Gönderen</th>
-              <th>Normal Abone</th>
-              <th>Gift</th>
+              <th>Üstlenen Kullanıcı</th>
+              <th>Beklenen</th>
+              <th>Tamamlanan</th>
               <th>Durum</th>
               <th>Son Tarih</th>
             </tr>
@@ -5353,8 +5472,14 @@ function renderTournamentSubscriptionPayments(subs){
             ${subs.map(s=>`
               <tr>
                 <td><b>${esc(s.payerUsername||'-')}</b></td>
-                <td>${Number(s.receivedDirectSubs||0)} / ${Number(s.requiredDirectSubs||0)}</td>
-                <td>${Number(s.receivedGifts||0)} / ${Number(s.requiredGifts||0)}</td>
+                <td>
+                  ${Number(s.requiredDirectSubs||0)} normal abone
+                  ${Number(s.requiredGifts||0) ? ` + ${Number(s.requiredGifts||0)} gift` : ''}
+                </td>
+                <td>
+                  ${Number(s.receivedDirectSubs||0)}/${Number(s.requiredDirectSubs||0)} normal abone
+                  ${Number(s.requiredGifts||0) ? ` + ${Number(s.receivedGifts||0)}/${Number(s.requiredGifts||0)} gift` : ''}
+                </td>
                 <td>${esc(s.status||'-')}</td>
                 <td>${esc(formatTournamentDate(s.expiresAt))}</td>
               </tr>
