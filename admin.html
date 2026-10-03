@@ -373,6 +373,30 @@ tr.user-row-blocked{background:rgba(227,27,27,.045)}
   .choiceActions{grid-template-columns:1fr}
 }
 
+
+
+/* =========================================================
+   TOURNAMENT V2 ADMIN
+========================================================= */
+.subTitle{margin:22px 0 10px;font-size:1rem;color:#fff;border-top:1px solid rgba(255,255,255,.08);padding-top:18px}
+.tournamentQuickInfo,.tournamentEntrySummary{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.tournamentPill{display:inline-flex;align-items:center;gap:5px;background:#171717;border:1px solid #333;border-radius:999px;padding:7px 10px;font-size:.82rem;color:#eee}
+.tournamentHint{background:#111;border:1px solid #333;border-radius:10px;padding:12px;line-height:1.5;color:#bbb;min-height:44px}
+.sectionHeaderRow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.smallButton{width:auto!important;margin:0!important;padding:9px 12px!important}
+.tournamentEntriesView{display:flex;flex-direction:column;gap:12px;margin-top:12px}
+.tournamentTeamCard{background:#0f0f0f;border:1px solid #292929;border-radius:14px;padding:14px}
+.tournamentTeamHead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.tournamentTeamName{font-size:1.08rem;font-weight:800;color:#fff;margin-bottom:4px}
+.tournamentState{display:inline-flex;border-radius:999px;padding:7px 10px;font-size:.78rem;font-weight:800;white-space:nowrap;background:#292929;color:#ddd}
+.tournamentState.ok{background:rgba(38,166,91,.15);color:#7cf0a8;border:1px solid rgba(38,166,91,.35)}
+.tournamentState.warn{background:rgba(241,196,15,.12);color:#ffe375;border:1px solid rgba(241,196,15,.3)}
+.tournamentState.bad{background:rgba(231,76,60,.12);color:#ff8d81;border:1px solid rgba(231,76,60,.3)}
+.tournamentSlotTable{margin-top:8px}
+.tournamentSlotTable table{min-width:760px}
+.tournamentEmpty{background:#111;border:1px dashed #333;border-radius:12px;padding:18px;color:#888;text-align:center}
+@media(max-width:700px){.tournamentTeamHead{flex-direction:column}.tournamentState{white-space:normal}.tournamentQuickInfo,.tournamentEntrySummary{gap:6px}.tournamentPill{font-size:.75rem;padding:6px 8px}}
+
 </style>
 </head>
 
@@ -514,6 +538,8 @@ tr.user-row-blocked{background:rgba(227,27,27,.045)}
             <select id="pPaymentType" onchange="updatePriceFields()">
               <option value="points">Puan</option>
               <option value="tl">TL / BynoGame</option>
+              <option value="stream">Yayın / Kick Komutu</option>
+              <option value="free">Ücretsiz</option>
             </select>
           </div>
 
@@ -539,6 +565,16 @@ tr.user-row-blocked{background:rgba(227,27,27,.045)}
               min="0.01"
               step="0.01"
               placeholder="Örn: 200">
+          </div>
+
+          <div class="field hidden" id="streamCommandBox">
+            <label class="title">Kick Komutu</label>
+            <input
+              id="pStreamCommand"
+              type="text"
+              maxlength="120"
+              placeholder="Örn: !alkartoyunu">
+            <div class="muted" style="margin-top:6px;">Yayın tipi seçildiğinde kullanıcıya bu komut kopyalanır ve 3 saniye sonra Kick sohbetine yönlendirilir.</div>
           </div>
 
           <div class="field">
@@ -1196,35 +1232,33 @@ tr.user-row-blocked{background:rgba(227,27,27,.045)}
     </div>
 
     <!-- ===================================================== -->
-    <!-- TOURNAMENT -->
+    <!-- TOURNAMENT V2 -->
     <!-- ===================================================== -->
 
     <div id="section-tournaments" class="section">
 
       <div class="card">
 
-        <h2>🏆 Turnuva Ayarları</h2>
+        <h2>🏆 Turnuva Yönetimi</h2>
+
+        <p class="muted">
+          Turnuvanın genel ayarları ile yeni takım/kadro/ödeme sistemini buradan yönetebilirsin.
+        </p>
 
         <div class="searchBox">
           <label class="title">Turnuva Ara</label>
           <input id="tournamentSearch" type="text" autocomplete="off"
-            placeholder="Örn: 1 VS 1"
+            placeholder="Örn: 5v5, Valorant"
             oninput="filterTournamentOptions()">
         </div>
 
-        <select
-          id="tournamentSelect"
-          onchange="loadTournamentConfig()">
-
-          <option value="valorant-1v1">
-            1 VS 1 Valorant
-          </option>
-
-          <option value="valorant-2v2">
-            2 VS 2 Valorant
-          </option>
-
+        <select id="tournamentSelect" onchange="loadTournamentConfig()">
+          <option value="">Turnuvalar yükleniyor...</option>
         </select>
+
+        <div id="tournamentQuickInfo" class="tournamentQuickInfo"></div>
+
+        <h3 class="subTitle">Genel Ayarlar</h3>
 
         <label class="checkline">
           <input id="tRegistrationOpen" type="checkbox">
@@ -1232,69 +1266,90 @@ tr.user-row-blocked{background:rgba(227,27,27,.045)}
         </label>
 
         <div class="grid3">
-
           <div>
-            <label class="title">
-              Kişi başı ücret (TL)
-            </label>
-
-            <input
-              id="tFee"
-              type="number"
-              min="0"
-              step="1">
+            <label class="title">Kontenjan</label>
+            <input id="tCapacity" type="number" min="1" step="1">
           </div>
 
           <div>
-            <label class="title">
-              Kontenjan
-            </label>
-
-            <input
-              id="tCapacity"
-              type="number"
-              min="1"
-              step="1">
+            <label class="title">Turnuva Tarihi</label>
+            <input id="tEventDate" type="datetime-local">
           </div>
 
           <div>
-            <label class="title">
-              Turnuva Tarihi
-            </label>
+            <label class="title">Kişi Başı TL Ücreti</label>
+            <input id="tFee" type="number" min="0" step="1">
+          </div>
+        </div>
 
-            <input
-              id="tEventDate"
-              type="datetime-local">
+        <h3 class="subTitle">Katılım Sistemi</h3>
+
+        <div class="grid3">
+          <div>
+            <label class="title">Katılım Türü</label>
+            <select id="tEntryMode" onchange="updateTournamentEntryFields()">
+              <option value="tl">💸 TL / BynoGame</option>
+              <option value="subscription">⭐ Abonelik / Hediye Abonelik</option>
+              <option value="free">🎁 Ücretsiz</option>
+            </select>
           </div>
 
+          <div>
+            <label class="title">Kayıt Kapanış Tarihi</label>
+            <input id="tRegistrationClosesAt" type="datetime-local">
+          </div>
+
+          <div>
+            <label class="title">Oyun</label>
+            <input id="tGameName" type="text" maxlength="60" value="VALORANT" placeholder="VALORANT">
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div>
+            <label class="title">Oyuncudan İstenecek Oyun İçi Bilgi</label>
+            <input id="tGameIdLabel" type="text" maxlength="80" value="VALORANT ID" placeholder="VALORANT ID / Steam Adı / PUBG Adı">
+          </div>
+
+          <div id="tEntryModeHint" class="tournamentHint"></div>
         </div>
 
         <div class="btnRow">
-
-          <button onclick="saveTournamentConfig()">
-            Ayarları Kaydet
-          </button>
-
-          <button
-            class="secondary"
-            onclick="loadTournamentEntries()">
-            Kayıtları Göster
-          </button>
-
-          <button
-            class="warn"
-            onclick="drawTournament()">
-            🎲 Kura Çek
-          </button>
-
+          <button onclick="saveTournamentConfig()">💾 Ayarları Kaydet</button>
+          <button class="secondary" onclick="loadTournamentEntries()">👥 Kadro / Kayıtları Göster</button>
+          <button id="tSubscriptionSyncButton" class="secondary" onclick="syncTournamentSubscriptions()">⭐ Abonelikleri Kontrol Et</button>
+          <button id="tSubscriptionEventsButton" class="secondary" onclick="loadTournamentSubscriptionEvents()">📡 Sub/Gift Olayları</button>
+          <button id="tDrawButton" class="warn" onclick="drawTournament()">🎲 Kura Çek</button>
         </div>
 
         <div id="tournamentStatus" class="status"></div>
 
-        <pre
-          id="tournamentOutput"
-          style="display:none"></pre>
+      </div>
 
+      <div class="card">
+        <div class="sectionHeaderRow">
+          <div>
+            <h2>👥 Takımlar ve Kadrolar</h2>
+            <p class="muted">Kaptan, oyuncu Kick adı, oyun içi ad ve katılım/ödeme durumlarını burada görebilirsin.</p>
+          </div>
+          <button class="secondary smallButton" onclick="loadTournamentEntries()">🔄 Yenile</button>
+        </div>
+
+        <div id="tournamentEntrySummary" class="tournamentEntrySummary">Bir turnuva seç ve kayıtları yükle.</div>
+        <div id="tournamentEntriesView" class="tournamentEntriesView"></div>
+      </div>
+
+      <div class="card" id="tournamentSubscriptionCard">
+        <div class="sectionHeaderRow">
+          <div>
+            <h2>⭐ Abonelik / Gift Takibi</h2>
+            <p class="muted">Bekleyen abonelik işlemleri ve MissXss üzerinden yakalanan abonelik hediyesi olayları.</p>
+          </div>
+          <button class="secondary smallButton" onclick="loadTournamentSubscriptionEvents()">🔄 Olayları Yenile</button>
+        </div>
+
+        <div id="tournamentSubscriptionSummary" class="tournamentEntrySummary">Henüz veri yüklenmedi.</div>
+        <div id="tournamentSubscriptionEvents" class="tournamentEntriesView"></div>
       </div>
 
     </div>
@@ -1562,7 +1617,10 @@ function deliveryTypeText(type){
 function paymentTypeText(type){
   const map = {
     points:'Puan',
-    tl:'TL / BynoGame'
+    tl:'TL / BynoGame',
+    stream:'Yayın / Kick Komutu',
+    free:'Ücretsiz',
+    gift_code:'Hediye Kodu'
   };
 
   return map[type] || type || '-';
@@ -1677,7 +1735,7 @@ function openTab(name){
   }
 
   if(name === 'tournaments'){
-    loadTournamentConfig();
+    loadTournamentList();
   }
 }
 
@@ -2048,7 +2106,13 @@ function renderProducts(){
     const price =
       p.paymentType === 'points'
         ? points(p.pricePoints)
-        : tlFromCents(p.priceTlCents);
+        : p.paymentType === 'tl'
+          ? tlFromCents(p.priceTlCents)
+          : p.paymentType === 'stream'
+            ? (p.metadata?.streamCommand || 'Kick Komutu')
+            : p.paymentType === 'free'
+              ? 'Ücretsiz'
+              : '-';
 
     const stock =
       p.unlimited
@@ -2067,11 +2131,7 @@ function renderProducts(){
 
       <td>${esc(p.category)}</td>
 
-      <td>${esc(
-        p.paymentType === 'points'
-          ? 'Puan'
-          : 'TL'
-      )}</td>
+      <td>${esc(paymentTypeText(p.paymentType))}</td>
 
       <td>${esc(price)}</td>
 
@@ -2156,6 +2216,24 @@ function updatePriceFields(){
       'hidden',
       type !== 'tl'
     );
+
+  document
+    .getElementById('streamCommandBox')
+    .classList.toggle(
+      'hidden',
+      type !== 'stream'
+    );
+
+  const webPurchase = document.getElementById('pWebPurchase');
+  if(webPurchase){
+    if(type === 'stream'){
+      webPurchase.checked = false;
+      webPurchase.disabled = true;
+    }else{
+      webPurchase.disabled = false;
+      webPurchase.checked = true;
+    }
+  }
 }
 
 function updateStockField(){
@@ -2198,6 +2276,7 @@ document.getElementById(
   document.getElementById('pPaymentType').value = 'points';
   document.getElementById('pPricePoints').value = '';
   document.getElementById('pPriceTl').value = '';
+  document.getElementById('pStreamCommand').value = '';
   document.getElementById('pStock').value = '1';
   document.getElementById('pUnlimited').checked = false;
   document.getElementById('pWebPurchase').checked = true;
@@ -2253,6 +2332,9 @@ document.getElementById(
     p.priceTlCents == null
       ? ''
       : Number(p.priceTlCents) / 100;
+
+  document.getElementById('pStreamCommand').value =
+    p.metadata?.streamCommand || '';
 
   document.getElementById('pUnlimited').checked =
     !!p.unlimited;
@@ -2374,7 +2456,7 @@ async function saveProduct(){
           .value
       );
 
-  }else{
+  }else if(paymentType === 'tl'){
 
     product.priceTl =
       Number(
@@ -2382,6 +2464,22 @@ async function saveProduct(){
           .getElementById('pPriceTl')
           .value
       );
+
+  }else if(paymentType === 'stream'){
+
+    product.streamCommand =
+      document
+        .getElementById('pStreamCommand')
+        .value
+        .trim();
+
+    product.webPurchase = false;
+
+  }else if(paymentType === 'free'){
+
+    product.pricePoints = null;
+    product.priceTl = null;
+    product.webPurchase = true;
 
   }
 
@@ -3479,7 +3577,11 @@ function renderAdminOrders(){
         ? '🎁 Hediye Kodu'
         : o.paymentType === 'points'
           ? '🪙 Puan'
-          : '💳 TL / BynoGame';
+          : o.paymentType === 'tl'
+            ? '💳 TL / BynoGame'
+            : o.paymentType === 'free'
+              ? '🎁 Ücretsiz'
+              : paymentTypeText(o.paymentType);
 
     const deliveryCode =
       o.deliveryCode || '-';
@@ -4177,14 +4279,106 @@ async function completeOrder(){
 
 
 /* =========================================================
-   TOURNAMENT
+   TOURNAMENT V2
 ========================================================= */
+
+let tournamentCatalogCache = [];
+let currentTournamentAdmin = null;
+let currentTournamentRule = null;
+let currentTournamentEntries = null;
+
+function tournamentStatusText(status){
+  const map = {
+    forming:'Kadro Oluşturuluyor',
+    waiting_players:'Oyuncular Bekleniyor',
+    waiting_payment:'Katılım Şartı Bekleniyor',
+    ready:'Takım Hazır',
+    locked:'Kadro Kilitli',
+    cancelled:'İptal'
+  };
+  return map[status] || status || '-';
+}
+
+function tournamentJoinText(status){
+  const map = {
+    captain:'Kaptan',
+    planned:'Oyuncu Onayı Bekleniyor',
+    joined:'Takıma Katıldı'
+  };
+  return map[status] || status || '-';
+}
+
+function tournamentPaymentText(status, via){
+  const viaMap = {tl:'BynoGame',subscription:'Abonelik/Gift',free:'Ücretsiz'};
+  if(status === 'paid') return `✅ Tamamlandı${via ? ' · ' + (viaMap[via] || via) : ''}`;
+  if(status === 'pending') return '⏳ İşlem Bekleniyor';
+  return '❌ Tamamlanmadı';
+}
+
+function tournamentEntryModeText(mode){
+  const map = {tl:'TL / BynoGame',subscription:'Abonelik / Hediye Abonelik',free:'Ücretsiz'};
+  return map[mode] || mode || '-';
+}
+
+function formatTournamentDate(value){
+  if(!value) return '-';
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? String(value) : d.toLocaleString('tr-TR');
+}
+
+async function loadTournamentList(force=false){
+  try{
+    if(!force && tournamentCatalogCache.length){
+      renderTournamentOptions();
+      if(document.getElementById('tournamentSelect')?.value){
+        await loadTournamentConfig();
+      }
+      return;
+    }
+
+    const {r,d} = await api(`/tournaments?_=${Date.now()}`);
+    if(!r.ok || !d?.success || !Array.isArray(d.tournaments)){
+      throw new Error(d?.error || `HTTP ${r.status}`);
+    }
+
+    tournamentCatalogCache = d.tournaments;
+    renderTournamentOptions();
+
+    const select = document.getElementById('tournamentSelect');
+    if(select?.value){
+      await loadTournamentConfig();
+    }else{
+      showStatus('tournamentStatus','ℹ️ Aktif turnuva bulunamadı.',true);
+    }
+  }catch(error){
+    showStatus('tournamentStatus','❌ Turnuvalar alınamadı: ' + esc(error.message || error),false);
+  }
+}
+
+function renderTournamentOptions(){
+  const select = document.getElementById('tournamentSelect');
+  if(!select) return;
+
+  const previous = select.value;
+  const list = [...tournamentCatalogCache];
+
+  select.innerHTML = list.length
+    ? list.map(t => `<option value="${esc(t.id)}">${esc(t.name)} · ${Number(t.teamSize||1)}v${Number(t.teamSize||1)}</option>`).join('')
+    : '<option value="">Aktif turnuva bulunamadı</option>';
+
+  if(previous && list.some(t => String(t.id) === String(previous))){
+    select.value = previous;
+  }
+
+  filterTournamentOptions();
+}
 
 function filterTournamentOptions(){
   const search = String(document.getElementById('tournamentSearch')?.value || '')
     .trim().toLocaleLowerCase('tr-TR');
   const select = document.getElementById('tournamentSelect');
   if(!select) return;
+
   let firstVisible = null;
   for(const option of select.options){
     const visible = !search ||
@@ -4193,6 +4387,7 @@ function filterTournamentOptions(){
     option.hidden = !visible;
     if(visible && !firstVisible) firstVisible = option;
   }
+
   if(select.selectedOptions[0]?.hidden && firstVisible){
     select.value = firstVisible.value;
     loadTournamentConfig();
@@ -4200,291 +4395,362 @@ function filterTournamentOptions(){
 }
 
 async function loadTournamentConfig(){
-
-  const id =
-    document
-      .getElementById(
-        'tournamentSelect'
-      ).value;
+  const id = document.getElementById('tournamentSelect')?.value || '';
+  if(!id) return;
 
   try{
+    const [baseRes,v2Res] = await Promise.all([
+      api(`/admin/tournament/config?id=${encodeURIComponent(id)}&_=${Date.now()}`),
+      api(`/admin/tournament/v2/config?id=${encodeURIComponent(id)}&_=${Date.now()}`)
+    ]);
 
-    const {r,d} =
-      await api(
-        `/admin/tournament/config?id=${
-          encodeURIComponent(id)
-        }&_=${Date.now()}`
-      );
-
-    if(
-      !r.ok ||
-      !d?.success ||
-      !d?.tournament
-    ){
-      throw new Error(
-        d?.error ||
-        `HTTP ${r.status}`
-      );
+    if(!baseRes.r.ok || !baseRes.d?.success || !baseRes.d?.tournament){
+      throw new Error(baseRes.d?.error || `HTTP ${baseRes.r.status}`);
+    }
+    if(!v2Res.r.ok || !v2Res.d?.success){
+      throw new Error(v2Res.d?.error || `HTTP ${v2Res.r.status}`);
     }
 
-    const t = d.tournament;
+    const t = baseRes.d.tournament;
+    const rule = v2Res.d.rule || {};
+    currentTournamentAdmin = t;
+    currentTournamentRule = rule;
 
-    document
-      .getElementById(
-        'tRegistrationOpen'
-      ).checked =
-      !!t.registrationOpen;
+    document.getElementById('tRegistrationOpen').checked = !!t.registrationOpen;
+    document.getElementById('tFee').value = t.feePerPlayerTl ?? 0;
+    document.getElementById('tCapacity').value = t.capacity ?? 1;
+    document.getElementById('tEventDate').value = toLocalInputValue(t.eventDate);
+    document.getElementById('tEntryMode').value = rule.entryMode || (Number(t.feePerPlayerTl||0)>0 ? 'tl' : 'free');
+    document.getElementById('tRegistrationClosesAt').value = toLocalInputValue(rule.registrationClosesAt);
+    document.getElementById('tGameName').value = rule.gameName || 'VALORANT';
+    document.getElementById('tGameIdLabel').value = rule.gameIdLabel || 'VALORANT ID';
 
-    document
-      .getElementById(
-        'tFee'
-      ).value =
-      t.feePerPlayerTl ?? 0;
+    const teamMode = String(t.mode || '') !== 'solo';
+    const quick = document.getElementById('tournamentQuickInfo');
+    if(quick){
+      quick.innerHTML = `
+        <span class="tournamentPill">${esc(t.name)}</span>
+        <span class="tournamentPill">${teamMode ? `${Number(t.teamSize||0)}v${Number(t.teamSize||0)} Takımlı` : '1v1 Solo'}</span>
+        <span class="tournamentPill">Kontenjan: ${Number(t.capacity||0)}</span>
+        <span class="tournamentPill">${t.registrationOpen ? '🟢 Kayıt Açık' : '🔴 Kayıt Kapalı'}</span>
+      `;
+    }
 
-    document
-      .getElementById(
-        'tCapacity'
-      ).value =
-      t.capacity ?? 1;
+    const drawButton = document.getElementById('tDrawButton');
+    if(drawButton){
+      drawButton.disabled = teamMode;
+      drawButton.title = teamMode
+        ? 'Worker V9 takım kadrolarını tournament_v2 tablolarında tutuyor. Eski kura endpointi bu kayıtları kullanmadığı için yanlış kura oluşmaması adına bu buton takım turnuvalarında kapalıdır.'
+        : '';
+      drawButton.innerText = teamMode ? '🔒 Kura (Takımlı V2 için kapalı)' : '🎲 Kura Çek';
+    }
 
-    document
-      .getElementById(
-        'tEventDate'
-      ).value =
-      toLocalInputValue(
-        t.eventDate
-      );
+    updateTournamentEntryFields();
+    await loadTournamentEntries(true);
 
-    showStatus(
-      'tournamentStatus',
-      `✅ ${esc(t.name)} ayarları yüklendi.`,
-      true
-    );
-
+    showStatus('tournamentStatus',`✅ ${esc(t.name)} ayarları yüklendi.`,true);
   }catch(error){
+    showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
+  }
+}
 
-    showStatus(
-      'tournamentStatus',
-      '❌ ' + esc(error.message || error),
-      false
-    );
+function updateTournamentEntryFields(){
+  const mode = document.getElementById('tEntryMode')?.value || 'free';
+  const fee = document.getElementById('tFee');
+  const close = document.getElementById('tRegistrationClosesAt');
+  const hint = document.getElementById('tEntryModeHint');
+  const syncBtn = document.getElementById('tSubscriptionSyncButton');
+  const eventsBtn = document.getElementById('tSubscriptionEventsButton');
 
+  if(fee){
+    fee.disabled = mode !== 'tl';
+    if(mode !== 'tl') fee.value = 0;
+  }
+
+  if(close){
+    close.required = mode === 'subscription';
+  }
+
+  if(syncBtn) syncBtn.style.display = mode === 'subscription' ? '' : 'none';
+  if(eventsBtn) eventsBtn.style.display = mode === 'subscription' ? '' : 'none';
+
+  if(hint){
+    if(mode === 'tl'){
+      hint.innerHTML = '<b>💸 TL / BynoGame:</b> kaptan istediği oyuncu koltuklarını seçer. Toplam kişi × kişi başı ücret kadar tek kullanımlık ödeme kodu oluşturulur.';
+    }else if(mode === 'subscription'){
+      hint.innerHTML = '<b>⭐ Abonelik:</b> abone olmayan kullanıcı için önce normal abonelik, mevcut abone için gift gerekir. Gift alıcısı önemli değildir; gönderen Kick hesabı ve toplam adet kayıt kapanışına kadar birikir.';
+    }else{
+      hint.innerHTML = '<b>🎁 Ücretsiz:</b> oyuncu koltukları ödeme gerektirmeden hazır sayılır; yine oyuncular kendi doğrulanmış Kick hesaplarıyla takıma katılmalıdır.';
+    }
   }
 }
 
 async function saveTournamentConfig(){
+  const tournamentId = document.getElementById('tournamentSelect')?.value || '';
+  if(!tournamentId) return;
 
-  const tournamentId =
-    document
-      .getElementById(
-        'tournamentSelect'
-      ).value;
+  const registrationOpen = document.getElementById('tRegistrationOpen').checked;
+  const capacity = Number(document.getElementById('tCapacity').value || 0);
+  const eventDateRaw = document.getElementById('tEventDate').value;
+  const eventDate = eventDateRaw ? new Date(eventDateRaw).toISOString() : null;
 
-  const registrationOpen =
-    document
-      .getElementById(
-        'tRegistrationOpen'
-      ).checked;
+  const entryMode = document.getElementById('tEntryMode').value;
+  const feePerPlayerTl = entryMode === 'tl' ? Number(document.getElementById('tFee').value || 0) : 0;
+  const closeRaw = document.getElementById('tRegistrationClosesAt').value;
+  const registrationClosesAt = closeRaw ? new Date(closeRaw).toISOString() : null;
+  const gameName = document.getElementById('tGameName').value.trim() || 'VALORANT';
+  const gameIdLabel = document.getElementById('tGameIdLabel').value.trim() || 'VALORANT ID';
 
-  const feePerPlayerTl =
-    Number(
-      document
-        .getElementById('tFee')
-        .value || 0
-    );
-
-  const capacity =
-    Number(
-      document
-        .getElementById('tCapacity')
-        .value || 0
-    );
-
-  const eventDateRaw =
-    document
-      .getElementById('tEventDate')
-      .value;
-
-  const eventDate =
-    eventDateRaw
-      ? new Date(eventDateRaw).toISOString()
-      : null;
-
-  try{
-
-    const {r,d} =
-      await api(
-        '/admin/tournament/config',
-        {
-          method:'POST',
-
-          headers:{
-            'Content-Type':
-              'application/json'
-          },
-
-          body:
-            JSON.stringify({
-              tournamentId,
-              registrationOpen,
-              feePerPlayerTl,
-              capacity,
-              eventDate
-            })
-        }
-      );
-
-    if(
-      !r.ok ||
-      !d?.success
-    ){
-      throw new Error(
-        d?.error ||
-        `HTTP ${r.status}`
-      );
-    }
-
-    showStatus(
-      'tournamentStatus',
-      '✅ Turnuva ayarları kaydedildi.',
-      true
-    );
-
-  }catch(error){
-
-    showStatus(
-      'tournamentStatus',
-      '❌ ' + esc(error.message || error),
-      false
-    );
-
+  if(!capacity || capacity < 1){
+    showStatus('tournamentStatus','❌ Kontenjan en az 1 olmalı.',false);
+    return;
   }
-}
-
-async function loadTournamentEntries(){
-
-  const id =
-    document
-      .getElementById(
-        'tournamentSelect'
-      ).value;
-
-  try{
-
-    const {r,d} =
-      await api(
-        `/admin/tournament/entries?id=${
-          encodeURIComponent(id)
-        }&_=${Date.now()}`
-      );
-
-    if(
-      !r.ok ||
-      !d?.success
-    ){
-      throw new Error(
-        d?.error ||
-        `HTTP ${r.status}`
-      );
-    }
-
-    const values =
-      d.registrations ||
-      d.teams ||
-      [];
-
-    const output =
-      document.getElementById(
-        'tournamentOutput'
-      );
-
-    output.style.display =
-      'block';
-
-    output.textContent =
-      JSON.stringify(
-        values,
-        null,
-        2
-      );
-
-    showStatus(
-      'tournamentStatus',
-      `✅ ${values.length} kayıt/takım bulundu.`,
-      true
-    );
-
-  }catch(error){
-
-    showStatus(
-      'tournamentStatus',
-      '❌ ' + esc(error.message || error),
-      false
-    );
-
+  if(entryMode === 'tl' && !(feePerPlayerTl > 0)){
+    showStatus('tournamentStatus','❌ TL katılım türünde kişi başı ücret gerekli.',false);
+    return;
   }
-}
-
-async function drawTournament(){
-
-  const tournamentId =
-    document
-      .getElementById(
-        'tournamentSelect'
-      ).value;
-
-  if(
-    !confirm(
-      'Kura çekildiğinde kayıtlar kapatılır ve mevcut fikstür yeniden oluşturulur. Devam edilsin mi?'
-    )
-  ){
+  if(entryMode === 'subscription' && !registrationClosesAt){
+    showStatus('tournamentStatus','❌ Abonelik / gift işlemlerinin ne zamana kadar sayılacağını bilmek için kayıt kapanış tarihi zorunlu.',false);
     return;
   }
 
   try{
-
-    const {r,d} =
-      await api(
-        '/admin/tournament/draw',
-        {
-          method:'POST',
-
-          headers:{
-            'Content-Type':
-              'application/json'
-          },
-
-          body:
-            JSON.stringify({
-              tournamentId
-            })
-        }
-      );
-
-    if(
-      !r.ok ||
-      !d?.success
-    ){
-      throw new Error(
-        d?.error ||
-        `HTTP ${r.status}`
-      );
+    const base = await api('/admin/tournament/config',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({tournamentId,registrationOpen,feePerPlayerTl,capacity,eventDate})
+    });
+    if(!base.r.ok || !base.d?.success){
+      throw new Error(base.d?.error || `HTTP ${base.r.status}`);
     }
 
-    showStatus(
-      'tournamentStatus',
-      `✅ Kura çekildi. ${d.participantCount} katılımcı, ${d.rounds} tur.`,
-      true
-    );
+    const v2 = await api('/admin/tournament/v2/config',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        tournamentId,
+        entryMode,
+        feePerPlayerTl,
+        registrationClosesAt,
+        gameName,
+        gameIdLabel
+      })
+    });
+    if(!v2.r.ok || !v2.d?.success){
+      throw new Error(v2.d?.error || `HTTP ${v2.r.status}`);
+    }
 
+    currentTournamentAdmin = v2.d.tournament || base.d.tournament || currentTournamentAdmin;
+    currentTournamentRule = v2.d.rule || currentTournamentRule;
+    tournamentCatalogCache = [];
+    await loadTournamentList(true);
+    showStatus('tournamentStatus','✅ Turnuva ve katılım sistemi ayarları kaydedildi.',true);
   }catch(error){
+    showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
+  }
+}
 
-    showStatus(
-      'tournamentStatus',
-      '❌ ' + esc(error.message || error),
-      false
-    );
+async function loadTournamentEntries(silent=false){
+  const id = document.getElementById('tournamentSelect')?.value || '';
+  if(!id) return;
 
+  const teamMode = String(currentTournamentAdmin?.mode || '') !== 'solo';
+
+  try{
+    if(teamMode){
+      const {r,d} = await api(`/admin/tournament/v2/entries?id=${encodeURIComponent(id)}&_=${Date.now()}`);
+      if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+      currentTournamentEntries = d;
+      renderTournamentV2Entries(d);
+    }else{
+      const {r,d} = await api(`/admin/tournament/entries?id=${encodeURIComponent(id)}&_=${Date.now()}`);
+      if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+      currentTournamentEntries = d;
+      renderTournamentSoloEntries(d.registrations || []);
+    }
+
+    if(!silent) showStatus('tournamentStatus','✅ Turnuva kayıtları güncellendi.',true);
+  }catch(error){
+    document.getElementById('tournamentEntrySummary').innerHTML = '❌ Kayıtlar yüklenemedi.';
+    document.getElementById('tournamentEntriesView').innerHTML = `<div class="tournamentEmpty">${esc(error.message || error)}</div>`;
+    if(!silent) showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
+  }
+}
+
+function renderTournamentV2Entries(data){
+  const teams = Array.isArray(data?.teams) ? data.teams : [];
+  const subs = Array.isArray(data?.subscriptionPayments) ? data.subscriptionPayments : [];
+  const summary = document.getElementById('tournamentEntrySummary');
+  const host = document.getElementById('tournamentEntriesView');
+
+  const ready = teams.filter(x => ['ready','locked'].includes(String(x?.team?.status))).length;
+  const players = teams.reduce((sum,x)=>sum + (x.slots || []).filter(s => ['captain','joined'].includes(s.joinStatus)).length,0);
+  const paid = teams.reduce((sum,x)=>sum + (x.slots || []).filter(s => s.paymentStatus === 'paid').length,0);
+
+  summary.innerHTML = `
+    <span class="tournamentPill">Takım: ${teams.length}</span>
+    <span class="tournamentPill">Hazır: ${ready}</span>
+    <span class="tournamentPill">Katılmış Oyuncu: ${players}</span>
+    <span class="tournamentPill">Şartı Tamamlanan Slot: ${paid}</span>
+    <span class="tournamentPill">Bekleyen Sub/Gift: ${subs.filter(s=>s.status==='pending').length}</span>
+  `;
+
+  if(!teams.length){
+    host.innerHTML = '<div class="tournamentEmpty">Henüz takım oluşturulmamış.</div>';
+  }else{
+    host.innerHTML = teams.map(entry => {
+      const team = entry.team || {};
+      const slots = Array.isArray(entry.slots) ? entry.slots : [];
+      return `
+        <div class="tournamentTeamCard">
+          <div class="tournamentTeamHead">
+            <div>
+              <div class="tournamentTeamName">${esc(team.name || '-')}</div>
+              <div class="muted">👑 ${esc(team.captainUsername || '-')} · ${Number(team.joinedCount||0)}/${Number(team.teamSize||0)} oyuncu · ${Number(team.paidCount||0)}/${Number(team.teamSize||0)} şart tamamlandı</div>
+            </div>
+            <span class="tournamentState ${['ready','locked'].includes(team.status)?'ok':team.status==='cancelled'?'bad':'warn'}">${esc(tournamentStatusText(team.status))}</span>
+          </div>
+          <div class="tableWrap tournamentSlotTable">
+            <table>
+              <thead><tr><th>#</th><th>Kick Kullanıcı</th><th>Oyun İçi Ad</th><th>Takım Durumu</th><th>Katılım Şartı</th></tr></thead>
+              <tbody>
+                ${slots.map(s => `
+                  <tr>
+                    <td>${Number(s.slotNo||0)===1?'👑 ':''}${Number(s.slotNo||0)}</td>
+                    <td><b>${esc(s.plannedUsername || '-')}</b>${s.joinedUsername && s.joinedUsername!==s.plannedUsername ? `<div class="muted">Katılan: ${esc(s.joinedUsername)}</div>` : ''}</td>
+                    <td>${esc(s.gameId || '-')}</td>
+                    <td>${esc(tournamentJoinText(s.joinStatus))}</td>
+                    <td>${esc(tournamentPaymentText(s.paymentStatus,s.paidVia))}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  renderTournamentSubscriptionPayments(subs);
+}
+
+function renderTournamentSoloEntries(rows){
+  const summary = document.getElementById('tournamentEntrySummary');
+  const host = document.getElementById('tournamentEntriesView');
+  summary.innerHTML = `<span class="tournamentPill">Solo Kayıt: ${rows.length}</span>`;
+  if(!rows.length){
+    host.innerHTML = '<div class="tournamentEmpty">Henüz solo kayıt bulunmuyor.</div>';
+    return;
+  }
+  host.innerHTML = `
+    <div class="tableWrap"><table>
+      <thead><tr><th>Kick Kullanıcı</th><th>Oyun İçi Ad</th><th>Durum</th><th>Kayıt Tarihi</th></tr></thead>
+      <tbody>${rows.map(r=>`<tr><td><b>${esc(r.username||'-')}</b></td><td>${esc(r.riot_id||'-')}</td><td>${esc(r.status||'-')}</td><td>${esc(formatTournamentDate(r.created_at))}</td></tr>`).join('')}</tbody>
+    </table></div>
+  `;
+}
+
+function renderTournamentSubscriptionPayments(subs){
+  const box = document.getElementById('tournamentSubscriptionSummary');
+  if(!box) return;
+  const pending = subs.filter(s=>s.status==='pending').length;
+  const paid = subs.filter(s=>s.status==='paid').length;
+  const expired = subs.filter(s=>s.status==='expired').length;
+  box.innerHTML = `
+    <span class="tournamentPill">Bekleyen: ${pending}</span>
+    <span class="tournamentPill">Tamamlanan: ${paid}</span>
+    <span class="tournamentPill">Süresi Dolan: ${expired}</span>
+  `;
+
+  const host = document.getElementById('tournamentSubscriptionEvents');
+  if(host && subs.length){
+    host.innerHTML = `
+      <div class="tableWrap"><table>
+        <thead><tr><th>Gönderen</th><th>Normal Abone</th><th>Gift</th><th>Durum</th><th>Son Tarih</th></tr></thead>
+        <tbody>${subs.map(s=>`
+          <tr>
+            <td><b>${esc(s.payerUsername||'-')}</b></td>
+            <td>${Number(s.receivedDirectSubs||0)} / ${Number(s.requiredDirectSubs||0)}</td>
+            <td>${Number(s.receivedGifts||0)} / ${Number(s.requiredGifts||0)}</td>
+            <td>${esc(s.status||'-')}</td>
+            <td>${esc(formatTournamentDate(s.expiresAt))}</td>
+          </tr>
+        `).join('')}</tbody>
+      </table></div>
+    `;
+  }
+}
+
+async function syncTournamentSubscriptions(){
+  try{
+    showStatus('tournamentStatus','⏳ MissXss abonelik / gift olayları kontrol ediliyor...',true);
+    const {r,d} = await api('/admin/tournament/v2/subscriptions/sync',{method:'POST'});
+    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+    showStatus('tournamentStatus',`✅ Abonelik senkronizasyonu tamamlandı. Yeni olay: ${Number(d?.sync?.inserted||0)} · Dağıtılan hak: ${Number(d?.allocation?.allocated||0)}`,true);
+    await loadTournamentEntries(true);
+    await loadTournamentSubscriptionEvents(true);
+  }catch(error){
+    showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
+  }
+}
+
+async function loadTournamentSubscriptionEvents(silent=false){
+  try{
+    const {r,d} = await api(`/admin/tournament/v2/subscription-events?_=${Date.now()}`);
+    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+    const events = Array.isArray(d.events) ? d.events : [];
+    const host = document.getElementById('tournamentSubscriptionEvents');
+    const summary = document.getElementById('tournamentSubscriptionSummary');
+
+    if(summary){
+      summary.innerHTML = `<span class="tournamentPill">Son Olaylar: ${events.length}</span><span class="tournamentPill">Dağıtılmamış Hak: ${events.reduce((sum,e)=>sum+Math.max(0,Number(e.quantity||0)-Number(e.allocated_quantity||0)),0)}</span>`;
+    }
+
+    if(host){
+      host.innerHTML = events.length ? `
+        <div class="tableWrap"><table>
+          <thead><tr><th>Tarih</th><th>Gönderen</th><th>Tür</th><th>Adet</th><th>Dağıtılan</th><th>Kalan</th></tr></thead>
+          <tbody>${events.map(e=>`
+            <tr>
+              <td>${esc(formatTournamentDate(e.event_time||e.created_at))}</td>
+              <td><b>${esc(e.sender_username||'-')}</b></td>
+              <td>${esc(e.event_kind==='gift'?'🎁 Gift':'⭐ Abonelik')}</td>
+              <td>${Number(e.quantity||0)}</td>
+              <td>${Number(e.allocated_quantity||0)}</td>
+              <td>${Math.max(0,Number(e.quantity||0)-Number(e.allocated_quantity||0))}</td>
+            </tr>
+          `).join('')}</tbody>
+        </table></div>
+      ` : '<div class="tournamentEmpty">Henüz yakalanmış abonelik / gift olayı yok.</div>';
+    }
+
+    if(!silent) showStatus('tournamentStatus','✅ Abonelik / gift olayları yenilendi.',true);
+  }catch(error){
+    if(!silent) showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
+  }
+}
+
+async function drawTournament(){
+  const tournamentId = document.getElementById('tournamentSelect')?.value || '';
+  if(!tournamentId) return;
+
+  if(String(currentTournamentAdmin?.mode || '') !== 'solo'){
+    showStatus('tournamentStatus','⚠️ Bu Worker V9 sürümünde takım kadroları yeni tournament_v2 tablolarında tutuluyor; mevcut kura endpointi eski takım tablosunu kullandığı için takım turnuvasında kura butonunu bilerek kapattım.',false);
+    return;
+  }
+
+  if(!confirm('Kura çekildiğinde kayıtlar kapatılır ve mevcut fikstür yeniden oluşturulur. Devam edilsin mi?')) return;
+
+  try{
+    const {r,d} = await api('/admin/tournament/draw',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({tournamentId})
+    });
+    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+    showStatus('tournamentStatus',`✅ Kura çekildi. ${d.participantCount} katılımcı, ${d.rounds} tur.`,true);
+  }catch(error){
+    showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
   }
 }
 
