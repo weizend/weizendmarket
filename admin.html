@@ -323,6 +323,18 @@ tr.user-row-blocked{background:rgba(227,27,27,.045)}
 .iconRestore{width:36px!important;height:34px;padding:0!important;display:inline-flex;align-items:center;justify-content:center;background:#102616!important;border:1px solid #285b37!important;color:#8ff0aa!important}
 .iconRestore:hover{background:#1d6b36!important;color:#fff!important}
 
+.messageCenterToolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:14px}
+.messageCenterToolbar .field{margin:0;flex:1;min-width:220px}
+.messageCenterComposer{margin:14px 0 18px;padding:16px;border:1px solid #343434;border-radius:14px;background:#0b0b0b}
+.messagePreview{max-width:420px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#ddd}
+.messageDirectionBadge{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;font-size:.76rem;font-weight:800}
+.messageDirectionBadge.incoming{background:#3b1717;color:#ff9e9e}
+.messageDirectionBadge.outgoing{background:#12301d;color:#91efae}
+.messageDirectionBadge.system{background:#27203f;color:#cbb8ff}
+.messageReadState{font-size:.78rem;color:var(--muted)}
+.messageReadState.new{color:#ff7777;font-weight:800}
+.messageCenterLoadMore{margin-top:12px}
+
 @media(max-width:760px){
   .userSummaryGrid{grid-template-columns:1fr}
   body{padding:8px}
@@ -986,10 +998,10 @@ tr.user-row-blocked{background:rgba(227,27,27,.045)}
           <table>
             <thead><tr>
               <th>Kick Adı</th><th>Takma Ad</th><th>Puan</th><th>Level</th>
-              <th>İlk Doğrulama</th><th>Son Görülme</th><th>Durum</th><th>Mesaj</th><th>İşlem</th>
+              <th>İlk Doğrulama</th><th>Son Görülme</th><th>Durum</th><th>İşlem</th>
             </tr></thead>
             <tbody id="usersBody">
-              <tr><td colspan="9" class="muted">Kullanıcılar henüz yüklenmedi.</td></tr>
+              <tr><td colspan="8" class="muted">Kullanıcılar henüz yüklenmedi.</td></tr>
             </tbody>
           </table>
         </div>
@@ -1026,64 +1038,12 @@ tr.user-row-blocked{background:rgba(227,27,27,.045)}
         <div id="userRestrictionActions" class="userRestrictionActions"></div>
 
         <div class="card" style="margin-top:18px;margin-bottom:0;">
-          <h3>✉️ Özel Mesaj Gönder</h3>
-          <div class="field">
-            <label class="title">Başlık</label>
-            <input id="adminMessageSubject" maxlength="160" placeholder="Mesaj başlığı">
-          </div>
-          <div class="field">
-            <label class="title">Mesaj</label>
-            <textarea id="adminMessageBody" maxlength="5000" placeholder="Kullanıcıya göndereceğin mesaj"></textarea>
-          </div>
-          <label class="checkline">
-            <input id="adminMessageAllowReply" type="checkbox">
-            <span>Kullanıcı bu konuşmaya yanıt verebilsin</span>
-          </label>
-          <button onclick="sendAdminMessage()">✉️ Mesaj Gönder</button>
-          <div id="adminMessageStatus" class="status"></div>
-        </div>
-
-        <div class="card" style="margin-top:18px;margin-bottom:0;">
           <h3>📝 Admin Notu</h3>
           <textarea id="userAdminNote" maxlength="2000" placeholder="Bu notu yalnızca admin görür"></textarea>
           <button class="secondary" onclick="addUserNote()">Not Ekle</button>
           <div id="userNotesList" style="margin-top:12px;"></div>
         </div>
 
-        <div class="card" style="margin-top:18px;margin-bottom:0;">
-          <h3>💬 Mesaj Konuşmaları</h3>
-          <div class="tableWrap">
-            <table>
-              <thead><tr>
-                <th>Başlık</th><th>Tür</th><th>Yanıt</th><th>Durum</th><th>Son İşlem</th><th>İşlem</th>
-              </tr></thead>
-              <tbody id="userThreadsBody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div id="adminThreadCard" class="card hidden" style="margin-top:18px;margin-bottom:0;">
-          <div class="threadHeader">
-            <div>
-              <h3 id="adminThreadTitle" style="margin-bottom:5px;">💬 Konuşma</h3>
-              <div id="adminThreadMeta" class="muted"></div>
-            </div>
-            <div class="threadHeaderActions">
-              <button class="secondary smallBtn" onclick="refreshAdminThread()">🔄 Yenile</button>
-              <button class="danger smallBtn" onclick="deleteCurrentAdminThread()">🗑️ Konuşmayı Sil</button>
-            </div>
-          </div>
-          <div id="adminThreadMessages" class="messageList"></div>
-          <div class="field">
-            <label class="title">Yanıt Yaz</label>
-            <textarea id="adminThreadReply" maxlength="5000" placeholder="Yönetici yanıtı"></textarea>
-          </div>
-          <div class="btnRow">
-            <button onclick="sendAdminThreadReply()">Yanıt Gönder</button>
-            <button id="threadReplyToggleButton" class="secondary" onclick="toggleAdminThreadReply()">Yanıt Durumunu Değiştir</button>
-          </div>
-          <div id="adminThreadStatus" class="status"></div>
-        </div>
       </div>
     </div>
 
@@ -1095,33 +1055,122 @@ tr.user-row-blocked{background:rgba(227,27,27,.045)}
       <div class="card">
         <div class="topbar">
           <div>
-            <h2>💬 Gelen Mesajlar</h2>
-            <div id="adminMessagesSummary" class="muted">Mesajlar kontrol ediliyor...</div>
+            <h2>💬 Mesaj Merkezi</h2>
+            <div id="adminMessagesSummary" class="muted">Tüm gelen ve giden mesajlar burada listelenir.</div>
           </div>
-          <button class="secondary smallBtn" style="width:auto;min-width:0" onclick="loadAdminMessageCenter(false)">🔄 Yenile</button>
+          <div class="btnRow" style="width:auto;justify-content:flex-end;">
+            <button class="smallBtn" style="width:auto;min-width:0" onclick="toggleAdminMessageComposer()">✉️ Mesaj Gönder</button>
+            <button class="secondary smallBtn" style="width:auto;min-width:0" onclick="loadAdminMessageCenter(false,false)">🔄 Yenile</button>
+          </div>
+        </div>
+
+        <div id="adminMessageComposer" class="messageCenterComposer hidden">
+          <h3 style="margin-bottom:14px;">✉️ Yeni Mesaj Gönder</h3>
+
+          <div class="field">
+            <label class="title">Kullanıcı</label>
+            <select id="adminMessageRecipient">
+              <option value="">Kullanıcılar yükleniyor...</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label class="title">Başlık</label>
+            <input id="adminMessageSubject" maxlength="160" placeholder="Mesaj başlığı">
+          </div>
+
+          <div class="field">
+            <label class="title">Mesaj</label>
+            <textarea id="adminMessageBody" maxlength="5000" placeholder="Kullanıcıya göndereceğin mesaj"></textarea>
+          </div>
+
+          <label class="checkline">
+            <input id="adminMessageAllowReply" type="checkbox">
+            <span>Kullanıcı bu konuşmaya yanıt verebilsin</span>
+          </label>
+
+          <div class="btnRow">
+            <button id="adminMessageSendButton" onclick="sendAdminMessageFromCenter()">✉️ Mesajı Gönder</button>
+            <button class="secondary" onclick="toggleAdminMessageComposer(false)">İptal</button>
+          </div>
+
+          <div id="adminMessageComposeStatus" class="status"></div>
+        </div>
+
+        <div class="messageCenterToolbar">
+          <div class="field">
+            <label class="title">Mesaj Ara</label>
+            <input id="adminMessageSearch" type="text" autocomplete="off"
+              placeholder="Kullanıcı, başlık veya mesaj..."
+              oninput="renderAdminMessageCenter()">
+          </div>
+
+          <div class="field" style="max-width:260px;">
+            <label class="title">Tür</label>
+            <select id="adminMessageDirectionFilter" onchange="renderAdminMessageCenter()">
+              <option value="">Tümü</option>
+              <option value="user">📥 Gelen</option>
+              <option value="admin">📤 Giden</option>
+              <option value="system">⚙️ Sistem</option>
+            </select>
+          </div>
         </div>
 
         <div style="padding:12px 14px;border:1px solid #2b2b2b;border-radius:12px;background:#121212;margin-bottom:14px;">
-          Kullanıcılardan gelen okunmamış mesajlar burada görünür. Kırmızı sayı toplam okunmamış mesaj sayısını gösterir.
+          Okunmuş mesajlar kaybolmaz. En yeni mesaj en üstte görünür. Gelen, giden ve sistem mesajlarının tamamını buradan yönetebilirsin.
         </div>
 
         <div class="tableWrap">
           <table>
             <thead>
               <tr>
-                <th>Kick Adı</th>
-                <th>Takma Ad</th>
-                <th>Durum</th>
-                <th>Yeni Mesaj</th>
+                <th>Tarih</th>
+                <th>Kullanıcı</th>
+                <th>Tür</th>
+                <th>Başlık</th>
+                <th>Mesaj</th>
+                <th>Okunma</th>
                 <th>İşlem</th>
               </tr>
             </thead>
             <tbody id="adminMessagesBody">
-              <tr><td colspan="5" class="muted">Yeni mesajlar kontrol ediliyor...</td></tr>
+              <tr><td colspan="7" class="muted">Mesajlar yükleniyor...</td></tr>
             </tbody>
           </table>
         </div>
+
+        <div id="adminMessagesLoadMore" class="messageCenterLoadMore hidden">
+          <button class="secondary" onclick="loadAdminMessageCenter(false,true)">Daha Fazla Mesaj Yükle</button>
+        </div>
+
         <div id="adminMessagesStatus" class="status"></div>
+      </div>
+
+      <div id="adminThreadCard" class="card hidden">
+        <div class="threadHeader">
+          <div>
+            <h3 id="adminThreadTitle" style="margin-bottom:5px;">💬 Konuşma</h3>
+            <div id="adminThreadMeta" class="muted"></div>
+          </div>
+          <div class="threadHeaderActions">
+            <button class="secondary smallBtn" onclick="refreshAdminThread()">🔄 Yenile</button>
+            <button class="danger smallBtn" onclick="deleteCurrentAdminThread()">🗑️ Konuşmayı Sil</button>
+          </div>
+        </div>
+
+        <div id="adminThreadMessages" class="messageList"></div>
+
+        <div class="field">
+          <label class="title">Yanıt Yaz</label>
+          <textarea id="adminThreadReply" maxlength="5000" placeholder="Yönetici yanıtı"></textarea>
+        </div>
+
+        <div class="btnRow">
+          <button onclick="sendAdminThreadReply()">Yanıt Gönder</button>
+          <button id="threadReplyToggleButton" class="secondary" onclick="toggleAdminThreadReply()">Yanıt Durumunu Değiştir</button>
+        </div>
+
+        <div id="adminThreadStatus" class="status"></div>
       </div>
     </div>
 
@@ -1601,6 +1650,11 @@ let adminChoiceContext = null;
 let adminMessagesPollTimer = null;
 let adminMessagesLastTotal = 0;
 let adminMessagesPollInFlight = false;
+let adminMessagesCache = [];
+let adminMessageRecipientsCache = [];
+let adminMessagesTotalCount = 0;
+let adminMessagesHasMore = false;
+const ADMIN_MESSAGES_PAGE_SIZE = 100;
 
   
 function openAdminChoiceModal(config){
@@ -3215,17 +3269,100 @@ function setAdminMessagesBadge(total){
   }
 }
 
-async function fetchAdminUsersForMessages(){
-  const {r,d} = await api('/admin/users?status=');
+async function loadAdminMessageRecipients(force = false){
+  if(!force && adminMessageRecipientsCache.length > 0){
+    renderAdminMessageRecipients();
+    return;
+  }
+
+  const {r,d} = await api('/admin/messages/recipients');
+
   if(!r.ok || !d?.success){
     throw new Error(d?.error || `HTTP ${r.status}`);
   }
-  return Array.isArray(d.users) ? d.users : [];
+
+  adminMessageRecipientsCache =
+    Array.isArray(d.users) ? d.users : [];
+
+  renderAdminMessageRecipients();
 }
 
-// Sayfa yenileme modu: admin paneli sekmeye geri dönünce veya 30 saniyede bir
-// otomatik mesaj sorgusu yapmaz. Girişte bir kez sayaç alınır; Mesajlar sekmesi ve
-// Yenile butonları kullanıcı istediğinde güncel veriyi getirir.
+function renderAdminMessageRecipients(){
+  const select = document.getElementById('adminMessageRecipient');
+  if(!select) return;
+
+  const current = select.value;
+
+  select.innerHTML =
+    '<option value="">Kullanıcı seç...</option>' +
+    adminMessageRecipientsCache.map(u => {
+      const nick = u.nickname ? ` · ${u.nickname}` : '';
+      const state = u.status === 'blocked' ? ' · Kısıtlı' : '';
+
+      return `<option value="${esc(u.kick_uid)}">${esc(u.username || '-')}${esc(nick)}${esc(state)}</option>`;
+    }).join('');
+
+  if(
+    current &&
+    adminMessageRecipientsCache.some(u => u.kick_uid === current)
+  ){
+    select.value = current;
+  }
+}
+
+async function toggleAdminMessageComposer(forceOpen){
+  const box = document.getElementById('adminMessageComposer');
+  if(!box) return;
+
+  const shouldOpen =
+    typeof forceOpen === 'boolean'
+      ? forceOpen
+      : box.classList.contains('hidden');
+
+  if(!shouldOpen){
+    box.classList.add('hidden');
+    return;
+  }
+
+  box.classList.remove('hidden');
+
+  try{
+    await loadAdminMessageRecipients(false);
+  }catch(error){
+    showStatus(
+      'adminMessageComposeStatus',
+      '❌ Kullanıcılar alınamadı: ' + esc(error.message || error),
+      false
+    );
+  }
+
+  document.getElementById('adminMessageRecipient')?.focus();
+}
+
+function messageDirectionText(senderType){
+  if(senderType === 'user') return '📥 Gelen';
+  if(senderType === 'admin') return '📤 Giden';
+  return '⚙️ Sistem';
+}
+
+function messageDirectionClass(senderType){
+  if(senderType === 'user') return 'incoming';
+  if(senderType === 'admin') return 'outgoing';
+  return 'system';
+}
+
+function adminMessageReadState(message){
+  if(message.sender_type === 'user'){
+    return message.admin_read_at
+      ? {text:'Okundu', cls:''}
+      : {text:'Yeni', cls:'new'};
+  }
+
+  return message.user_read_at
+    ? {text:'Kullanıcı okudu', cls:''}
+    : {text:'Kullanıcı okumadı', cls:'new'};
+}
+
 function startAdminMessagesPolling(){
   if(adminMessagesPollTimer){
     clearInterval(adminMessagesPollTimer);
@@ -3241,16 +3378,12 @@ async function refreshAdminMessagesBadge(){
 
   try{
     const {r,d} = await api(`/admin/messages/unread-count?_=${Date.now()}`);
+
     if(!r.ok || !d?.success){
       throw new Error(d?.error || `HTTP ${r.status}`);
     }
 
     setAdminMessagesBadge(Number(d.unreadCount || 0));
-
-    const section = document.getElementById('section-messages');
-    if(section?.classList.contains('active')){
-      await loadAdminMessageCenter(true);
-    }
   }catch(error){
     console.warn('ADMIN MESSAGE BADGE ERROR:', error);
   }finally{
@@ -3258,78 +3391,280 @@ async function refreshAdminMessagesBadge(){
   }
 }
 
-async function loadAdminMessageCenter(silent = false){
+async function loadAdminMessageCenter(silent = false, append = false){
   const body = document.getElementById('adminMessagesBody');
   const summary = document.getElementById('adminMessagesSummary');
 
-  if(!silent && body){
-    body.innerHTML = '<tr><td colspan="5" class="muted">⏳ Mesajlar kontrol ediliyor...</td></tr>';
+  if(!append && !silent && body){
+    body.innerHTML =
+      '<tr><td colspan="7" class="muted">⏳ Mesajlar yükleniyor...</td></tr>';
   }
 
   try{
-    const users = await fetchAdminUsersForMessages();
-    renderAdminMessageCenter(users, silent);
-  }catch(error){
-    if(summary) summary.textContent = 'Mesajlar alınamadı';
-    if(body && !silent){
-      body.innerHTML = `<tr><td colspan="5" class="muted">❌ ${esc(error.message || error)}</td></tr>`;
+    const offset = append ? adminMessagesCache.length : 0;
+
+    const params = new URLSearchParams({
+      limit:String(ADMIN_MESSAGES_PAGE_SIZE),
+      offset:String(offset),
+      _:String(Date.now())
+    });
+
+    const {r,d} =
+      await api(`/admin/messages/all?${params.toString()}`);
+
+    if(!r.ok || !d?.success){
+      throw new Error(d?.error || `HTTP ${r.status}`);
     }
-    showStatus('adminMessagesStatus','❌ ' + esc(error.message || error),false);
+
+    const rows =
+      Array.isArray(d.messages) ? d.messages : [];
+
+    if(append){
+      const known =
+        new Set(adminMessagesCache.map(m => m.id));
+
+      for(const row of rows){
+        if(!known.has(row.id)){
+          adminMessagesCache.push(row);
+          known.add(row.id);
+        }
+      }
+    }else{
+      adminMessagesCache = rows;
+    }
+
+    adminMessagesTotalCount =
+      Number(d.totalCount || 0);
+
+    adminMessagesHasMore =
+      Boolean(d.hasMore);
+
+    setAdminMessagesBadge(
+      Number(d.unreadCount || 0)
+    );
+
+    if(summary){
+      summary.textContent =
+        `${adminMessagesTotalCount} mesaj · ${Number(d.unreadCount || 0)} okunmamış`;
+    }
+
+    renderAdminMessageCenter();
+    hideStatus('adminMessagesStatus');
+  }catch(error){
+    if(summary){
+      summary.textContent = 'Mesajlar alınamadı';
+    }
+
+    if(body && !silent){
+      body.innerHTML =
+        `<tr><td colspan="7" class="muted">❌ ${esc(error.message || error)}</td></tr>`;
+    }
+
+    showStatus(
+      'adminMessagesStatus',
+      '❌ ' + esc(error.message || error),
+      false
+    );
   }
 }
 
-function renderAdminMessageCenter(users, silent = false){
+function renderAdminMessageCenter(){
   const body = document.getElementById('adminMessagesBody');
-  const summary = document.getElementById('adminMessagesSummary');
-  if(!body || !summary) return;
+  const more = document.getElementById('adminMessagesLoadMore');
 
-  const unreadUsers = (users || [])
-    .map(u => ({...u, unread:Number(u.unread_admin_messages || 0)}))
-    .filter(u => u.unread > 0)
-    .sort((a,b) => {
-      if(b.unread !== a.unread) return b.unread - a.unread;
-      return String(b.last_activity_at || b.updated_at || '').localeCompare(String(a.last_activity_at || a.updated_at || ''));
-    });
+  if(!body) return;
 
-  const total = unreadUsers.reduce((sum,u) => sum + u.unread, 0);
-  setAdminMessagesBadge(total);
-  summary.textContent = total > 0
-    ? `${unreadUsers.length} kullanıcıdan ${total} okunmamış mesaj`
-    : 'Yeni okunmamış mesaj yok';
+  const q =
+    String(
+      document.getElementById('adminMessageSearch')?.value || ''
+    )
+    .trim()
+    .toLocaleLowerCase('tr-TR');
+
+  const direction =
+    String(
+      document.getElementById('adminMessageDirectionFilter')?.value || ''
+    );
+
+  let rows = adminMessagesCache.slice();
+
+  if(direction){
+    rows =
+      rows.filter(m => m.sender_type === direction);
+  }
+
+  if(q){
+    rows =
+      rows.filter(m => {
+        const haystack = [
+          m.username,
+          m.nickname,
+          m.subject,
+          m.body,
+          m.sender_name
+        ]
+        .map(
+          v =>
+            String(v || '')
+              .toLocaleLowerCase('tr-TR')
+        )
+        .join(' ');
+
+        return haystack.includes(q);
+      });
+  }
 
   body.innerHTML = '';
 
-  if(unreadUsers.length === 0){
-    body.innerHTML = '<tr><td colspan="5" class="muted">📭 Şu anda okunmamış kullanıcı mesajı yok.</td></tr>';
-    return;
+  if(rows.length === 0){
+    body.innerHTML =
+      '<tr><td colspan="7" class="muted">📭 Bu filtreye uygun mesaj bulunamadı.</td></tr>';
+  }else{
+    for(const m of rows){
+      const read = adminMessageReadState(m);
+      const tr = document.createElement('tr');
+
+      tr.innerHTML = `
+        <td>${esc(dateText(m.created_at))}</td>
+
+        <td>
+          <strong>${esc(m.username || m.sender_name || '-')}</strong>
+          ${m.nickname ? `<div class="muted">${esc(m.nickname)}</div>` : ''}
+        </td>
+
+        <td>
+          <span class="messageDirectionBadge ${messageDirectionClass(m.sender_type)}">
+            ${esc(messageDirectionText(m.sender_type))}
+          </span>
+        </td>
+
+        <td>${esc(m.subject || '-')}</td>
+
+        <td>
+          <div class="messagePreview" title="${esc(m.body || '')}">
+            ${esc(m.body || '-')}
+          </div>
+        </td>
+
+        <td>
+          <span class="messageReadState ${read.cls}">
+            ${esc(read.text)}
+          </span>
+        </td>
+
+        <td>
+          <button
+            class="smallBtn secondary"
+            onclick="openAdminThread('${encodeURIComponent(m.thread_id)}')">
+            💬 Konuşmayı Aç
+          </button>
+        </td>
+      `;
+
+      body.appendChild(tr);
+    }
   }
 
-  for(const u of unreadUsers){
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><strong>${esc(u.username || '-')}</strong></td>
-      <td>${esc(u.nickname || '-')}</td>
-      <td><span class="badge ${userStatusBadge(u.status)}">${esc(userStatusText(u.status))}</span></td>
-      <td><span class="badge bad">${u.unread} yeni</span></td>
-      <td><button class="smallBtn" onclick="openUnreadUserMessages('${encodeURIComponent(u.kick_uid)}')">💬 Mesajı Aç</button></td>
-    `;
-    body.appendChild(tr);
+  if(more){
+    more.classList.toggle(
+      'hidden',
+      !adminMessagesHasMore
+    );
   }
 }
 
-async function openUnreadUserMessages(encodedUid){
-  const uid = decodeURIComponent(encodedUid || '');
-  if(!uid) return;
+async function sendAdminMessageFromCenter(){
+  const uid =
+    String(
+      document.getElementById('adminMessageRecipient')?.value || ''
+    )
+    .trim();
 
-  openTab('users');
-  await openUser(encodeURIComponent(uid));
+  const subject =
+    String(
+      document.getElementById('adminMessageSubject')?.value || ''
+    )
+    .trim();
 
-  const firstThread = currentAdminUser?.threads?.[0];
-  if(firstThread?.id){
-    await openAdminThread(encodeURIComponent(firstThread.id));
+  const message =
+    String(
+      document.getElementById('adminMessageBody')?.value || ''
+    )
+    .trim();
+
+  const allowReply =
+    document.getElementById('adminMessageAllowReply')?.checked === true;
+
+  if(!uid || !subject || !message){
+    return showStatus(
+      'adminMessageComposeStatus',
+      '⚠️ Kullanıcı, başlık ve mesaj gerekli.',
+      false
+    );
   }
 
-  refreshAdminMessagesBadge().catch(() => {});
+  const button =
+    document.getElementById('adminMessageSendButton');
+
+  if(button){
+    button.disabled = true;
+    button.textContent = '⏳ Gönderiliyor...';
+  }
+
+  try{
+    const {r,d} =
+      await api(
+        '/admin/message/send',
+        {
+          method:'POST',
+          headers:{
+            'Content-Type':'application/json'
+          },
+          body:JSON.stringify({
+            kickUid:uid,
+            subject,
+            message,
+            allowReply
+          })
+        }
+      );
+
+    if(!r.ok || !d?.success){
+      throw new Error(
+        d?.error ||
+        `HTTP ${r.status}`
+      );
+    }
+
+    document.getElementById('adminMessageSubject').value = '';
+    document.getElementById('adminMessageBody').value = '';
+    document.getElementById('adminMessageAllowReply').checked = false;
+
+    showStatus(
+      'adminMessageComposeStatus',
+      '✅ Mesaj kullanıcıya gönderildi.',
+      true
+    );
+
+    await loadAdminMessageCenter(true,false);
+
+    if(d.threadId){
+      await openAdminThread(
+        encodeURIComponent(d.threadId)
+      );
+    }
+  }catch(error){
+    showStatus(
+      'adminMessageComposeStatus',
+      '❌ ' + esc(error.message || error),
+      false
+    );
+  }finally{
+    if(button){
+      button.disabled = false;
+      button.textContent = '✉️ Mesajı Gönder';
+    }
+  }
 }
 
 /* =========================================================
@@ -3371,11 +3706,10 @@ function renderUsers(){
   document.getElementById('userCount').innerText = `${usersCache.length} kullanıcı`;
   body.innerHTML = '';
   if(usersCache.length === 0){
-    body.innerHTML = `<tr><td colspan="9" class="muted">Kullanıcı bulunamadı.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="8" class="muted">Kullanıcı bulunamadı.</td></tr>`;
     return;
   }
   for(const u of usersCache){
-    const unread = Number(u.unread_admin_messages || 0);
     const tr = document.createElement('tr');
     if(u.status === 'blocked') tr.classList.add('user-row-blocked');
     tr.innerHTML = `
@@ -3386,7 +3720,6 @@ function renderUsers(){
       <td>${esc(dateText(u.first_verified_at))}</td>
       <td>${esc(dateText(u.last_seen_at || u.last_activity_at))}</td>
       <td><span class="badge ${userStatusBadge(u.status)}" ${u.blocked_reason ? `title="${esc(u.blocked_reason)}"` : ''}>${esc(userStatusText(u.status))}</span></td>
-      <td>${unread > 0 ? `<span class="badge bad">${unread} yeni</span>` : '<span class="muted">-</span>'}</td>
       <td><button class="smallBtn secondary" onclick="openUser('${encodeURIComponent(u.kick_uid)}')">⚙️ İşlem Yap</button></td>
     `;
     body.appendChild(tr);
@@ -3398,7 +3731,6 @@ async function openUser(encodedUid){
     const {r,d} = await api(`/admin/user?uid=${encodeURIComponent(uid)}`);
     if(!r.ok || !d?.success || !d?.user) throw new Error(d?.error || `HTTP ${r.status}`);
     currentAdminUser = d.user;
-    currentAdminUser.threads = Array.isArray(d.threads) ? d.threads : [];
     currentAdminUser.notes = Array.isArray(d.notes) ? d.notes : [];
     currentAdminThread = null;
     renderUserDetail();
@@ -3441,8 +3773,6 @@ function renderUserDetail(){
   reasonInput.value = u.blocked_reason || '';
   reasonInput.disabled = restricted;
   renderUserNotes();
-  renderUserThreads();
-  document.getElementById('adminThreadCard').classList.add('hidden');
   document.getElementById('userDetailCard').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function closeUserDetail(){
@@ -3541,105 +3871,200 @@ function renderUserNotes(){
     <div class="row"><span>${esc(dateText(n.created_at))}</span><strong>${esc(n.note)}</strong></div>
   `).join('');
 }
-async function sendAdminMessage(){
-  if(!currentAdminUser) return;
-  const subject = document.getElementById('adminMessageSubject').value.trim();
-  const message = document.getElementById('adminMessageBody').value.trim();
-  const allowReply = document.getElementById('adminMessageAllowReply').checked;
-  if(!subject || !message) return showStatus('adminMessageStatus','⚠️ Başlık ve mesaj gerekli.',false);
+async function openAdminThread(encodedId){
+  const id = decodeURIComponent(encodedId || '');
+  if(!id) return;
+
   try{
-    const {r,d} = await api('/admin/message/send',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({kickUid:currentAdminUser.kick_uid,subject,message,allowReply})
-    });
-    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
-    const newThreadId = d.threadId;
-    document.getElementById('adminMessageSubject').value = '';
-    document.getElementById('adminMessageBody').value = '';
-    document.getElementById('adminMessageAllowReply').checked = false;
-    showStatus('adminMessageStatus','✅ Mesaj kullanıcıya gönderildi. Konuşma açık tutuluyor.',true);
-    await refreshCurrentUser();
-    if(newThreadId) await openAdminThread(encodeURIComponent(newThreadId));
-  }catch(error){ showStatus('adminMessageStatus','❌ ' + esc(error.message || error),false); }
-}
-function renderUserThreads(){
-  const body = document.getElementById('userThreadsBody');
-  const threads = currentAdminUser?.threads || [];
-  body.innerHTML = '';
-  if(threads.length === 0){ body.innerHTML = `<tr><td colspan="6" class="muted">Mesaj konuşması yok.</td></tr>`; return; }
-  for(const t of threads){
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${esc(t.subject || '-')}</td>
-      <td>${esc(t.thread_type === 'admin' ? 'Özel Mesaj' : 'Sistem')}</td>
-      <td>${Number(t.allow_reply) === 1 ? 'Açık' : 'Kapalı'}</td>
-      <td>${esc(t.status || '-')}</td>
-      <td>${esc(dateText(t.updated_at || t.created_at))}</td>
-      <td>
-        <div class="inlineActions">
-          <button class="smallBtn secondary" onclick="openAdminThread('${encodeURIComponent(t.id)}')">Aç</button>
-          <button class="smallBtn iconDanger" title="Konuşmayı sil" onclick="deleteAdminThread('${encodeURIComponent(t.id)}')">🗑</button>
-        </div>
-      </td>
-    `;
-    body.appendChild(tr);
+    const {r,d} =
+      await api(
+        `/admin/message/thread?id=${encodeURIComponent(id)}`
+      );
+
+    if(!r.ok || !d?.success || !d?.thread){
+      throw new Error(
+        d?.error ||
+        `HTTP ${r.status}`
+      );
+    }
+
+    currentAdminThread = {
+      ...d.thread,
+      messages:
+        Array.isArray(d.messages)
+          ? d.messages
+          : []
+    };
+
+    const now =
+      new Date().toISOString();
+
+    for(const message of adminMessagesCache){
+      if(
+        message.thread_id === id &&
+        message.sender_type === 'user' &&
+        !message.admin_read_at
+      ){
+        message.admin_read_at = now;
+      }
+    }
+
+    renderAdminMessageCenter();
+    renderAdminThread();
+
+    refreshAdminMessagesBadge()
+      .catch(() => {});
+  }catch(error){
+    showStatus(
+      'adminMessagesStatus',
+      '❌ ' + esc(error.message || error),
+      false
+    );
   }
 }
-async function openAdminThread(encodedId){
-  const id = decodeURIComponent(encodedId);
-  try{
-    const {r,d} = await api(`/admin/message/thread?id=${encodeURIComponent(id)}`);
-    if(!r.ok || !d?.success || !d?.thread) throw new Error(d?.error || `HTTP ${r.status}`);
-    currentAdminThread = {...d.thread,messages:Array.isArray(d.messages) ? d.messages : []};
-    renderAdminThread();
-    refreshAdminMessagesBadge().catch(() => {});
-  }catch(error){ showStatus('usersStatus','❌ ' + esc(error.message || error),false); }
-}
+
 function renderAdminThread(){
   if(!currentAdminThread) return;
+
   const t = currentAdminThread;
-  document.getElementById('adminThreadCard').classList.remove('hidden');
-  document.getElementById('adminThreadTitle').innerText = `💬 ${t.subject || 'Konuşma'}`;
-  document.getElementById('adminThreadMeta').innerText =
-    `${t.username || currentAdminUser?.username || '-'} · Yanıt ${Number(t.allow_reply) === 1 ? 'Açık' : 'Kapalı'}`;
-  document.getElementById('adminThreadMessages').innerHTML =
-    (t.messages || []).map(m => `
-      <div class="messageBubble ${esc(m.sender_type || 'system')}">
-        <button class="messageDeleteBtn" title="Bu mesajı admin görünümünden sil" onclick="deleteAdminMessage('${encodeURIComponent(m.id)}')">🗑</button>
-        <strong>${esc(m.sender_name || '-')}</strong>
-        <div>${esc(m.body || '')}</div>
-        <div class="messageMeta">${esc(dateText(m.created_at))}</div>
-      </div>
-    `).join('');
-  const btn = document.getElementById('threadReplyToggleButton');
+
+  const card =
+    document.getElementById('adminThreadCard');
+
+  if(!card) return;
+
+  card.classList.remove('hidden');
+
+  document
+    .getElementById('adminThreadTitle')
+    .innerText =
+      `💬 ${t.subject || 'Konuşma'}`;
+
+  document
+    .getElementById('adminThreadMeta')
+    .innerText =
+      `${t.username || '-'} · Yanıt ${Number(t.allow_reply) === 1 ? 'Açık' : 'Kapalı'}`;
+
+  document
+    .getElementById('adminThreadMessages')
+    .innerHTML =
+      (t.messages || []).map(m => `
+        <div class="messageBubble ${esc(m.sender_type || 'system')}">
+          <button
+            class="messageDeleteBtn"
+            title="Bu mesajı sil"
+            onclick="deleteAdminMessage('${encodeURIComponent(m.id)}')">
+            🗑
+          </button>
+
+          <strong>${esc(m.sender_name || '-')}</strong>
+
+          <div>${esc(m.body || '')}</div>
+
+          <div class="messageMeta">
+            ${esc(dateText(m.created_at))}
+            · ${esc(
+              m.sender_type === 'user'
+                ? (m.admin_read_at ? 'Admin okudu' : 'Yeni')
+                : (m.user_read_at ? 'Kullanıcı okudu' : 'Kullanıcı okumadı')
+            )}
+          </div>
+        </div>
+      `).join('');
+
+  const btn =
+    document.getElementById('threadReplyToggleButton');
+
   if(t.thread_type !== 'admin'){
-    btn.disabled = true; btn.innerText = 'Sistem mesajında yanıt kapalı';
+    btn.disabled = true;
+    btn.innerText =
+      'Sistem mesajında yanıt kapalı';
   }else{
     btn.disabled = false;
-    btn.innerText = Number(t.allow_reply) === 1 ? '🔒 Kullanıcı Yanıtını Kapat' : '💬 Kullanıcı Yanıtını Aç';
+    btn.innerText =
+      Number(t.allow_reply) === 1
+        ? '🔒 Kullanıcı Yanıtını Kapat'
+        : '💬 Kullanıcı Yanıtını Aç';
   }
-  document.getElementById('adminThreadCard').scrollIntoView({behavior:'smooth',block:'start'});
+
+  card.scrollIntoView({
+    behavior:'smooth',
+    block:'start'
+  });
 }
+
 async function sendAdminThreadReply(){
   if(!currentAdminThread) return;
-  const threadId = currentAdminThread.id;
-  const message = document.getElementById('adminThreadReply').value.trim();
+
+  const threadId =
+    currentAdminThread.id;
+
+  const message =
+    String(
+      document.getElementById('adminThreadReply')?.value || ''
+    )
+    .trim();
+
   if(!message) return;
+
   try{
-    const {r,d} = await api('/admin/message/reply',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({threadId,message})
-    });
-    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
-    document.getElementById('adminThreadReply').value = '';
-    await refreshCurrentUser();
-    await openAdminThread(encodeURIComponent(threadId));
-    showStatus('adminThreadStatus','✅ Mesaj gönderildi.',true);
-  }catch(error){ showStatus('adminThreadStatus','❌ ' + esc(error.message || error),false); }
+    const {r,d} =
+      await api(
+        '/admin/message/reply',
+        {
+          method:'POST',
+          headers:{
+            'Content-Type':'application/json'
+          },
+          body:JSON.stringify({
+            threadId,
+            message
+          })
+        }
+      );
+
+    if(!r.ok || !d?.success){
+      throw new Error(
+        d?.error ||
+        `HTTP ${r.status}`
+      );
+    }
+
+    document
+      .getElementById('adminThreadReply')
+      .value = '';
+
+    await loadAdminMessageCenter(
+      true,
+      false
+    );
+
+    await openAdminThread(
+      encodeURIComponent(threadId)
+    );
+
+    showStatus(
+      'adminThreadStatus',
+      '✅ Mesaj gönderildi.',
+      true
+    );
+  }catch(error){
+    showStatus(
+      'adminThreadStatus',
+      '❌ ' + esc(error.message || error),
+      false
+    );
+  }
 }
+
 async function refreshAdminThread(){
   if(!currentAdminThread?.id) return;
-  await openAdminThread(encodeURIComponent(currentAdminThread.id));
+
+  await openAdminThread(
+    encodeURIComponent(
+      currentAdminThread.id
+    )
+  );
 }
 
 function deleteAdminMessage(encodedId){
@@ -3705,10 +4130,10 @@ async function performDeleteAdminMessage(
       }
     }
 
-    await refreshCurrentUser();
+    await loadAdminMessageCenter(true,false);
 
     showStatus(
-      'usersStatus',
+      'adminMessagesStatus',
       scope === 'everyone'
         ? '✅ Mesaj herkesten silindi.'
         : '✅ Mesaj yalnızca admin görünümünden silindi.',
@@ -3725,18 +4150,67 @@ async function performDeleteAdminMessage(
 }
 
 async function deleteAdminThread(encodedId){
-  const threadId = decodeURIComponent(encodedId);
-  if(!confirm('Bu konuşma admin mesaj listesinden silinsin mi? Kullanıcının mesaj kutusu etkilenmez.')) return;
+  const threadId =
+    decodeURIComponent(encodedId || '');
+
+  if(!threadId) return;
+
+  if(
+    !confirm(
+      'Bu konuşma admin mesaj listesinden silinsin mi? Kullanıcının mesaj kutusu etkilenmez.'
+    )
+  ){
+    return;
+  }
+
   try{
-    const {r,d} = await api('/admin/message/delete',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({threadId})
-    });
-    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+    const {r,d} =
+      await api(
+        '/admin/message/delete',
+        {
+          method:'POST',
+          headers:{
+            'Content-Type':'application/json'
+          },
+          body:JSON.stringify({
+            threadId
+          })
+        }
+      );
+
+    if(!r.ok || !d?.success){
+      throw new Error(
+        d?.error ||
+        `HTTP ${r.status}`
+      );
+    }
+
     currentAdminThread = null;
-    document.getElementById('adminThreadCard').classList.add('hidden');
-    await refreshCurrentUser();
-  }catch(error){ showStatus('usersStatus','❌ ' + esc(error.message || error),false); }
+
+    document
+      .getElementById('adminThreadCard')
+      ?.classList
+      .add('hidden');
+
+    await loadAdminMessageCenter(
+      true,
+      false
+    );
+
+    await refreshAdminMessagesBadge();
+
+    showStatus(
+      'adminMessagesStatus',
+      '✅ Konuşma admin mesaj listesinden kaldırıldı.',
+      true
+    );
+  }catch(error){
+    showStatus(
+      'adminMessagesStatus',
+      '❌ ' + esc(error.message || error),
+      false
+    );
+  }
 }
 
 async function deleteCurrentAdminThread(){
@@ -3755,7 +4229,7 @@ async function toggleAdminThreadReply(){
     if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
     currentAdminThread.allow_reply = d.allowReply ? 1 : 0;
     renderAdminThread();
-    await loadUsers();
+    await loadAdminMessageCenter(true,false);
   }catch(error){ showStatus('adminThreadStatus','❌ ' + esc(error.message || error),false); }
 }
 
