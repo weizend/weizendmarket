@@ -400,6 +400,46 @@
             .inbox-inline-support-send{width:100%;min-height:42px;}
         }
 
+        /* MESAJ KUTUSU KAYDIRMA - başlık ve yazma alanı sabit, mesajlar kendi içinde kayar */
+        .inbox-modal-content {
+            overflow:hidden;
+        }
+        .inbox-shell {
+            flex:1 1 auto;
+            min-height:0;
+            overflow:hidden;
+        }
+        .inbox-thread-view {
+            flex:1 1 auto;
+            min-height:0;
+            overflow:hidden;
+        }
+        .inbox-thread-header,
+        .inbox-reply-box {
+            flex:0 0 auto;
+        }
+        .inbox-messages {
+            flex:1 1 auto;
+            min-height:0;
+            height:0;
+            max-height:none;
+            overflow-y:auto !important;
+            overflow-x:hidden !important;
+            overscroll-behavior:contain;
+            -webkit-overflow-scrolling:touch;
+            scrollbar-gutter:stable;
+            scrollbar-width:thin;
+            scrollbar-color:#555 #0b0b0b;
+        }
+        .inbox-messages::-webkit-scrollbar { width:10px; }
+        .inbox-messages::-webkit-scrollbar-track { background:#0b0b0b; }
+        .inbox-messages::-webkit-scrollbar-thumb {
+            background:#444;
+            border-radius:999px;
+            border:2px solid #0b0b0b;
+        }
+        .inbox-messages::-webkit-scrollbar-thumb:hover { background:#666; }
+
         .inbox-reply-box { border-top:1px solid #292929; padding:14px 18px; background:#0c0c0c; }
         .inbox-reply-row { display:flex; gap:10px; align-items:flex-end; }
         .inbox-reply-input { flex:1; min-height:44px; max-height:130px; resize:vertical; background:#050505; color:#fff; border:1px solid #333; border-radius:10px; padding:11px 12px; font:inherit; outline:none; }
@@ -2597,6 +2637,8 @@
                         button.textContent = 'TALEP AÇ';
                         button.title = 'Tek seferlik talep hakkı kullanıldı';
                     });
+                document.querySelectorAll('.inbox-inline-support-composer.open')
+                    .forEach(composer => composer.classList.remove('open'));
 
                 if (input) input.value = '';
                 closeInlineSupportComposer(messageId);
@@ -2637,6 +2679,9 @@
                 const threadId = String(item.thread_id || item.threadId || '');
                 const supportAnchor = Number(item.support_anchor ?? item.supportAnchor ?? 0) === 1;
                 const supportUsed = Number(item.support_used ?? item.supportUsed ?? 0) === 1;
+                // Backend support_anchor=1 değerini aynı işlemdeki HER bilgi mesajına verir.
+                // Böylece bir satın alma için birden fazla bilgi mesajı varsa hepsinin altında
+                // TALEP AÇ görünür. Hak kullanıldığında hepsi disabled olur.
                 const showSupport = senderType !== 'user' && supportAnchor && !!threadId && !!messageId;
 
                 const bubble = document.createElement('div');
