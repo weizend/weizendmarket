@@ -309,8 +309,9 @@ tr.user-row-blocked{background:rgba(227,27,27,.045)}
 .messageBubble.user{align-self:flex-end;border-color:#5a1d1d;background:#1a0909}
 .messageBubble.admin,.messageBubble.system{align-self:flex-start}
 .messageMeta{color:var(--muted);font-size:.75rem;margin-top:6px}
-.messageDeleteBtn{position:absolute;right:8px;top:8px;width:28px;height:28px;padding:0;border-radius:8px;background:#211010;border:1px solid #5a2424;color:#ff9d9d;font-size:.78rem;display:flex;align-items:center;justify-content:center}
-.messageDeleteBtn:hover{background:#6f1d1d;color:#fff}
+.messageDeleteBtn{position:absolute;right:10px;top:10px;width:32px!important;height:32px!important;min-width:32px!important;padding:0!important;border-radius:9px;background:#241010!important;border:1px solid #6d2929!important;color:#ff8f8f!important;display:inline-flex!important;align-items:center;justify-content:center;line-height:1;box-shadow:none}
+.messageDeleteBtn svg{width:16px;height:16px;display:block;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+.messageDeleteBtn:hover{background:#7a1d1d!important;color:#fff!important;border-color:#a93434!important}
 .inlineActions{display:flex;gap:6px;flex-wrap:wrap}
 .inlineActions button{width:auto}
 .threadHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
@@ -334,6 +335,20 @@ tr.user-row-blocked{background:rgba(227,27,27,.045)}
 .messageReadState{font-size:.78rem;color:var(--muted)}
 .messageReadState.new{color:#ff7777;font-weight:800}
 .messageCenterLoadMore{margin-top:12px}
+.messageRowUnread td{background:rgba(227,27,27,.045)}
+.messageRowUnread td:first-child{box-shadow:inset 3px 0 0 var(--red)}
+.messageThreadModal{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.82);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:18px}
+.messageThreadModal.hidden{display:none!important}
+.messageThreadModalPanel{width:min(860px,100%);max-height:min(90vh,900px);display:flex;flex-direction:column;background:linear-gradient(145deg,#121212,#080808);border:1px solid #3a3a3a;border-radius:18px;box-shadow:0 28px 90px rgba(0,0,0,.8);padding:18px;overflow:hidden}
+.messageThreadModalPanel .threadHeader{flex:0 0 auto;padding-bottom:12px;border-bottom:1px solid #292929}
+.messageThreadModalPanel .messageList{flex:1 1 auto;max-height:none;min-height:180px;overflow:auto;margin:12px 0;padding:8px 4px 8px 2px}
+.messageThreadModalPanel .field{flex:0 0 auto}
+.messageThreadModalPanel .btnRow{flex:0 0 auto}
+.messageThreadCloseBtn{width:38px!important;height:38px!important;min-width:38px!important;padding:0!important;border-radius:10px!important;background:#202020!important;border:1px solid #3b3b3b!important;color:#fff!important;font-size:1.35rem!important;line-height:1!important}
+.messageThreadCloseBtn:hover{background:#353535!important}
+body.messageModalOpen{overflow:hidden}
+.messageCenterDanger{background:#4e1515!important;border:1px solid #7c2929!important;color:#ffd6d6!important}
+.messageCenterDanger:hover{background:#7b1f1f!important;color:#fff!important}
 
 @media(max-width:760px){
   .userSummaryGrid{grid-template-columns:1fr}
@@ -1061,6 +1076,7 @@ tr.user-row-blocked{background:rgba(227,27,27,.045)}
           <div class="btnRow" style="width:auto;justify-content:flex-end;">
             <button class="smallBtn" style="width:auto;min-width:0" onclick="toggleAdminMessageComposer()">✉️ Mesaj Gönder</button>
             <button class="secondary smallBtn" style="width:auto;min-width:0" onclick="loadAdminMessageCenter(false,false)">🔄 Yenile</button>
+            <button class="smallBtn messageCenterDanger" style="width:auto;min-width:0" onclick="deleteAllAdminMessages()">Tüm Mesajları Sil</button>
           </div>
         </div>
 
@@ -1146,31 +1162,34 @@ tr.user-row-blocked{background:rgba(227,27,27,.045)}
         <div id="adminMessagesStatus" class="status"></div>
       </div>
 
-      <div id="adminThreadCard" class="card hidden">
-        <div class="threadHeader">
-          <div>
-            <h3 id="adminThreadTitle" style="margin-bottom:5px;">💬 Konuşma</h3>
-            <div id="adminThreadMeta" class="muted"></div>
+      <div id="adminThreadCard" class="messageThreadModal hidden" onclick="if(event.target===this) closeAdminThreadModal()">
+        <div class="messageThreadModalPanel" role="dialog" aria-modal="true" aria-labelledby="adminThreadTitle">
+          <div class="threadHeader">
+            <div>
+              <h3 id="adminThreadTitle" style="margin-bottom:5px;">💬 Konuşma</h3>
+              <div id="adminThreadMeta" class="muted"></div>
+            </div>
+            <div class="threadHeaderActions">
+              <button class="secondary smallBtn" onclick="refreshAdminThread()">🔄 Yenile</button>
+              <button class="danger smallBtn" onclick="deleteCurrentAdminThread()">Konuşmayı Sil</button>
+              <button class="messageThreadCloseBtn" onclick="closeAdminThreadModal()" title="Kapat" aria-label="Kapat">×</button>
+            </div>
           </div>
-          <div class="threadHeaderActions">
-            <button class="secondary smallBtn" onclick="refreshAdminThread()">🔄 Yenile</button>
-            <button class="danger smallBtn" onclick="deleteCurrentAdminThread()">🗑️ Konuşmayı Sil</button>
+
+          <div id="adminThreadMessages" class="messageList"></div>
+
+          <div class="field">
+            <label class="title">Yanıt Yaz</label>
+            <textarea id="adminThreadReply" maxlength="5000" placeholder="Yönetici yanıtı"></textarea>
           </div>
+
+          <div class="btnRow">
+            <button onclick="sendAdminThreadReply()">Yanıt Gönder</button>
+            <button id="threadReplyToggleButton" class="secondary" onclick="toggleAdminThreadReply()">Yanıt Durumunu Değiştir</button>
+          </div>
+
+          <div id="adminThreadStatus" class="status"></div>
         </div>
-
-        <div id="adminThreadMessages" class="messageList"></div>
-
-        <div class="field">
-          <label class="title">Yanıt Yaz</label>
-          <textarea id="adminThreadReply" maxlength="5000" placeholder="Yönetici yanıtı"></textarea>
-        </div>
-
-        <div class="btnRow">
-          <button onclick="sendAdminThreadReply()">Yanıt Gönder</button>
-          <button id="threadReplyToggleButton" class="secondary" onclick="toggleAdminThreadReply()">Yanıt Durumunu Değiştir</button>
-        </div>
-
-        <div id="adminThreadStatus" class="status"></div>
       </div>
     </div>
 
@@ -1655,6 +1674,15 @@ let adminMessageRecipientsCache = [];
 let adminMessagesTotalCount = 0;
 let adminMessagesHasMore = false;
 const ADMIN_MESSAGES_PAGE_SIZE = 100;
+
+document.addEventListener('keydown', event => {
+  if(event.key === 'Escape'){
+    const modal = document.getElementById('adminThreadCard');
+    if(modal && !modal.classList.contains('hidden')){
+      closeAdminThreadModal();
+    }
+  }
+});
 
   
 function openAdminChoiceModal(config){
@@ -3524,6 +3552,10 @@ function renderAdminMessageCenter(){
       const read = adminMessageReadState(m);
       const tr = document.createElement('tr');
 
+      if(m.sender_type === 'user' && !m.admin_read_at){
+        tr.classList.add('messageRowUnread');
+      }
+
       tr.innerHTML = `
         <td>${esc(dateText(m.created_at))}</td>
 
@@ -3953,8 +3985,15 @@ function renderAdminThread(){
           <button
             class="messageDeleteBtn"
             title="Bu mesajı sil"
+            aria-label="Bu mesajı sil"
             onclick="deleteAdminMessage('${encodeURIComponent(m.id)}')">
-            🗑
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 6h18"></path>
+              <path d="M8 6V4h8v2"></path>
+              <path d="M19 6l-1 14H6L5 6"></path>
+              <path d="M10 11v5"></path>
+              <path d="M14 11v5"></path>
+            </svg>
           </button>
 
           <strong>${esc(m.sender_name || '-')}</strong>
@@ -3987,10 +4026,18 @@ function renderAdminThread(){
         : '💬 Kullanıcı Yanıtını Aç';
   }
 
-  card.scrollIntoView({
-    behavior:'smooth',
-    block:'start'
-  });
+  document.body.classList.add('messageModalOpen');
+}
+
+function closeAdminThreadModal(){
+  document
+    .getElementById('adminThreadCard')
+    ?.classList
+    .add('hidden');
+
+  document.body.classList.remove('messageModalOpen');
+  currentAdminThread = null;
+  hideStatus('adminThreadStatus');
 }
 
 async function sendAdminThreadReply(){
@@ -4067,6 +4114,59 @@ async function refreshAdminThread(){
   );
 }
 
+async function deleteAllAdminMessages(){
+  if(adminMessagesTotalCount <= 0 && adminMessagesCache.length === 0){
+    return showStatus(
+      'adminMessagesStatus',
+      'ℹ️ Silinecek mesaj bulunmuyor.',
+      true
+    );
+  }
+
+  const ok = confirm(
+    'Admin panelindeki TÜM mesajlar silinsin mi?\n\n' +
+    'Bu işlem yalnızca senin admin görünümünden kaldırır. ' +
+    'Kullanıcıların Mesaj Kutusu ve onlara gönderilmiş mesajlar silinmez.'
+  );
+
+  if(!ok) return;
+
+  try{
+    const {r,d} = await api(
+      '/admin/messages/delete-all',
+      {method:'POST'}
+    );
+
+    if(!r.ok || !d?.success){
+      throw new Error(d?.error || `HTTP ${r.status}`);
+    }
+
+    adminMessagesCache = [];
+    adminMessagesTotalCount = 0;
+    adminMessagesHasMore = false;
+    setAdminMessagesBadge(0);
+    closeAdminThreadModal();
+    renderAdminMessageCenter();
+
+    const summary = document.getElementById('adminMessagesSummary');
+    if(summary){
+      summary.textContent = '0 mesaj · 0 okunmamış';
+    }
+
+    showStatus(
+      'adminMessagesStatus',
+      `✅ ${Number(d.deletedCount || 0)} mesaj yalnızca admin panelinden silindi. Kullanıcıların mesaj kutuları etkilenmedi.`,
+      true
+    );
+  }catch(error){
+    showStatus(
+      'adminMessagesStatus',
+      '❌ ' + esc(error.message || error),
+      false
+    );
+  }
+}
+
 function deleteAdminMessage(encodedId){
   if(!currentAdminThread) return;
 
@@ -4122,11 +4222,7 @@ async function performDeleteAdminMessage(
           encodeURIComponent(threadId)
         );
       }catch(_){
-        currentAdminThread = null;
-        document
-          .getElementById('adminThreadCard')
-          ?.classList
-          .add('hidden');
+        closeAdminThreadModal();
       }
     }
 
@@ -4185,12 +4281,7 @@ async function deleteAdminThread(encodedId){
       );
     }
 
-    currentAdminThread = null;
-
-    document
-      .getElementById('adminThreadCard')
-      ?.classList
-      .add('hidden');
+    closeAdminThreadModal();
 
     await loadAdminMessageCenter(
       true,
