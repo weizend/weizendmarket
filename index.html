@@ -4571,7 +4571,7 @@
             const comingSoon = rule.comingSoon === true || t.comingSoon === true;
             const dateText =
                 comingSoon
-                    ? 'YAKINDA'
+                    ? 'ÇOK YAKINDA'
                     : t.eventDate
                         ? tv2Date(t.eventDate)
                         : 'Daha sonra duyurulacak';
@@ -4616,7 +4616,7 @@
 
                         <div class="tv2-meta-box">
                             ${comingSoon
-                                ? `<span class="tv2-meta-value">YAKINDA</span>`
+                                ? `<span class="tv2-meta-value">ÇOK YAKINDA</span>`
                                 : `<span class="tv2-meta-label">Turnuva Tarihi</span><span class="tv2-meta-value">${tv2Esc(dateText)}</span>`}
                         </div>
 
@@ -4802,7 +4802,7 @@
                             : `${Number(t?.teamSize)}v${Number(t?.teamSize)} Takımlı`}<br>
                         Katılım: <b>${tv2Esc(tv2EntryLabel(rule,t))}</b><br>
                         ${comingSoon
-                            ? '<b>YAKINDA</b>'
+                            ? '<b>ÇOK YAKINDA</b>'
                             : `Tarih: <b>${tv2Esc(t?.eventDate ? tv2Date(t.eventDate) : 'Daha sonra duyurulacak')}</b>`}
                     </div>
                 </div>
@@ -5037,7 +5037,7 @@
                         ${Number(t.teamSize || 0)}v${Number(t.teamSize || 0)} · ${tv2Esc(rule.gameName || 'Oyun')}<br>
                         Katılım: <b>${tv2Esc(tv2EntryLabel(rule,t))}</b><br>
                         ${comingSoon
-                            ? '<b>YAKINDA</b>'
+                            ? '<b>ÇOK YAKINDA</b>'
                             : `Turnuva tarihi: <b>${tv2Esc(t.eventDate ? tv2Date(t.eventDate) : 'Daha sonra duyurulacak')}</b>`}
                     </div>
                 </div>
