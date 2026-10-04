@@ -4701,21 +4701,34 @@ function updateCreateTournamentEntryFields(){
 function updateCreateTournamentDateField(){
   const comingSoon = document.getElementById('tcComingSoon')?.checked === true;
   const dateInput = document.getElementById('tcEventDate');
-  if(!dateInput) return;
+  const closeInput = document.getElementById('tcRegistrationClosesAt');
 
-  dateInput.disabled = comingSoon;
-  if(comingSoon) dateInput.value = '';
+  if(dateInput){
+    dateInput.disabled = comingSoon;
+    if(comingSoon) dateInput.value = '';
+  }
+
+  if(closeInput){
+    closeInput.disabled = comingSoon;
+    if(comingSoon) closeInput.value = '';
+  }
 }
 
 function updateTournamentDateField(){
   const comingSoon = document.getElementById('tComingSoon')?.checked === true;
   const dateInput = document.getElementById('tEventDate');
-  if(!dateInput) return;
+  const closeInput = document.getElementById('tRegistrationClosesAt');
 
-  dateInput.disabled = comingSoon;
-  if(comingSoon) dateInput.value = '';
+  if(dateInput){
+    dateInput.disabled = comingSoon;
+    if(comingSoon) dateInput.value = '';
+  }
+
+  if(closeInput){
+    closeInput.disabled = comingSoon;
+    if(comingSoon) closeInput.value = '';
+  }
 }
-
 
 async function createTournament(){
   const button = document.getElementById('createTournamentButton');
@@ -4729,7 +4742,9 @@ async function createTournament(){
     : 0;
   const comingSoon = document.getElementById('tcComingSoon')?.checked === true;
   const eventDate = comingSoon ? null : tournamentDateToIso('tcEventDate');
-  const registrationClosesAt = tournamentDateToIso('tcRegistrationClosesAt');
+  const registrationClosesAt = comingSoon
+  ? null
+  : tournamentDateToIso('tcRegistrationClosesAt');
   const gameName = document.getElementById('tcGameName')?.value.trim() || 'VALORANT';
   const gameIdLabel = document.getElementById('tcGameIdLabel')?.value.trim() || 'VALORANT ID';
   const active = document.getElementById('tcActive')?.checked !== false;
@@ -4747,10 +4762,11 @@ async function createTournament(){
     showStatus('createTournamentStatus','❌ TL katılım türünde kişi başı ücret gerekli.',false);
     return;
   }
-  if(entryMode === 'subscription' && !registrationClosesAt){
-    showStatus('createTournamentStatus','❌ Abonelik / Gift turnuvasında kayıt kapanış tarihi zorunlu.',false);
-    return;
-  }
+  
+  if(!comingSoon && entryMode === 'subscription' && !registrationClosesAt){
+  showStatus('createTournamentStatus','❌ Abonelik / Gift turnuvasında kayıt kapanış tarihi zorunlu.',false);
+  return;
+}
 
   const id = createProductId(name);
 
@@ -5080,7 +5096,9 @@ async function saveTournamentConfig(){
   const feePerPlayerTl = entryMode === 'tl'
     ? Number(document.getElementById('tFee')?.value || 0)
     : 0;
-  const registrationClosesAt = tournamentDateToIso('tRegistrationClosesAt');
+  const registrationClosesAt = comingSoon
+  ? null
+  : tournamentDateToIso('tRegistrationClosesAt');
   const gameName = document.getElementById('tGameName')?.value.trim() || 'VALORANT';
   const gameIdLabel = document.getElementById('tGameIdLabel')?.value.trim() || 'VALORANT ID';
 
@@ -5096,10 +5114,11 @@ async function saveTournamentConfig(){
     showStatus('tournamentStatus','❌ TL katılım türünde kişi başı ücret gerekli.',false);
     return;
   }
-  if(entryMode === 'subscription' && !registrationClosesAt){
-    showStatus('tournamentStatus','❌ Abonelik / Gift turnuvasında kayıt kapanış tarihi zorunlu.',false);
-    return;
-  }
+  
+  if(!comingSoon && entryMode === 'subscription' && !registrationClosesAt){
+  showStatus('tournamentStatus','❌ Abonelik / Gift turnuvasında kayıt kapanış tarihi zorunlu.',false);
+  return;
+}
 
   try{
     if(button){
