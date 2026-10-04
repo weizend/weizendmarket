@@ -324,31 +324,86 @@ tr.user-row-blocked{background:rgba(227,27,27,.045)}
 .iconRestore{width:36px!important;height:34px;padding:0!important;display:inline-flex;align-items:center;justify-content:center;background:#102616!important;border:1px solid #285b37!important;color:#8ff0aa!important}
 .iconRestore:hover{background:#1d6b36!important;color:#fff!important}
 
-.messageCenterToolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:14px}
-.messageCenterToolbar .field{margin:0;flex:1;min-width:220px}
-.messageCenterComposer{margin:14px 0 18px;padding:16px;border:1px solid #343434;border-radius:14px;background:#0b0b0b}
-.messagePreview{max-width:420px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#ddd}
-.messageDirectionBadge{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;font-size:.76rem;font-weight:800}
-.messageDirectionBadge.incoming{background:#3b1717;color:#ff9e9e}
-.messageDirectionBadge.outgoing{background:#12301d;color:#91efae}
-.messageDirectionBadge.system{background:#27203f;color:#cbb8ff}
-.messageReadState{font-size:.78rem;color:var(--muted)}
-.messageReadState.new{color:#ff7777;font-weight:800}
-.messageCenterLoadMore{margin-top:12px}
-.messageRowUnread td{background:rgba(227,27,27,.045)}
-.messageRowUnread td:first-child{box-shadow:inset 3px 0 0 var(--red)}
-.messageThreadModal{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.82);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:18px}
-.messageThreadModal.hidden{display:none!important}
-.messageThreadModalPanel{width:min(860px,100%);max-height:min(90vh,900px);display:flex;flex-direction:column;background:linear-gradient(145deg,#121212,#080808);border:1px solid #3a3a3a;border-radius:18px;box-shadow:0 28px 90px rgba(0,0,0,.8);padding:18px;overflow:hidden}
-.messageThreadModalPanel .threadHeader{flex:0 0 auto;padding-bottom:12px;border-bottom:1px solid #292929}
-.messageThreadModalPanel .messageList{flex:1 1 auto;max-height:none;min-height:180px;overflow:auto;margin:12px 0;padding:8px 4px 8px 2px}
-.messageThreadModalPanel .field{flex:0 0 auto}
-.messageThreadModalPanel .btnRow{flex:0 0 auto}
-.messageThreadCloseBtn{width:38px!important;height:38px!important;min-width:38px!important;padding:0!important;border-radius:10px!important;background:#202020!important;border:1px solid #3b3b3b!important;color:#fff!important;font-size:1.35rem!important;line-height:1!important}
-.messageThreadCloseBtn:hover{background:#353535!important}
-body.messageModalOpen{overflow:hidden}
-.messageCenterDanger{background:#4e1515!important;border:1px solid #7c2929!important;color:#ffd6d6!important}
-.messageCenterDanger:hover{background:#7b1f1f!important;color:#fff!important}
+.dmTopActions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.dmTopActions button{width:auto;min-width:0}
+.dmShell{display:grid;grid-template-columns:minmax(280px,340px) minmax(0,1fr);height:min(74vh,760px);min-height:540px;border:1px solid #2b2b2b;border-radius:18px;overflow:hidden;background:#090909}
+.dmSidebar{display:flex;flex-direction:column;min-width:0;border-right:1px solid #2b2b2b;background:#0c0c0c}
+.dmSidebarHead{padding:14px;border-bottom:1px solid #242424;background:#101010}
+.dmSidebarSearch{position:relative}
+.dmSidebarSearch input{padding-left:38px;background:#080808}
+.dmSidebarSearchIcon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#777;pointer-events:none}
+.dmConversationList{flex:1;overflow:auto;padding:6px}
+.dmConversationItem{width:100%!important;display:grid!important;grid-template-columns:46px minmax(0,1fr) auto;gap:10px;align-items:center;text-align:left;background:transparent!important;border:1px solid transparent!important;border-radius:13px!important;padding:10px!important;color:#fff!important;font-weight:400!important;margin:0 0 3px!important}
+.dmConversationItem:hover{background:#151515!important;border-color:#242424!important;filter:none!important}
+.dmConversationItem.active{background:#1b1010!important;border-color:#5c2424!important}
+.dmAvatar{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#2d1111,#111);border:1px solid #6a2525;color:#fff;font-size:.95rem;font-weight:900;flex:0 0 auto}
+.dmConversationMain{min-width:0}
+.dmConversationNameRow{display:flex;align-items:center;gap:7px;min-width:0}
+.dmConversationName{font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dmConversationNick{font-size:.72rem;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dmConversationPreview{margin-top:4px;color:#9b9b9b;font-size:.79rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dmConversationSide{display:flex;flex-direction:column;align-items:flex-end;gap:7px;min-width:52px}
+.dmConversationTime{color:#777;font-size:.68rem;white-space:nowrap}
+.dmUnreadBadge{min-width:21px;height:21px;padding:0 6px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:var(--red);color:#fff;font-size:.7rem;font-weight:900}
+.dmLoadMore{padding:10px;border-top:1px solid #222}
+.dmLoadMore button{padding:9px 10px;font-size:.8rem}
+.dmChat{display:flex;flex-direction:column;min-width:0;background:#070707}
+.dmChatEmpty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;color:#888}
+.dmChatEmptyIcon{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid #333;background:#111;font-size:2rem;margin-bottom:14px}
+.dmChatPanel{display:flex;flex-direction:column;height:100%;min-height:0}
+.dmChatHeader{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;border-bottom:1px solid #242424;background:#101010}
+.dmChatUser{display:flex;align-items:center;gap:10px;min-width:0}
+.dmChatUserText{min-width:0}
+.dmChatUserName{font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dmChatUserMeta{font-size:.76rem;color:#888;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dmChatHeaderActions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.dmChatHeaderActions button{width:auto;min-width:0;padding:8px 10px;font-size:.78rem}
+.dmMessages{flex:1;min-height:0;overflow:auto;padding:18px 16px;display:flex;flex-direction:column;gap:7px;scroll-behavior:smooth;background:radial-gradient(circle at 50% -20%,rgba(227,27,27,.07),transparent 42%),#070707}
+.dmDayNote{align-self:center;background:#151515;border:1px solid #242424;color:#888;font-size:.7rem;padding:5px 9px;border-radius:999px;margin:6px 0}
+.dmBubbleWrap{display:flex;flex-direction:column;max-width:min(74%,620px)}
+.dmBubbleWrap.user{align-self:flex-start;align-items:flex-start}
+.dmBubbleWrap.admin{align-self:flex-end;align-items:flex-end}
+.dmBubbleWrap.system{align-self:center;align-items:center;max-width:min(84%,700px)}
+.dmBubble{padding:10px 12px;border-radius:16px;line-height:1.45;white-space:pre-wrap;word-break:break-word;border:1px solid #292929;box-shadow:0 3px 14px rgba(0,0,0,.18)}
+.dmBubbleWrap.user .dmBubble{background:#151515;border-bottom-left-radius:5px}
+.dmBubbleWrap.admin .dmBubble{background:#6f1515;border-color:#942323;border-bottom-right-radius:5px}
+.dmBubbleWrap.system .dmBubble{background:#17131f;border-color:#342947;color:#ddd;text-align:center}
+.dmBubbleSubject{font-size:.7rem;font-weight:850;color:#f0b0b0;margin-bottom:5px;opacity:.9}
+.dmBubbleMeta{font-size:.67rem;color:#777;margin:3px 4px 0}
+.dmBubbleWrap.admin .dmBubbleMeta{text-align:right}
+.dmComposer{flex:0 0 auto;display:flex;gap:9px;align-items:flex-end;padding:12px 14px;border-top:1px solid #242424;background:#101010}
+.dmComposer textarea{min-height:44px;max-height:120px;resize:none;margin:0;padding:11px 13px}
+.dmComposer button{width:auto;min-width:96px;height:44px;padding:0 16px;border-radius:11px}
+.dmComposerHint{font-size:.68rem;color:#666;padding:0 14px 10px;background:#101010}
+.dmDanger{background:#4e1515!important;border:1px solid #7c2929!important;color:#ffd6d6!important}
+.dmDanger:hover{background:#7b1f1f!important;color:#fff!important}
+.dmNewMessageModal{position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,.82);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:18px}
+.dmNewMessageModal.hidden{display:none!important}
+.dmNewMessageCard{width:min(480px,100%);background:linear-gradient(145deg,#121212,#080808);border:1px solid #363636;border-radius:18px;padding:18px;box-shadow:0 28px 90px rgba(0,0,0,.8)}
+.dmNewMessageHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.dmNewMessageHead h3{margin:0}
+.dmCloseButton{width:38px!important;height:38px!important;min-width:38px!important;padding:0!important;border-radius:10px!important;background:#202020!important;border:1px solid #3b3b3b!important;color:#fff!important;font-size:1.35rem!important;line-height:1!important}
+.dmCloseButton:hover{background:#353535!important}
+body.dmModalOpen{overflow:hidden}
+@media(max-width:800px){
+  .dmShell{grid-template-columns:1fr;height:auto;min-height:0}
+  .dmSidebar{border-right:0;border-bottom:1px solid #2b2b2b;max-height:420px}
+  .dmChat{min-height:560px}
+  .dmBubbleWrap{max-width:88%}
+  .dmTopActions{width:100%;justify-content:stretch}
+  .dmTopActions button{flex:1;min-width:130px}
+}
+@media(max-width:520px){
+  .dmShell{border-radius:13px}
+  .dmSidebar{max-height:360px}
+  .dmChat{min-height:520px}
+  .dmChatHeader{align-items:flex-start}
+  .dmChatHeaderActions{flex-direction:column}
+  .dmChatHeaderActions button{width:100%}
+  .dmBubbleWrap{max-width:94%}
+  .dmComposer{gap:6px;padding:10px}
+  .dmComposer button{min-width:74px;padding:0 10px}
+}
 
 @media(max-width:760px){
   .userSummaryGrid{grid-template-columns:1fr}
@@ -1070,125 +1125,96 @@ body.messageModalOpen{overflow:hidden}
       <div class="card">
         <div class="topbar">
           <div>
-            <h2>💬 Mesaj Merkezi</h2>
-            <div id="adminMessagesSummary" class="muted">Tüm gelen ve giden mesajlar burada listelenir.</div>
+            <h2>💬 Mesajlar</h2>
+            <div id="adminMessagesSummary" class="muted">Kullanıcı konuşmaları yükleniyor...</div>
           </div>
-          <div class="btnRow" style="width:auto;justify-content:flex-end;">
-            <button class="smallBtn" style="width:auto;min-width:0" onclick="toggleAdminMessageComposer()">✉️ Mesaj Gönder</button>
-            <button class="secondary smallBtn" style="width:auto;min-width:0" onclick="loadAdminMessageCenter(false,false)">🔄 Yenile</button>
-            <button class="smallBtn messageCenterDanger" style="width:auto;min-width:0" onclick="deleteAllAdminMessages()">Tüm Mesajları Sil</button>
-          </div>
-        </div>
-
-        <div id="adminMessageComposer" class="messageCenterComposer hidden">
-          <h3 style="margin-bottom:14px;">✉️ Yeni Mesaj Gönder</h3>
-
-          <div class="field">
-            <label class="title">Kullanıcı</label>
-            <select id="adminMessageRecipient">
-              <option value="">Kullanıcılar yükleniyor...</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label class="title">Başlık</label>
-            <input id="adminMessageSubject" maxlength="160" placeholder="Mesaj başlığı">
-          </div>
-
-          <div class="field">
-            <label class="title">Mesaj</label>
-            <textarea id="adminMessageBody" maxlength="5000" placeholder="Kullanıcıya göndereceğin mesaj"></textarea>
-          </div>
-
-          <label class="checkline">
-            <input id="adminMessageAllowReply" type="checkbox">
-            <span>Kullanıcı bu konuşmaya yanıt verebilsin</span>
-          </label>
-
-          <div class="btnRow">
-            <button id="adminMessageSendButton" onclick="sendAdminMessageFromCenter()">✉️ Mesajı Gönder</button>
-            <button class="secondary" onclick="toggleAdminMessageComposer(false)">İptal</button>
-          </div>
-
-          <div id="adminMessageComposeStatus" class="status"></div>
-        </div>
-
-        <div class="messageCenterToolbar">
-          <div class="field">
-            <label class="title">Mesaj Ara</label>
-            <input id="adminMessageSearch" type="text" autocomplete="off"
-              placeholder="Kullanıcı, başlık veya mesaj..."
-              oninput="renderAdminMessageCenter()">
-          </div>
-
-          <div class="field" style="max-width:260px;">
-            <label class="title">Tür</label>
-            <select id="adminMessageDirectionFilter" onchange="renderAdminMessageCenter()">
-              <option value="">Tümü</option>
-              <option value="user">📥 Gelen</option>
-              <option value="admin">📤 Giden</option>
-              <option value="system">⚙️ Sistem</option>
-            </select>
+          <div class="dmTopActions">
+            <button onclick="openAdminNewMessageModal()">✉️ Yeni Mesaj</button>
+            <button class="secondary" onclick="loadAdminConversations(false,false)">🔄 Yenile</button>
+            <button class="dmDanger" onclick="deleteAllAdminMessages()">🗑️ Tüm Mesajları Sil</button>
           </div>
         </div>
 
-        <div style="padding:12px 14px;border:1px solid #2b2b2b;border-radius:12px;background:#121212;margin-bottom:14px;">
-          Okunmuş mesajlar kaybolmaz. En yeni mesaj en üstte görünür. Gelen, giden ve sistem mesajlarının tamamını buradan yönetebilirsin.
-        </div>
+        <div class="dmShell">
+          <aside class="dmSidebar">
+            <div class="dmSidebarHead">
+              <div class="dmSidebarSearch">
+                <span class="dmSidebarSearchIcon">⌕</span>
+                <input id="adminConversationSearch" type="text" autocomplete="off"
+                  placeholder="Konuşmalarda ara..."
+                  oninput="renderAdminConversationList()">
+              </div>
+            </div>
 
-        <div class="tableWrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Tarih</th>
-                <th>Kullanıcı</th>
-                <th>Tür</th>
-                <th>Başlık</th>
-                <th>Mesaj</th>
-                <th>Okunma</th>
-                <th>İşlem</th>
-              </tr>
-            </thead>
-            <tbody id="adminMessagesBody">
-              <tr><td colspan="7" class="muted">Mesajlar yükleniyor...</td></tr>
-            </tbody>
-          </table>
-        </div>
+            <div id="adminConversationList" class="dmConversationList">
+              <div class="muted" style="padding:16px;">Konuşmalar yükleniyor...</div>
+            </div>
 
-        <div id="adminMessagesLoadMore" class="messageCenterLoadMore hidden">
-          <button class="secondary" onclick="loadAdminMessageCenter(false,true)">Daha Fazla Mesaj Yükle</button>
+            <div id="adminConversationLoadMore" class="dmLoadMore hidden">
+              <button class="secondary" onclick="loadAdminConversations(false,true)">Daha Fazla Konuşma</button>
+            </div>
+          </aside>
+
+          <section class="dmChat">
+            <div id="adminChatEmpty" class="dmChatEmpty">
+              <div class="dmChatEmptyIcon">💬</div>
+              <strong style="color:#fff;font-size:1.05rem;">Bir konuşma seç</strong>
+              <div style="margin-top:7px;max-width:360px;line-height:1.5;">
+                Gelen ve giden bütün mesajlar kullanıcı bazında tek konuşma içinde görünür.
+              </div>
+            </div>
+
+            <div id="adminChatPanel" class="dmChatPanel hidden">
+              <div class="dmChatHeader">
+                <div class="dmChatUser">
+                  <div id="adminChatAvatar" class="dmAvatar">?</div>
+                  <div class="dmChatUserText">
+                    <div id="adminChatUsername" class="dmChatUserName">-</div>
+                    <div id="adminChatMeta" class="dmChatUserMeta">-</div>
+                  </div>
+                </div>
+                <div class="dmChatHeaderActions">
+                  <button class="secondary" onclick="refreshAdminConversation()">🔄 Yenile</button>
+                  <button class="dmDanger" onclick="deleteCurrentAdminConversation()">🗑️ Konuşmayı Sil</button>
+                </div>
+              </div>
+
+              <div id="adminChatMessages" class="dmMessages"></div>
+
+              <div class="dmComposer">
+                <textarea id="adminConversationReply" maxlength="5000"
+                  placeholder="Mesaj yaz..."
+                  onkeydown="handleAdminConversationKey(event)"></textarea>
+                <button id="adminConversationSendButton" onclick="sendAdminConversationMessage()">Gönder</button>
+              </div>
+              <div class="dmComposerHint">Enter: gönder · Shift + Enter: yeni satır</div>
+            </div>
+          </section>
         </div>
 
         <div id="adminMessagesStatus" class="status"></div>
       </div>
 
-      <div id="adminThreadCard" class="messageThreadModal hidden" onclick="if(event.target===this) closeAdminThreadModal()">
-        <div class="messageThreadModalPanel" role="dialog" aria-modal="true" aria-labelledby="adminThreadTitle">
-          <div class="threadHeader">
-            <div>
-              <h3 id="adminThreadTitle" style="margin-bottom:5px;">💬 Konuşma</h3>
-              <div id="adminThreadMeta" class="muted"></div>
-            </div>
-            <div class="threadHeaderActions">
-              <button class="secondary smallBtn" onclick="refreshAdminThread()">🔄 Yenile</button>
-              <button class="danger smallBtn" onclick="deleteCurrentAdminThread()">Konuşmayı Sil</button>
-              <button class="messageThreadCloseBtn" onclick="closeAdminThreadModal()" title="Kapat" aria-label="Kapat">×</button>
-            </div>
+      <div id="adminNewMessageModal" class="dmNewMessageModal hidden" onclick="if(event.target===this) closeAdminNewMessageModal()">
+        <div class="dmNewMessageCard" onclick="event.stopPropagation()">
+          <div class="dmNewMessageHead">
+            <h3>✉️ Yeni Mesaj</h3>
+            <button class="dmCloseButton" onclick="closeAdminNewMessageModal()" aria-label="Kapat">×</button>
           </div>
-
-          <div id="adminThreadMessages" class="messageList"></div>
-
           <div class="field">
-            <label class="title">Yanıt Yaz</label>
-            <textarea id="adminThreadReply" maxlength="5000" placeholder="Yönetici yanıtı"></textarea>
+            <label class="title">Kullanıcı seç</label>
+            <select id="adminMessageRecipient">
+              <option value="">Kullanıcılar yükleniyor...</option>
+            </select>
           </div>
-
+          <div class="muted" style="margin:8px 0 14px;line-height:1.5;">
+            Kullanıcıyı seçtiğinde mevcut konuşması açılır. Daha önce konuşma yoksa ilk mesajı gönderdiğinde oluşturulur.
+          </div>
           <div class="btnRow">
-            <button onclick="sendAdminThreadReply()">Yanıt Gönder</button>
-            <button id="threadReplyToggleButton" class="secondary" onclick="toggleAdminThreadReply()">Yanıt Durumunu Değiştir</button>
+            <button onclick="startAdminConversationFromPicker()">💬 Sohbeti Aç</button>
+            <button class="secondary" onclick="closeAdminNewMessageModal()">İptal</button>
           </div>
-
-          <div id="adminThreadStatus" class="status"></div>
+          <div id="adminMessageComposeStatus" class="status"></div>
         </div>
       </div>
     </div>
@@ -1675,11 +1701,18 @@ let adminMessagesTotalCount = 0;
 let adminMessagesHasMore = false;
 const ADMIN_MESSAGES_PAGE_SIZE = 100;
 
+let adminConversationsCache = [];
+let adminConversationTotalCount = 0;
+let adminConversationHasMore = false;
+let currentAdminConversationUid = '';
+let currentAdminConversation = null;
+const ADMIN_CONVERSATIONS_PAGE_SIZE = 100;
+
 document.addEventListener('keydown', event => {
   if(event.key === 'Escape'){
-    const modal = document.getElementById('adminThreadCard');
+    const modal = document.getElementById('adminNewMessageModal');
     if(modal && !modal.classList.contains('hidden')){
-      closeAdminThreadModal();
+      closeAdminNewMessageModal();
     }
   }
 });
@@ -1960,7 +1993,7 @@ function openTab(name){
   }
 
   if(name === 'messages'){
-    loadAdminMessageCenter(false);
+    loadAdminConversations(false,false);
   }
 
   if(name === 'tournaments'){
@@ -3277,7 +3310,7 @@ async function deletePayment(encodedId){
 }
   
 /* =========================================================
-   ADMIN MESSAGE CENTER
+   ADMIN MESAJLAR - INSTAGRAM TARZI TEK KONUŞMA
 ========================================================= */
 
 function setAdminMessagesBadge(total){
@@ -3297,120 +3330,20 @@ function setAdminMessagesBadge(total){
   }
 }
 
-async function loadAdminMessageRecipients(force = false){
-  if(!force && adminMessageRecipientsCache.length > 0){
-    renderAdminMessageRecipients();
-    return;
-  }
-
-  const {r,d} = await api('/admin/messages/recipients');
-
-  if(!r.ok || !d?.success){
-    throw new Error(d?.error || `HTTP ${r.status}`);
-  }
-
-  adminMessageRecipientsCache =
-    Array.isArray(d.users) ? d.users : [];
-
-  renderAdminMessageRecipients();
-}
-
-function renderAdminMessageRecipients(){
-  const select = document.getElementById('adminMessageRecipient');
-  if(!select) return;
-
-  const current = select.value;
-
-  select.innerHTML =
-    '<option value="">Kullanıcı seç...</option>' +
-    adminMessageRecipientsCache.map(u => {
-      const nick = u.nickname ? ` · ${u.nickname}` : '';
-      const state = u.status === 'blocked' ? ' · Kısıtlı' : '';
-
-      return `<option value="${esc(u.kick_uid)}">${esc(u.username || '-')}${esc(nick)}${esc(state)}</option>`;
-    }).join('');
-
-  if(
-    current &&
-    adminMessageRecipientsCache.some(u => u.kick_uid === current)
-  ){
-    select.value = current;
-  }
-}
-
-async function toggleAdminMessageComposer(forceOpen){
-  const box = document.getElementById('adminMessageComposer');
-  if(!box) return;
-
-  const shouldOpen =
-    typeof forceOpen === 'boolean'
-      ? forceOpen
-      : box.classList.contains('hidden');
-
-  if(!shouldOpen){
-    box.classList.add('hidden');
-    return;
-  }
-
-  box.classList.remove('hidden');
-
-  try{
-    await loadAdminMessageRecipients(false);
-  }catch(error){
-    showStatus(
-      'adminMessageComposeStatus',
-      '❌ Kullanıcılar alınamadı: ' + esc(error.message || error),
-      false
-    );
-  }
-
-  document.getElementById('adminMessageRecipient')?.focus();
-}
-
-function messageDirectionText(senderType){
-  if(senderType === 'user') return '📥 Gelen';
-  if(senderType === 'admin') return '📤 Giden';
-  return '⚙️ Sistem';
-}
-
-function messageDirectionClass(senderType){
-  if(senderType === 'user') return 'incoming';
-  if(senderType === 'admin') return 'outgoing';
-  return 'system';
-}
-
-function adminMessageReadState(message){
-  if(message.sender_type === 'user'){
-    return message.admin_read_at
-      ? {text:'Okundu', cls:''}
-      : {text:'Yeni', cls:'new'};
-  }
-
-  return message.user_read_at
-    ? {text:'Kullanıcı okudu', cls:''}
-    : {text:'Kullanıcı okumadı', cls:'new'};
-}
-
 function startAdminMessagesPolling(){
   if(adminMessagesPollTimer){
     clearInterval(adminMessagesPollTimer);
     adminMessagesPollTimer = null;
   }
-
   refreshAdminMessagesBadge().catch(() => {});
 }
 
 async function refreshAdminMessagesBadge(){
   if(adminMessagesPollInFlight || !token()) return;
   adminMessagesPollInFlight = true;
-
   try{
     const {r,d} = await api(`/admin/messages/unread-count?_=${Date.now()}`);
-
-    if(!r.ok || !d?.success){
-      throw new Error(d?.error || `HTTP ${r.status}`);
-    }
-
+    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
     setAdminMessagesBadge(Number(d.unreadCount || 0));
   }catch(error){
     console.warn('ADMIN MESSAGE BADGE ERROR:', error);
@@ -3419,911 +3352,366 @@ async function refreshAdminMessagesBadge(){
   }
 }
 
-async function loadAdminMessageCenter(silent = false, append = false){
-  const body = document.getElementById('adminMessagesBody');
+async function loadAdminMessageRecipients(force = false){
+  if(!force && adminMessageRecipientsCache.length > 0){
+    renderAdminMessageRecipients();
+    return;
+  }
+
+  const {r,d} = await api('/admin/messages/recipients');
+  if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+
+  adminMessageRecipientsCache = Array.isArray(d.users) ? d.users : [];
+  renderAdminMessageRecipients();
+}
+
+function renderAdminMessageRecipients(){
+  const select = document.getElementById('adminMessageRecipient');
+  if(!select) return;
+  const current = select.value;
+
+  select.innerHTML =
+    '<option value="">Kullanıcı seç...</option>' +
+    adminMessageRecipientsCache.map(u => {
+      const nick = u.nickname ? ` · ${u.nickname}` : '';
+      const state = u.status === 'blocked' ? ' · Kısıtlı' : '';
+      return `<option value="${esc(u.kick_uid)}">${esc(u.username || '-')}${esc(nick)}${esc(state)}</option>`;
+    }).join('');
+
+  if(current && adminMessageRecipientsCache.some(u => u.kick_uid === current)){
+    select.value = current;
+  }
+}
+
+function dmInitial(value){
+  const text = String(value || '?').trim();
+  return esc((text[0] || '?').toLocaleUpperCase('tr-TR'));
+}
+
+function dmPreviewPrefix(senderType){
+  if(senderType === 'admin') return 'Sen: ';
+  if(senderType === 'system') return 'Sistem: ';
+  return '';
+}
+
+function dmReadText(message){
+  if(message.sender_type === 'admin'){
+    return message.user_read_at ? 'Görüldü' : 'Gönderildi';
+  }
+  if(message.sender_type === 'user'){
+    return message.admin_read_at ? 'Okundu' : 'Yeni';
+  }
+  return message.user_read_at ? 'Görüldü' : 'Sistem';
+}
+
+async function loadAdminConversations(silent = false, append = false){
+  const list = document.getElementById('adminConversationList');
   const summary = document.getElementById('adminMessagesSummary');
 
-  if(!append && !silent && body){
-    body.innerHTML =
-      '<tr><td colspan="7" class="muted">⏳ Mesajlar yükleniyor...</td></tr>';
+  if(!append && !silent && list){
+    list.innerHTML = '<div class="muted" style="padding:16px;">⏳ Konuşmalar yükleniyor...</div>';
   }
 
   try{
-    const offset = append ? adminMessagesCache.length : 0;
-
+    const offset = append ? adminConversationsCache.length : 0;
     const params = new URLSearchParams({
-      limit:String(ADMIN_MESSAGES_PAGE_SIZE),
+      limit:String(ADMIN_CONVERSATIONS_PAGE_SIZE),
       offset:String(offset),
       _:String(Date.now())
     });
 
-    const {r,d} =
-      await api(`/admin/messages/all?${params.toString()}`);
+    const {r,d} = await api(`/admin/conversations?${params.toString()}`);
+    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
 
-    if(!r.ok || !d?.success){
-      throw new Error(d?.error || `HTTP ${r.status}`);
-    }
-
-    const rows =
-      Array.isArray(d.messages) ? d.messages : [];
+    const rows = Array.isArray(d.conversations) ? d.conversations : [];
 
     if(append){
-      const known =
-        new Set(adminMessagesCache.map(m => m.id));
-
+      const known = new Set(adminConversationsCache.map(c => c.kick_uid));
       for(const row of rows){
-        if(!known.has(row.id)){
-          adminMessagesCache.push(row);
-          known.add(row.id);
+        if(!known.has(row.kick_uid)){
+          adminConversationsCache.push(row);
+          known.add(row.kick_uid);
         }
       }
     }else{
-      adminMessagesCache = rows;
+      adminConversationsCache = rows;
     }
 
-    adminMessagesTotalCount =
-      Number(d.totalCount || 0);
-
-    adminMessagesHasMore =
-      Boolean(d.hasMore);
-
-    setAdminMessagesBadge(
-      Number(d.unreadCount || 0)
-    );
+    adminConversationTotalCount = Number(d.totalCount || 0);
+    adminConversationHasMore = Boolean(d.hasMore);
+    setAdminMessagesBadge(Number(d.unreadCount || 0));
 
     if(summary){
-      summary.textContent =
-        `${adminMessagesTotalCount} mesaj · ${Number(d.unreadCount || 0)} okunmamış`;
+      summary.textContent = `${adminConversationTotalCount} konuşma · ${Number(d.unreadCount || 0)} okunmamış mesaj`;
     }
 
-    renderAdminMessageCenter();
+    renderAdminConversationList();
     hideStatus('adminMessagesStatus');
+
+    if(currentAdminConversationUid){
+      const stillExists = adminConversationsCache.some(c => c.kick_uid === currentAdminConversationUid);
+      if(stillExists && !currentAdminConversation){
+        await selectAdminConversation(encodeURIComponent(currentAdminConversationUid), true);
+      }
+    }
   }catch(error){
-    if(summary){
-      summary.textContent = 'Mesajlar alınamadı';
+    if(summary) summary.textContent = 'Konuşmalar alınamadı';
+    if(list && !silent){
+      list.innerHTML = `<div class="muted" style="padding:16px;">❌ ${esc(error.message || error)}</div>`;
     }
-
-    if(body && !silent){
-      body.innerHTML =
-        `<tr><td colspan="7" class="muted">❌ ${esc(error.message || error)}</td></tr>`;
-    }
-
-    showStatus(
-      'adminMessagesStatus',
-      '❌ ' + esc(error.message || error),
-      false
-    );
+    showStatus('adminMessagesStatus','❌ ' + esc(error.message || error),false);
   }
 }
 
-function renderAdminMessageCenter(){
-  const body = document.getElementById('adminMessagesBody');
-  const more = document.getElementById('adminMessagesLoadMore');
+function renderAdminConversationList(){
+  const list = document.getElementById('adminConversationList');
+  const more = document.getElementById('adminConversationLoadMore');
+  if(!list) return;
 
-  if(!body) return;
+  const q = String(document.getElementById('adminConversationSearch')?.value || '')
+    .trim().toLocaleLowerCase('tr-TR');
 
-  const q =
-    String(
-      document.getElementById('adminMessageSearch')?.value || ''
-    )
-    .trim()
-    .toLocaleLowerCase('tr-TR');
-
-  const direction =
-    String(
-      document.getElementById('adminMessageDirectionFilter')?.value || ''
-    );
-
-  let rows = adminMessagesCache.slice();
-
-  if(direction){
-    rows =
-      rows.filter(m => m.sender_type === direction);
-  }
-
+  let rows = adminConversationsCache.slice();
   if(q){
-    rows =
-      rows.filter(m => {
-        const haystack = [
-          m.username,
-          m.nickname,
-          m.subject,
-          m.body,
-          m.sender_name
-        ]
-        .map(
-          v =>
-            String(v || '')
-              .toLocaleLowerCase('tr-TR')
-        )
-        .join(' ');
-
-        return haystack.includes(q);
-      });
+    rows = rows.filter(c => [c.username,c.nickname,c.last_body,c.last_subject]
+      .map(v => String(v || '').toLocaleLowerCase('tr-TR')).join(' ').includes(q));
   }
-
-  body.innerHTML = '';
 
   if(rows.length === 0){
-    body.innerHTML =
-      '<tr><td colspan="7" class="muted">📭 Bu filtreye uygun mesaj bulunamadı.</td></tr>';
+    list.innerHTML = '<div class="muted" style="padding:18px;text-align:center;">Henüz konuşma yok.</div>';
   }else{
-    for(const m of rows){
-      const read = adminMessageReadState(m);
-      const tr = document.createElement('tr');
-
-      if(m.sender_type === 'user' && !m.admin_read_at){
-        tr.classList.add('messageRowUnread');
-      }
-
-      tr.innerHTML = `
-        <td>${esc(dateText(m.created_at))}</td>
-
-        <td>
-          <strong>${esc(m.username || m.sender_name || '-')}</strong>
-          ${m.nickname ? `<div class="muted">${esc(m.nickname)}</div>` : ''}
-        </td>
-
-        <td>
-          <span class="messageDirectionBadge ${messageDirectionClass(m.sender_type)}">
-            ${esc(messageDirectionText(m.sender_type))}
+    list.innerHTML = rows.map(c => {
+      const active = c.kick_uid === currentAdminConversationUid ? ' active' : '';
+      const unread = Number(c.unread_count || 0);
+      const preview = `${dmPreviewPrefix(c.last_sender_type)}${String(c.last_body || '').replace(/\s+/g,' ').trim() || 'Mesaj yok'}`;
+      return `
+        <button class="dmConversationItem${active}" onclick="selectAdminConversation('${encodeURIComponent(c.kick_uid)}')">
+          <span class="dmAvatar">${dmInitial(c.username || c.nickname || '?')}</span>
+          <span class="dmConversationMain">
+            <span class="dmConversationNameRow">
+              <span class="dmConversationName">${esc(c.username || 'Kullanıcı')}</span>
+            </span>
+            ${c.nickname ? `<span class="dmConversationNick">${esc(c.nickname)}</span>` : ''}
+            <span class="dmConversationPreview">${esc(preview)}</span>
           </span>
-        </td>
-
-        <td>${esc(m.subject || '-')}</td>
-
-        <td>
-          <div class="messagePreview" title="${esc(m.body || '')}">
-            ${esc(m.body || '-')}
-          </div>
-        </td>
-
-        <td>
-          <span class="messageReadState ${read.cls}">
-            ${esc(read.text)}
+          <span class="dmConversationSide">
+            <span class="dmConversationTime">${esc(dateText(c.last_message_at || ''))}</span>
+            ${unread > 0 ? `<span class="dmUnreadBadge">${unread > 99 ? '99+' : unread}</span>` : ''}
           </span>
-        </td>
-
-        <td>
-          <button
-            class="smallBtn secondary"
-            onclick="openAdminThread('${encodeURIComponent(m.thread_id)}')">
-            💬 Konuşmayı Aç
-          </button>
-        </td>
-      `;
-
-      body.appendChild(tr);
-    }
+        </button>`;
+    }).join('');
   }
 
-  if(more){
-    more.classList.toggle(
-      'hidden',
-      !adminMessagesHasMore
-    );
-  }
+  if(more) more.classList.toggle('hidden', !adminConversationHasMore);
 }
 
-async function sendAdminMessageFromCenter(){
-  const uid =
-    String(
-      document.getElementById('adminMessageRecipient')?.value || ''
-    )
-    .trim();
+async function selectAdminConversation(encodedUid, silent = false){
+  const uid = decodeURIComponent(encodedUid || '');
+  if(!uid) return;
+  currentAdminConversationUid = uid;
+  renderAdminConversationList();
 
-  const subject =
-    String(
-      document.getElementById('adminMessageSubject')?.value || ''
-    )
-    .trim();
-
-  const message =
-    String(
-      document.getElementById('adminMessageBody')?.value || ''
-    )
-    .trim();
-
-  const allowReply =
-    document.getElementById('adminMessageAllowReply')?.checked === true;
-
-  if(!uid || !subject || !message){
-    return showStatus(
-      'adminMessageComposeStatus',
-      '⚠️ Kullanıcı, başlık ve mesaj gerekli.',
-      false
-    );
-  }
-
-  const button =
-    document.getElementById('adminMessageSendButton');
-
-  if(button){
-    button.disabled = true;
-    button.textContent = '⏳ Gönderiliyor...';
+  const empty = document.getElementById('adminChatEmpty');
+  const panel = document.getElementById('adminChatPanel');
+  const messages = document.getElementById('adminChatMessages');
+  if(empty) empty.classList.add('hidden');
+  if(panel) panel.classList.remove('hidden');
+  if(messages && !silent){
+    messages.innerHTML = '<div class="muted" style="padding:20px;text-align:center;">⏳ Konuşma yükleniyor...</div>';
   }
 
   try{
-    const {r,d} =
-      await api(
-        '/admin/message/send',
-        {
-          method:'POST',
-          headers:{
-            'Content-Type':'application/json'
-          },
-          body:JSON.stringify({
-            kickUid:uid,
-            subject,
-            message,
-            allowReply
-          })
-        }
-      );
-
-    if(!r.ok || !d?.success){
-      throw new Error(
-        d?.error ||
-        `HTTP ${r.status}`
-      );
-    }
-
-    document.getElementById('adminMessageSubject').value = '';
-    document.getElementById('adminMessageBody').value = '';
-    document.getElementById('adminMessageAllowReply').checked = false;
-
-    showStatus(
-      'adminMessageComposeStatus',
-      '✅ Mesaj kullanıcıya gönderildi.',
-      true
-    );
-
-    await loadAdminMessageCenter(true,false);
-
-    if(d.threadId){
-      await openAdminThread(
-        encodeURIComponent(d.threadId)
-      );
-    }
-  }catch(error){
-    showStatus(
-      'adminMessageComposeStatus',
-      '❌ ' + esc(error.message || error),
-      false
-    );
-  }finally{
-    if(button){
-      button.disabled = false;
-      button.textContent = '✉️ Mesajı Gönder';
-    }
-  }
-}
-
-/* =========================================================
-   USERS
-========================================================= */
-
-function userStatusText(status){
-  return {active:'Aktif',blocked:'Kısıtlı',archived:'Arşivlenmiş'}[status] || status || '-';
-}
-function userStatusBadge(status){
-  if(status === 'active') return 'ok';
-  if(status === 'blocked') return 'bad';
-  return 'warn';
-}
-function scheduleUserSearch(){
-  if(userSearchTimer) clearTimeout(userSearchTimer);
-  userSearchTimer = setTimeout(() => loadUsers(),300);
-}
-async function loadUsers(){
-  const q = String(document.getElementById('userSearch')?.value || '').trim();
-  const status = String(document.getElementById('userStatusFilter')?.value || '').trim();
-  const params = new URLSearchParams();
-  if(q) params.set('q',q);
-  if(status) params.set('status',status);
-  try{
-    const query = params.toString() ? `?${params.toString()}` : '';
-    const {r,d} = await api(`/admin/users${query}`);
-    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
-    usersCache = Array.isArray(d.users) ? d.users : [];
-    renderUsers();
-    hideStatus('usersStatus');
-  }catch(error){
-    showStatus('usersStatus','❌ ' + esc(error.message || error),false);
-  }
-}
-function renderUsers(){
-  const body = document.getElementById('usersBody');
-  if(!body) return;
-  document.getElementById('userCount').innerText = `${usersCache.length} kullanıcı`;
-  body.innerHTML = '';
-  if(usersCache.length === 0){
-    body.innerHTML = `<tr><td colspan="8" class="muted">Kullanıcı bulunamadı.</td></tr>`;
-    return;
-  }
-  for(const u of usersCache){
-    const tr = document.createElement('tr');
-    if(u.status === 'blocked') tr.classList.add('user-row-blocked');
-    tr.innerHTML = `
-      <td><strong>${esc(u.username || '-')}</strong></td>
-      <td>${esc(u.nickname || '-')}</td>
-      <td>${esc(points(u.points))}</td>
-      <td>${esc(u.level ?? '-')}</td>
-      <td>${esc(dateText(u.first_verified_at))}</td>
-      <td>${esc(dateText(u.last_seen_at || u.last_activity_at))}</td>
-      <td><span class="badge ${userStatusBadge(u.status)}" ${u.blocked_reason ? `title="${esc(u.blocked_reason)}"` : ''}>${esc(userStatusText(u.status))}</span></td>
-      <td><button class="smallBtn secondary" onclick="openUser('${encodeURIComponent(u.kick_uid)}')">⚙️ İşlem Yap</button></td>
-    `;
-    body.appendChild(tr);
-  }
-}
-async function openUser(encodedUid){
-  const uid = decodeURIComponent(encodedUid);
-  try{
-    const {r,d} = await api(`/admin/user?uid=${encodeURIComponent(uid)}`);
-    if(!r.ok || !d?.success || !d?.user) throw new Error(d?.error || `HTTP ${r.status}`);
-    currentAdminUser = d.user;
-    currentAdminUser.notes = Array.isArray(d.notes) ? d.notes : [];
-    currentAdminThread = null;
-    renderUserDetail();
-  }catch(error){
-    showStatus('usersStatus','❌ ' + esc(error.message || error),false);
-  }
-}
-function renderUserDetail(){
-  if(!currentAdminUser) return;
-  const u = currentAdminUser;
-  document.getElementById('userDetailCard').classList.remove('hidden');
-  const restricted = u.status === 'blocked';
-  document.getElementById('userDetailTitle').innerText = `👤 ${u.username || 'Kullanıcı'}`;
-  document.getElementById('userDetailStatusText').innerText = `${restricted ? '⛔ Kısıtlı' : '✅ Aktif'} · UID: ${u.kick_uid || '-'}`;
-  document.getElementById('userSummary').innerHTML = `
-    <div class="userSummaryItem"><span>Kick Adı</span><strong>${esc(u.username || '-')}</strong></div>
-    <div class="userSummaryItem"><span>Takma Ad</span><strong>${esc(u.nickname || '-')}</strong></div>
-    <div class="userSummaryItem"><span>Bakiye</span><strong>${esc(points(u.points))}</strong></div>
-    <div class="userSummaryItem"><span>Level</span><strong>${esc(u.level ?? '-')}</strong></div>
-    <div class="userSummaryItem"><span>İlk Doğrulama</span><strong>${esc(dateText(u.first_verified_at))}</strong></div>
-    <div class="userSummaryItem"><span>Son Görülme</span><strong>${esc(dateText(u.last_seen_at || u.last_activity_at))}</strong></div>
-  `;
-
-  const restrictionBanner = document.getElementById('userRestrictionBanner');
-  if(restricted){
-    restrictionBanner.style.display = 'block';
-    restrictionBanner.innerHTML = `<strong>⛔ HESAP KISITLI</strong>${esc(u.blocked_reason || 'Kısıtlama nedeni belirtilmemiş.')}`;
-  }else{
-    restrictionBanner.style.display = 'none';
-    restrictionBanner.innerHTML = '';
-  }
-
-  const restrictionActions = document.getElementById('userRestrictionActions');
-  restrictionActions.innerHTML = restricted
-    ? `<button class="success" onclick="toggleUserRestriction()">✅ Kısıtlamayı Kaldır</button>`
-    : `<button class="danger" onclick="toggleUserRestriction()">⛔ Hesabı Kısıtla</button>`;
-
-  document.getElementById('userNickname').value = u.nickname || '';
-  const reasonInput = document.getElementById('userBlockReason');
-  reasonInput.value = u.blocked_reason || '';
-  reasonInput.disabled = restricted;
-  renderUserNotes();
-  document.getElementById('userDetailCard').scrollIntoView({behavior:'smooth',block:'start'});
-}
-function closeUserDetail(){
-  currentAdminUser = null;
-  currentAdminThread = null;
-  document.getElementById('userDetailCard').classList.add('hidden');
-}
-async function refreshCurrentUser(){
-  if(!currentAdminUser?.kick_uid) return;
-  await openUser(encodeURIComponent(currentAdminUser.kick_uid));
-}
-async function saveUserNickname(){
-  if(!currentAdminUser) return;
-  const nickname = document.getElementById('userNickname').value.trim();
-  try{
-    const {r,d} = await api('/admin/user/nickname',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({kickUid:currentAdminUser.kick_uid,nickname})
-    });
-    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
-    await loadUsers(); await refreshCurrentUser();
-  }catch(error){ showStatus('usersStatus','❌ ' + esc(error.message || error),false); }
-}
-async function toggleUserRestriction(){
-  if(!currentAdminUser) return;
-
-  const currentlyRestricted = currentAdminUser.status === 'blocked';
-  const nextStatus = currentlyRestricted ? 'active' : 'blocked';
-  const reason = document.getElementById('userBlockReason').value.trim();
-
-  if(!currentlyRestricted && !reason){
-    showStatus('usersStatus','⚠️ Hesabı kısıtlamak için kullanıcıya gösterilecek nedeni yazmalısın.',false);
-    document.getElementById('userBlockReason').focus();
-    return;
-  }
-
-  const question = currentlyRestricted
-    ? `${currentAdminUser.username} kullanıcısının hesap kısıtlaması kaldırılsın mı?`
-    : `${currentAdminUser.username} kullanıcısının hesabı kısıtlansın mı?\n\nKullanıcıya gönderilecek neden:\n${reason}`;
-
-  if(!confirm(question)) return;
-
-  await setUserStatus(nextStatus, reason);
-}
-
-async function setUserStatus(status, suppliedReason = ''){
-  if(!currentAdminUser) return;
-  const reason = String(suppliedReason || '').trim();
-
-  try{
-    const {r,d} = await api('/admin/user/status',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        kickUid:currentAdminUser.kick_uid,
-        status,
-        reason
-      })
-    });
-
+    const {r,d} = await api(`/admin/conversation?kickUid=${encodeURIComponent(uid)}&_=${Date.now()}`);
     if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
 
-    showStatus(
-      'usersStatus',
-      status === 'blocked'
-        ? '✅ Hesap kısıtlandı ve kullanıcıya HESABINIZ KISITLANDI mesajı gönderildi.'
-        : '✅ Hesap kısıtlaması kaldırıldı.',
-      true
-    );
-
-    await loadUsers();
-    await refreshCurrentUser();
-  }catch(error){
-    showStatus('usersStatus','❌ ' + esc(error.message || error),false);
-  }
-}
-async function addUserNote(){
-  if(!currentAdminUser) return;
-  const note = document.getElementById('userAdminNote').value.trim();
-  if(!note) return;
-  try{
-    const {r,d} = await api('/admin/user/note',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({kickUid:currentAdminUser.kick_uid,note})
-    });
-    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
-    document.getElementById('userAdminNote').value = '';
-    await refreshCurrentUser();
-  }catch(error){ showStatus('usersStatus','❌ ' + esc(error.message || error),false); }
-}
-function renderUserNotes(){
-  const box = document.getElementById('userNotesList');
-  const notes = currentAdminUser?.notes || [];
-  if(notes.length === 0){ box.innerHTML = '<div class="muted">Admin notu yok.</div>'; return; }
-  box.innerHTML = notes.map(n => `
-    <div class="row"><span>${esc(dateText(n.created_at))}</span><strong>${esc(n.note)}</strong></div>
-  `).join('');
-}
-async function openAdminThread(encodedId){
-  const id = decodeURIComponent(encodedId || '');
-  if(!id) return;
-
-  try{
-    const {r,d} =
-      await api(
-        `/admin/message/thread?id=${encodeURIComponent(id)}`
-      );
-
-    if(!r.ok || !d?.success || !d?.thread){
-      throw new Error(
-        d?.error ||
-        `HTTP ${r.status}`
-      );
-    }
-
-    currentAdminThread = {
-      ...d.thread,
-      messages:
-        Array.isArray(d.messages)
-          ? d.messages
-          : []
+    currentAdminConversation = {
+      user:d.user || {kick_uid:uid,username:'Kullanıcı'},
+      messages:Array.isArray(d.messages) ? d.messages : [],
+      totalCount:Number(d.totalCount || 0),
+      truncated:Boolean(d.truncated)
     };
 
-    const now =
-      new Date().toISOString();
+    const row = adminConversationsCache.find(c => c.kick_uid === uid);
+    if(row) row.unread_count = 0;
 
-    for(const message of adminMessagesCache){
-      if(
-        message.thread_id === id &&
-        message.sender_type === 'user' &&
-        !message.admin_read_at
-      ){
-        message.admin_read_at = now;
-      }
-    }
-
-    renderAdminMessageCenter();
-    renderAdminThread();
-
-    refreshAdminMessagesBadge()
-      .catch(() => {});
+    renderAdminConversationList();
+    renderAdminConversation();
+    refreshAdminMessagesBadge().catch(() => {});
   }catch(error){
-    showStatus(
-      'adminMessagesStatus',
-      '❌ ' + esc(error.message || error),
-      false
-    );
+    currentAdminConversation = null;
+    if(messages) messages.innerHTML = `<div class="muted" style="padding:20px;text-align:center;">❌ ${esc(error.message || error)}</div>`;
+    showStatus('adminMessagesStatus','❌ ' + esc(error.message || error),false);
   }
 }
 
-function renderAdminThread(){
-  if(!currentAdminThread) return;
+function renderAdminConversation(){
+  const data = currentAdminConversation;
+  if(!data) return;
 
-  const t = currentAdminThread;
+  const u = data.user || {};
+  const username = u.username || 'Kullanıcı';
 
-  const card =
-    document.getElementById('adminThreadCard');
+  document.getElementById('adminChatAvatar').innerHTML = dmInitial(username);
+  document.getElementById('adminChatUsername').textContent = username;
 
-  if(!card) return;
+  const metaParts = [];
+  if(u.nickname) metaParts.push(u.nickname);
+  metaParts.push(`${data.totalCount} mesaj`);
+  if(data.truncated) metaParts.push('son 500 mesaj gösteriliyor');
+  document.getElementById('adminChatMeta').textContent = metaParts.join(' · ');
 
-  card.classList.remove('hidden');
+  const box = document.getElementById('adminChatMessages');
+  const rows = data.messages || [];
 
-  document
-    .getElementById('adminThreadTitle')
-    .innerText =
-      `💬 ${t.subject || 'Konuşma'}`;
-
-  document
-    .getElementById('adminThreadMeta')
-    .innerText =
-      `${t.username || '-'} · Yanıt ${Number(t.allow_reply) === 1 ? 'Açık' : 'Kapalı'}`;
-
-  document
-    .getElementById('adminThreadMessages')
-    .innerHTML =
-      (t.messages || []).map(m => `
-        <div class="messageBubble ${esc(m.sender_type || 'system')}">
-          <button
-            class="messageDeleteBtn"
-            title="Bu mesajı sil"
-            aria-label="Bu mesajı sil"
-            onclick="deleteAdminMessage('${encodeURIComponent(m.id)}')">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M3 6h18"></path>
-              <path d="M8 6V4h8v2"></path>
-              <path d="M19 6l-1 14H6L5 6"></path>
-              <path d="M10 11v5"></path>
-              <path d="M14 11v5"></path>
-            </svg>
-          </button>
-
-          <strong>${esc(m.sender_name || '-')}</strong>
-
-          <div>${esc(m.body || '')}</div>
-
-          <div class="messageMeta">
-            ${esc(dateText(m.created_at))}
-            · ${esc(
-              m.sender_type === 'user'
-                ? (m.admin_read_at ? 'Admin okudu' : 'Yeni')
-                : (m.user_read_at ? 'Kullanıcı okudu' : 'Kullanıcı okumadı')
-            )}
-          </div>
-        </div>
-      `).join('');
-
-  const btn =
-    document.getElementById('threadReplyToggleButton');
-
-  if(t.thread_type !== 'admin'){
-    btn.disabled = true;
-    btn.innerText =
-      'Sistem mesajında yanıt kapalı';
+  if(rows.length === 0){
+    box.innerHTML = '<div class="dmChatEmpty"><div class="dmChatEmptyIcon">✉️</div><strong style="color:#fff;">Henüz mesaj yok</strong><div style="margin-top:7px;">Aşağıdan ilk mesajı gönderebilirsin.</div></div>';
   }else{
-    btn.disabled = false;
-    btn.innerText =
-      Number(t.allow_reply) === 1
-        ? '🔒 Kullanıcı Yanıtını Kapat'
-        : '💬 Kullanıcı Yanıtını Aç';
+    box.innerHTML = rows.map(m => {
+      const type = ['user','admin','system'].includes(m.sender_type) ? m.sender_type : 'system';
+      const subject = String(m.subject || '').trim();
+      const showSubject = subject && subject.toLocaleLowerCase('tr-TR') !== 'mesajlaşma';
+      return `
+        <div class="dmBubbleWrap ${type}">
+          <div class="dmBubble">
+            ${showSubject ? `<div class="dmBubbleSubject">${esc(subject)}</div>` : ''}
+            <div>${esc(m.body || '')}</div>
+          </div>
+          <div class="dmBubbleMeta">${esc(dateText(m.created_at))} · ${esc(dmReadText(m))}</div>
+        </div>`;
+    }).join('');
   }
 
-  document.body.classList.add('messageModalOpen');
-}
-
-function closeAdminThreadModal(){
-  document
-    .getElementById('adminThreadCard')
-    ?.classList
-    .add('hidden');
-
-  document.body.classList.remove('messageModalOpen');
-  currentAdminThread = null;
-  hideStatus('adminThreadStatus');
-}
-
-async function sendAdminThreadReply(){
-  if(!currentAdminThread) return;
-
-  const threadId =
-    currentAdminThread.id;
-
-  const message =
-    String(
-      document.getElementById('adminThreadReply')?.value || ''
-    )
-    .trim();
-
-  if(!message) return;
-
-  try{
-    const {r,d} =
-      await api(
-        '/admin/message/reply',
-        {
-          method:'POST',
-          headers:{
-            'Content-Type':'application/json'
-          },
-          body:JSON.stringify({
-            threadId,
-            message
-          })
-        }
-      );
-
-    if(!r.ok || !d?.success){
-      throw new Error(
-        d?.error ||
-        `HTTP ${r.status}`
-      );
-    }
-
-    document
-      .getElementById('adminThreadReply')
-      .value = '';
-
-    await loadAdminMessageCenter(
-      true,
-      false
-    );
-
-    await openAdminThread(
-      encodeURIComponent(threadId)
-    );
-
-    showStatus(
-      'adminThreadStatus',
-      '✅ Mesaj gönderildi.',
-      true
-    );
-  }catch(error){
-    showStatus(
-      'adminThreadStatus',
-      '❌ ' + esc(error.message || error),
-      false
-    );
-  }
-}
-
-async function refreshAdminThread(){
-  if(!currentAdminThread?.id) return;
-
-  await openAdminThread(
-    encodeURIComponent(
-      currentAdminThread.id
-    )
-  );
-}
-
-async function deleteAllAdminMessages(){
-  if(adminMessagesTotalCount <= 0 && adminMessagesCache.length === 0){
-    return showStatus(
-      'adminMessagesStatus',
-      'ℹ️ Silinecek mesaj bulunmuyor.',
-      true
-    );
-  }
-
-  const ok = confirm(
-    'Admin panelindeki TÜM mesajlar silinsin mi?\n\n' +
-    'Bu işlem yalnızca senin admin görünümünden kaldırır. ' +
-    'Kullanıcıların Mesaj Kutusu ve onlara gönderilmiş mesajlar silinmez.'
-  );
-
-  if(!ok) return;
-
-  try{
-    const {r,d} = await api(
-      '/admin/messages/delete-all',
-      {method:'POST'}
-    );
-
-    if(!r.ok || !d?.success){
-      throw new Error(d?.error || `HTTP ${r.status}`);
-    }
-
-    adminMessagesCache = [];
-    adminMessagesTotalCount = 0;
-    adminMessagesHasMore = false;
-    setAdminMessagesBadge(0);
-    closeAdminThreadModal();
-    renderAdminMessageCenter();
-
-    const summary = document.getElementById('adminMessagesSummary');
-    if(summary){
-      summary.textContent = '0 mesaj · 0 okunmamış';
-    }
-
-    showStatus(
-      'adminMessagesStatus',
-      `✅ ${Number(d.deletedCount || 0)} mesaj yalnızca admin panelinden silindi. Kullanıcıların mesaj kutuları etkilenmedi.`,
-      true
-    );
-  }catch(error){
-    showStatus(
-      'adminMessagesStatus',
-      '❌ ' + esc(error.message || error),
-      false
-    );
-  }
-}
-
-function deleteAdminMessage(encodedId){
-  if(!currentAdminThread) return;
-
-  const messageId =
-    decodeURIComponent(encodedId);
-
-  openAdminChoiceModal({
-    type:'message',
-    messageId,
-    threadId:currentAdminThread.id,
-    title:'🗑 Mesajı nasıl silmek istiyorsun?',
-    text:
-      'Sadece Benden Sil seçeneği mesajı yalnızca admin panelinden kaldırır. ' +
-      'Herkesten Sil seçeneği mesajı kullanıcının Mesaj Kutusu dahil iki taraftan da kaldırır.',
-    primaryLabel:'👤 Sadece Benden Sil',
-    primaryClass:'secondary',
-    secondaryLabel:'👥 Herkesten Sil',
-    secondaryClass:'danger'
+  requestAnimationFrame(() => {
+    box.scrollTop = box.scrollHeight;
   });
 }
 
-async function performDeleteAdminMessage(
-  messageId,
-  threadId,
-  scope
-){
-  try{
-    const {r,d} =
-      await api(
-        '/admin/message/delete',
-        {
-          method:'POST',
-          headers:{
-            'Content-Type':'application/json'
-          },
-          body:JSON.stringify({
-            messageId,
-            scope
-          })
-        }
-      );
+async function refreshAdminConversation(){
+  if(!currentAdminConversationUid) return;
+  await selectAdminConversation(encodeURIComponent(currentAdminConversationUid), true);
+  await loadAdminConversations(true,false);
+}
 
-    if(!r.ok || !d?.success){
-      throw new Error(
-        d?.error ||
-        `HTTP ${r.status}`
-      );
-    }
-
-    if(currentAdminThread?.id === threadId){
-      try{
-        await openAdminThread(
-          encodeURIComponent(threadId)
-        );
-      }catch(_){
-        closeAdminThreadModal();
-      }
-    }
-
-    await loadAdminMessageCenter(true,false);
-
-    showStatus(
-      'adminMessagesStatus',
-      scope === 'everyone'
-        ? '✅ Mesaj herkesten silindi.'
-        : '✅ Mesaj yalnızca admin görünümünden silindi.',
-      true
-    );
-
-  }catch(error){
-    showStatus(
-      'adminThreadStatus',
-      '❌ ' + esc(error.message || error),
-      false
-    );
+function handleAdminConversationKey(event){
+  if(event.key === 'Enter' && !event.shiftKey){
+    event.preventDefault();
+    sendAdminConversationMessage();
   }
 }
 
-async function deleteAdminThread(encodedId){
-  const threadId =
-    decodeURIComponent(encodedId || '');
+async function sendAdminConversationMessage(){
+  const uid = currentAdminConversationUid;
+  const textarea = document.getElementById('adminConversationReply');
+  const button = document.getElementById('adminConversationSendButton');
+  const message = String(textarea?.value || '').trim();
+  if(!uid || !message) return;
 
-  if(!threadId) return;
-
-  if(
-    !confirm(
-      'Bu konuşma admin mesaj listesinden silinsin mi? Kullanıcının mesaj kutusu etkilenmez.'
-    )
-  ){
-    return;
-  }
+  const oldText = button?.textContent || 'Gönder';
+  if(button){ button.disabled = true; button.textContent = 'Gönderiliyor...'; }
 
   try{
-    const {r,d} =
-      await api(
-        '/admin/message/delete',
-        {
-          method:'POST',
-          headers:{
-            'Content-Type':'application/json'
-          },
-          body:JSON.stringify({
-            threadId
-          })
-        }
-      );
-
-    if(!r.ok || !d?.success){
-      throw new Error(
-        d?.error ||
-        `HTTP ${r.status}`
-      );
-    }
-
-    closeAdminThreadModal();
-
-    await loadAdminMessageCenter(
-      true,
-      false
-    );
-
-    await refreshAdminMessagesBadge();
-
-    showStatus(
-      'adminMessagesStatus',
-      '✅ Konuşma admin mesaj listesinden kaldırıldı.',
-      true
-    );
-  }catch(error){
-    showStatus(
-      'adminMessagesStatus',
-      '❌ ' + esc(error.message || error),
-      false
-    );
-  }
-}
-
-async function deleteCurrentAdminThread(){
-  if(!currentAdminThread?.id) return;
-  await deleteAdminThread(encodeURIComponent(currentAdminThread.id));
-}
-
-async function toggleAdminThreadReply(){
-  if(!currentAdminThread) return;
-  const allowReply = Number(currentAdminThread.allow_reply) !== 1;
-  try{
-    const {r,d} = await api('/admin/message/reply-toggle',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({threadId:currentAdminThread.id,allowReply})
+    const {r,d} = await api('/admin/conversation/send',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({kickUid:uid,message})
     });
     if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
-    currentAdminThread.allow_reply = d.allowReply ? 1 : 0;
-    renderAdminThread();
-    await loadAdminMessageCenter(true,false);
-  }catch(error){ showStatus('adminThreadStatus','❌ ' + esc(error.message || error),false); }
+
+    if(textarea) textarea.value = '';
+    await selectAdminConversation(encodeURIComponent(uid), true);
+    await loadAdminConversations(true,false);
+  }catch(error){
+    showStatus('adminMessagesStatus','❌ ' + esc(error.message || error),false);
+  }finally{
+    if(button){ button.disabled = false; button.textContent = oldText; }
+  }
 }
 
+async function openAdminNewMessageModal(){
+  const modal = document.getElementById('adminNewMessageModal');
+  if(!modal) return;
+  modal.classList.remove('hidden');
+  document.body.classList.add('dmModalOpen');
+  hideStatus('adminMessageComposeStatus');
+
+  try{
+    await loadAdminMessageRecipients(false);
+  }catch(error){
+    showStatus('adminMessageComposeStatus','❌ Kullanıcılar alınamadı: ' + esc(error.message || error),false);
+  }
+}
+
+function closeAdminNewMessageModal(){
+  document.getElementById('adminNewMessageModal')?.classList.add('hidden');
+  document.body.classList.remove('dmModalOpen');
+  hideStatus('adminMessageComposeStatus');
+}
+
+async function startAdminConversationFromPicker(){
+  const uid = String(document.getElementById('adminMessageRecipient')?.value || '').trim();
+  if(!uid){
+    return showStatus('adminMessageComposeStatus','Kullanıcı seçmelisin.',false);
+  }
+  closeAdminNewMessageModal();
+  await selectAdminConversation(encodeURIComponent(uid));
+  document.getElementById('adminConversationReply')?.focus();
+}
+
+async function deleteCurrentAdminConversation(){
+  const uid = currentAdminConversationUid;
+  if(!uid) return;
+
+  const username = currentAdminConversation?.user?.username || 'bu kullanıcı';
+  if(!confirm(`${username} ile olan konuşma yalnızca admin panelinden silinsin mi?\n\nKullanıcının Mesaj Kutusu etkilenmez.`)) return;
+
+  try{
+    const {r,d} = await api('/admin/conversation/delete',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({kickUid:uid})
+    });
+    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+
+    currentAdminConversationUid = '';
+    currentAdminConversation = null;
+    document.getElementById('adminChatPanel')?.classList.add('hidden');
+    document.getElementById('adminChatEmpty')?.classList.remove('hidden');
+    await loadAdminConversations(false,false);
+    showStatus('adminMessagesStatus',`✅ ${Number(d.deletedCount || 0)} mesaj yalnızca admin görünümünden kaldırıldı.`,true);
+  }catch(error){
+    showStatus('adminMessagesStatus','❌ ' + esc(error.message || error),false);
+  }
+}
+
+async function deleteAllAdminMessages(){
+  if(adminConversationTotalCount <= 0 && adminConversationsCache.length === 0){
+    return showStatus('adminMessagesStatus','ℹ️ Silinecek konuşma bulunmuyor.',true);
+  }
+
+  if(!confirm('Admin panelindeki TÜM konuşmalar silinsin mi?\n\nBu işlem yalnızca senin admin görünümünden kaldırır. Kullanıcıların Mesaj Kutusu etkilenmez.')) return;
+
+  try{
+    const {r,d} = await api('/admin/messages/delete-all',{method:'POST'});
+    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+
+    adminConversationsCache = [];
+    adminConversationTotalCount = 0;
+    adminConversationHasMore = false;
+    currentAdminConversationUid = '';
+    currentAdminConversation = null;
+    setAdminMessagesBadge(0);
+    renderAdminConversationList();
+    document.getElementById('adminChatPanel')?.classList.add('hidden');
+    document.getElementById('adminChatEmpty')?.classList.remove('hidden');
+
+    const summary = document.getElementById('adminMessagesSummary');
+    if(summary) summary.textContent = '0 konuşma · 0 okunmamış mesaj';
+
+    showStatus('adminMessagesStatus',`✅ ${Number(d.deletedCount || 0)} mesaj yalnızca admin görünümünden silindi.`,true);
+  }catch(error){
+    showStatus('adminMessagesStatus','❌ ' + esc(error.message || error),false);
+  }
+}
 
   /* =========================================================
    SATIN ALINANLAR
