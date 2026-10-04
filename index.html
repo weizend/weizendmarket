@@ -3833,34 +3833,55 @@ return;
         }
 
         function showBynoGameRedirect(reference) {
-            document.getElementById('redirectModalTitle').innerText = '💳 BynoGame Sayfasına Yönlendiriliyorsunuz';
-            document.getElementById('redirectStatusText').innerText = 'Lütfen açılacak BynoGame sayfasında bağış işlemini tamamlayın. Ödeme kodun panoya kopyalandı:';
-            document.getElementById('modalCommandText').innerText = reference;
-            document.getElementById('redirectModal').style.display = 'flex';
+    const modal = document.getElementById('redirectModal');
+    const titleEl = document.getElementById('redirectModalTitle');
+    const statusEl = document.getElementById('redirectStatusText');
+    const commandEl = document.getElementById('modalCommandText');
+    const timerEl = document.getElementById('timerText');
 
-            let kalanSaniye = 3;
-            document.getElementById('timerText').innerText = `${kalanSaniye} saniye içinde BynoGame bağış sayfası açılacak...`;
+    if (!modal || !titleEl || !statusEl || !commandEl || !timerEl) {
+        window.location.href = BYNOGAME_DONATION_URL;
+        return;
+    }
 
-            if (redirectTimer) clearInterval(redirectTimer);
-            redirectTimer = setInterval(() => {
-                kalanSaniye--;
-                if (kalanSaniye > 0) {
-                    document.getElementById('timerText').innerText = `${kalanSaniye} saniye içinde BynoGame bağış sayfası açılacak...`;
-                    return;
-                }
+    titleEl.innerText = '💳 BynoGame Sayfasına Yönlendiriliyorsunuz';
 
-                clearInterval(redirectTimer);
-                redirectTimer = null;
-                document.getElementById('redirectModal').style.display = 'none';
+    statusEl.innerText =
+        'Lütfen açılacak BynoGame sayfasında bağış işlemini tamamlayın. Ödeme kodun panoya kopyalandı:';
 
-                const opened = window.open(BYNOGAME_DONATION_URL, '_blank', 'noopener,noreferrer');
-                if (!opened) {
-                    showStatusToast('⚠️ BynoGame sekmesi tarayıcı tarafından engellendi. Ödeme kodun panoda; bağış sayfasını manuel açabilirsin.', 6000);
-                } else {
-                    showStatusToast(`✅ ${reference} kopyalandı · BynoGame yeni sekmede açıldı`, 4500);
-                }
-            }, 1000);
+    commandEl.innerText = reference;
+
+    modal.style.display = 'flex';
+
+    let kalanSaniye = 3;
+
+    timerEl.innerText =
+        `${kalanSaniye} saniye içinde BynoGame bağış sayfasına yönlendiriliyorsunuz...`;
+
+    if (redirectTimer) {
+        clearInterval(redirectTimer);
+    }
+
+    redirectTimer = setInterval(() => {
+
+        kalanSaniye--;
+
+        if (kalanSaniye > 0) {
+            timerEl.innerText =
+                `${kalanSaniye} saniye içinde BynoGame bağış sayfasına yönlendiriliyorsunuz...`;
+            return;
         }
+
+        clearInterval(redirectTimer);
+        redirectTimer = null;
+
+        timerEl.innerText =
+            'BynoGame bağış sayfasına yönlendiriliyorsunuz...';
+
+        window.location.href = BYNOGAME_DONATION_URL;
+
+    }, 1000);
+}
 
         async function checkTlPaymentOnce() {
             const savedRaw = localStorage.getItem(PENDING_TL_PAYMENT_KEY);
@@ -5727,53 +5748,64 @@ return;
     }
 
     function tv2RedirectCountdown(url, title, message, codeText='') {
-        const modal = document.getElementById('redirectModal');
-        const titleEl = document.getElementById('redirectModalTitle');
-        const statusEl = document.getElementById('redirectStatusText');
-        const commandEl = document.getElementById('modalCommandText');
-        const timerEl = document.getElementById('timerText');
+    const modal = document.getElementById('redirectModal');
+    const titleEl = document.getElementById('redirectModalTitle');
+    const statusEl = document.getElementById('redirectStatusText');
+    const commandEl = document.getElementById('modalCommandText');
+    const timerEl = document.getElementById('timerText');
 
-        if (!modal || !titleEl || !statusEl || !commandEl || !timerEl) {
-            const opened = window.open(url,'_blank','noopener,noreferrer');
-            if (!opened) showStatusToast('⚠️ Yeni sekme tarayıcı tarafından engellendi.',4000);
+    if (!modal || !titleEl || !statusEl || !commandEl || !timerEl) {
+        window.location.href = url;
+        return;
+    }
+
+    titleEl.innerText = title;
+    statusEl.innerText = message;
+
+    commandEl.innerText =
+        codeText ||
+        'Lütfen açılacak sayfadaki işlemi tamamlayın.';
+
+    modal.style.display = 'flex';
+
+    let kalan = 3;
+
+    timerEl.innerText =
+        `${kalan} saniye içinde yönlendiriliyorsunuz...`;
+
+    if (redirectTimer) {
+        clearInterval(redirectTimer);
+    }
+
+    redirectTimer = setInterval(() => {
+
+        kalan--;
+
+        if (kalan > 0) {
+            timerEl.innerText =
+                `${kalan} saniye içinde yönlendiriliyorsunuz...`;
             return;
         }
 
-        titleEl.innerText = title;
-        statusEl.innerText = message;
-        commandEl.innerText = codeText || 'Lütfen açılacak sayfadaki işlemi tamamlayın.';
-        modal.style.display = 'flex';
+        clearInterval(redirectTimer);
+        redirectTimer = null;
 
-        let kalan = 3;
-        timerEl.innerText = `${kalan} saniye içinde yönlendiriliyorsunuz...`;
+        timerEl.innerText =
+            'Yönlendiriliyorsunuz...';
 
-        if (redirectTimer) clearInterval(redirectTimer);
-        redirectTimer = setInterval(() => {
-            kalan--;
-            if (kalan > 0) {
-                timerEl.innerText = `${kalan} saniye içinde yönlendiriliyorsunuz...`;
-                return;
-            }
+        window.location.href = url;
 
-            clearInterval(redirectTimer);
-            redirectTimer = null;
-            modal.style.display = 'none';
-
-            const opened = window.open(url,'_blank','noopener,noreferrer');
-            if (!opened) {
-                showStatusToast('⚠️ Yönlendirme tarayıcı tarafından engellendi. Butona tekrar basabilirsin.',5000);
-            }
-        },1000);
-    }
+    }, 1000);
+}
 
     function tv2OpenKickChannel() {
-        tv2RedirectCountdown(
-            TV2_KICK_CHANNEL_URL,
-            '⭐ Kick Abonelik Sayfasına Yönlendiriliyorsunuz',
-            'Lütfen açılacak sayfada abonelik / hediye abonelik işlemini tamamlayın.',
-            'İşlem tamamlandıktan sonra markete geri dönebilirsin.'
-        );
-    }
+    tv2RedirectCountdown(
+        TV2_KICK_CHANNEL_URL,
+        '⭐ Kick Abonelik Sayfasına Yönlendiriliyorsunuz',
+        'Lütfen açılacak sayfada abonelik / hediye abonelik işlemini tamamlayın.',
+        'İşlem tamamlandıktan sonra markete geri dönebilirsin.'
+    );
+}
 
     function tv2RestorePendingTl() {
         const host = document.getElementById('tv2PendingTlHost');
