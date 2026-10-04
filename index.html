@@ -382,9 +382,22 @@
         .inbox-message:hover .inbox-message-delete,.inbox-message-delete:focus { opacity:1; }
         .inbox-message-delete:hover { background:#5a1717; border-color:#812b2b; color:#fff; }
         .inbox-message-delete svg { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; pointer-events:none; }
+
+        .inbox-message-support { margin-top:10px; padding-top:9px; border-top:1px solid rgba(255,255,255,.08); }
+        .inbox-message-support-btn { width:auto; min-width:104px; border:1px solid rgba(227,27,27,.55); background:rgba(227,27,27,.10); color:#ff8d8d; border-radius:9px; padding:8px 11px; font-size:.76rem; font-weight:900; cursor:pointer; }
+        .inbox-message-support-btn:hover:not(:disabled) { background:var(--weizend-red); color:#fff; border-color:var(--weizend-red); }
+        .inbox-message-support-btn:disabled { cursor:not-allowed; opacity:.48; background:#171717; color:#777; border-color:#303030; }
+        .inbox-inline-support-composer { display:none; margin-top:9px; gap:8px; align-items:flex-end; }
+        .inbox-inline-support-composer.open { display:flex; }
+        .inbox-inline-support-input { flex:1; min-width:0; min-height:66px; max-height:150px; resize:vertical; background:#080808; color:#fff; border:1px solid #393939; border-radius:10px; padding:10px 11px; font:inherit; line-height:1.4; }
+        .inbox-inline-support-input:focus { outline:none; border-color:var(--weizend-red); }
+        .inbox-inline-support-send { width:auto; min-width:82px; border:0; border-radius:10px; padding:10px 13px; background:var(--weizend-red); color:#fff; font-weight:900; cursor:pointer; }
+        .inbox-inline-support-send:disabled { background:#333; color:#777; cursor:not-allowed; }
         @media(max-width:640px){
             .inbox-message{max-width:94%;padding-right:44px;}
             .inbox-message-delete{opacity:1;}
+            .inbox-inline-support-composer.open{flex-direction:column;align-items:stretch;}
+            .inbox-inline-support-send{width:100%;min-height:42px;}
         }
 
         .inbox-reply-box { border-top:1px solid #292929; padding:14px 18px; background:#0c0c0c; }
@@ -2292,7 +2305,11 @@
                 const rows = Array.isArray(data.messages) ? data.messages : [];
                 renderInboxMessages(rows);
                 configureRestrictionAppeal(data,replyAllowed);
-                configureSupportRequest(data,replyAllowed);
+
+                // Talep açma artık bilgi mesajının hemen altında gösteriliyor.
+                // Eski alt destek kutusunu birleşik sohbet görünümünde kullanma.
+                const legacySupportBox = document.getElementById('inboxSupportBox');
+                if (legacySupportBox) legacySupportBox.style.display = 'none';
 
                 currentInboxThreads = [];
                 updateInboxBadge(0);
@@ -2521,54 +2538,42 @@
         }
 
         function configureSupportRequest(data = {}, replyAllowed = false) {
+            // Geriye dönük uyumluluk için fonksiyon korunuyor.
+            // Birleşik sohbet görünümünde talep butonları mesajların altında render edilir.
             const box = document.getElementById('inboxSupportBox');
-            const button = document.getElementById('inboxSupportButton');
-            const row = document.getElementById('inboxSupportRow');
-            const note = document.getElementById('inboxSupportNote');
-            const input = document.getElementById('inboxSupportInput');
-            if (!box || !button || !row || !note) return;
-
-            const allowed = data?.supportAllowed === true;
-            const used = data?.supportUsed === true;
-
-            // Birleşik mesaj görünümünde başka bir admin konuşmasında normal yanıt açık olsa bile
-            // satın alma / teslimat için verilen tek seferlik TALEP AÇ hakkını gizleme.
-            // Hak sadece ilgili destek kaydının kendi durumuna göre görünür.
-            if (!allowed && !used) {
-                box.style.display = 'none';
-                row.style.display = 'none';
-                if (input) input.value = '';
-                return;
-            }
-
-            box.style.display = 'block';
-            row.style.display = 'none';
-
-            if (used) {
-                button.style.display = 'none';
-                note.innerHTML = '✅ Talebiniz gönderildi. Yönetici yanıtını bekleyin. Yönetici mesaj göndermeyi açtığında bu konuşmadan devam edebilirsiniz.';
-            } else {
-                button.style.display = 'block';
-                button.textContent = 'TALEP AÇ';
-                note.innerHTML = 'Bu teslimatla ilgili <b>tek seferlik</b> talep mesajı gönderebilirsiniz.';
-            }
+            if (box) box.style.display = 'none';
         }
 
-        function openSupportRequestComposer() {
-            const row = document.getElementById('inboxSupportRow');
-            const button = document.getElementById('inboxSupportButton');
-            const input = document.getElementById('inboxSupportInput');
-            if (!row || !button || !input) return;
-            button.style.display = 'none';
-            row.style.display = 'flex';
-            input.focus();
+        function openInlineSupportComposer(encodedThreadId, encodedMessageId) {
+            const threadId = decodeURIComponent(encodedThreadId || '');
+            const messageId = decodeURIComponent(encodedMessageId || '');
+            if (!threadId || !messageId) return;
+
+            document.querySelectorAll('.inbox-inline-support-composer.open')
+                .forEach(el => el.classList.remove('open'));
+
+            const composer = document.getElementById(`supportComposer-${messageId}`);
+            const input = document.getElementById(`supportInput-${messageId}`);
+            if (!composer || !input) return;
+
+            composer.dataset.threadId = threadId;
+            composer.classList.add('open');
+            setTimeout(() => input.focus(), 30);
         }
 
-        async function sendSupportRequest() {
-            const input = document.getElementById('inboxSupportInput');
-            const sendButton = document.getElementById('inboxSupportSend');
+        function closeInlineSupportComposer(messageId) {
+            const composer = document.getElementById(`supportComposer-${messageId}`);
+            const input = document.getElementById(`supportInput-${messageId}`);
+            if (composer) composer.classList.remove('open');
+            if (input) input.value = '';
+        }
+
+        async function sendInlineSupportRequest(encodedThreadId, encodedMessageId) {
+            const threadId = decodeURIComponent(encodedThreadId || '');
+            const messageId = decodeURIComponent(encodedMessageId || '');
+            const input = document.getElementById(`supportInput-${messageId}`);
+            const sendButton = document.getElementById(`supportSend-${messageId}`);
             const message = String(input?.value || '').trim();
-            const threadId = currentInboxConversation?.supportThreadId;
 
             if (!threadId || !message) {
                 showStatusToast('⚠️ Talep mesajını yazmalısın.', 3000);
@@ -2577,16 +2582,33 @@
             }
 
             if (sendButton) sendButton.disabled = true;
+
             try {
                 await inboxRequest('/inbox/support-request', {
                     method: 'POST',
                     body: JSON.stringify({ threadId, message })
                 });
+
+                // Kullanıcı bir bilgi mesajından talep açınca o anda görünen
+                // bütün diğer TALEP AÇ butonlarını anında devre dışı bırak.
+                document.querySelectorAll('.inbox-message-support-btn')
+                    .forEach(button => {
+                        button.disabled = true;
+                        button.textContent = 'TALEP AÇ';
+                        button.title = 'Tek seferlik talep hakkı kullanıldı';
+                    });
+
                 if (input) input.value = '';
+                closeInlineSupportComposer(messageId);
+
                 await loadInbox(false);
-                showStatusToast('✅ Talebin yöneticiye gönderildi', 3200);
+                showStatusToast('✅ Talebin yöneticiye gönderildi. Diğer talep butonları kapatıldı.', 3600);
             } catch (error) {
                 showStatusToast(`❌ ${error.message || error}`, 4200);
+                // Başka sekmeden aynı anda kullanıldıysa görünümü sunucudan yenile.
+                if (String(error?.message || '').toLowerCase().includes('talep')) {
+                    await loadInbox(false).catch(() => {});
+                }
             } finally {
                 if (sendButton) sendButton.disabled = false;
             }
@@ -2611,13 +2633,46 @@
                     .replace(/\n{3,}/g,'\n\n')
                     .trim();
 
+                const messageId = String(item.id || '');
+                const threadId = String(item.thread_id || item.threadId || '');
+                const supportAnchor = Number(item.support_anchor ?? item.supportAnchor ?? 0) === 1;
+                const supportUsed = Number(item.support_used ?? item.supportUsed ?? 0) === 1;
+                const showSupport = senderType !== 'user' && supportAnchor && !!threadId && !!messageId;
+
                 const bubble = document.createElement('div');
                 bubble.className = `inbox-message ${senderType}`;
+
+                const supportHtml = showSupport ? `
+                    <div class="inbox-message-support">
+                        <button
+                            class="inbox-message-support-btn"
+                            ${supportUsed ? 'disabled' : ''}
+                            title="${supportUsed ? 'Tek seferlik talep hakkı kullanıldı' : 'Bu işlem hakkında tek seferlik talep aç'}"
+                            onclick="event.stopPropagation();openInlineSupportComposer('${encodeURIComponent(threadId)}','${encodeURIComponent(messageId)}')">
+                            TALEP AÇ
+                        </button>
+
+                        <div id="supportComposer-${escapeHtml(messageId)}" class="inbox-inline-support-composer">
+                            <textarea
+                                id="supportInput-${escapeHtml(messageId)}"
+                                class="inbox-inline-support-input"
+                                maxlength="3000"
+                                placeholder="Bu işlemle ilgili talebini yaz..."></textarea>
+                            <button
+                                id="supportSend-${escapeHtml(messageId)}"
+                                class="inbox-inline-support-send"
+                                onclick="event.stopPropagation();sendInlineSupportRequest('${encodeURIComponent(threadId)}','${encodeURIComponent(messageId)}')">
+                                Gönder
+                            </button>
+                        </div>
+                    </div>
+                ` : '';
 
                 bubble.innerHTML = `
                     <div class="inbox-message-sender">${escapeHtml(senderName)}</div>
                     <div class="inbox-message-text">${escapeHtml(body || '—')}</div>
                     <div class="inbox-message-date">${escapeHtml(inboxDateText(item.created_at || item.createdAt))}</div>
+                    ${supportHtml}
                     <button class="inbox-message-delete" title="Bu mesajı yalnızca benden sil" aria-label="Bu mesajı yalnızca benden sil"
                         onclick="event.stopPropagation();deleteInboxMessage('${encodeURIComponent(item.id)}')">
                         <svg viewBox="0 0 24 24" aria-hidden="true">
