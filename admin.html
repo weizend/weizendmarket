@@ -2990,15 +2990,13 @@ function renderPayments(){
       document.createElement('tr');
 
     const badgeClass =
-      p.status === 'paid'
-        ? 'ok'
-        : p.status === 'manual_review'
-        ? 'bad'
-        : 'warn';
+  p.status === 'paid'
+    ? 'ok'
+    : p.status === 'manual_review'
+    ? 'bad'
+    : 'warn';
 
-    let actions = '-';
-
-    let actions = '-';
+let actions = '-';
 
 if(p.status === 'manual_review'){
 
