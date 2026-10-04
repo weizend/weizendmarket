@@ -367,10 +367,21 @@ tr.user-row-blocked{background:rgba(227,27,27,.045)}
  .dmBubble{display:inline-block;width:fit-content;max-width:100%;min-width:44px;padding:9px 12px;border-radius:18px;line-height:1.35;font-size:.92rem;white-space:pre-wrap;overflow-wrap:anywhere;word-break:normal;border:0;box-shadow:none}
  .dmBubbleWrap.user .dmBubble{background:#1b1b1b;color:#f5f5f5;border:1px solid #292929;border-bottom-left-radius:6px}
  .dmBubbleWrap.admin .dmBubble{background:#e31b1b;color:#fff;border-bottom-right-radius:6px}
- .dmBubbleWrap.system .dmBubble{background:#141414;border:1px solid #2b2b2b;color:#aaa;text-align:center;font-size:.78rem;padding:7px 11px;border-radius:999px}
+ .dmBubbleWrap.system .dmBubble{background:#141414;border:1px solid #2b2b2b;color:#aaa;text-align:center;font-size:.78rem;padding:8px 12px;border-radius:14px;line-height:1.45;overflow-wrap:anywhere;word-break:break-word}
  .dmBubbleSubject{display:none!important}
  .dmBubbleMeta{font-size:.62rem;color:#707070;margin:3px 5px 0;line-height:1.2}
 .dmBubbleWrap.admin .dmBubbleMeta{text-align:right}
+
+.dmBubbleRow{display:flex;align-items:flex-end;gap:7px;max-width:100%;min-width:0}
+.dmBubbleWrap.admin .dmBubbleRow{flex-direction:row-reverse}
+.dmBubbleWrap.system .dmBubbleRow{justify-content:center}
+.dmBubble{overflow-wrap:anywhere;word-break:break-word;max-width:100%}
+.dmMessageDelete{width:30px!important;height:30px!important;min-width:30px!important;flex:0 0 30px;padding:0!important;border-radius:50%!important;background:#161616!important;border:1px solid #303030!important;color:#858585!important;display:inline-flex!important;align-items:center;justify-content:center;opacity:0;transition:.15s!important}
+.dmBubbleWrap:hover .dmMessageDelete,.dmMessageDelete:focus{opacity:1}
+.dmMessageDelete:hover{background:#541717!important;border-color:#7d2828!important;color:#fff!important;filter:none!important}
+.dmMessageDelete svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+@media(max-width:760px){.dmMessageDelete{opacity:1}}
+
  .dmComposer{flex:0 0 auto;display:flex;gap:9px;align-items:flex-end;padding:12px 14px 8px;border-top:1px solid #242424;background:#0f0f0f}
  .dmComposer textarea{min-height:44px;max-height:120px;resize:none;margin:0;padding:11px 14px;border-radius:22px;background:#090909}
  .dmComposer button{width:auto;min-width:88px;height:44px;padding:0 17px;border-radius:22px}
@@ -3309,6 +3320,241 @@ async function deletePayment(encodedId){
   }
 }
   
+
+/* =========================================================
+   USERS - KULLANICI YÖNETİMİ
+========================================================= */
+
+function userStatusText(status){
+  return {active:'Aktif',blocked:'Kısıtlı',archived:'Arşivlenmiş'}[status] || status || '-';
+}
+
+function userStatusBadge(status){
+  if(status === 'active') return 'ok';
+  if(status === 'blocked') return 'bad';
+  return 'warn';
+}
+
+function scheduleUserSearch(){
+  if(userSearchTimer) clearTimeout(userSearchTimer);
+  userSearchTimer = setTimeout(() => loadUsers(),300);
+}
+
+async function loadUsers(){
+  const q = String(document.getElementById('userSearch')?.value || '').trim();
+  const status = String(document.getElementById('userStatusFilter')?.value || '').trim();
+  const params = new URLSearchParams();
+  if(q) params.set('q',q);
+  if(status) params.set('status',status);
+
+  const body = document.getElementById('usersBody');
+  const count = document.getElementById('userCount');
+  if(body) body.innerHTML = '<tr><td colspan="8" class="muted">⏳ Kullanıcılar yükleniyor...</td></tr>';
+  if(count) count.textContent = 'Kullanıcılar yükleniyor...';
+
+  try{
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const {r,d} = await api(`/admin/users${query}`);
+    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+    usersCache = Array.isArray(d.users) ? d.users : [];
+    renderUsers();
+    hideStatus('usersStatus');
+  }catch(error){
+    usersCache = [];
+    if(count) count.textContent = 'Kullanıcılar yüklenemedi';
+    if(body) body.innerHTML = `<tr><td colspan="8" class="muted">❌ ${esc(error.message || error)}</td></tr>`;
+    showStatus('usersStatus','❌ ' + esc(error.message || error),false);
+  }
+}
+
+function renderUsers(){
+  const body = document.getElementById('usersBody');
+  const count = document.getElementById('userCount');
+  if(!body) return;
+  if(count) count.innerText = `${usersCache.length} kullanıcı`;
+  body.innerHTML = '';
+
+  if(usersCache.length === 0){
+    body.innerHTML = '<tr><td colspan="8" class="muted">Kullanıcı bulunamadı.</td></tr>';
+    return;
+  }
+
+  for(const u of usersCache){
+    const tr = document.createElement('tr');
+    if(u.status === 'blocked') tr.classList.add('user-row-blocked');
+    tr.innerHTML = `
+      <td><strong>${esc(u.username || '-')}</strong></td>
+      <td>${esc(u.nickname || '-')}</td>
+      <td>${esc(points(u.points))}</td>
+      <td>${esc(u.level ?? '-')}</td>
+      <td>${esc(dateText(u.first_verified_at))}</td>
+      <td>${esc(dateText(u.last_seen_at || u.last_activity_at))}</td>
+      <td><span class="badge ${userStatusBadge(u.status)}" ${u.blocked_reason ? `title="${esc(u.blocked_reason)}"` : ''}>${esc(userStatusText(u.status))}</span></td>
+      <td><button class="smallBtn secondary" onclick="openUser('${encodeURIComponent(u.kick_uid)}')">⚙️ İşlem Yap</button></td>
+    `;
+    body.appendChild(tr);
+  }
+}
+
+async function openUser(encodedUid){
+  const uid = decodeURIComponent(encodedUid || '');
+  if(!uid) return;
+
+  try{
+    const {r,d} = await api(`/admin/user?uid=${encodeURIComponent(uid)}`);
+    if(!r.ok || !d?.success || !d?.user) throw new Error(d?.error || `HTTP ${r.status}`);
+    currentAdminUser = d.user;
+    currentAdminUser.notes = Array.isArray(d.notes) ? d.notes : [];
+    renderUserDetail();
+  }catch(error){
+    showStatus('usersStatus','❌ ' + esc(error.message || error),false);
+  }
+}
+
+function renderUserDetail(){
+  if(!currentAdminUser) return;
+  const u = currentAdminUser;
+  const restricted = u.status === 'blocked';
+
+  document.getElementById('userDetailCard')?.classList.remove('hidden');
+  document.getElementById('userDetailTitle').innerText = `👤 ${u.username || 'Kullanıcı'}`;
+  document.getElementById('userDetailStatusText').innerText = `${restricted ? '⛔ Kısıtlı' : '✅ Aktif'} · UID: ${u.kick_uid || '-'}`;
+  document.getElementById('userSummary').innerHTML = `
+    <div class="userSummaryItem"><span>Kick Adı</span><strong>${esc(u.username || '-')}</strong></div>
+    <div class="userSummaryItem"><span>Takma Ad</span><strong>${esc(u.nickname || '-')}</strong></div>
+    <div class="userSummaryItem"><span>Bakiye</span><strong>${esc(points(u.points))}</strong></div>
+    <div class="userSummaryItem"><span>Level</span><strong>${esc(u.level ?? '-')}</strong></div>
+    <div class="userSummaryItem"><span>İlk Doğrulama</span><strong>${esc(dateText(u.first_verified_at))}</strong></div>
+    <div class="userSummaryItem"><span>Son Görülme</span><strong>${esc(dateText(u.last_seen_at || u.last_activity_at))}</strong></div>
+  `;
+
+  const banner = document.getElementById('userRestrictionBanner');
+  if(banner){
+    if(restricted){
+      banner.style.display = 'block';
+      banner.innerHTML = `<strong>⛔ HESAP KISITLI</strong>${esc(u.blocked_reason || 'Kısıtlama nedeni belirtilmemiş.')}`;
+    }else{
+      banner.style.display = 'none';
+      banner.innerHTML = '';
+    }
+  }
+
+  const actions = document.getElementById('userRestrictionActions');
+  if(actions){
+    actions.innerHTML = restricted
+      ? '<button class="success" onclick="toggleUserRestriction()">✅ Kısıtlamayı Kaldır</button>'
+      : '<button class="danger" onclick="toggleUserRestriction()">⛔ Hesabı Kısıtla</button>';
+  }
+
+  const nickname = document.getElementById('userNickname');
+  if(nickname) nickname.value = u.nickname || '';
+
+  const reason = document.getElementById('userBlockReason');
+  if(reason){
+    reason.value = u.blocked_reason || '';
+    reason.disabled = restricted;
+  }
+
+  renderUserNotes();
+  document.getElementById('userDetailCard')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function closeUserDetail(){
+  currentAdminUser = null;
+  document.getElementById('userDetailCard')?.classList.add('hidden');
+}
+
+async function refreshCurrentUser(){
+  if(!currentAdminUser?.kick_uid) return;
+  await openUser(encodeURIComponent(currentAdminUser.kick_uid));
+}
+
+async function saveUserNickname(){
+  if(!currentAdminUser) return;
+  const nickname = String(document.getElementById('userNickname')?.value || '').trim();
+  try{
+    const {r,d} = await api('/admin/user/nickname',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({kickUid:currentAdminUser.kick_uid,nickname})
+    });
+    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+    await loadUsers();
+    await refreshCurrentUser();
+    showStatus('usersStatus','✅ Takma ad kaydedildi.',true);
+  }catch(error){
+    showStatus('usersStatus','❌ ' + esc(error.message || error),false);
+  }
+}
+
+async function toggleUserRestriction(){
+  if(!currentAdminUser) return;
+  const currentlyRestricted = currentAdminUser.status === 'blocked';
+  const nextStatus = currentlyRestricted ? 'active' : 'blocked';
+  const reason = String(document.getElementById('userBlockReason')?.value || '').trim();
+
+  if(!currentlyRestricted && !reason){
+    showStatus('usersStatus','⚠️ Hesabı kısıtlamak için kullanıcıya gösterilecek nedeni yazmalısın.',false);
+    document.getElementById('userBlockReason')?.focus();
+    return;
+  }
+
+  const question = currentlyRestricted
+    ? `${currentAdminUser.username} kullanıcısının hesap kısıtlaması kaldırılsın mı?`
+    : `${currentAdminUser.username} kullanıcısının hesabı kısıtlansın mı?\n\nKullanıcıya gösterilecek neden:\n${reason}`;
+
+  if(!confirm(question)) return;
+  await setUserStatus(nextStatus,reason);
+}
+
+async function setUserStatus(status,suppliedReason=''){
+  if(!currentAdminUser) return;
+  const reason = String(suppliedReason || '').trim();
+  try{
+    const {r,d} = await api('/admin/user/status',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({kickUid:currentAdminUser.kick_uid,status,reason})
+    });
+    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+    showStatus('usersStatus',status === 'blocked'
+      ? '✅ Hesap kısıtlandı ve kullanıcı bilgilendirildi.'
+      : '✅ Hesap kısıtlaması kaldırıldı.',true);
+    await loadUsers();
+    await refreshCurrentUser();
+  }catch(error){
+    showStatus('usersStatus','❌ ' + esc(error.message || error),false);
+  }
+}
+
+async function addUserNote(){
+  if(!currentAdminUser) return;
+  const note = String(document.getElementById('userAdminNote')?.value || '').trim();
+  if(!note) return;
+  try{
+    const {r,d} = await api('/admin/user/note',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({kickUid:currentAdminUser.kick_uid,note})
+    });
+    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+    document.getElementById('userAdminNote').value = '';
+    await refreshCurrentUser();
+  }catch(error){
+    showStatus('usersStatus','❌ ' + esc(error.message || error),false);
+  }
+}
+
+function renderUserNotes(){
+  const box = document.getElementById('userNotesList');
+  if(!box) return;
+  const notes = currentAdminUser?.notes || [];
+  if(notes.length === 0){
+    box.innerHTML = '<div class="muted">Admin notu yok.</div>';
+    return;
+  }
+  box.innerHTML = notes.map(n => `
+    <div class="row"><span>${esc(dateText(n.created_at))}</span><strong>${esc(n.note)}</strong></div>
+  `).join('');
+}
+
 /* =========================================================
    ADMIN MESAJLAR - INSTAGRAM TARZI TEK KONUŞMA
 ========================================================= */
@@ -3575,7 +3821,16 @@ function renderAdminConversation(){
 
       return `
         <div class="dmBubbleWrap ${type}">
-          <div class="dmBubble">${esc(body || '—')}</div>
+          <div class="dmBubbleRow">
+            <div class="dmBubble">${esc(body || '—')}</div>
+            <button class="dmMessageDelete" title="Mesajı sil" aria-label="Mesajı sil"
+              onclick="event.stopPropagation();deleteAdminConversationMessage('${encodeURIComponent(m.id)}')">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 6h18"></path><path d="M8 6V4h8v2"></path>
+                <path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v5"></path><path d="M14 11v5"></path>
+              </svg>
+            </button>
+          </div>
           <div class="dmBubbleMeta">${esc(dateText(m.created_at))} · ${esc(dmReadText(m))}</div>
         </div>`;
     }).join('');
@@ -3624,6 +3879,51 @@ async function sendAdminConversationMessage(){
     showStatus('adminMessagesStatus','❌ ' + esc(error.message || error),false);
   }finally{
     if(button){ button.disabled = false; button.textContent = oldText; }
+  }
+}
+
+
+function deleteAdminConversationMessage(encodedMessageId){
+  const messageId = decodeURIComponent(encodedMessageId || '');
+  if(!messageId) return;
+
+  openAdminChoiceModal({
+    type:'message',
+    messageId,
+    threadId:'',
+    title:'🗑 Mesajı nasıl silmek istiyorsun?',
+    text:'Sadece Benden Sil mesajı yalnızca admin panelinden kaldırır. Herkesten Sil ise mesajı hem admin panelinden hem kullanıcının Mesaj Kutusundan kaldırır.',
+    primaryLabel:'👤 Sadece Benden Sil',
+    primaryClass:'secondary',
+    secondaryLabel:'👥 Herkesten Sil',
+    secondaryClass:'danger'
+  });
+}
+
+async function performDeleteAdminMessage(messageId,threadId,scope){
+  if(!messageId) return;
+  try{
+    const {r,d} = await api('/admin/message/delete',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({messageId,scope})
+    });
+    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+
+    if(currentAdminConversationUid){
+      await selectAdminConversation(encodeURIComponent(currentAdminConversationUid),true);
+    }
+    await loadAdminConversations(true,false);
+
+    showStatus(
+      'adminMessagesStatus',
+      scope === 'everyone'
+        ? '✅ Mesaj herkesten silindi.'
+        : '✅ Mesaj yalnızca admin görünümünden silindi.',
+      true
+    );
+  }catch(error){
+    showStatus('adminMessagesStatus','❌ ' + esc(error.message || error),false);
   }
 }
 
