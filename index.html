@@ -3830,8 +3830,8 @@ return;
         }
 
         function showBynoGameRedirect(reference) {
-            document.getElementById('redirectModalTitle').innerText = 'BynoGame Ödeme Kodu';
-            document.getElementById('redirectStatusText').innerText = 'Tek kullanımlık ödeme kodu kopyalandı. BynoGame bağış mesajına bu kodu yapıştır:';
+            document.getElementById('redirectModalTitle').innerText = '💳 BynoGame Sayfasına Yönlendiriliyorsunuz';
+            document.getElementById('redirectStatusText').innerText = 'Lütfen açılacak BynoGame sayfasında bağış işlemini tamamlayın. Ödeme kodun panoya kopyalandı:';
             document.getElementById('modalCommandText').innerText = reference;
             document.getElementById('redirectModal').style.display = 'flex';
 
@@ -4697,7 +4697,7 @@ return;
 
                     <div class="tv2-card-note">
                         ${teamMode
-                            ? `Kayıtlı takımlar ve oyuncular turnuva detayında görülebilir. Takım kaptanı takım oluştururken takım üyelerinin tam Kick kullanıcı adlarını ve ${tv2Esc(rule.gameIdLabel || 'oyun içi isimleri')} girer.`
+                            ? `Sadece tüm oyuncu katılımları ve katılım şartları tamamlanan takımlar herkese açık listede görünür. Kaptan takım oluştururken üyelerin tam Kick kullanıcı adlarını ve ${tv2Esc(rule.gameIdLabel || 'oyun içi isimlerini')} girer.`
                             : `Kayıtlı oyuncuları, fikstürü ve sonuçları turnuva detayından görebilirsin.`}
                     </div>
 
@@ -4927,7 +4927,8 @@ return;
 
         return `
             <div class="tv2-panel">
-                <h4>👥 Kayıt Olan Takımlar ve Oyuncular</h4>
+                <h4>👥 Kaydı Tamamlanan Takımlar</h4>
+                <div class="tv2-muted" style="margin-bottom:10px;">Yalnızca tüm oyuncuları ve katılım şartları tamamlanan takımlar burada görünür.</div>
                 ${teams.length
                     ? teams.map(team=>`
                         <div class="tv2-panel" style="margin-top:10px;">
@@ -5223,19 +5224,23 @@ return;
 
         host.innerHTML = `
             <div class="tv2-panel tv2-form-card">
-                <h4>👑 Takımını Oluştur</h4>
+                <h4>👑 Takım Kaydı</h4>
+                <div class="tv2-message" style="margin-bottom:12px;">
+                    <b>1.</b> Takım adını yaz. <b>2.</b> Her oyuncunun Kick adı ve oyun içi adını gir. <b>3.</b> Takımı oluştur ve katılım şartlarını tamamla.
+                </div>
                 <div class="tv2-field">
-                    <label>Takım Adı</label>
+                    <label>1 · Takım Adı</label>
                     <input id="tv2TeamName" class="tv2-input" maxlength="32" placeholder="Örn: OYNAMAYI UNUTTUK">
                 </div>
+                <div class="tv2-muted" style="margin:8px 0 10px;">2 · Oyuncular</div>
                 <div class="tv2-roster-grid">${rows}</div>
                 <label class="tv2-terms" style="margin-top:10px;">
                     <input id="tv2TermsCreate" type="checkbox">
-                    <span>Takım adını, tüm Kick kullanıcı adlarını ve oyun içi isimleri doğru girdiğimi; yanlış bilgilerin turnuva kaydını etkileyebileceğini kabul ediyorum.</span>
+                    <span>Bilgilerin doğru olduğunu kontrol ettim.</span>
                 </label>
                 <div id="tv2FormStatus" style="margin-top:10px;"></div>
                 <div class="tv2-actions">
-                    <button class="tv2-btn" onclick="tv2SubmitCreate()">TAKIMI OLUŞTUR</button>
+                    <button id="tv2CreateTeamButton" class="tv2-btn" onclick="tv2SubmitCreate()">3 · TAKIMI OLUŞTUR</button>
                     <button class="tv2-btn secondary" onclick="tv2CancelInlineForm()">İptal</button>
                 </div>
             </div>
@@ -5302,6 +5307,11 @@ return;
         }
 
         tv2State.busy = true;
+        const createButton = document.getElementById('tv2CreateTeamButton');
+        if (createButton) {
+            createButton.disabled = true;
+            createButton.textContent = '⏳ TAKIM OLUŞTURULUYOR...';
+        }
         try {
             await tv2AuthFetch('/tournament/v2/team/create', {
                 method:'POST',
@@ -5321,6 +5331,11 @@ return;
             tv2SetFormStatus(error.message || error);
         } finally {
             tv2State.busy = false;
+            const createButton = document.getElementById('tv2CreateTeamButton');
+            if (createButton) {
+                createButton.disabled = false;
+                createButton.textContent = '3 · TAKIMI OLUŞTUR';
+            }
         }
     }
 
@@ -5442,10 +5457,11 @@ return;
             paymentHtml = `
                 <div class="tv2-panel" style="margin-top:12px;">
                     <h4>${rule.entryMode === 'subscription' ? '⭐ Abonelik Şartını Tamamla' : rule.entryMode === 'tl' ? '💳 Katılım Ücretini Öde' : '🎁 Katılımı Tamamla'}</h4>
-                    <div class="tv2-muted" style="margin-bottom:10px;">
-                        ${isCaptain
-                            ? 'Katılım şartını üstlenmek istediğin oyuncuları seç. Seçtiğin oyuncular tek işlem altında işaretlenir.'
-                            : 'Yalnızca kendi oyuncu satırın için işlem yapabilirsin.'}
+                    <div class="tv2-message" style="margin-bottom:10px;">
+                        <b>1.</b> İşlem yapılacak oyuncuyu / oyuncuları seç.<br>
+                        <b>2.</b> Aşağıdaki butona bas.<br>
+                        <b>3.</b> Açılacak BynoGame veya Kick sayfasında işlemi tamamla.<br>
+                        <span class="tv2-muted">Tüm oyuncuların şartı tamamlanınca takım otomatik olarak herkese açık listede görünür.</span>
                     </div>
                     ${payCandidates.map(slot => `
                         <label class="tv2-pay-select">
@@ -5469,7 +5485,7 @@ return;
                     ` : ''}
                     <div id="tv2PaymentStatus"></div>
                     <div class="tv2-actions">
-                        <button class="tv2-btn" onclick="tv2StartPayment()">${rule.entryMode === 'subscription' ? 'ABONELİK İŞLEMİNİ BAŞLAT' : rule.entryMode === 'tl' ? 'ÖDEME KODU OLUŞTUR' : 'KATILIMI TAMAMLA'}</button>
+                        <button id="tv2StartPaymentButton" class="tv2-btn" onclick="tv2StartPayment()">${rule.entryMode === 'subscription' ? 'DEVAM ET · KICK ABONELİK' : rule.entryMode === 'tl' ? 'DEVAM ET · BYNOGAME' : 'KATILIMI TAMAMLA'}</button>
                     </div>
                 </div>
             `;
@@ -5496,6 +5512,11 @@ return;
                     <span class="tv2-status-pill ${team.status==='ready'?'ok':team.status==='locked'?'ok':'warn'}">${tv2Esc(tv2TeamStatusLabel(team.status))}</span>
                 </div>
                 <div style="margin-top:12px;" class="tv2-team-slots">${slotsHtml}</div>
+            </div>
+            <div class="tv2-message ${['ready','locked'].includes(team.status) ? 'success' : ''}" style="margin-top:12px;">
+                ${['ready','locked'].includes(team.status)
+                    ? '✅ Takım kaydı tamamlandı. Takımın artık herkese açık katılımcı listesinde görünüyor.'
+                    : '⏳ Takım henüz herkese açık listede görünmüyor. Tüm oyuncular takıma katılıp katılım / ödeme şartını tamamladığında otomatik olarak yayınlanacak.'}
             </div>
             ${requestHtml}
             ${claimHtml}
@@ -5611,7 +5632,12 @@ return;
 
         tv2State.busy = true;
         const statusEl = document.getElementById('tv2PaymentStatus');
-        if (statusEl) statusEl.innerHTML = '<div class="tv2-message">⏳ İşlem oluşturuluyor...</div>';
+        const paymentButton = document.getElementById('tv2StartPaymentButton');
+        if (paymentButton) {
+            paymentButton.disabled = true;
+            paymentButton.textContent = '⏳ İŞLEM HAZIRLANIYOR...';
+        }
+        if (statusEl) statusEl.innerHTML = '<div class="tv2-message">⏳ İşlem hazırlanıyor. Lütfen bu ekranı kapatma...</div>';
 
         try {
             const data = await tv2AuthFetch('/tournament/v2/team/payment/start',{
@@ -5673,12 +5699,58 @@ return;
             if (statusEl) statusEl.innerHTML = `<div class="tv2-message error">❌ ${tv2Esc(error.message || error)}</div>`;
         } finally {
             tv2State.busy = false;
+            const paymentButton = document.getElementById('tv2StartPaymentButton');
+            if (paymentButton) paymentButton.disabled = false;
         }
     }
 
+    function tv2RedirectCountdown(url, title, message, codeText='') {
+        const modal = document.getElementById('redirectModal');
+        const titleEl = document.getElementById('redirectModalTitle');
+        const statusEl = document.getElementById('redirectStatusText');
+        const commandEl = document.getElementById('modalCommandText');
+        const timerEl = document.getElementById('timerText');
+
+        if (!modal || !titleEl || !statusEl || !commandEl || !timerEl) {
+            const opened = window.open(url,'_blank','noopener,noreferrer');
+            if (!opened) showStatusToast('⚠️ Yeni sekme tarayıcı tarafından engellendi.',4000);
+            return;
+        }
+
+        titleEl.innerText = title;
+        statusEl.innerText = message;
+        commandEl.innerText = codeText || 'Lütfen açılacak sayfadaki işlemi tamamlayın.';
+        modal.style.display = 'flex';
+
+        let kalan = 3;
+        timerEl.innerText = `${kalan} saniye içinde yönlendiriliyorsunuz...`;
+
+        if (redirectTimer) clearInterval(redirectTimer);
+        redirectTimer = setInterval(() => {
+            kalan--;
+            if (kalan > 0) {
+                timerEl.innerText = `${kalan} saniye içinde yönlendiriliyorsunuz...`;
+                return;
+            }
+
+            clearInterval(redirectTimer);
+            redirectTimer = null;
+            modal.style.display = 'none';
+
+            const opened = window.open(url,'_blank','noopener,noreferrer');
+            if (!opened) {
+                showStatusToast('⚠️ Yönlendirme tarayıcı tarafından engellendi. Butona tekrar basabilirsin.',5000);
+            }
+        },1000);
+    }
+
     function tv2OpenKickChannel() {
-        const opened = window.open(TV2_KICK_CHANNEL_URL,'_blank','noopener,noreferrer');
-        if (!opened) showStatusToast('⚠️ Kick sekmesi tarayıcı tarafından engellendi. Kanalı manuel açabilirsin.',4000);
+        tv2RedirectCountdown(
+            TV2_KICK_CHANNEL_URL,
+            '⭐ Kick Abonelik Sayfasına Yönlendiriliyorsunuz',
+            'Lütfen açılacak sayfada abonelik / hediye abonelik işlemini tamamlayın.',
+            'İşlem tamamlandıktan sonra markete geri dönebilirsin.'
+        );
     }
 
     function tv2RestorePendingTl() {
@@ -5715,7 +5787,7 @@ return;
         tv2State.tlTimer = setInterval(() => {
             if (document.getElementById('tv2Modal')?.style.display !== 'flex') return;
             tv2CheckTlPayment(paymentId,false).catch(()=>{});
-        },10000);
+        },20000);
     }
 
     async function tv2CheckTlPayment(paymentId, notify=false) {
@@ -5800,7 +5872,7 @@ return;
         tv2State.subTimer = setInterval(() => {
             if (document.getElementById('tv2Modal')?.style.display !== 'flex') return;
             tv2RefreshSubscription(pending.id,false).catch(()=>{});
-        },15000);
+        },30000);
     }
 
     async function tv2RefreshSubscription(paymentId, notify=true) {
@@ -5896,7 +5968,7 @@ return;
                     </div>
                     ${!paid ? `
                         <div class="tv2-actions">
-                            <button class="tv2-btn" onclick="window.open('${TV2_KICK_CHANNEL_URL}','_blank','noopener,noreferrer')">⭐ KICK KANALINI AÇ</button>
+                            <button class="tv2-btn" onclick="tv2OpenKickChannel()">⭐ KICK KANALINI AÇ</button>
                             <button class="tv2-btn secondary" onclick="tv2RefreshSubscription('${tv2Esc(subscriptionPayment.id)}',true)">🔄 ABONELİĞİ KONTROL ET</button>
                             ${Number(subscriptionPayment.receivedDirectSubs||0)===0 && Number(subscriptionPayment.receivedGifts||0)===0
                                 ? `<button class="tv2-btn danger" onclick="tv2CancelPendingPayment('${tv2Esc(subscriptionPayment.id)}','subscription')">İŞLEMİ İPTAL ET</button>`
@@ -6018,7 +6090,7 @@ return;
                 const directLeft = Number(p.remainingDirectSubs || 0);
                 const giftsLeft = Number(p.remainingGifts || 0);
                 showStatusToast(`⭐ Kayıt oluşturuldu. Kalan: ${directLeft} normal abonelik + ${giftsLeft} gift.`,5000);
-                window.open(TV2_KICK_CHANNEL_URL,'_blank','noopener,noreferrer');
+                tv2OpenKickChannel();
             } else {
                 showStatusToast('✅ Turnuva kaydın tamamlandı.',3500);
             }
