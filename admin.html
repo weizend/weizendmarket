@@ -490,6 +490,68 @@ body.dmModalOpen{overflow:hidden}
 .tournamentEmpty{background:#111;border:1px dashed #333;border-radius:12px;padding:18px;color:#888;text-align:center}
 @media(max-width:700px){.tournamentTeamHead{flex-direction:column}.tournamentState{white-space:normal}.tournamentQuickInfo,.tournamentEntrySummary{gap:6px}.tournamentPill{font-size:.75rem;padding:6px 8px}}
 
+
+
+/* =========================================================
+   ADMIN DM KAYDIRMA DÜZELTMESİ
+   ========================================================= */
+.dmShell{
+  min-height:0;
+}
+.dmChat{
+  height:100%;
+  min-height:0;
+  overflow:hidden;
+}
+.dmChatPanel{
+  height:100%;
+  min-height:0;
+  overflow:hidden;
+}
+.dmMessages{
+  flex:1 1 auto;
+  min-height:0;
+  height:0;
+  max-height:none;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-gutter:stable;
+  scrollbar-width:thin;
+  scrollbar-color:#555 #0b0b0b;
+}
+.dmMessages::-webkit-scrollbar{
+  width:10px;
+}
+.dmMessages::-webkit-scrollbar-track{
+  background:#0b0b0b;
+}
+.dmMessages::-webkit-scrollbar-thumb{
+  background:#444;
+  border-radius:999px;
+  border:2px solid #0b0b0b;
+}
+.dmMessages::-webkit-scrollbar-thumb:hover{
+  background:#666;
+}
+.dmChatHeader,
+.dmComposer,
+.dmComposerHint{
+  flex-shrink:0;
+}
+
+@media(max-width:800px){
+  .dmShell{
+    height:min(82dvh,760px);
+    min-height:520px;
+  }
+  .dmChat{
+    min-height:0;
+    height:100%;
+  }
+}
+
 </style>
 </head>
 
