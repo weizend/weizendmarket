@@ -2070,7 +2070,11 @@ async function createGiftCode(){
   const deliveryValue = String(document.getElementById('giftDeliveryValue')?.value || '').trim();
 
   if(!productName || !deliveryValue){
-    showStatus('giftCodeStatus','⚠️ Ürün adı ve teslim edilecek VP / ürün kodunu yazmalısın.',false);
+    showStatus(
+      'giftCodeStatus',
+      '⚠️ Ürün adı ve teslim edilecek VP / ürün kodunu yazmalısın.',
+      false
+    );
     return;
   }
 
@@ -2086,15 +2090,25 @@ async function createGiftCode(){
     }
 
     lastCreatedGiftCode = d.giftCode.code;
+
     document.getElementById('giftCreatedCode').textContent = lastCreatedGiftCode;
     document.getElementById('giftCreatedBox').style.display = 'block';
     document.getElementById('giftDeliveryValue').value = '';
 
-    showStatus('giftCodeStatus','✅ Tek kullanımlık hediye kodu oluşturuldu. Bu kod yalnızca bir kez kullanılabilir.',true);
+    showStatus(
+      'giftCodeStatus',
+      '✅ Tek kullanımlık hediye kodu oluşturuldu. Bu kod yalnızca bir kez kullanılabilir.',
+      true
+    );
+
     await loadGiftCodes();
-    showStatus('giftCodeStatus','✅ Hediye kodu silindi ve artık geçersiz.',true);
+
   }catch(error){
-    showStatus('giftCodeStatus','❌ '+esc(error.message || error),false);
+    showStatus(
+      'giftCodeStatus',
+      '❌ ' + esc(error.message || error),
+      false
+    );
   }
 }
 
@@ -4764,7 +4778,11 @@ async function createTournament(){
   }
   
   if(!comingSoon && entryMode === 'subscription' && !registrationClosesAt){
-  showStatus('createTournamentStatus','❌ Abonelik / Gift turnuvasında kayıt kapanış tarihi zorunlu.',false);
+  showStatus(
+    'createTournamentStatus',
+    '❌ Abonelik / Gift turnuvasında kayıt kapanış tarihi zorunlu.',
+    false
+  );
   return;
 }
 
@@ -5116,7 +5134,11 @@ async function saveTournamentConfig(){
   }
   
   if(!comingSoon && entryMode === 'subscription' && !registrationClosesAt){
-  showStatus('tournamentStatus','❌ Abonelik / Gift turnuvasında kayıt kapanış tarihi zorunlu.',false);
+  showStatus(
+    'tournamentStatus',
+    '❌ Abonelik / Gift turnuvasında kayıt kapanış tarihi zorunlu.',
+    false
+  );
   return;
 }
 
