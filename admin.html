@@ -2998,30 +2998,45 @@ function renderPayments(){
 
     let actions = '-';
 
-    if(p.status === 'manual_review'){
+    let actions = '-';
 
-      actions = `
-        <button
-          class="smallBtn success"
-          onclick="resolvePayment(
-            '${encodeURIComponent(p.id)}',
-            'approve_exact'
-          )">
-          Onayla
-        </button>
+if(p.status === 'manual_review'){
 
-        <button
-          class="smallBtn danger"
-          style="margin-top:5px"
-          onclick="resolvePayment(
-            '${encodeURIComponent(p.id)}',
-            'cancel'
-          )">
-          İptal
-        </button>
-      `;
+  actions = `
+    <button
+      class="smallBtn success"
+      onclick="resolvePayment(
+        '${encodeURIComponent(p.id)}',
+        'approve_exact'
+      )">
+      Onayla
+    </button>
 
-    }
+    <button
+      class="smallBtn danger"
+      style="margin-top:5px"
+      onclick="resolvePayment(
+        '${encodeURIComponent(p.id)}',
+        'cancel'
+      )">
+      İptal
+    </button>
+  `;
+
+}else if(
+  p.status === 'pending' ||
+  p.status === 'cancelled'
+){
+
+  actions = `
+    <button
+      class="smallBtn danger"
+      onclick="deletePayment('${encodeURIComponent(p.id)}')">
+      🗑 Sil
+    </button>
+  `;
+
+}
 
     tr.innerHTML = `
       <td class="code">${esc(p.reference)}</td>
@@ -3124,7 +3139,62 @@ async function resolvePayment(
   }
 }
 
+async function deletePayment(encodedId){
 
+  const paymentId =
+    decodeURIComponent(encodedId);
+
+  if(
+    !confirm(
+      'Bu ödeme kaydını kalıcı olarak silmek istiyor musun? Bu işlem geri alınamaz.'
+    )
+  ){
+    return;
+  }
+
+  try{
+
+    const {r,d} =
+      await api(
+        '/admin/payment/delete',
+        {
+          method:'POST',
+          headers:{
+            'Content-Type':'application/json'
+          },
+          body: JSON.stringify({ paymentId })
+        }
+      );
+
+    if(
+      !r.ok ||
+      !d?.success
+    ){
+      throw new Error(
+        d?.error ||
+        `HTTP ${r.status}`
+      );
+    }
+
+    showStatus(
+      'paymentsStatus',
+      '✅ Ödeme kaydı silindi.',
+      true
+    );
+
+    await loadPayments();
+
+  }catch(error){
+
+    showStatus(
+      'paymentsStatus',
+      '❌ ' + esc(error.message || error),
+      false
+    );
+
+  }
+}
+  
 /* =========================================================
    ADMIN MESSAGE CENTER
 ========================================================= */
