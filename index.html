@@ -2531,7 +2531,10 @@
             const allowed = data?.supportAllowed === true;
             const used = data?.supportUsed === true;
 
-            if (replyAllowed || (!allowed && !used)) {
+            // Birleşik mesaj görünümünde başka bir admin konuşmasında normal yanıt açık olsa bile
+            // satın alma / teslimat için verilen tek seferlik TALEP AÇ hakkını gizleme.
+            // Hak sadece ilgili destek kaydının kendi durumuna göre görünür.
+            if (!allowed && !used) {
                 box.style.display = 'none';
                 row.style.display = 'none';
                 if (input) input.value = '';
