@@ -5033,7 +5033,14 @@ return;
         let data = null;
         try { data = await response.json(); } catch (_) {}
         if (!response.ok || !data?.success) {
-            const err = new Error(data?.error || `HTTP ${response.status}`);
+            const publicError = String(data?.error || '').trim();
+            const workerDetail = String(data?.message || '').trim();
+            const message =
+                publicError === 'Worker hatası' && workerDetail
+                    ? workerDetail
+                    : (publicError || workerDetail || `HTTP ${response.status}`);
+
+            const err = new Error(message);
             err.status = response.status;
             err.data = data;
             throw err;
@@ -5328,6 +5335,18 @@ return;
             await tv2ReloadMe();
             await tv2LoadCatalog(false);
         } catch (error) {
+            // D1 kaydı oluşup sonraki yardımcı adım hata verdiyse kullanıcıyı
+            // tekrar takım oluşturmaya zorlamak yerine mevcut takımı geri yükle.
+            if (Number(error?.status || 0) >= 500) {
+                try {
+                    await tv2ReloadMe();
+                    if (tv2State.me?.team) {
+                        tv2State.form = '';
+                        showStatusToast('✅ Takım kaydı oluşturulmuş. İşlemlere mevcut takım üzerinden devam edebilirsin.',4500);
+                        return;
+                    }
+                } catch (_) {}
+            }
             tv2SetFormStatus(error.message || error);
         } finally {
             tv2State.busy = false;
