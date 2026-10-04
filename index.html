@@ -375,6 +375,18 @@
         .inbox-message.user .inbox-message-sender { color:#ddd; text-align:right; }
         .inbox-message-text { color:#eee; line-height:1.55; white-space:pre-wrap; word-break:break-word; }
         .inbox-message-date { margin-top:7px; color:#747474; font-size:.7rem; text-align:right; }
+
+        .inbox-message { position:relative; max-width:min(86%,680px); min-width:0; overflow:hidden; padding-right:48px; }
+        .inbox-message-text { overflow-wrap:anywhere; word-break:break-word; max-width:100%; }
+        .inbox-message-delete { position:absolute; top:8px; right:8px; width:30px; height:30px; padding:0; border-radius:50%; border:1px solid #303030; background:#151515; color:#858585; display:flex; align-items:center; justify-content:center; opacity:0; transition:.15s; cursor:pointer; }
+        .inbox-message:hover .inbox-message-delete,.inbox-message-delete:focus { opacity:1; }
+        .inbox-message-delete:hover { background:#5a1717; border-color:#812b2b; color:#fff; }
+        .inbox-message-delete svg { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; pointer-events:none; }
+        @media(max-width:640px){
+            .inbox-message{max-width:94%;padding-right:44px;}
+            .inbox-message-delete{opacity:1;}
+        }
+
         .inbox-reply-box { border-top:1px solid #292929; padding:14px 18px; background:#0c0c0c; }
         .inbox-reply-row { display:flex; gap:10px; align-items:flex-end; }
         .inbox-reply-input { flex:1; min-height:44px; max-height:130px; resize:vertical; background:#050505; color:#fff; border:1px solid #333; border-radius:10px; padding:11px 12px; font:inherit; outline:none; }
@@ -1157,12 +1169,13 @@
                 <div id="inboxThreadView" class="inbox-thread-view">
                     <div class="inbox-thread-header">
                         <div class="inbox-thread-header-row">
-                            <button class="inbox-back-btn" onclick="backToInbox()">← Geri</button>
+                            <button class="inbox-back-btn" onclick="loadInbox(true)">↻ Yenile</button>
                             <div style="min-width:0;">
-                                <h3 id="inboxThreadSubject" class="inbox-thread-subject">Mesaj</h3>
-                                <div id="inboxThreadStatus" class="inbox-thread-status"></div>
+                                <h3 id="inboxThreadSubject" class="inbox-thread-subject">Weizend</h3>
+                                <div id="inboxThreadStatus" class="inbox-thread-status">Yönetici ve sistem mesajları</div>
                             </div>
-                            <button class="close-icon" style="margin-left:auto;" onclick="closeInbox()">✖</button>
+                            <button class="inbox-mini-btn danger" style="margin-left:auto;width:auto;" onclick="clearInbox()">🧹 Temizle</button>
+                            <button class="close-icon" onclick="closeInbox()">✖</button>
                         </div>
                     </div>
 
@@ -2096,6 +2109,7 @@
 
         let currentInboxThreads = [];
         let currentInboxThread = null;
+        let currentInboxConversation = null;
         const selectedInboxThreadIds = new Set();
         let inboxRefreshInFlight = false;
         let inboxBadgeUnreadCount = 0;
@@ -2196,48 +2210,19 @@
 
             try {
                 const unreadBefore = inboxBadgeUnreadCount;
-                currentInboxThreads = await fetchInboxThreads();
-                updateInboxBadge();
-                const unreadAfter = inboxUnreadCount();
+                await refreshInboxBadge();
+                const unreadAfter = inboxBadgeUnreadCount;
                 if (unreadAfter > unreadBefore) {
                     showStatusToast(`✉️ ${unreadAfter} okunmamış mesajın var`, 3500);
                 }
 
                 const modal = document.getElementById('inboxModal');
-                const listView = document.getElementById('inboxListView');
-
                 if (modal?.style.display !== 'flex') return;
 
-                if (listView?.style.display !== 'none') {
-                    renderInbox();
-                    return;
-                }
-
-                // Kullanıcı konuşmanın içindeyse yeni admin mesajını sayfa yenilemeden getir.
-                // Yazdığı taslak mesajı silmeden konuşmayı günceller.
-                if (currentInboxThread?.id) {
-                    const threadId = currentInboxThread.id;
-                    const draft = document.getElementById('inboxReplyInput')?.value || '';
-                    const data = await inboxRequest(`/inbox/thread?id=${encodeURIComponent(threadId)}&_=${Date.now()}`);
-                    currentInboxThread = data.thread || currentInboxThread;
-
-                    const replyAllowed =
-                        Number(currentInboxThread?.allow_reply) === 1 &&
-                        currentInboxThread?.status === 'open';
-
-                    document.getElementById('inboxThreadStatus').textContent =
-                        `${currentInboxThread?.thread_type === 'admin' ? '(Yönetici) Weizend' : 'Weizend Sistem'} · ` +
-                        `${replyAllowed ? 'Yanıt açık' : 'Yanıt kapalı'}`;
-
-                    document.getElementById('inboxReplyAllowed').style.display = replyAllowed ? 'block' : 'none';
-                    document.getElementById('inboxReplyClosed').style.display = replyAllowed ? 'none' : 'block';
-                    const realtimeMessages = Array.isArray(data.messages) ? data.messages : [];
-                    renderInboxMessages(realtimeMessages);
-                    configureRestrictionAppeal(realtimeMessages, replyAllowed);
-
-                    const input = document.getElementById('inboxReplyInput');
-                    if (input && replyAllowed) input.value = draft;
-                }
+                const draft = document.getElementById('inboxReplyInput')?.value || '';
+                await loadInbox(true);
+                const input = document.getElementById('inboxReplyInput');
+                if (input && currentInboxConversation?.replyAllowed) input.value = draft;
             } catch (error) {
                 console.warn('INBOX REALTIME REFRESH ERROR:', error);
             }
@@ -2251,14 +2236,16 @@
 
             document.getElementById('inboxModal').style.display = 'flex';
             document.body.style.overflow = 'hidden';
-            backToInbox(false);
-            await loadInbox();
+            document.getElementById('inboxListView').style.display = 'none';
+            document.getElementById('inboxThreadView').style.display = 'flex';
+            await loadInbox(false);
         }
 
         function closeInbox() {
             document.getElementById('inboxModal').style.display = 'none';
             document.body.style.overflow = '';
             currentInboxThread = null;
+            currentInboxConversation = null;
             const input = document.getElementById('inboxReplyInput');
             if (input) input.value = '';
         }
@@ -2267,28 +2254,50 @@
             if (event.target?.id === 'inboxModal') closeInbox();
         }
 
-        async function loadInbox() {
-            const list = document.getElementById('inboxList');
-            const summary = document.getElementById('inboxSummary');
+        async function loadInbox(preserveDraft = false) {
+            const messagesBox = document.getElementById('inboxMessages');
+            const draft = preserveDraft ? (document.getElementById('inboxReplyInput')?.value || '') : '';
+            if (!messagesBox) return;
 
-            if (!list || !summary) return;
-
-            list.innerHTML = '<div class="inbox-empty">⏳ Mesajlar yükleniyor...</div>';
-            summary.textContent = 'Mesajlar yükleniyor...';
+            messagesBox.innerHTML = '<div class="inbox-empty">⏳ Mesajlar yükleniyor...</div>';
 
             try {
-                currentInboxThreads = await fetchInboxThreads();
+                const data = await inboxRequest(`/inbox/conversation?_=${Date.now()}`);
+                currentInboxConversation = data;
+                currentInboxThread = {
+                    id:data.replyThreadId || data.appealThreadId || data.supportThreadId || 'WEIZEND',
+                    subject:'Weizend',
+                    thread_type:'admin',
+                    allow_reply:data.replyAllowed ? 1 : 0,
+                    status:data.replyAllowed ? 'open' : 'closed'
+                };
 
-                const currentIds = new Set(currentInboxThreads.map(x => String(x.id)));
-                for (const id of [...selectedInboxThreadIds]) {
-                    if (!currentIds.has(String(id))) selectedInboxThreadIds.delete(id);
-                }
+                document.getElementById('inboxListView').style.display = 'none';
+                document.getElementById('inboxThreadView').style.display = 'flex';
+                document.getElementById('inboxThreadSubject').textContent = 'Weizend';
 
-                updateInboxBadge();
-                renderInbox();
+                const meta = [];
+                meta.push('(Yönetici) Weizend');
+                meta.push(`${Number(data.totalCount || 0)} mesaj`);
+                if(data.truncated) meta.push('son 500 mesaj gösteriliyor');
+                document.getElementById('inboxThreadStatus').textContent = meta.join(' · ');
+
+                const replyAllowed = data.replyAllowed === true && !!data.replyThreadId;
+                document.getElementById('inboxReplyAllowed').style.display = replyAllowed ? 'block' : 'none';
+                document.getElementById('inboxReplyClosed').style.display = replyAllowed ? 'none' : 'block';
+
+                const input = document.getElementById('inboxReplyInput');
+                if(input) input.value = replyAllowed ? draft : '';
+
+                const rows = Array.isArray(data.messages) ? data.messages : [];
+                renderInboxMessages(rows);
+                configureRestrictionAppeal(data,replyAllowed);
+                configureSupportRequest(data,replyAllowed);
+
+                currentInboxThreads = [];
+                updateInboxBadge(0);
             } catch (error) {
-                summary.textContent = 'Mesajlar yüklenemedi';
-                list.innerHTML = `<div class="inbox-empty">❌ ${escapeHtml(error.message || error)}</div>`;
+                messagesBox.innerHTML = `<div class="inbox-empty">❌ ${escapeHtml(error.message || error)}</div>`;
             }
         }
 
@@ -2377,54 +2386,10 @@
         }
 
         async function openInboxThread(encodedId) {
-            const id = decodeURIComponent(encodedId || '');
-            if (!id) return;
-
-            const messagesBox = document.getElementById('inboxMessages');
-            messagesBox.innerHTML = '<div class="inbox-empty">⏳ Mesaj açılıyor...</div>';
-
-            try {
-                const data = await inboxRequest(`/inbox/thread?id=${encodeURIComponent(id)}&_=${Date.now()}`);
-
-                currentInboxThread = data.thread || null;
-
-                const item = currentInboxThreads.find(x => String(x.id) === String(id));
-                if (item) {
-                    item.unread_count = 0;
-                    item.unreadCount = 0;
-                }
-
-                updateInboxBadge();
-
-                document.getElementById('inboxListView').style.display = 'none';
-                document.getElementById('inboxThreadView').style.display = 'flex';
-
-                document.getElementById('inboxThreadSubject').textContent =
-                    currentInboxThread?.subject || 'Weizend Mesajı';
-
-                const replyAllowed =
-                    Number(currentInboxThread?.allow_reply) === 1 &&
-                    currentInboxThread?.status === 'open';
-
-                document.getElementById('inboxThreadStatus').textContent =
-                    `${currentInboxThread?.thread_type === 'admin' ? '(Yönetici) Weizend' : 'Weizend Sistem'} · ` +
-                    `${replyAllowed ? 'Yanıt açık' : 'Yanıt kapalı'}`;
-
-                document.getElementById('inboxReplyAllowed').style.display = replyAllowed ? 'block' : 'none';
-                document.getElementById('inboxReplyClosed').style.display = replyAllowed ? 'none' : 'block';
-                document.getElementById('inboxReplyInput').value = '';
-
-                const threadMessages = Array.isArray(data.messages) ? data.messages : [];
-                renderInboxMessages(threadMessages);
-                configureRestrictionAppeal(threadMessages, replyAllowed);
-                configureSupportRequest(data, replyAllowed);
-                renderInbox();
-            } catch (error) {
-                messagesBox.innerHTML = `<div class="inbox-empty">❌ ${escapeHtml(error.message || error)}</div>`;
-            }
+            await loadInbox(true);
         }
 
-        function configureRestrictionAppeal(messages = [], replyAllowed = false) {
+        function configureRestrictionAppeal(data = {}, replyAllowed = false) {
             const box = document.getElementById('inboxAppealBox');
             const button = document.getElementById('inboxAppealButton');
             const row = document.getElementById('inboxAppealRow');
@@ -2432,12 +2397,10 @@
             const input = document.getElementById('inboxAppealInput');
             if (!box || !button || !row || !note) return;
 
-            const subject = String(currentInboxThread?.subject || '').trim().toLocaleUpperCase('tr-TR');
-            const restrictionThread = subject === 'HESABINIZ KISITLANDI';
-            const isBlocked = currentAccountStatus === 'blocked';
-            const hasAppeal = (messages || []).some(item => String(item.sender_type || item.senderType || '') === 'user');
+            const allowed = data?.appealAllowed === true;
+            const used = data?.appealUsed === true;
 
-            if (!restrictionThread || !isBlocked || replyAllowed) {
+            if (replyAllowed || (!allowed && !used)) {
                 box.style.display = 'none';
                 row.style.display = 'none';
                 if (input) input.value = '';
@@ -2447,7 +2410,7 @@
             box.style.display = 'block';
             row.style.display = 'none';
 
-            if (hasAppeal) {
+            if (used) {
                 button.style.display = 'none';
                 note.innerHTML = '✅ İtirazınız gönderildi. Yönetici yanıtını bekleyin. Yönetici mesaj göndermeyi açtığında konuşmaya devam edebilirsiniz.';
             } else {
@@ -2471,7 +2434,7 @@
             const input = document.getElementById('inboxAppealInput');
             const sendButton = document.getElementById('inboxAppealSend');
             const message = String(input?.value || '').trim();
-            const threadId = currentInboxThread?.id;
+            const threadId = currentInboxConversation?.appealThreadId;
 
             if (!threadId || !message) {
                 showStatusToast('⚠️ İtiraz mesajınızı yazmalısınız.', 3000);
@@ -2486,7 +2449,7 @@
                     body: JSON.stringify({ threadId, message })
                 });
                 if (input) input.value = '';
-                await openInboxThread(encodeURIComponent(threadId));
+                await loadInbox(false);
                 showStatusToast('✅ İtirazınız yöneticiye gönderildi', 3200);
             } catch (error) {
                 showStatusToast(`❌ ${error.message || error}`, 4200);
@@ -2602,7 +2565,7 @@
             const input = document.getElementById('inboxSupportInput');
             const sendButton = document.getElementById('inboxSupportSend');
             const message = String(input?.value || '').trim();
-            const threadId = currentInboxThread?.id;
+            const threadId = currentInboxConversation?.supportThreadId;
 
             if (!threadId || !message) {
                 showStatusToast('⚠️ Talep mesajını yazmalısın.', 3000);
@@ -2617,7 +2580,7 @@
                     body: JSON.stringify({ threadId, message })
                 });
                 if (input) input.value = '';
-                await openInboxThread(encodeURIComponent(threadId));
+                await loadInbox(false);
                 showStatusToast('✅ Talebin yöneticiye gönderildi', 3200);
             } catch (error) {
                 showStatusToast(`❌ ${error.message || error}`, 4200);
@@ -2631,7 +2594,7 @@
             box.innerHTML = '';
 
             if (!items.length) {
-                box.innerHTML = '<div class="inbox-empty">Bu konuşmada mesaj bulunamadı.</div>';
+                box.innerHTML = '<div class="inbox-empty">Bu konuşmada henüz mesaj bulunmuyor.</div>';
                 return;
             }
 
@@ -2640,13 +2603,25 @@
                 const senderName = item.sender_name || item.senderName ||
                     (senderType === 'user' ? currentUsername : '(Yönetici) Weizend');
 
+                const body = String(item.body || '')
+                    .replace(/\r\n/g,'\n')
+                    .replace(/\n{3,}/g,'\n\n')
+                    .trim();
+
                 const bubble = document.createElement('div');
                 bubble.className = `inbox-message ${senderType}`;
 
                 bubble.innerHTML = `
                     <div class="inbox-message-sender">${escapeHtml(senderName)}</div>
-                    <div class="inbox-message-text">${escapeHtml(item.body || '')}</div>
+                    <div class="inbox-message-text">${escapeHtml(body || '—')}</div>
                     <div class="inbox-message-date">${escapeHtml(inboxDateText(item.created_at || item.createdAt))}</div>
+                    <button class="inbox-message-delete" title="Bu mesajı yalnızca benden sil" aria-label="Bu mesajı yalnızca benden sil"
+                        onclick="event.stopPropagation();deleteInboxMessage('${encodeURIComponent(item.id)}')">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M3 6h18"></path><path d="M8 6V4h8v2"></path>
+                            <path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v5"></path><path d="M14 11v5"></path>
+                        </svg>
+                    </button>
                 `;
 
                 box.appendChild(bubble);
@@ -2656,17 +2631,7 @@
         }
 
         function backToInbox(refresh = true) {
-            document.getElementById('inboxThreadView').style.display = 'none';
-            document.getElementById('inboxListView').style.display = 'flex';
-            currentInboxThread = null;
-            const appealBox = document.getElementById('inboxAppealBox');
-            if (appealBox) appealBox.style.display = 'none';
-            const supportBox = document.getElementById('inboxSupportBox');
-            if (supportBox) supportBox.style.display = 'none';
-
-            if (refresh) {
-                loadInbox().catch(() => {});
-            }
+            if (refresh) loadInbox(true).catch(() => {});
         }
 
         async function markAllInboxRead() {
@@ -2675,14 +2640,10 @@
                     method: 'POST',
                     body: JSON.stringify({})
                 });
-
-                currentInboxThreads.forEach(item => {
-                    item.unread_count = 0;
-                    item.unreadCount = 0;
-                });
-
-                updateInboxBadge();
-                renderInbox();
+                updateInboxBadge(0);
+                if(document.getElementById('inboxModal')?.style.display === 'flex'){
+                    await loadInbox(true);
+                }
                 showStatusToast('✅ Tüm mesajlar okundu olarak işaretlendi', 3000);
             } catch (error) {
                 showStatusToast(`❌ ${error.message || error}`, 4000);
@@ -2712,10 +2673,30 @@
             }
         }
 
-        async function clearInbox() {
-            if (currentInboxThreads.length === 0) return;
 
-            if (!confirm('Mesaj Kutundaki tüm konuşmalar temizlensin mi?')) {
+        async function deleteInboxMessage(encodedMessageId) {
+            const messageId = decodeURIComponent(encodedMessageId || '');
+            if(!messageId) return;
+
+            if(!confirm('Bu mesaj yalnızca senin Mesaj Kutundan silinsin mi?')) return;
+
+            try{
+                await inboxRequest('/inbox/message/delete',{
+                    method:'POST',
+                    body:JSON.stringify({messageId})
+                });
+                await loadInbox(true);
+                showStatusToast('✅ Mesaj yalnızca senden silindi',2600);
+            }catch(error){
+                showStatusToast(`❌ ${error.message || error}`,4000);
+            }
+        }
+
+        async function clearInbox() {
+            const count = Number(currentInboxConversation?.totalCount || 0);
+            if(count <= 0) return;
+
+            if (!confirm('Mesaj Kutundaki tüm mesajlar yalnızca senden temizlensin mi?')) {
                 return;
             }
 
@@ -2724,12 +2705,10 @@
                     method: 'POST',
                     body: JSON.stringify({})
                 });
-
-                selectedInboxThreadIds.clear();
-                currentInboxThreads = [];
-                updateInboxBadge();
-                renderInbox();
-                showStatusToast('✅ Mesaj Kutusu temizlendi', 3000);
+                currentInboxConversation = {messages:[],totalCount:0,replyAllowed:false};
+                updateInboxBadge(0);
+                await loadInbox(false);
+                showStatusToast('✅ Mesaj Kutusu yalnızca senden temizlendi', 3000);
             } catch (error) {
                 showStatusToast(`❌ ${error.message || error}`, 4000);
             }
@@ -2738,28 +2717,22 @@
         async function sendInboxReply() {
             const input = document.getElementById('inboxReplyInput');
             const button = document.getElementById('inboxSendButton');
+            const message = String(input?.value || '').trim();
+            const threadId = currentInboxConversation?.replyThreadId;
 
-            const message = String(input.value || '').trim();
-
-            if (!currentInboxThread?.id || !message) {
+            if (!threadId || !message) {
                 showStatusToast('⚠️ Yanıt mesajını yazmalısın.', 3000);
                 return;
             }
 
-            const threadId = currentInboxThread.id;
             button.disabled = true;
-
             try {
                 await inboxRequest('/inbox/reply', {
                     method: 'POST',
-                    body: JSON.stringify({
-                        threadId,
-                        message
-                    })
+                    body: JSON.stringify({ threadId, message })
                 });
-
                 input.value = '';
-                await openInboxThread(encodeURIComponent(threadId));
+                await loadInbox(false);
                 showStatusToast('✅ Yanıtın gönderildi', 2600);
             } catch (error) {
                 showStatusToast(`❌ ${error.message || error}`, 4000);
