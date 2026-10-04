@@ -3748,11 +3748,14 @@
                         `<span style="color:var(--text-muted);font-size:.86rem;">Kod panoya kopyalandı. Stok ödeme doğrulanana kadar fiziksel olarak düşmez; ancak bu işlem için sistemde ayrılmıştır.</span>`;
 
                     const cancelPendingBtn = document.getElementById('purchaseCancelPendingButton');
-                    if (cancelPendingBtn) cancelPendingBtn.style.display = 'inline-flex';
+if (cancelPendingBtn) cancelPendingBtn.style.display = 'inline-flex';
 
-                    showBynoGameRedirect(reference);
-                    startTlPaymentWatcher();
-                    return;
+// ✅ BynoGame ödeme kodu oluşturulduktan sonra X tekrar aktif olsun
+document.getElementById('purchaseCloseButton').disabled = false;
+
+showBynoGameRedirect(reference);
+startTlPaymentWatcher();
+return;
                 }
 
                 if (data.paymentType === 'free') {
@@ -4096,21 +4099,24 @@
         }
 
         function closePurchaseModal(force = false) {
-            // TL ödeme beklerken modal kapatılabilir; takip arka planda devam eder.
-            const pendingTl = !!localStorage.getItem(PENDING_TL_PAYMENT_KEY);
-            if (purchaseInFlight && !force && !pendingTl) {
-                showStatusToast('⏳ Satın alma işlemi devam ediyor. Lütfen tamamlanmasını bekle.', 3500);
-                return;
-            }
+    const pendingTl = !!localStorage.getItem(PENDING_TL_PAYMENT_KEY);
 
-            if (purchasePollTimer) {
-                clearTimeout(purchasePollTimer);
-                purchasePollTimer = null;
-            }
+    if (purchaseInFlight && !force && !pendingTl) {
+        showStatusToast(
+            '⏳ Satın alma işlemi devam ediyor. Lütfen tamamlanmasını bekle.',
+            3500
+        );
+        return;
+    }
 
-            document.getElementById('purchaseModal').style.display = 'none';
-            document.body.style.overflow = '';
-        }
+    if (purchasePollTimer) {
+        clearTimeout(purchasePollTimer);
+        purchasePollTimer = null;
+    }
+
+    document.getElementById('purchaseModal').style.display = 'none';
+    document.body.style.overflow = '';
+}
 
         function islemYapBaslat(komut) {
             if (currentAccountStatus === 'blocked') {
