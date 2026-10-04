@@ -4013,9 +4013,65 @@ async function hideAdminPurchase(encodedId,sourceType='order'){
   const type = String(sourceType || 'order').trim().toLowerCase();
 
   if(!sourceId) return;
-  if(!confirm('Bu işlem Satın Alınanlar geçmişinden kaldırılsın mı?')) return;
+
+  const item = adminOrdersCache.find(o =>
+    String(o.id) === String(sourceId) &&
+    String(o.sourceType || (o.paymentType === 'gift_code' ? 'gift_code' : 'order')).toLowerCase() === type
+  );
+
+  const paymentType = String(item?.paymentType || '').toLowerCase();
+  const status = String(item?.status || '').toLowerCase();
+
+  let confirmText = 'Bu işlem Satın Alınanlar geçmişinden kaldırılsın mı?';
+
+  if(type === 'order' && paymentType === 'points' && status === 'pending'){
+    confirmText =
+      'Bu BEKLEYEN puanlı sipariş iptal edilecek. Puan düşümü sonradan gerçekleşirse sistem aynı puanı otomatik iade edecek, teslimat kodu geçersiz olacak ve kullanıcıya mesaj gidecek. Devam edilsin mi?';
+  }else if(type === 'order' && paymentType === 'points' && ['paid','delivery_pending'].includes(status)){
+    confirmText =
+      'Bu sipariş iptal edilecek, teslimat kodu hemen geçersiz kılınacak ve puan iadesi otomatik başlatılacak. Kullanıcıya mesaj gidecek. Devam edilsin mi?';
+  }else if(type === 'order' && paymentType === 'tl' && ['payment_pending','partial_payment'].includes(status)){
+    confirmText =
+      'Bu bekleyen TL / BynoGame siparişi iptal edilecek, ödeme kodu geçersiz kılınacak ve kullanıcıya mesaj gidecek. Devam edilsin mi?';
+  }
+
+  if(!confirm(confirmText)) return;
 
   try{
+    // 1) Aktif işlemi önce güvenli şekilde iptal / iade et.
+    if(type === 'order' && paymentType === 'points' && status === 'pending'){
+      const {r,d} = await api('/admin/order/cancel-pending',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({orderId:sourceId})
+      });
+
+      if(!r.ok || !d?.success){
+        throw new Error(d?.error || `HTTP ${r.status}`);
+      }
+    }else if(type === 'order' && paymentType === 'points' && ['paid','delivery_pending'].includes(status)){
+      const {r,d} = await api('/admin/order/refund',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({orderId:sourceId})
+      });
+
+      if(!r.ok || !d?.success){
+        throw new Error(d?.error || `HTTP ${r.status}`);
+      }
+    }else if(type === 'order' && paymentType === 'tl' && ['payment_pending','partial_payment'].includes(status)){
+      const {r,d} = await api('/admin/order/cancel-pending',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({orderId:sourceId})
+      });
+
+      if(!r.ok || !d?.success){
+        throw new Error(d?.error || `HTTP ${r.status}`);
+      }
+    }
+
+    // 2) Operasyon güvenceye alındıktan sonra admin geçmişinden kaldır.
     const {r,d} = await api('/admin/purchase/hide',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
@@ -4032,9 +4088,18 @@ async function hideAdminPurchase(encodedId,sourceType='order'){
     adminOrdersCache = adminOrdersCache.filter(o => String(o.id) !== String(sourceId));
     renderAdminOrders();
 
+    const successText =
+      type === 'order' && paymentType === 'points' && status === 'pending'
+        ? '✅ Bekleyen sipariş iptal edildi. Puan düşümü gelirse otomatik iade edilecek; kod geçersiz ve kullanıcı bilgilendirildi.'
+        : type === 'order' && paymentType === 'points' && ['paid','delivery_pending'].includes(status)
+          ? '✅ Sipariş iptal edildi, teslimat kodu geçersiz kılındı ve puan iadesi başlatıldı.'
+          : type === 'order' && paymentType === 'tl' && ['payment_pending','partial_payment'].includes(status)
+            ? '✅ Bekleyen TL siparişi iptal edildi ve ödeme kodu geçersiz kılındı.'
+            : '✅ İşlem Satın Alınanlar geçmişinden kaldırıldı.';
+
     showStatus(
       'adminOrdersStatus',
-      '✅ İşlem Satın Alınanlar geçmişinden kaldırıldı.',
+      successText,
       true
     );
   }catch(error){
@@ -4045,6 +4110,7 @@ async function hideAdminPurchase(encodedId,sourceType='order'){
     );
   }
 }
+
 
 
 function openOrderDeleteChoice(
