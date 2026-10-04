@@ -1185,6 +1185,7 @@ body.dmModalOpen{overflow:hidden}
                   </div>
                 </div>
                 <div class="dmChatHeaderActions">
+                  <button id="adminConversationReplyToggle" class="secondary" onclick="toggleAdminConversationReply()">💬 Yanıtı Aç</button>
                   <button class="secondary" onclick="refreshAdminConversation()">🔄 Yenile</button>
                   <button class="dmDanger" onclick="deleteCurrentAdminConversation()">🗑️ Konuşmayı Sil</button>
                 </div>
@@ -3774,7 +3775,8 @@ async function selectAdminConversation(encodedUid, silent = false){
       user:d.user || {kick_uid:uid,username:'Kullanıcı'},
       messages:Array.isArray(d.messages) ? d.messages : [],
       totalCount:Number(d.totalCount || 0),
-      truncated:Boolean(d.truncated)
+      truncated:Boolean(d.truncated),
+      replyAllowed:d.replyAllowed === true
     };
 
     const row = adminConversationsCache.find(c => c.kick_uid === uid);
@@ -3805,6 +3807,17 @@ function renderAdminConversation(){
   metaParts.push(`${data.totalCount} mesaj`);
   if(data.truncated) metaParts.push('son 500 mesaj gösteriliyor');
   document.getElementById('adminChatMeta').textContent = metaParts.join(' · ');
+
+  const replyToggle = document.getElementById('adminConversationReplyToggle');
+  if(replyToggle){
+    const isOpen = data.replyAllowed === true;
+    replyToggle.textContent = isOpen ? '🔒 Yanıtı Kapat' : '💬 Yanıtı Aç';
+    replyToggle.classList.toggle('success', !isOpen);
+    replyToggle.classList.toggle('warn', isOpen);
+    replyToggle.title = isOpen
+      ? 'Kullanıcının normal yanıt yazmasını kapat'
+      : 'Kullanıcının bu sohbetten normal yanıt yazmasını aç';
+  }
 
   const box = document.getElementById('adminChatMessages');
   const rows = data.messages || [];
@@ -3839,6 +3852,51 @@ function renderAdminConversation(){
   requestAnimationFrame(() => {
     box.scrollTop = box.scrollHeight;
   });
+}
+
+async function toggleAdminConversationReply(){
+  const uid = currentAdminConversationUid;
+  if(!uid || !currentAdminConversation) return;
+
+  const button = document.getElementById('adminConversationReplyToggle');
+  const allowReply = currentAdminConversation.replyAllowed !== true;
+  const oldText = button?.textContent || '';
+
+  if(button){
+    button.disabled = true;
+    button.textContent = allowReply ? '⏳ Açılıyor...' : '⏳ Kapatılıyor...';
+  }
+
+  try{
+    const {r,d} = await api('/admin/conversation/reply-toggle',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({kickUid:uid,allowReply})
+    });
+
+    if(!r.ok || !d?.success){
+      throw new Error(d?.error || `HTTP ${r.status}`);
+    }
+
+    currentAdminConversation.replyAllowed = d.replyAllowed === true;
+    renderAdminConversation();
+
+    showStatus(
+      'adminMessagesStatus',
+      currentAdminConversation.replyAllowed
+        ? '✅ Kullanıcının bu sohbetten yanıt vermesi açıldı.'
+        : '✅ Kullanıcının normal yanıt vermesi kapatıldı.',
+      true
+    );
+  }catch(error){
+    showStatus('adminMessagesStatus','❌ ' + esc(error.message || error),false);
+  }finally{
+    if(button){
+      button.disabled = false;
+      if(button.textContent.includes('⏳')) button.textContent = oldText;
+    }
+    if(currentAdminConversation) renderAdminConversation();
+  }
 }
 
 async function refreshAdminConversation(){
