@@ -378,6 +378,8 @@
 
         .inbox-message { position:relative; max-width:min(86%,680px); min-width:0; overflow:hidden; padding-right:48px; }
         .inbox-message-text { overflow-wrap:anywhere; word-break:break-word; max-width:100%; }
+        .inbox-message-text a { color:#ff6b6b; font-weight:800; text-decoration:underline; text-underline-offset:3px; }
+        .inbox-message-text a:hover { color:#fff; }
         .inbox-message-delete { position:absolute; top:8px; right:8px; width:30px; height:30px; padding:0; border-radius:50%; border:1px solid #303030; background:#151515; color:#858585; display:flex; align-items:center; justify-content:center; opacity:0; transition:.15s; cursor:pointer; }
         .inbox-message:hover .inbox-message-delete,.inbox-message-delete:focus { opacity:1; }
         .inbox-message-delete:hover { background:#5a1717; border-color:#812b2b; color:#fff; }
@@ -2402,6 +2404,7 @@
         const selectedInboxThreadIds = new Set();
         let inboxRefreshInFlight = false;
         let inboxBadgeUnreadCount = 0;
+        let inboxLivePollInFlight = false;
 
         function inboxDateText(value) {
             if (!value) return '-';
@@ -2429,11 +2432,61 @@
             badge.style.display = unread > 0 ? 'inline-block' : 'none';
         }
 
+        async function pollInboxMessagesOnly() {
+            if (
+                !marketAuthenticated ||
+                !localStorage.getItem(SESSION_STORAGE_KEY) ||
+                document.hidden ||
+                inboxLivePollInFlight
+            ) return;
+
+            inboxLivePollInFlight = true;
+
+            try {
+                const modal = document.getElementById('inboxModal');
+                const modalOpen = modal?.style.display === 'flex';
+
+                if (modalOpen) {
+                    // Mesaj kutusu açıksa yalnızca mesaj verisini yenile.
+                    // Böylece yeni mesaj, Yanıtı Aç/Kapat ve talep durumu F5 gerektirmez.
+                    // Kullanıcı yazı yazıyorsa taslakları yenileme sırasında kaybetme.
+                    const replyDraft = document.getElementById('inboxReplyInput')?.value || '';
+                    const supportDraft = document.getElementById('inboxSupportInput')?.value || '';
+                    const appealDraft = document.getElementById('inboxAppealInput')?.value || '';
+
+                    await loadInbox(true);
+
+                    const replyInput = document.getElementById('inboxReplyInput');
+                    const supportInput = document.getElementById('inboxSupportInput');
+                    const appealInput = document.getElementById('inboxAppealInput');
+
+                    if (replyInput && currentInboxConversation?.replyAllowed) replyInput.value = replyDraft;
+                    if (supportInput && supportDraft) supportInput.value = supportDraft;
+                    if (appealInput && appealDraft) appealInput.value = appealDraft;
+                    return;
+                }
+
+                const unreadBefore = inboxBadgeUnreadCount;
+                await refreshInboxBadge();
+
+                if (inboxBadgeUnreadCount > unreadBefore) {
+                    showStatusToast(`✉️ ${inboxBadgeUnreadCount} okunmamış mesajın var`, 3200);
+                }
+            } catch (error) {
+                console.warn('INBOX LIVE FALLBACK ERROR:', error);
+            } finally {
+                inboxLivePollInFlight = false;
+            }
+        }
+
         function startInboxBadgeWatcher() {
-            // Sayfa yenileme modu: arka planda periyodik mesaj sayacı sorgusu yok.
-            // showAccount() girişte bir kez refreshInboxBadge() çağırır; Mesaj Kutusu
-            // açıldığında ve kullanıcı işlem yaptığında ilgili ekran yine manuel yenilenir.
+            // WebSocket ana yöntemdir. Mobil tarayıcı WebSocket'i uykuya alırsa
+            // yalnızca mesaj kutusu için hafif bir 2 saniyelik yedek kontrol çalışır.
             stopInboxBadgeWatcher();
+            pollInboxMessagesOnly().catch(() => {});
+            inboxBadgeWatchTimer = setInterval(() => {
+                pollInboxMessagesOnly().catch(() => {});
+            }, 2000);
         }
 
         function stopInboxBadgeWatcher() {
@@ -2441,6 +2494,7 @@
                 clearInterval(inboxBadgeWatchTimer);
                 inboxBadgeWatchTimer = null;
             }
+            inboxLivePollInFlight = false;
         }
 
         async function inboxRequest(path, options = {}) {
@@ -2508,10 +2562,19 @@
                 const modal = document.getElementById('inboxModal');
                 if (modal?.style.display !== 'flex') return;
 
-                const draft = document.getElementById('inboxReplyInput')?.value || '';
+                const replyDraft = document.getElementById('inboxReplyInput')?.value || '';
+                const supportDraft = document.getElementById('inboxSupportInput')?.value || '';
+                const appealDraft = document.getElementById('inboxAppealInput')?.value || '';
+
                 await loadInbox(true);
-                const input = document.getElementById('inboxReplyInput');
-                if (input && currentInboxConversation?.replyAllowed) input.value = draft;
+
+                const replyInput = document.getElementById('inboxReplyInput');
+                const supportInput = document.getElementById('inboxSupportInput');
+                const appealInput = document.getElementById('inboxAppealInput');
+
+                if (replyInput && currentInboxConversation?.replyAllowed) replyInput.value = replyDraft;
+                if (supportInput && supportDraft) supportInput.value = supportDraft;
+                if (appealInput && appealDraft) appealInput.value = appealDraft;
             } catch (error) {
                 console.warn('INBOX REALTIME REFRESH ERROR:', error);
             }
@@ -2794,14 +2857,23 @@
                     body: JSON.stringify({ code })
                 });
 
-                if (status) status.innerHTML = `<span style="color:#78e59a">✅ ${escapeHtml(data.message || 'Hediye kodu kullanıldı.')}</span>`;
                 if (input) input.value = '';
-                await refreshInboxBadge().catch(() => {});
-                showStatusToast('🎁 Hediyen teslim edildi. Mesaj Kutunu kontrol et.', 4200);
-                setTimeout(() => {
-                    closeGiftRedeem();
-                    openInbox();
-                }, 800);
+
+                if (data?.pending === true && data?.rewardType === 'points') {
+                    if (status) {
+                        status.innerHTML = `<span style="color:#ffd166">⏳ ${escapeHtml(data.message || 'Puan gönderimi MissXss tarafından doğrulanıyor.')}</span>`;
+                    }
+                    showStatusToast('🪙 Puan hediyen gönderiliyor. Tamamlanınca mesaj kutuna anlık bildirim gelecek.', 4600);
+                    setTimeout(() => closeGiftRedeem(), 1400);
+                } else {
+                    if (status) status.innerHTML = `<span style="color:#78e59a">✅ ${escapeHtml(data.message || 'Hediye kodu kullanıldı.')}</span>`;
+                    await refreshInboxBadge().catch(() => {});
+                    showStatusToast('🎁 Hediyen teslim edildi. Mesaj Kutunu kontrol et.', 4200);
+                    setTimeout(() => {
+                        closeGiftRedeem();
+                        openInbox();
+                    }, 800);
+                }
             } catch (error) {
                 if (status) status.innerHTML = `<span style="color:#ff8d8d">❌ ${escapeHtml(error.message || error)}</span>`;
             } finally {
@@ -2986,6 +3058,14 @@
             }
         }
 
+        function inboxMessageBodyHtml(value) {
+            const safe = escapeHtml(String(value || '—'));
+            return safe.replace(
+                /https:\/\/instagram\.com\/weizend\/?/gi,
+                '<a href="https://instagram.com/weizend" target="_blank" rel="noopener noreferrer">instagram.com/weizend</a>'
+            );
+        }
+
         function renderInboxMessages(items) {
             const box = document.getElementById('inboxMessages');
             box.innerHTML = '';
@@ -3018,7 +3098,7 @@
 
                 bubble.innerHTML = `
                     <div class="inbox-message-sender">${escapeHtml(senderName)}</div>
-                    <div class="inbox-message-text">${escapeHtml(body || '—')}</div>
+                    <div class="inbox-message-text">${inboxMessageBodyHtml(body || '—')}</div>
                     <div class="inbox-message-date">${escapeHtml(inboxDateText(item.created_at || item.createdAt))}</div>
                     ${supportHtml}
                     <button class="inbox-message-delete" title="Bu mesajı yalnızca benden sil" aria-label="Bu mesajı yalnızca benden sil"
@@ -7354,5 +7434,6 @@ return;
         }
     });
     </script>
+
 </body>
 </html>
