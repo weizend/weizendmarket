@@ -928,6 +928,34 @@ body.dmModalOpen{overflow:hidden}
   .supportRewardToolbar button{width:100%;min-width:0;flex:1 1 100%}
 }
 
+
+/* =========================================================
+   BYNOGAME SON AKTİVİTE - TEMİZ GÖRÜNÜM
+   ========================================================= */
+.activityDashboard{margin-top:14px}
+.activitySummary{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.activitySummaryChip{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;border:1px solid #333;background:#161616;color:#ddd;font-size:.8rem;font-weight:800}
+.activitySummaryChip strong{color:#fff}
+.activityList{display:flex;flex-direction:column;gap:10px}
+.activityItem{border:1px solid #2e2e2e;background:#090909;border-radius:14px;padding:14px}
+.activityItemTop{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.activityUser{min-width:0}
+.activityUserName{font-size:1rem;font-weight:900;color:#fff;overflow-wrap:anywhere}
+.activityDisplayName{margin-top:2px;color:#888;font-size:.75rem;overflow-wrap:anywhere}
+.activityAmount{flex:0 0 auto;color:#7df29c;font-size:1.05rem;font-weight:900;white-space:nowrap}
+.activityMeta{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px;color:#858585;font-size:.73rem}
+.activityMeta span{display:inline-flex;align-items:center;gap:4px}
+.activityMessage{margin-top:10px;padding:10px 11px;border-radius:10px;background:#111;border:1px solid #242424;color:#d4d4d4;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}
+.activityEmpty{padding:28px 14px;border:1px dashed #333;border-radius:13px;text-align:center;color:#888;background:#090909}
+.activityRawDetails{margin-top:14px;border-top:1px solid #242424;padding-top:10px;color:#777}
+.activityRawDetails summary{cursor:pointer;font-weight:800;color:#aaa;user-select:none}
+.activityRawDetails pre{margin-top:10px;max-height:300px}
+@media(max-width:560px){
+  .activityItem{padding:12px}
+  .activityItemTop{gap:8px}
+  .activityAmount{font-size:.96rem}
+}
+
 </style>
 </head>
 
@@ -2272,9 +2300,14 @@ body.dmModalOpen{overflow:hidden}
 
         <div id="activityStatus" class="status"></div>
 
-        <pre
-          id="activityOutput"
-          style="display:none"></pre>
+        <div id="activityOutput" class="activityDashboard" style="display:none">
+          <div id="activitySummary" class="activitySummary"></div>
+          <div id="activityList" class="activityList"></div>
+          <details class="activityRawDetails">
+            <summary>🧩 Teknik veriyi göster</summary>
+            <pre id="activityRawOutput"></pre>
+          </details>
+        </div>
 
       </div>
 
@@ -7934,9 +7967,121 @@ async function testMissXss(){
   }
 }
 
+function activityDateText(value){
+  if(!value) return '-';
+  const d = new Date(value);
+  if(Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleString('tr-TR');
+}
+
+function activityDonorKey(item){
+  const id = String(item?.id || '').trim();
+  if(id) return `id:${id}`;
+  return [
+    String(item?.username || item?.displayname || '').toLocaleLowerCase('tr-TR'),
+    String(item?.date || ''),
+    String(item?.amount ?? ''),
+    String(item?.message || '')
+  ].join('|');
+}
+
+function recentActivityDonors(data){
+  const primary = Array.isArray(data?.donors) ? data.donors : [];
+  const fallback = Array.isArray(data?.missxss?.latest_donors) ? data.missxss.latest_donors : [];
+  const source = primary.length ? primary : fallback;
+  const seen = new Set();
+  const unique = [];
+
+  for(const item of source){
+    if(!item || typeof item !== 'object') continue;
+    const key = activityDonorKey(item);
+    if(seen.has(key)) continue;
+    seen.add(key);
+    unique.push(item);
+  }
+
+  return unique.sort((a,b)=>{
+    const ta = Date.parse(a?.date || '') || 0;
+    const tb = Date.parse(b?.date || '') || 0;
+    return tb - ta;
+  });
+}
+
+function renderRecentActivity(data){
+  const output = document.getElementById('activityOutput');
+  const summary = document.getElementById('activitySummary');
+  const list = document.getElementById('activityList');
+  const raw = document.getElementById('activityRawOutput');
+  if(!output || !summary || !list) return 0;
+
+  const donors = recentActivityDonors(data);
+  const totalAmount = donors.reduce((sum,item)=>{
+    const n = Number(item?.amount || 0);
+    return sum + (Number.isFinite(n) ? n : 0);
+  },0);
+  const latestDate = donors[0]?.date || null;
+
+  summary.innerHTML = `
+    <span class="activitySummaryChip">🧾 Son Kayıt: <strong>${donors.length}</strong></span>
+    <span class="activitySummaryChip">💰 Toplam: <strong>${totalAmount.toLocaleString('tr-TR',{maximumFractionDigits:2})} TL</strong></span>
+    <span class="activitySummaryChip">🕒 Son İşlem: <strong>${esc(latestDate ? activityDateText(latestDate) : '-')}</strong></span>
+  `;
+
+  if(!donors.length){
+    list.innerHTML = '<div class="activityEmpty">Henüz BynoGame aktivitesi bulunamadı.</div>';
+  }else{
+    list.innerHTML = donors.map(item=>{
+      const username = String(item?.username || item?.displayname || 'Bilinmiyor');
+      const displayName = String(item?.displayname || '');
+      const amount = Number(item?.amount || 0);
+      const amountText = Number.isFinite(amount)
+        ? `${amount.toLocaleString('tr-TR',{maximumFractionDigits:2})} TL`
+        : `${esc(String(item?.amount ?? '-'))} TL`;
+      const message = String(item?.message || '').trim();
+      const type = String(item?.type || 'BynoGame');
+      const id = String(item?.id || '');
+
+      return `
+        <div class="activityItem">
+          <div class="activityItemTop">
+            <div class="activityUser">
+              <div class="activityUserName">👤 ${esc(username)}</div>
+              ${displayName && displayName.toLocaleLowerCase('tr-TR') !== username.toLocaleLowerCase('tr-TR')
+                ? `<div class="activityDisplayName">${esc(displayName)}</div>`
+                : ''}
+            </div>
+            <div class="activityAmount">${amountText}</div>
+          </div>
+          <div class="activityMeta">
+            <span>🕒 ${esc(activityDateText(item?.date))}</span>
+            <span>💸 ${esc(type)}</span>
+            ${id ? `<span>#${esc(id)}</span>` : ''}
+          </div>
+          ${message ? `<div class="activityMessage">💬 ${esc(message)}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  if(raw){
+    raw.textContent = JSON.stringify({
+      donors:data?.donors || [],
+      latest_donors:data?.missxss?.latest_donors || []
+    },null,2);
+  }
+
+  output.style.display = 'block';
+  return donors.length;
+}
+
 async function loadRecentActivity(){
 
+  const output = document.getElementById('activityOutput');
+  const list = document.getElementById('activityList');
+
   try{
+    if(output) output.style.display = 'block';
+    if(list) list.innerHTML = '<div class="activityEmpty">⏳ Son aktiviteler yükleniyor...</div>';
 
     const {r,d} =
       await api(
@@ -7956,33 +8101,19 @@ async function loadRecentActivity(){
       );
     }
 
-    const output =
-      document.getElementById(
-        'activityOutput'
-      );
-
-    output.style.display =
-      'block';
-
-    output.textContent =
-      JSON.stringify(
-        {
-          donors:d.donors || [],
-          latest_donors:
-            d.missxss?.latest_donors ||
-            []
-        },
-        null,
-        2
-      );
+    const count = renderRecentActivity(d);
 
     showStatus(
       'activityStatus',
-      `✅ MissXss bağlantısı çalışıyor. Donör kaydı: ${(d.donors || []).length}`,
+      `✅ MissXss bağlantısı çalışıyor. Gösterilen BynoGame kaydı: ${count}`,
       true
     );
 
   }catch(error){
+
+    if(list){
+      list.innerHTML = `<div class="activityEmpty">❌ ${esc(error.message || error)}</div>`;
+    }
 
     showStatus(
       'activityStatus',
