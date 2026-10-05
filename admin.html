@@ -1860,6 +1860,15 @@ body.dmModalOpen{overflow:hidden}
             <button class="dmCloseButton" onclick="closeAdminNewMessageModal()" aria-label="Kapat">×</button>
           </div>
           <div class="field">
+            <label class="title">Kullanıcı ara</label>
+            <input
+              id="adminMessageRecipientSearch"
+              type="search"
+              autocomplete="off"
+              placeholder="Kick adı veya takma ad yaz..."
+              oninput="filterAdminMessageRecipients()">
+          </div>
+          <div class="field">
             <label class="title">Kullanıcı seç</label>
             <select id="adminMessageRecipient">
               <option value="">Kullanıcılar yükleniyor...</option>
@@ -4726,18 +4735,15 @@ async function refreshAdminInboxAfterRealtime(){
     await refreshAdminMessagesBadge();
 
     if(adminMessagesTabIsOpen()){
-      const replyDraft = document.getElementById('adminConversationReply')?.value || '';
-
       await loadAdminConversations(true,false);
 
       if(currentAdminConversationUid && !adminConversationListOnlyMode){
+        // Konuşma yenilenirken mesaj yazma alanına dokunma.
+        // Böylece ağ isteği sürerken yazılan yeni harfler eski taslakla geri ezilmez.
         await selectAdminConversation(
           encodeURIComponent(currentAdminConversationUid),
           true
         );
-
-        const replyInput = document.getElementById('adminConversationReply');
-        if(replyInput && replyDraft) replyInput.value = replyDraft;
       }
     }
   }catch(error){
@@ -4811,20 +4817,36 @@ async function loadAdminMessageRecipients(force = false){
   renderAdminMessageRecipients();
 }
 
+function filterAdminMessageRecipients(){
+  renderAdminMessageRecipients();
+}
+
 function renderAdminMessageRecipients(){
   const select = document.getElementById('adminMessageRecipient');
+  const search = document.getElementById('adminMessageRecipientSearch');
   if(!select) return;
+
   const current = select.value;
+  const query = String(search?.value || '')
+    .trim()
+    .toLocaleLowerCase('tr-TR');
+
+  const filtered = adminMessageRecipientsCache.filter(u => {
+    if(!query) return true;
+    const username = String(u.username || '').toLocaleLowerCase('tr-TR');
+    const nickname = String(u.nickname || '').toLocaleLowerCase('tr-TR');
+    return username.includes(query) || nickname.includes(query);
+  });
 
   select.innerHTML =
-    '<option value="">Kullanıcı seç...</option>' +
-    adminMessageRecipientsCache.map(u => {
+    `<option value="">${filtered.length ? 'Kullanıcı seç...' : 'Eşleşen kullanıcı bulunamadı'}</option>` +
+    filtered.map(u => {
       const nick = u.nickname ? ` · ${u.nickname}` : '';
       const state = u.status === 'blocked' ? ' · Kısıtlı' : '';
       return `<option value="${esc(u.kick_uid)}">${esc(u.username || '-')}${esc(nick)}${esc(state)}</option>`;
     }).join('');
 
-  if(current && adminMessageRecipientsCache.some(u => u.kick_uid === current)){
+  if(current && filtered.some(u => u.kick_uid === current)){
     select.value = current;
   }
 }
@@ -5202,8 +5224,14 @@ async function openAdminNewMessageModal(){
   document.body.classList.add('dmModalOpen');
   hideStatus('adminMessageComposeStatus');
 
+  const search = document.getElementById('adminMessageRecipientSearch');
+  const select = document.getElementById('adminMessageRecipient');
+  if(search) search.value = '';
+  if(select) select.value = '';
+
   try{
     await loadAdminMessageRecipients(false);
+    setTimeout(() => search?.focus(), 40);
   }catch(error){
     showStatus('adminMessageComposeStatus','❌ Kullanıcılar alınamadı: ' + esc(error.message || error),false);
   }
