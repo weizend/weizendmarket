@@ -2433,6 +2433,18 @@
             badge.style.display = unread > 0 ? 'inline-block' : 'none';
         }
 
+        function inboxComposerIsActive() {
+            const modal = document.getElementById('inboxModal');
+            if (modal?.style.display !== 'flex') return false;
+
+            const active = document.activeElement;
+            if (!active || !modal.contains(active)) return false;
+
+            return active.matches(
+                '#inboxReplyInput, #inboxSupportInput, #inboxAppealInput, .inbox-inline-support-input'
+            );
+        }
+
         async function pollInboxMessagesOnly() {
             if (
                 !marketAuthenticated ||
@@ -2448,22 +2460,15 @@
                 const modalOpen = modal?.style.display === 'flex';
 
                 if (modalOpen) {
-                    // Mesaj kutusu açıksa yalnızca mesaj verisini yenile.
-                    // Böylece yeni mesaj, Yanıtı Aç/Kapat ve talep durumu F5 gerektirmez.
-                    // Kullanıcı yazı yazıyorsa taslakları yenileme sırasında kaybetme.
-                    const replyDraft = document.getElementById('inboxReplyInput')?.value || '';
-                    const supportDraft = document.getElementById('inboxSupportInput')?.value || '';
-                    const appealDraft = document.getElementById('inboxAppealInput')?.value || '';
+                    // Kullanıcı mesaj/talep/itiraz yazarken DOM'u yenileme.
+                    // Böylece mobil klavyede harfler, imleç ve taslak asla geri sarılmaz.
+                    if (inboxComposerIsActive()) {
+                        await refreshInboxBadge();
+                        return;
+                    }
 
+                    // Sadece konuşma verisini sessizce yenile.
                     await loadInbox(true);
-
-                    const replyInput = document.getElementById('inboxReplyInput');
-                    const supportInput = document.getElementById('inboxSupportInput');
-                    const appealInput = document.getElementById('inboxAppealInput');
-
-                    if (replyInput && currentInboxConversation?.replyAllowed) replyInput.value = replyDraft;
-                    if (supportInput && supportDraft) supportInput.value = supportDraft;
-                    if (appealInput && appealDraft) appealInput.value = appealDraft;
                     return;
                 }
 
@@ -2563,19 +2568,11 @@
                 const modal = document.getElementById('inboxModal');
                 if (modal?.style.display !== 'flex') return;
 
-                const replyDraft = document.getElementById('inboxReplyInput')?.value || '';
-                const supportDraft = document.getElementById('inboxSupportInput')?.value || '';
-                const appealDraft = document.getElementById('inboxAppealInput')?.value || '';
+                // Kullanıcı yazı yazıyorsa mevcut textarea'ya kesinlikle dokunma.
+                // Yeni mesaj bir sonraki blur/gönderim veya 2 sn yedek kontrolde gelir.
+                if (inboxComposerIsActive()) return;
 
                 await loadInbox(true);
-
-                const replyInput = document.getElementById('inboxReplyInput');
-                const supportInput = document.getElementById('inboxSupportInput');
-                const appealInput = document.getElementById('inboxAppealInput');
-
-                if (replyInput && currentInboxConversation?.replyAllowed) replyInput.value = replyDraft;
-                if (supportInput && supportDraft) supportInput.value = supportDraft;
-                if (appealInput && appealDraft) appealInput.value = appealDraft;
             } catch (error) {
                 console.warn('INBOX REALTIME REFRESH ERROR:', error);
             }
@@ -2609,7 +2606,6 @@
 
         async function loadInbox(preserveDraft = false) {
             const messagesBox = document.getElementById('inboxMessages');
-            const draft = preserveDraft ? (document.getElementById('inboxReplyInput')?.value || '') : '';
             if (!messagesBox) return;
 
             // WebSocket + 2 sn yedek kontrol aynı anda tetiklenebilir. Arka plandaki
@@ -2647,9 +2643,8 @@
                 document.getElementById('inboxReplyAllowed').style.display = replyAllowed ? 'block' : 'none';
                 document.getElementById('inboxReplyClosed').style.display = replyAllowed ? 'none' : 'block';
 
-                const input = document.getElementById('inboxReplyInput');
-                if(input) input.value = replyAllowed ? draft : '';
-
+                // Canlı yenilemelerde yazılan metne dokunma.
+                // Input yalnızca kullanıcı gönderdiğinde veya kutuyu kapattığında temizlenir.
                 const rows = Array.isArray(data.messages) ? data.messages : [];
                 renderInboxMessages(rows);
                 configureRestrictionAppeal(data,replyAllowed);
@@ -2766,22 +2761,25 @@
 
             const allowed = data?.appealAllowed === true;
             const used = data?.appealUsed === true;
+            const composerOpen =
+                row.style.display === 'flex' ||
+                document.activeElement === input;
 
             if (replyAllowed || (!allowed && !used)) {
                 box.style.display = 'none';
                 row.style.display = 'none';
-                if (input) input.value = '';
                 return;
             }
 
             box.style.display = 'block';
-            row.style.display = 'none';
 
             if (used) {
+                row.style.display = 'none';
                 button.style.display = 'none';
                 note.innerHTML = '✅ İtirazınız gönderildi. Yönetici yanıtını bekleyin. Yönetici mesaj göndermeyi açtığında konuşmaya devam edebilirsiniz.';
             } else {
-                button.style.display = 'block';
+                row.style.display = composerOpen ? 'flex' : 'none';
+                button.style.display = composerOpen ? 'none' : 'block';
                 button.textContent = 'İTİRAZ ET';
                 note.innerHTML = 'Hesabınızın kısıtlanmasına <b>tek seferlik</b> itiraz mesajı gönderebilirsiniz.';
             }
@@ -2907,11 +2905,13 @@
 
             if (!closed || !closedText || !box || !button || !row || !note) return;
 
-            row.style.display = 'none';
-            if (input) input.value = '';
+            const composerOpen =
+                row.style.display === 'flex' ||
+                document.activeElement === input;
 
             if (replyAllowed) {
                 box.style.display = 'none';
+                row.style.display = 'none';
                 return;
             }
 
@@ -2922,7 +2922,8 @@
             if (allowed) {
                 closedText.innerHTML = '🔒 Bu mesaj için yanıt verme kapalı.';
                 box.style.display = 'block';
-                button.style.display = 'block';
+                row.style.display = composerOpen ? 'flex' : 'none';
+                button.style.display = composerOpen ? 'none' : 'block';
                 button.disabled = false;
                 button.textContent = 'TALEP AÇ';
                 note.innerHTML = 'Bu sistem mesajıyla ilgili <b>tek seferlik</b> talep gönderebilirsin.';
@@ -2932,12 +2933,14 @@
             if (pending) {
                 closedText.innerHTML = '⏳ Talebiniz iletildi. Yönetici geri dönüşü bekleniyor.';
                 box.style.display = 'block';
+                row.style.display = 'none';
                 button.style.display = 'none';
                 note.innerHTML = 'Talebin yöneticiye ulaştı. Yönetici <b>Yanıtı Aç</b> yaptığında bu konuşmadan devam edebilirsin.';
                 return;
             }
 
             box.style.display = 'none';
+            row.style.display = 'none';
             button.style.display = 'none';
 
             if (supportClosed) {
