@@ -827,6 +827,107 @@ body.dmModalOpen{overflow:hidden}
   .tournamentV3InviteGrid{grid-template-columns:1fr}
 }
 
+
+
+/* =========================================================
+   DESTEK ÖDÜLLERİ - ADMIN
+   ========================================================= */
+.supportRewardConfigGrid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+}
+.supportRewardCard{
+  background:#090909;
+  border:1px solid #2d2d2d;
+  border-radius:14px;
+  padding:15px;
+  min-width:0;
+}
+.supportRewardCard h3{
+  margin:0 0 11px;
+  font-size:1rem;
+}
+.supportRewardToggle{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  margin-bottom:12px;
+  color:#ddd;
+  font-weight:700;
+}
+.supportRewardToggle input{
+  width:auto;
+  margin:0;
+  accent-color:var(--red);
+}
+.supportRewardPreview{
+  margin-top:10px;
+  color:#9b9b9b;
+  font-size:.82rem;
+  line-height:1.5;
+}
+.supportRewardInfo{
+  padding:13px 14px;
+  border-radius:12px;
+  border:1px solid #303030;
+  background:#090909;
+  color:#bbb;
+  line-height:1.55;
+  margin:12px 0 14px;
+}
+.supportRewardToolbar{
+  display:flex;
+  align-items:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+  margin:0 0 14px;
+}
+.supportRewardToolbar .field{
+  margin:0;
+  flex:1 1 210px;
+}
+.supportRewardToolbar button{
+  width:auto;
+  min-width:150px;
+}
+.supportRewardSummary{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin:0 0 12px;
+}
+.supportRewardSummary .badge{
+  font-size:.8rem;
+  padding:6px 9px;
+}
+.supportRewardSource{
+  font-weight:850;
+  white-space:nowrap;
+}
+.supportRewardUser{
+  min-width:150px;
+}
+.supportRewardUser .muted{
+  font-size:.72rem;
+}
+.supportRewardPoints{
+  font-weight:900;
+  color:#ffd166;
+  white-space:nowrap;
+}
+.supportRewardCode{
+  font-family:Consolas,monospace;
+  color:#ff7777;
+  white-space:nowrap;
+}
+@media(max-width:760px){
+  .supportRewardConfigGrid{grid-template-columns:1fr}
+  .supportRewardToolbar{align-items:stretch}
+  .supportRewardToolbar .field,
+  .supportRewardToolbar button{width:100%;min-width:0;flex:1 1 100%}
+}
+
 </style>
 </head>
 
@@ -883,6 +984,10 @@ body.dmModalOpen{overflow:hidden}
 
   <button id="tab-giftcodes" onclick="openTab('giftcodes')">
     🎁 Hediye Kodları
+  </button>
+
+  <button id="tab-supportrewards" onclick="openTab('supportrewards')">
+    💚 Destek Ödülleri
   </button>
 
   <button id="tab-payments" onclick="openTab('payments')">
@@ -1141,13 +1246,29 @@ body.dmModalOpen{overflow:hidden}
 
         <div class="grid2">
           <div class="field">
-            <label class="title">Ürün / Ödül Adı</label>
-            <input id="giftProductName" maxlength="160" placeholder="Örn: 375 VP Valorant Points">
+            <label class="title">Ödül Adı</label>
+            <input id="giftProductName" maxlength="160" placeholder="Örn: 375 VP Valorant Points veya 25.000 Puan">
           </div>
 
           <div class="field">
-            <label class="title">Kullanıcıya Teslim Edilecek VP / Ürün Kodu</label>
-            <input id="giftDeliveryValue" maxlength="2000" autocomplete="off" placeholder="Örn: XXXX-XXXX-XXXX-XXXX">
+            <label class="title">Ödül Türü</label>
+            <select id="giftRewardType" onchange="updateGiftCodeRewardFields()">
+              <option value="delivery">🎁 VP / Ürün Kodu</option>
+              <option value="points">🪙 Puan</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="giftDeliveryField" class="field">
+          <label class="title">Kullanıcıya Teslim Edilecek VP / Ürün Kodu</label>
+          <input id="giftDeliveryValue" maxlength="2000" autocomplete="off" placeholder="Örn: XXXX-XXXX-XXXX-XXXX">
+        </div>
+
+        <div id="giftPointsField" class="field hidden">
+          <label class="title">Gönderilecek Puan</label>
+          <input id="giftPointsAmount" type="number" min="1" step="1" placeholder="Örn: 25000">
+          <div class="muted" style="margin-top:6px;">
+            Kullanıcı bu tek kullanımlık kodu kullandığında MissXss doğrulanmış Kick hesabına bu puanı gönderir.
           </div>
         </div>
 
@@ -1168,7 +1289,8 @@ body.dmModalOpen{overflow:hidden}
           <table>
             <thead>
               <tr>
-                <th>Ürün</th>
+                <th>Ödül</th>
+                <th>Tür / Değer</th>
                 <th>Kod</th>
                 <th>Durum</th>
                 <th>Kullanan</th>
@@ -1178,11 +1300,169 @@ body.dmModalOpen{overflow:hidden}
               </tr>
             </thead>
             <tbody id="giftCodesBody">
-              <tr><td colspan="7" class="muted">Hediye kodları henüz yüklenmedi.</td></tr>
+              <tr><td colspan="8" class="muted">Hediye kodları henüz yüklenmedi.</td></tr>
             </tbody>
           </table>
         </div>
       </div>
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- SUPPORT REWARDS -->
+    <!-- ===================================================== -->
+
+    <div id="section-supportrewards" class="section">
+
+      <div class="card">
+        <div class="topbar">
+          <div>
+            <h2>💚 Destek Ödülleri</h2>
+            <div class="muted">Abonelik, yenileme, Gift, KICKs ve BynoGame bağışlarından otomatik tek kullanımlık puan kodları üret.</div>
+          </div>
+          <div class="btnRow" style="width:auto;justify-content:flex-end;">
+            <button class="secondary smallBtn" style="width:auto;min-width:0" onclick="loadSupportRewardAdmin(true)">🔄 Yenile</button>
+            <button class="smallBtn" style="width:auto;min-width:0" onclick="syncSupportRewardSourcesAdmin()">🔍 Destekleri Tara</button>
+          </div>
+        </div>
+
+        <div class="supportRewardInfo">
+          Bu ödüller yalnızca karşılıksız destek olaylarında çalışır. Market alışverişi, turnuva ödemesi ve turnuvada kullanılan abonelik / Gift miktarı destek ödülü olarak tekrar sayılmaz. Kullanıcı henüz markete kayıtlı değilse hak bekler; doğrulama yaptığında uygun hakları tek puan kodunda birleştirilerek mesajına gönderilir.
+        </div>
+
+        <div class="supportRewardConfigGrid">
+          <div class="supportRewardCard">
+            <h3>⭐ Yeni Abonelik</h3>
+            <label class="supportRewardToggle">
+              <input id="srSubscriptionEnabled" type="checkbox" checked onchange="updateSupportRewardPreviews()">
+              <span>Ödül aktif</span>
+            </label>
+            <div class="field">
+              <label class="title">Abonelik başına puan</label>
+              <input id="srSubscriptionPoints" type="number" min="0" step="1" value="20000" oninput="updateSupportRewardPreviews()">
+            </div>
+            <div id="srSubscriptionPreview" class="supportRewardPreview"></div>
+          </div>
+
+          <div class="supportRewardCard">
+            <h3>🔁 Abonelik Yenileme</h3>
+            <label class="supportRewardToggle">
+              <input id="srRenewalEnabled" type="checkbox" checked onchange="updateSupportRewardPreviews()">
+              <span>Ödül aktif</span>
+            </label>
+            <div class="field">
+              <label class="title">Yenileme başına puan</label>
+              <input id="srRenewalPoints" type="number" min="0" step="1" value="20000" oninput="updateSupportRewardPreviews()">
+            </div>
+            <div id="srRenewalPreview" class="supportRewardPreview"></div>
+          </div>
+
+          <div class="supportRewardCard">
+            <h3>🎁 Hediye Abonelik</h3>
+            <label class="supportRewardToggle">
+              <input id="srGiftEnabled" type="checkbox" checked onchange="updateSupportRewardPreviews()">
+              <span>Ödül aktif</span>
+            </label>
+            <div class="field">
+              <label class="title">1 Gift başına puan</label>
+              <input id="srGiftPointsEach" type="number" min="0" step="1" value="15000" oninput="updateSupportRewardPreviews()">
+            </div>
+            <div id="srGiftPreview" class="supportRewardPreview"></div>
+          </div>
+
+          <div class="supportRewardCard">
+            <h3>💚 KICKs</h3>
+            <label class="supportRewardToggle">
+              <input id="srKicksEnabled" type="checkbox" checked onchange="updateSupportRewardPreviews()">
+              <span>Ödül aktif</span>
+            </label>
+            <div class="grid2">
+              <div class="field">
+                <label class="title">1 KICK karşılığı puan</label>
+                <input id="srKicksPointsEach" type="number" min="0" step="1" value="30" oninput="updateSupportRewardPreviews()">
+              </div>
+              <div class="field">
+                <label class="title">Minimum KICK</label>
+                <input id="srKicksMinimum" type="number" min="1" step="1" value="100" oninput="updateSupportRewardPreviews()">
+              </div>
+            </div>
+            <div id="srKicksPreview" class="supportRewardPreview"></div>
+          </div>
+
+          <div class="supportRewardCard" style="grid-column:1/-1;">
+            <h3>💸 BynoGame Bağışı</h3>
+            <label class="supportRewardToggle">
+              <input id="srDonationEnabled" type="checkbox" checked onchange="updateSupportRewardPreviews()">
+              <span>Ödül aktif</span>
+            </label>
+            <div class="field" style="max-width:360px;">
+              <label class="title">1 TL bağış karşılığı puan</label>
+              <input id="srDonationPointsPerTl" type="number" min="0" step="1" value="100" oninput="updateSupportRewardPreviews()">
+            </div>
+            <div id="srDonationPreview" class="supportRewardPreview"></div>
+          </div>
+        </div>
+
+        <div class="btnRow" style="margin-top:14px;">
+          <button onclick="saveSupportRewardConfig()">💾 Destek Ödülü Ayarlarını Kaydet</button>
+        </div>
+        <div id="supportRewardConfigStatus" class="status"></div>
+      </div>
+
+      <div class="card">
+        <div class="topbar">
+          <div>
+            <h2>📋 Destek Hakları / Oluşturulan Kodlar</h2>
+            <div id="supportRewardEventsCount" class="muted">Destek kayıtları yüklenmedi.</div>
+          </div>
+          <button class="secondary" style="width:auto" onclick="loadSupportRewardEvents()">🔄 Listeyi Yenile</button>
+        </div>
+
+        <div class="supportRewardToolbar">
+          <div class="field">
+            <label class="title">Durum</label>
+            <select id="supportRewardStatusFilter" onchange="loadSupportRewardEvents()">
+              <option value="">Tüm Durumlar</option>
+              <option value="pending_identity">Kullanıcı Doğrulaması Bekliyor</option>
+              <option value="issuing">Kod Hazırlanıyor</option>
+              <option value="code_issued">Kod Oluşturuldu</option>
+              <option value="ignored_internal_payment">Market / Turnuva Ödemesi - Hariç</option>
+              <option value="ignored_tournament">Turnuvada Kullanıldı - Hariç</option>
+              <option value="ignored_minimum">Minimum Altı - Hariç</option>
+              <option value="ignored_disabled">Ödül Kapalı - Hariç</option>
+              <option value="cancelled">İptal Edildi</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="title">Kullanıcı / Kaynak Ara</label>
+            <input id="supportRewardSearch" type="text" autocomplete="off" placeholder="Kick adı, UID, destek türü..." oninput="renderSupportRewardEvents()">
+          </div>
+        </div>
+
+        <div id="supportRewardSummary" class="supportRewardSummary"></div>
+
+        <div class="tableWrap">
+          <table style="min-width:1040px;">
+            <thead>
+              <tr>
+                <th>Kaynak</th>
+                <th>Kullanıcı</th>
+                <th>Destek</th>
+                <th>Ödül Puanı</th>
+                <th>Durum</th>
+                <th>Hediye Kodu</th>
+                <th>Tarih</th>
+                <th>İşlem</th>
+              </tr>
+            </thead>
+            <tbody id="supportRewardEventsBody">
+              <tr><td colspan="8" class="muted">Destek kayıtları henüz yüklenmedi.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="supportRewardEventsStatus" class="status"></div>
+      </div>
+
     </div>
 
     <!-- ===================================================== -->
@@ -2344,6 +2624,10 @@ function openTab(name){
     loadGiftCodes();
   }
 
+  if(name === 'supportrewards'){
+    loadSupportRewardAdmin(false);
+  }
+
   if(name === 'payments'){
     loadPayments();
   }
@@ -2549,14 +2833,39 @@ async function api(path,options={}){
 
 let lastCreatedGiftCode = '';
 
+function updateGiftCodeRewardFields(){
+  const rewardType = String(document.getElementById('giftRewardType')?.value || 'delivery');
+  const deliveryField = document.getElementById('giftDeliveryField');
+  const pointsField = document.getElementById('giftPointsField');
+
+  if(deliveryField) deliveryField.classList.toggle('hidden', rewardType !== 'delivery');
+  if(pointsField) pointsField.classList.toggle('hidden', rewardType !== 'points');
+}
+
 async function createGiftCode(){
   const productName = String(document.getElementById('giftProductName')?.value || '').trim();
+  const rewardType = String(document.getElementById('giftRewardType')?.value || 'delivery');
   const deliveryValue = String(document.getElementById('giftDeliveryValue')?.value || '').trim();
+  const pointsAmount = Math.trunc(Number(document.getElementById('giftPointsAmount')?.value || 0));
 
-  if(!productName || !deliveryValue){
+  if(!productName){
+    showStatus('giftCodeStatus','⚠️ Ödül adını yazmalısın.',false);
+    return;
+  }
+
+  if(rewardType === 'delivery' && !deliveryValue){
     showStatus(
       'giftCodeStatus',
-      '⚠️ Ürün adı ve teslim edilecek VP / ürün kodunu yazmalısın.',
+      '⚠️ Teslim edilecek VP / ürün kodunu yazmalısın.',
+      false
+    );
+    return;
+  }
+
+  if(rewardType === 'points' && (!Number.isSafeInteger(pointsAmount) || pointsAmount <= 0)){
+    showStatus(
+      'giftCodeStatus',
+      '⚠️ Gönderilecek puan miktarını yazmalısın.',
       false
     );
     return;
@@ -2566,7 +2875,12 @@ async function createGiftCode(){
     const {r,d} = await api('/admin/gift-codes/create',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({productName,deliveryValue})
+      body:JSON.stringify({
+        productName,
+        rewardType,
+        deliveryValue:rewardType === 'delivery' ? deliveryValue : '',
+        pointsAmount:rewardType === 'points' ? pointsAmount : null
+      })
     });
 
     if(!r.ok || !d?.success || !d?.giftCode?.code){
@@ -2578,10 +2892,13 @@ async function createGiftCode(){
     document.getElementById('giftCreatedCode').textContent = lastCreatedGiftCode;
     document.getElementById('giftCreatedBox').style.display = 'block';
     document.getElementById('giftDeliveryValue').value = '';
+    document.getElementById('giftPointsAmount').value = '';
 
     showStatus(
       'giftCodeStatus',
-      '✅ Tek kullanımlık hediye kodu oluşturuldu. Bu kod yalnızca bir kez kullanılabilir.',
+      rewardType === 'points'
+        ? `✅ ${pointsAmount.toLocaleString('tr-TR')} puanlık tek kullanımlık hediye kodu oluşturuldu.`
+        : '✅ Tek kullanımlık hediye kodu oluşturuldu. Bu kod yalnızca bir kez kullanılabilir.',
       true
     );
 
@@ -2609,14 +2926,14 @@ async function copyCreatedGiftCode(){
 async function loadGiftCodes(){
   const body = document.getElementById('giftCodesBody');
   if(!body) return;
-  body.innerHTML = '<tr><td colspan="7" class="muted">⏳ Hediye kodları yükleniyor...</td></tr>';
+  body.innerHTML = '<tr><td colspan="8" class="muted">⏳ Hediye kodları yükleniyor...</td></tr>';
 
   try{
     const {r,d} = await api('/admin/gift-codes');
     if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
     renderGiftCodes(Array.isArray(d.giftCodes) ? d.giftCodes : []);
   }catch(error){
-    body.innerHTML = `<tr><td colspan="7" class="muted">❌ ${esc(error.message || error)}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="8" class="muted">❌ ${esc(error.message || error)}</td></tr>`;
   }
 }
 
@@ -2626,7 +2943,7 @@ function renderGiftCodes(items){
   body.innerHTML = '';
 
   if(!items.length){
-    body.innerHTML = '<tr><td colspan="7" class="muted">Henüz hediye kodu oluşturulmadı.</td></tr>';
+    body.innerHTML = '<tr><td colspan="8" class="muted">Henüz hediye kodu oluşturulmadı.</td></tr>';
     return;
   }
 
@@ -2634,13 +2951,26 @@ function renderGiftCodes(items){
     const status = String(item.status || 'unused');
     const statusText = status === 'unused'
       ? 'Kullanılmadı'
-      : status === 'redeemed'
-        ? 'Kullanıldı'
-        : 'SİLİNDİ / GEÇERSİZ';
-    const badge = status === 'unused' ? 'ok' : status === 'redeemed' ? 'warn' : 'bad';
+      : status === 'processing'
+        ? 'Puan Gönderiliyor'
+        : status === 'redeemed'
+          ? 'Kullanıldı'
+          : 'SİLİNDİ / GEÇERSİZ';
+    const badge = status === 'unused'
+      ? 'ok'
+      : status === 'processing'
+        ? 'warn'
+        : status === 'redeemed'
+          ? 'warn'
+          : 'bad';
+    const rewardType = String(item.reward_type || 'delivery');
+    const rewardText = rewardType === 'points'
+      ? `🪙 ${Number(item.points_amount || 0).toLocaleString('tr-TR')} Puan`
+      : '🎁 VP / Ürün Kodu';
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><strong>${esc(item.product_name || '-')}</strong></td>
+      <td>${esc(rewardText)}</td>
       <td class="code">••••-${esc(item.redeem_code_last4 || '----')}</td>
       <td><span class="badge ${badge}">${esc(statusText)}</span></td>
       <td>${esc(item.redeemed_by_username || '-')}</td>
@@ -2650,8 +2980,12 @@ function renderGiftCodes(items){
         <div class="inlineActions">
           ${status === 'disabled'
             ? '<span class="muted">SİLİNDİ / GEÇERSİZ</span>'
-            : ''}
-          <button class="smallBtn iconDanger" title="${status === 'disabled' ? 'Listeden tamamen kaldır' : 'Geçersiz hale getir'}" onclick="deleteGiftCode('${encodeURIComponent(item.id)}','${esc(status)}')">🗑</button>
+            : status === 'processing'
+              ? '<span class="muted">MissXss doğrulaması bekleniyor</span>'
+              : ''}
+          ${status === 'processing'
+            ? ''
+            : `<button class="smallBtn iconDanger" title="${status === 'disabled' ? 'Listeden tamamen kaldır' : 'Geçersiz hale getir'}" onclick="deleteGiftCode('${encodeURIComponent(item.id)}','${esc(status)}')">🗑</button>`}
         </div>
       </td>`;
     body.appendChild(tr);
@@ -2690,6 +3024,257 @@ async function deleteGiftCode(encodedId,currentStatus=''){
   }
 }
 
+
+
+/* =========================================================
+   SUPPORT REWARDS / DESTEK ÖDÜLLERİ
+========================================================= */
+
+let supportRewardEventsCache = [];
+let supportRewardConfigCache = null;
+
+function srInt(id,fallback=0){
+  const n = Math.trunc(Number(document.getElementById(id)?.value ?? fallback));
+  return Number.isSafeInteger(n) ? n : fallback;
+}
+
+function updateSupportRewardPreviews(){
+  const sub = Math.max(0,srInt('srSubscriptionPoints',20000));
+  const renewal = Math.max(0,srInt('srRenewalPoints',20000));
+  const gift = Math.max(0,srInt('srGiftPointsEach',15000));
+  const kicks = Math.max(0,srInt('srKicksPointsEach',30));
+  const minKicks = Math.max(1,srInt('srKicksMinimum',100));
+  const donation = Math.max(0,srInt('srDonationPointsPerTl',100));
+
+  const set=(id,text)=>{ const el=document.getElementById(id); if(el) el.textContent=text; };
+  set('srSubscriptionPreview', `Örnek: 1 yeni abonelik → ${sub.toLocaleString('tr-TR')} puanlık hak.`);
+  set('srRenewalPreview', `Örnek: 1 abonelik yenileme → ${renewal.toLocaleString('tr-TR')} puanlık hak.`);
+  set('srGiftPreview', `Örnek: 1 Gift → ${gift.toLocaleString('tr-TR')} · 5 Gift → ${(gift*5).toLocaleString('tr-TR')} puan.`);
+  set('srKicksPreview', `Örnek: ${minKicks.toLocaleString('tr-TR')} KICK → ${(minKicks*kicks).toLocaleString('tr-TR')} puan. Minimumun altı ödül oluşturmaz.`);
+  set('srDonationPreview', `Örnek: 100 TL bağış → ${(100*donation).toLocaleString('tr-TR')} puanlık hak.`);
+}
+
+function applySupportRewardConfig(config){
+  const c=config || {};
+  const setCheck=(id,v)=>{ const el=document.getElementById(id); if(el) el.checked=v !== false; };
+  const setValue=(id,v,fallback)=>{ const el=document.getElementById(id); if(el) el.value=String(v ?? fallback); };
+
+  setCheck('srSubscriptionEnabled',c.subscriptionEnabled);
+  setValue('srSubscriptionPoints',c.subscriptionPoints,20000);
+  setCheck('srRenewalEnabled',c.renewalEnabled);
+  setValue('srRenewalPoints',c.renewalPoints,20000);
+  setCheck('srGiftEnabled',c.giftEnabled);
+  setValue('srGiftPointsEach',c.giftPointsEach,15000);
+  setCheck('srKicksEnabled',c.kicksEnabled);
+  setValue('srKicksPointsEach',c.kicksPointsEach,30);
+  setValue('srKicksMinimum',c.kicksMinimum,100);
+  setCheck('srDonationEnabled',c.donationEnabled);
+  setValue('srDonationPointsPerTl',c.donationPointsPerTl,100);
+  updateSupportRewardPreviews();
+}
+
+async function loadSupportRewardConfig(){
+  const {r,d}=await api('/admin/support-rewards/config');
+  if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+  supportRewardConfigCache=d.config || {};
+  applySupportRewardConfig(supportRewardConfigCache);
+  return supportRewardConfigCache;
+}
+
+async function saveSupportRewardConfig(){
+  const body={
+    subscriptionEnabled:document.getElementById('srSubscriptionEnabled')?.checked === true,
+    subscriptionPoints:Math.max(0,srInt('srSubscriptionPoints',0)),
+    renewalEnabled:document.getElementById('srRenewalEnabled')?.checked === true,
+    renewalPoints:Math.max(0,srInt('srRenewalPoints',0)),
+    giftEnabled:document.getElementById('srGiftEnabled')?.checked === true,
+    giftPointsEach:Math.max(0,srInt('srGiftPointsEach',0)),
+    kicksEnabled:document.getElementById('srKicksEnabled')?.checked === true,
+    kicksPointsEach:Math.max(0,srInt('srKicksPointsEach',0)),
+    kicksMinimum:Math.max(1,srInt('srKicksMinimum',1)),
+    donationEnabled:document.getElementById('srDonationEnabled')?.checked === true,
+    donationPointsPerTl:Math.max(0,srInt('srDonationPointsPerTl',0))
+  };
+
+  try{
+    showStatus('supportRewardConfigStatus','⏳ Ayarlar kaydediliyor...',true);
+    const {r,d}=await api('/admin/support-rewards/config',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)
+    });
+    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+    supportRewardConfigCache=d.config || body;
+    applySupportRewardConfig(supportRewardConfigCache);
+    showStatus('supportRewardConfigStatus','✅ Destek ödülü ayarları kaydedildi.',true);
+  }catch(error){
+    showStatus('supportRewardConfigStatus','❌ '+esc(error.message || error),false);
+  }
+}
+
+function supportRewardSourceText(type){
+  const map={
+    subscription:'⭐ Abonelik',
+    subscription_renewal:'🔁 Yenileme',
+    gift_subscription:'🎁 Gift',
+    kicks:'💚 KICKs',
+    bynogame_donation:'💸 BynoGame'
+  };
+  return map[String(type||'')] || String(type||'-');
+}
+
+function supportRewardStatusInfo(status){
+  const map={
+    pending_identity:['Kullanıcı Doğrulaması Bekliyor','warn'],
+    issuing:['Kod Hazırlanıyor','warn'],
+    code_issued:['Kod Oluşturuldu','ok'],
+    ignored_internal_payment:['Market / Turnuva Ödemesi','bad'],
+    ignored_tournament:['Turnuvada Kullanıldı','bad'],
+    ignored_minimum:['Minimum Altı','bad'],
+    ignored_disabled:['Ödül Kapalı','bad'],
+    cancelled:['İptal Edildi','bad']
+  };
+  return map[String(status||'')] || [String(status||'-'),''];
+}
+
+function supportRewardSupportText(item){
+  const type=String(item?.source_type||'');
+  const qty=Math.max(1,Math.trunc(Number(item?.quantity||1)));
+  if(type==='gift_subscription') return `${qty.toLocaleString('tr-TR')} Gift`;
+  if(type==='kicks') return `${qty.toLocaleString('tr-TR')} KICK`;
+  if(type==='bynogame_donation') return `${(Number(item?.amount_cents||0)/100).toLocaleString('tr-TR',{minimumFractionDigits:0,maximumFractionDigits:2})} TL`;
+  if(type==='subscription_renewal') return `${qty} yenileme`;
+  if(type==='subscription') return `${qty} abonelik`;
+  return qty.toLocaleString('tr-TR');
+}
+
+function renderSupportRewardEvents(){
+  const body=document.getElementById('supportRewardEventsBody');
+  const summary=document.getElementById('supportRewardSummary');
+  const count=document.getElementById('supportRewardEventsCount');
+  if(!body) return;
+
+  const q=String(document.getElementById('supportRewardSearch')?.value||'').trim().toLocaleLowerCase('tr-TR');
+  const items=supportRewardEventsCache.filter(item=>{
+    if(!q) return true;
+    return [item.source_type,item.username,item.username_norm,item.kick_uid,item.external_id,item.status]
+      .some(v=>String(v||'').toLocaleLowerCase('tr-TR').includes(q));
+  });
+
+  const pending=supportRewardEventsCache.filter(x=>String(x.status)==='pending_identity').length;
+  const issued=supportRewardEventsCache.filter(x=>String(x.status)==='code_issued').length;
+  const cancelled=supportRewardEventsCache.filter(x=>String(x.status)==='cancelled').length;
+  const totalPoints=supportRewardEventsCache.reduce((sum,x)=>sum+Math.max(0,Math.trunc(Number(x.points_awarded||0))),0);
+
+  if(summary){
+    summary.innerHTML=`
+      <span class="badge warn">⏳ Bekleyen: ${pending.toLocaleString('tr-TR')}</span>
+      <span class="badge ok">🎁 Kod Oluşan: ${issued.toLocaleString('tr-TR')}</span>
+      <span class="badge bad">🚫 İptal: ${cancelled.toLocaleString('tr-TR')}</span>
+      <span class="badge">🪙 Toplam Hak: ${totalPoints.toLocaleString('tr-TR')} Puan</span>`;
+  }
+  if(count) count.textContent=`${supportRewardEventsCache.length.toLocaleString('tr-TR')} destek kaydı · ${items.length.toLocaleString('tr-TR')} gösteriliyor`;
+
+  body.innerHTML='';
+  if(!items.length){
+    body.innerHTML='<tr><td colspan="8" class="muted">Bu filtrede destek kaydı bulunamadı.</td></tr>';
+    return;
+  }
+
+  for(const item of items){
+    const [statusText,statusBadge]=supportRewardStatusInfo(item.status);
+    const canCancel=['pending_identity','issuing','code_issued'].includes(String(item.status||''));
+    const codeLast4=String(item.redeem_code_last4||'').trim();
+    const giftStatus=String(item.gift_code_status||'').trim();
+    const codeText=codeLast4
+      ? `••••-${codeLast4}${giftStatus ? ` · ${giftStatus}` : ''}`
+      : '-';
+    const userName=String(item.username||item.username_norm||'-');
+    const uid=String(item.kick_uid||'');
+
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><span class="supportRewardSource">${esc(supportRewardSourceText(item.source_type))}</span></td>
+      <td class="supportRewardUser"><strong>${esc(userName)}</strong>${uid?`<div class="muted">UID: ${esc(uid)}</div>`:''}</td>
+      <td>${esc(supportRewardSupportText(item))}</td>
+      <td><span class="supportRewardPoints">${Number(item.points_awarded||0).toLocaleString('tr-TR')} Puan</span></td>
+      <td><span class="badge ${statusBadge}">${esc(statusText)}</span></td>
+      <td><span class="supportRewardCode">${esc(codeText)}</span></td>
+      <td>${esc(dateText(item.occurred_at || item.created_at))}</td>
+      <td>${canCancel
+        ? `<button class="smallBtn danger" onclick="cancelSupportRewardEvent('${encodeURIComponent(item.id)}')">🚫 İptal Et</button>`
+        : '<span class="muted">-</span>'}</td>`;
+    body.appendChild(tr);
+  }
+}
+
+async function loadSupportRewardEvents(){
+  const body=document.getElementById('supportRewardEventsBody');
+  const status=String(document.getElementById('supportRewardStatusFilter')?.value||'').trim();
+  if(body) body.innerHTML='<tr><td colspan="8" class="muted">⏳ Destek kayıtları yükleniyor...</td></tr>';
+
+  try{
+    const qs=status?`?status=${encodeURIComponent(status)}&_=${Date.now()}`:`?_=${Date.now()}`;
+    const {r,d}=await api(`/admin/support-rewards/events${qs}`);
+    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+    supportRewardEventsCache=Array.isArray(d.events)?d.events:[];
+    renderSupportRewardEvents();
+  }catch(error){
+    if(body) body.innerHTML=`<tr><td colspan="8" class="muted">❌ ${esc(error.message || error)}</td></tr>`;
+    showStatus('supportRewardEventsStatus','❌ '+esc(error.message || error),false);
+  }
+}
+
+async function syncSupportRewardSourcesAdmin(){
+  try{
+    showStatus('supportRewardEventsStatus','⏳ Abonelik, Gift ve BynoGame destekleri taranıyor...',true);
+    const {r,d}=await api('/admin/support-rewards/sync',{method:'POST'});
+    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+
+    const createdSubs=Number(d?.subscriptionRewards?.created||0);
+    const createdDonations=Number(d?.donations?.created||0);
+    const issued=Number(d?.delivery?.issuedCodes||0);
+    const delivered=Number(d?.delivery?.deliveredEvents||0);
+    showStatus(
+      'supportRewardEventsStatus',
+      `✅ Tarama tamamlandı. Yeni abonelik/Gift hakları: ${createdSubs}, yeni bağış hakları: ${createdDonations}, oluşturulan kod: ${issued}, teslim edilen destek olayı: ${delivered}.`,
+      true
+    );
+    await loadSupportRewardEvents();
+    await loadGiftCodes();
+  }catch(error){
+    showStatus('supportRewardEventsStatus','❌ '+esc(error.message || error),false);
+  }
+}
+
+async function cancelSupportRewardEvent(encodedId){
+  const id=decodeURIComponent(encodedId||'');
+  if(!id) return;
+  if(!confirm('Bu destek ödülü iptal edilsin mi? Oluşturulmuş ve henüz kullanılmamış hediye kodu varsa o da geçersiz hale gelir.')) return;
+
+  try{
+    const {r,d}=await api('/admin/support-rewards/event/cancel',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})
+    });
+    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+    showStatus('supportRewardEventsStatus','✅ Destek ödülü iptal edildi.',true);
+    await loadSupportRewardEvents();
+    await loadGiftCodes();
+  }catch(error){
+    showStatus('supportRewardEventsStatus','❌ '+esc(error.message || error),false);
+  }
+}
+
+async function loadSupportRewardAdmin(force=false){
+  try{
+    if(force || !supportRewardConfigCache){
+      await loadSupportRewardConfig();
+    }else{
+      applySupportRewardConfig(supportRewardConfigCache);
+    }
+    await loadSupportRewardEvents();
+  }catch(error){
+    showStatus('supportRewardConfigStatus','❌ '+esc(error.message || error),false);
+  }
+}
 
 /* =========================================================
    PRODUCTS
@@ -3950,6 +4535,11 @@ function adminMessagesTabIsOpen(){
 }
 
 function disconnectAdminRealtime(){
+  if(adminMessagesPollTimer){
+    clearInterval(adminMessagesPollTimer);
+    adminMessagesPollTimer = null;
+  }
+
   if(adminRealtimeReconnectTimer){
     clearTimeout(adminRealtimeReconnectTimer);
     adminRealtimeReconnectTimer = null;
@@ -4079,6 +4669,8 @@ async function refreshAdminInboxAfterRealtime(){
     await refreshAdminMessagesBadge();
 
     if(adminMessagesTabIsOpen()){
+      const replyDraft = document.getElementById('adminConversationReply')?.value || '';
+
       await loadAdminConversations(true,false);
 
       if(currentAdminConversationUid){
@@ -4086,6 +4678,9 @@ async function refreshAdminInboxAfterRealtime(){
           encodeURIComponent(currentAdminConversationUid),
           true
         );
+
+        const replyInput = document.getElementById('adminConversationReply');
+        if(replyInput && replyDraft) replyInput.value = replyDraft;
       }
     }
   }catch(error){
@@ -4100,9 +4695,25 @@ async function refreshAdminInboxAfterRealtime(){
   }
 }
 
+async function pollAdminMessagesOnly(){
+  if(!token() || document.hidden) return;
+
+  try{
+    if(adminMessagesTabIsOpen()){
+      // Mesajlar sekmesi açıksa konuşmaları ve açık sohbeti yenile.
+      // Bu yalnızca mesaj endpointlerini kullanır; ürün/puan/turnuva sorgusu yapmaz.
+      await refreshAdminInboxAfterRealtime();
+    }else{
+      await refreshAdminMessagesBadge();
+    }
+  }catch(error){
+    console.warn('ADMIN MESSAGE LIVE FALLBACK ERROR:',error);
+  }
+}
+
 function startAdminMessagesPolling(){
-  // Eski periyodik polling kapalı kalır. Yalnızca mesaj değişikliği için
-  // hafif WebSocket bildirimi dinlenir; içerik geldiğinde yetkili API'den okunur.
+  // WebSocket ana yöntemdir. Mobil tarayıcı WebSocket'i uykuya alır veya
+  // bağlantıyı keserse yalnızca mesajlaşma için 2 saniyelik yedek kontrol çalışır.
   if(adminMessagesPollTimer){
     clearInterval(adminMessagesPollTimer);
     adminMessagesPollTimer = null;
@@ -4110,6 +4721,10 @@ function startAdminMessagesPolling(){
 
   refreshAdminMessagesBadge().catch(() => {});
   connectAdminRealtime();
+
+  adminMessagesPollTimer = setInterval(() => {
+    pollAdminMessagesOnly().catch(() => {});
+  },2000);
 }
 
 async function refreshAdminMessagesBadge(){
