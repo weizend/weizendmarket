@@ -789,6 +789,44 @@ body.dmModalOpen{overflow:hidden}
   }
 }
 
+
+
+/* =========================================================
+   TURNUVA V3 ADMIN - DAVET / KOLTUK / ÖDEME
+   ========================================================= */
+.tournamentV3Notice{margin:12px 0 0;padding:12px 14px;border:1px solid #39465b;border-radius:12px;background:#0b1018;color:#c9d7ec;line-height:1.5}
+.tournamentV3Grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
+.tournamentV3Metric{background:#090909;border:1px solid #292929;border-radius:10px;padding:10px;min-width:0}
+.tournamentV3Metric span{display:block;color:#858585;font-size:.72rem;margin-bottom:4px}
+.tournamentV3Metric b{display:block;overflow-wrap:anywhere}
+.tournamentV3Section{margin-top:14px;padding-top:14px;border-top:1px solid #252525}
+.tournamentV3SectionTitle{font-size:.86rem;font-weight:900;color:#ddd;margin-bottom:9px}
+.tournamentV3InviteGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px}
+.tournamentV3Invite{background:#090909;border:1px solid #303030;border-radius:11px;padding:10px;min-width:0}
+.tournamentV3Invite.prepaid{border-color:#285c39;background:#09110c}
+.tournamentV3Invite.used{opacity:.62}
+.tournamentV3InviteCode{margin:8px 0;padding:8px;border:1px dashed #6f2828;border-radius:8px;background:#050505;color:#ff6a6a;font-family:Consolas,monospace;font-weight:900;letter-spacing:.6px;overflow-wrap:anywhere;text-align:center}
+.tournamentV3InviteTop{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.75rem;color:#aaa}
+.tournamentV3Chip{display:inline-flex;align-items:center;padding:4px 7px;border-radius:999px;background:#252525;color:#ccc;font-size:.66rem;font-weight:900;white-space:nowrap}
+.tournamentV3Chip.ok{background:#12331d;color:#7ce99d;border:1px solid #285c39}
+.tournamentV3Chip.warn{background:#3b2e0b;color:#ffd86a;border:1px solid #6d5414}
+.tournamentV3Chip.bad{background:#3a1515;color:#ff9c9c;border:1px solid #672525}
+.tournamentV3PaymentList{display:flex;flex-direction:column;gap:8px}
+.tournamentV3Payment{background:#090909;border:1px solid #2b2b2b;border-radius:11px;padding:10px}
+.tournamentV3PaymentGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:8px}
+.tournamentV3PaymentGrid div{background:#070707;border:1px solid #252525;border-radius:9px;padding:8px;min-width:0}
+.tournamentV3PaymentGrid span{display:block;color:#777;font-size:.68rem;margin-bottom:3px}
+.tournamentV3PaymentGrid b{display:block;overflow-wrap:anywhere;font-size:.82rem}
+.tournamentV3InlineActions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.tournamentV3InlineActions button{width:auto;min-width:0}
+@media(max-width:800px){
+  .tournamentV3Grid,.tournamentV3PaymentGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:520px){
+  .tournamentV3Grid,.tournamentV3PaymentGrid{grid-template-columns:1fr}
+  .tournamentV3InviteGrid{grid-template-columns:1fr}
+}
+
 </style>
 </head>
 
@@ -1646,7 +1684,7 @@ body.dmModalOpen{overflow:hidden}
       <div class="card">
         <h2>➕ Yeni Turnuva Oluştur</h2>
         <p class="muted">
-          Turnuvalar artık Ürünler bölümünden değil, yalnızca bu panelden oluşturulur ve yönetilir.
+          Turnuvalar davet kodu / koltuk / ödeme sistemiyle yönetilir. Takım turnuvalarında kaptan yalnızca kendisini kaydeder; kalan oyuncular tek kullanımlık davet kodlarıyla katılır.
         </p>
 
         <div class="grid2">
@@ -1865,12 +1903,15 @@ body.dmModalOpen{overflow:hidden}
         <div class="sectionHeaderRow">
           <div>
             <h2>👥 Katılanlar / Takımlar / Kadrolar</h2>
-            <p class="muted">Kayıt olan kullanıcılar ve takım kadroları burada görünür.</p>
+            <p class="muted">Kayıtlar; takım koltukları, tek kullanımlık davet kodları ve oyuncu bazlı ödeme durumu ile birlikte görünür.</p>
           </div>
           <button class="secondary smallButton" onclick="loadTournamentEntries()">🔄 Yenile</button>
         </div>
 
         <div id="tournamentEntrySummary" class="tournamentEntrySummary">Bir turnuva seç ve kayıtları yükle.</div>
+        <div class="tournamentV3Notice">
+          <b>Turnuva V3:</b> Takım tamamlanmadan public listede görünmez. Davet kodu tek kullanımlıktır; ön ödemeli koltuk varsa katılan oyuncudan tekrar ücret istenmez.
+        </div>
         <div id="tournamentEntriesView" class="tournamentEntriesView"></div>
       </div>
 
@@ -1990,6 +2031,9 @@ body.dmModalOpen{overflow:hidden}
 const MARKET_WORKER =
   'https://weizend-botrix.weizendtv.workers.dev';
 
+const REALTIME_WS_URL =
+  'wss://weizend-realtime.weizendtv.workers.dev/ws';
+
 const ADMIN_TOKEN_KEY =
   'weizend_market_admin_token_v3';
 
@@ -2007,6 +2051,14 @@ let adminChoiceContext = null;
 let adminMessagesPollTimer = null;
 let adminMessagesLastTotal = 0;
 let adminMessagesPollInFlight = false;
+let adminRealtimeSocket = null;
+let adminRealtimeReconnectTimer = null;
+let adminRealtimeReconnectAttempts = 0;
+let adminRealtimeRefreshTimer = null;
+let adminRealtimeRefreshRunning = false;
+let adminRealtimeRefreshQueued = false;
+const ADMIN_REALTIME_RECONNECT_BASE_MS = 2000;
+const ADMIN_REALTIME_RECONNECT_MAX_MS = 30000;
 let adminMessagesCache = [];
 let adminMessageRecipientsCache = [];
 let adminMessagesTotalCount = 0;
@@ -2391,6 +2443,8 @@ async function loginAdmin(){
 
 async function logoutAdmin(){
 
+  disconnectAdminRealtime();
+
   try{
 
     if(token()){
@@ -2464,6 +2518,8 @@ async function api(path,options={}){
   }catch(_){}
 
   if(r.status === 401){
+
+    disconnectAdminRealtime();
 
     sessionStorage.removeItem(
       ADMIN_TOKEN_KEY
@@ -3877,12 +3933,183 @@ function setAdminMessagesBadge(total){
   }
 }
 
+
+function adminRealtimeReason(message){
+  return String(
+    message?.reason ||
+    message?.payload?.reason ||
+    message?.data?.reason ||
+    ''
+  ).trim();
+}
+
+function adminMessagesTabIsOpen(){
+  return document
+    .getElementById('section-messages')
+    ?.classList.contains('active') === true;
+}
+
+function disconnectAdminRealtime(){
+  if(adminRealtimeReconnectTimer){
+    clearTimeout(adminRealtimeReconnectTimer);
+    adminRealtimeReconnectTimer = null;
+  }
+
+  if(adminRealtimeRefreshTimer){
+    clearTimeout(adminRealtimeRefreshTimer);
+    adminRealtimeRefreshTimer = null;
+  }
+
+  const socket = adminRealtimeSocket;
+  adminRealtimeSocket = null;
+  adminRealtimeReconnectAttempts = 0;
+
+  if(socket && (
+    socket.readyState === WebSocket.OPEN ||
+    socket.readyState === WebSocket.CONNECTING
+  )){
+    try{ socket.close(1000,'Admin connection closed'); }catch(_){}
+  }
+}
+
+function scheduleAdminRealtimeReconnect(){
+  if(adminRealtimeReconnectTimer || !token()) return;
+
+  const exponent = Math.min(adminRealtimeReconnectAttempts,4);
+  const waitMs = Math.min(
+    ADMIN_REALTIME_RECONNECT_MAX_MS,
+    ADMIN_REALTIME_RECONNECT_BASE_MS * (2 ** exponent)
+  );
+
+  adminRealtimeReconnectAttempts += 1;
+  adminRealtimeReconnectTimer = setTimeout(() => {
+    adminRealtimeReconnectTimer = null;
+    connectAdminRealtime();
+  },waitMs);
+}
+
+function connectAdminRealtime(){
+  if(!token()) return;
+
+  if(
+    adminRealtimeSocket &&
+    (
+      adminRealtimeSocket.readyState === WebSocket.OPEN ||
+      adminRealtimeSocket.readyState === WebSocket.CONNECTING
+    )
+  ){
+    return;
+  }
+
+  if(adminRealtimeReconnectTimer){
+    clearTimeout(adminRealtimeReconnectTimer);
+    adminRealtimeReconnectTimer = null;
+  }
+
+  let socket;
+  try{
+    socket = new WebSocket(`${REALTIME_WS_URL}?user=admin`);
+  }catch(error){
+    console.warn('ADMIN REALTIME CREATE ERROR:',error);
+    scheduleAdminRealtimeReconnect();
+    return;
+  }
+
+  adminRealtimeSocket = socket;
+
+  socket.onopen = () => {
+    if(socket !== adminRealtimeSocket) return;
+    adminRealtimeReconnectAttempts = 0;
+    console.log('ADMIN REALTIME CONNECTED');
+  };
+
+  socket.onmessage = event => {
+    if(socket !== adminRealtimeSocket) return;
+
+    let message = null;
+    try{
+      message = JSON.parse(String(event.data || ''));
+    }catch(_){
+      return;
+    }
+
+    if(!message || message.type === 'connected') return;
+
+    if(
+      message.type === 'profile_changed' &&
+      adminRealtimeReason(message) === 'admin_inbox_changed'
+    ){
+      scheduleAdminInboxRealtimeRefresh();
+    }
+  };
+
+  socket.onerror = error => {
+    console.warn('ADMIN REALTIME SOCKET ERROR:',error);
+  };
+
+  socket.onclose = () => {
+    if(socket !== adminRealtimeSocket) return;
+    adminRealtimeSocket = null;
+    scheduleAdminRealtimeReconnect();
+  };
+}
+
+function scheduleAdminInboxRealtimeRefresh(){
+  if(adminRealtimeRefreshTimer) return;
+
+  // Aynı anda birden fazla mesaj düşerse tek yenilemede birleştir.
+  adminRealtimeRefreshTimer = setTimeout(() => {
+    adminRealtimeRefreshTimer = null;
+    refreshAdminInboxAfterRealtime().catch(() => {});
+  },120);
+}
+
+async function refreshAdminInboxAfterRealtime(){
+  if(!token()) return;
+
+  if(adminRealtimeRefreshRunning){
+    adminRealtimeRefreshQueued = true;
+    return;
+  }
+
+  adminRealtimeRefreshRunning = true;
+
+  try{
+    // Mesaj sekmesi kapalıysa yalnızca kırmızı okunmamış rozeti güncellenir.
+    await refreshAdminMessagesBadge();
+
+    if(adminMessagesTabIsOpen()){
+      await loadAdminConversations(true,false);
+
+      if(currentAdminConversationUid){
+        await selectAdminConversation(
+          encodeURIComponent(currentAdminConversationUid),
+          true
+        );
+      }
+    }
+  }catch(error){
+    console.warn('ADMIN INBOX REALTIME REFRESH ERROR:',error);
+  }finally{
+    adminRealtimeRefreshRunning = false;
+
+    if(adminRealtimeRefreshQueued){
+      adminRealtimeRefreshQueued = false;
+      queueMicrotask(() => refreshAdminInboxAfterRealtime());
+    }
+  }
+}
+
 function startAdminMessagesPolling(){
+  // Eski periyodik polling kapalı kalır. Yalnızca mesaj değişikliği için
+  // hafif WebSocket bildirimi dinlenir; içerik geldiğinde yetkili API'den okunur.
   if(adminMessagesPollTimer){
     clearInterval(adminMessagesPollTimer);
     adminMessagesPollTimer = null;
   }
+
   refreshAdminMessagesBadge().catch(() => {});
+  connectAdminRealtime();
 }
 
 async function refreshAdminMessagesBadge(){
@@ -5365,7 +5592,7 @@ async function completeOrder(){
 
 
 /* =========================================================
-   TOURNAMENT V2
+   TOURNAMENT V3 · DAVET / KOLTUK / ÖDEME
 ========================================================= */
 
 let tournamentCatalogCache = [];
@@ -6042,27 +6269,18 @@ async function loadTournamentEntries(silent=false){
   const id = document.getElementById('tournamentSelect')?.value || '';
   if(!id) return;
 
-  const teamMode = Number(currentTournamentAdmin?.teamSize || 1) > 1;
-
   if(!silent){
-    showStatus('tournamentStatus','⏳ Turnuva kayıtları yenileniyor...',true);
+    showStatus('tournamentStatus','⏳ Turnuva V3 kayıtları yenileniyor...',true);
   }
 
   try{
-    if(teamMode){
-      const {r,d} = await api(`/admin/tournament/v2/entries?id=${encodeURIComponent(id)}&_=${Date.now()}`);
-      if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
-      currentTournamentEntries = d;
-      renderTournamentV2Entries(d);
-    }else{
-      const {r,d} = await api(`/admin/tournament/entries?id=${encodeURIComponent(id)}&_=${Date.now()}`);
-      if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
-      currentTournamentEntries = d;
-      renderTournamentSoloEntries(d.registrations || []);
-    }
+    const {r,d} = await api(`/admin/tournament/v3/entries?id=${encodeURIComponent(id)}&_=${Date.now()}`);
+    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+    currentTournamentEntries = d;
+    renderTournamentV3Entries(d);
 
     if(!silent){
-      showStatus('tournamentStatus','✅ Turnuva kayıtları güncellendi.',true);
+      showStatus('tournamentStatus','✅ Turnuva V3 kayıtları güncellendi.',true);
     }
   }catch(error){
     document.getElementById('tournamentEntrySummary').innerHTML = '❌ Kayıtlar yüklenemedi.';
@@ -6075,118 +6293,204 @@ async function loadTournamentEntries(silent=false){
   }
 }
 
-function renderTournamentV2Entries(data){
+function tournamentV3InviteText(status){
+  const map={
+    available:'Kullanılabilir',
+    reserved:'Ayrıldı',
+    used:'Kullanıldı',
+    revoked:'İptal',
+    expired:'Süresi Doldu'
+  };
+  return map[String(status||'').toLowerCase()] || status || '-';
+}
+
+function tournamentV3SlotText(status,role){
+  if(role==='captain') return 'Kaptan';
+  const map={
+    empty:'Boş Koltuk',
+    invited:'Davet Bekliyor',
+    payment_pending:'Ödeme Bekliyor',
+    joined:'Takıma Katıldı',
+    removed:'Takımdan Çıkarıldı'
+  };
+  return map[String(status||'').toLowerCase()] || status || '-';
+}
+
+function tournamentV3Money(cents){
+  return `${(Number(cents||0)/100).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})} TL`;
+}
+
+function tournamentV3PaymentStatusText(status){
+  const map={
+    pending:'Bekliyor',
+    partial_payment:'Eksik Ödeme',
+    paid:'Tamamlandı',
+    cancelled:'İptal',
+    expired:'Süresi Doldu',
+    manual_review:'İnceleme Gerekli'
+  };
+  return map[String(status||'').toLowerCase()] || status || '-';
+}
+
+function renderTournamentV3Entries(data){
   const teams = Array.isArray(data?.teams) ? data.teams : [];
-  const subs = Array.isArray(data?.subscriptionPayments) ? data.subscriptionPayments : [];
   const summary = document.getElementById('tournamentEntrySummary');
   const host = document.getElementById('tournamentEntriesView');
 
-  const ready =
-    teams.filter(x =>
-      ['ready','locked'].includes(String(x?.team?.status))
-    ).length;
-
-  const players =
-    teams.reduce(
-      (sum,x) =>
-        sum +
-        (x.slots || [])
-          .filter(s =>
-            ['captain','joined'].includes(s.joinStatus)
-          ).length,
-      0
-    );
-
-  const paid =
-    teams.reduce(
-      (sum,x) =>
-        sum +
-        (x.slots || [])
-          .filter(s => s.paymentStatus === 'paid').length,
-      0
-    );
-
-  const capacity =
-    Number(currentTournamentAdmin?.capacity || 0);
+  const teamSize = Number(currentTournamentAdmin?.teamSize || data?.tournament?.teamSize || 1);
+  const capacity = Number(currentTournamentAdmin?.capacity || data?.tournament?.capacity || 0);
+  const ready = teams.filter(x=>['ready','locked'].includes(String(x?.team?.status||''))).length;
+  const joined = teams.reduce((n,x)=>n+(x.slots||[]).filter(s=>['captain','joined'].includes(String(s?.status||s?.joinStatus||''))).length,0);
+  const paid = teams.reduce((n,x)=>n+(x.slots||[]).filter(s=>String(s?.paymentStatus||'')==='paid').length,0);
+  const availableInvites = teams.reduce((n,x)=>n+(x.invites||[]).filter(i=>String(i?.status||'')==='available').length,0);
 
   summary.innerHTML = `
-    <span class="tournamentPill">Takım: ${teams.length} / ${capacity || '-'}</span>
-    <span class="tournamentPill">Hazır Takım: ${ready}</span>
-    <span class="tournamentPill">Katılmış Oyuncu: ${players}</span>
-    <span class="tournamentPill">Şartı Tamamlanan Slot: ${paid}</span>
-    <span class="tournamentPill">Bekleyen Sub/Gift: ${subs.filter(s=>s.status==='pending').length}</span>
+    <span class="tournamentPill">Takım/Kayıt: ${teams.length} / ${capacity || '-'}</span>
+    <span class="tournamentPill">Hazır: ${ready}</span>
+    <span class="tournamentPill">Katılan Oyuncu: ${joined}</span>
+    <span class="tournamentPill">Ödenmiş Koltuk: ${paid}</span>
+    <span class="tournamentPill">Aktif Davet: ${availableInvites}</span>
   `;
 
   if(!teams.length){
-    host.innerHTML =
-      '<div class="tournamentEmpty">Henüz takım oluşturulmamış.</div>';
-  }else{
-    host.innerHTML =
-      teams.map(entry => {
-        const team = entry.team || {};
-        const slots = Array.isArray(entry.slots) ? entry.slots : [];
-
-        return `
-          <div class="tournamentTeamCard">
-            <div class="tournamentTeamHead">
-              <div>
-                <div class="tournamentTeamName">${esc(team.name || '-')}</div>
-                <div class="muted">
-                  👑 ${esc(team.captainUsername || '-')} ·
-                  ${Number(team.joinedCount||0)}/${Number(team.teamSize||0)} oyuncu ·
-                  ${Number(team.paidCount||0)}/${Number(team.teamSize||0)} şart tamamlandı
-                </div>
-              </div>
-              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
-                <span class="tournamentState ${['ready','locked'].includes(team.status)?'ok':team.status==='cancelled'?'bad':'warn'}">
-                  ${esc(tournamentStatusText(team.status))}
-                </span>
-                <button class="smallBtn danger" onclick="deleteTournamentTeam('${encodeURIComponent(team.id)}')">🗑 Takımı Sil</button>
-              </div>
-            </div>
-
-            <div class="tableWrap tournamentSlotTable">
-              <table>
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Kick Kullanıcı</th>
-                    <th>Oyun İçi Ad</th>
-                    <th>Takım Durumu</th>
-                    <th>Katılım Şartı</th>
-                    <th>İşlem</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${slots.map(s => `
-                    <tr>
-                      <td>${Number(s.slotNo||0)===1?'👑 ':''}${Number(s.slotNo||0)}</td>
-                      <td>
-                        <b>${esc(s.plannedUsername || '-')}</b>
-                        ${s.joinedUsername && s.joinedUsername!==s.plannedUsername
-                          ? `<div class="muted">Katılan: ${esc(s.joinedUsername)}</div>`
-                          : ''}
-                      </td>
-                      <td>${esc(s.gameId || '-')}</td>
-                      <td>${esc(tournamentJoinText(s.joinStatus))}</td>
-                      <td>${esc(tournamentPaymentText(s.paymentStatus,s.paidVia))}</td>
-                      <td>
-                        <button class="smallBtn secondary" onclick="editTournamentSlot('${encodeURIComponent(s.id)}','${encodeURIComponent(s.plannedUsername || '')}','${encodeURIComponent(s.gameId || '')}')">✏️ Düzenle</button>
-                        ${Number(s.slotNo||0) === 1 || s.joinStatus === 'captain'
-                          ? '<div class="muted" style="margin-top:5px;">Kaptan</div>'
-                          : `<button class="smallBtn danger" style="margin-top:6px" onclick="deleteTournamentSlot('${encodeURIComponent(s.id)}')">🗑 Oyuncuyu Sil</button>`}
-                      </td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        `;
-      }).join('');
+    host.innerHTML='<div class="tournamentEmpty">Henüz kayıt oluşturulmamış.</div>';
+    renderTournamentSubscriptionPayments(Array.isArray(data?.subscriptionPayments)?data.subscriptionPayments:[]);
+    return;
   }
 
-  renderTournamentSubscriptionPayments(subs);
+  host.innerHTML = teams.map(entry=>{
+    const team=entry.team||{};
+    const slots=Array.isArray(entry.slots)?entry.slots:[];
+    const invites=Array.isArray(entry.invites)?entry.invites:[];
+    const payments=Array.isArray(entry.payments)?entry.payments:[];
+    const tsize=Number(team.teamSize||teamSize||1);
+    const joinedCount=Number(team.joinedCount ?? slots.filter(s=>['captain','joined'].includes(String(s?.status||s?.joinStatus||''))).length);
+    const paidCount=Number(team.paidCount ?? slots.filter(s=>String(s?.paymentStatus||'')==='paid').length);
+    const status=String(team.status||'forming');
+
+    const slotRows=slots.map(s=>{
+      const role=String(s.role||((Number(s.slotNo||0)===1)?'captain':'member'));
+      const slotStatus=String(s.status||s.joinStatus||'empty');
+      const username=s.username||s.joinedUsername||s.plannedUsername||'';
+      const gameId=s.gameId||s.riotId||'';
+      const paymentStatus=String(s.paymentStatus||'unpaid');
+      const via=s.paidVia||s.paymentVia||'';
+      const canRemove=role!=='captain' && ['joined','payment_pending','invited'].includes(slotStatus);
+      return `
+        <tr>
+          <td>${role==='captain'?'👑 ':''}${Number(s.slotNo||0)||'-'}</td>
+          <td><b>${esc(username||'-')}</b>${s.paidForByUsername?`<div class="muted">Ödeyen: ${esc(s.paidForByUsername)}</div>`:''}</td>
+          <td>${esc(gameId||'-')}</td>
+          <td>${esc(tournamentV3SlotText(slotStatus,role))}</td>
+          <td>${esc(tournamentPaymentText(paymentStatus,via))}</td>
+          <td>
+            ${username?`<button class="smallBtn secondary" onclick="editTournamentSlot('${encodeURIComponent(s.id)}','${encodeURIComponent(username)}','${encodeURIComponent(gameId)}')">✏️ Düzenle</button>`:''}
+            ${canRemove?`<button class="smallBtn danger" style="margin-top:6px" onclick="deleteTournamentSlot('${encodeURIComponent(s.id)}')">🗑 Oyuncuyu Çıkar</button>`:''}
+          </td>
+        </tr>`;
+    }).join('');
+
+    const inviteCards=invites.length ? invites.map(i=>{
+      const st=String(i.status||'available');
+      const prepaid=i.prepaid===true || Number(i.prepaid||0)===1 || String(i.paymentStatus||'')==='paid';
+      const code=i.code||i.inviteCode||i.codePreview||'';
+      return `
+        <div class="tournamentV3Invite ${prepaid?'prepaid':''} ${st==='used'?'used':''}">
+          <div class="tournamentV3InviteTop">
+            <span>Koltuk ${Number(i.slotNo||0)||'-'}</span>
+            <span class="tournamentV3Chip ${st==='used'?'ok':st==='available'?'warn':'bad'}">${esc(tournamentV3InviteText(st))}</span>
+          </div>
+          <div class="tournamentV3InviteCode">${esc(code||'Kod gizli')}</div>
+          <div class="muted">${prepaid?'✅ Ücreti önceden ödenmiş':'💳 Katılan oyuncu ödeme yapacak'}${i.usedByUsername?` · ${esc(i.usedByUsername)}`:''}</div>
+          <div class="tournamentV3InlineActions">
+            ${code?`<button class="smallBtn secondary" onclick="copyTextAdmin('${encodeURIComponent(code)}')">📋 Kopyala</button>`:''}
+            ${st==='available'?`<button class="smallBtn secondary" onclick="regenerateTournamentInvite('${encodeURIComponent(i.id)}')">♻️ Yeni Kod</button>`:''}
+          </div>
+        </div>`;
+    }).join('') : '<div class="muted">Aktif davet kodu yok.</div>';
+
+    const paymentCards=payments.length ? payments.map(p=>{
+      const statusText=tournamentV3PaymentStatusText(p.status);
+      const cls=String(p.status)==='paid'?'ok':String(p.status)==='manual_review'?'bad':'warn';
+      const expected=Number(p.expectedAmountCents||0);
+      const received=Number(p.receivedAmountCents||0);
+      const remaining=Math.max(0,expected-received);
+      const over=Math.max(0,received-expected);
+      return `
+        <div class="tournamentV3Payment">
+          <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;">
+            <b>${esc(p.payerUsername||p.username||'Kullanıcı')} · ${Number(p.seatCount||1)} koltuk</b>
+            <span class="tournamentV3Chip ${cls}">${esc(statusText)}</span>
+          </div>
+          <div class="tournamentV3PaymentGrid">
+            <div><span>Beklenen</span><b>${tournamentV3Money(expected)}</b></div>
+            <div><span>Gelen</span><b>${tournamentV3Money(received)}</b></div>
+            <div><span>Kalan</span><b>${tournamentV3Money(remaining)}</b></div>
+            <div><span>Fazla</span><b>${tournamentV3Money(over)}</b></div>
+          </div>
+          <div class="muted" style="margin-top:7px;">Kod: ${esc(p.reference||'-')} · ${esc(formatTournamentDate(p.createdAt||p.created_at))}</div>
+        </div>`;
+    }).join('') : '<div class="muted">Henüz ödeme işlemi yok.</div>';
+
+    return `
+      <div class="tournamentTeamCard">
+        <div class="tournamentTeamHead">
+          <div>
+            <div class="tournamentTeamName">${esc(team.name||'-')}</div>
+            <div class="muted">👑 ${esc(team.captainUsername||'-')} · ${joinedCount}/${tsize} oyuncu · ${paidCount}/${tsize} ödeme şartı</div>
+            <div class="tournamentV3Grid">
+              <div class="tournamentV3Metric"><span>Takım Durumu</span><b>${esc(tournamentStatusText(status))}</b></div>
+              <div class="tournamentV3Metric"><span>Oyuncu</span><b>${joinedCount}/${tsize}</b></div>
+              <div class="tournamentV3Metric"><span>Ödenmiş Koltuk</span><b>${paidCount}/${tsize}</b></div>
+              <div class="tournamentV3Metric"><span>Aktif Davet</span><b>${invites.filter(i=>String(i.status||'')==='available').length}</b></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+            <span class="tournamentState ${['ready','locked'].includes(status)?'ok':status==='cancelled'?'bad':'warn'}">${esc(tournamentStatusText(status))}</span>
+            <button class="smallBtn danger" onclick="deleteTournamentTeam('${encodeURIComponent(team.id)}')">🗑 Takımı Sil</button>
+          </div>
+        </div>
+
+        <div class="tableWrap tournamentSlotTable">
+          <table>
+            <thead><tr><th>#</th><th>Kick Kullanıcı</th><th>Oyun İçi Ad</th><th>Koltuk</th><th>Ödeme</th><th>İşlem</th></tr></thead>
+            <tbody>${slotRows || `<tr><td colspan="6" class="muted">Henüz koltuk kaydı yok.</td></tr>`}</tbody>
+          </table>
+        </div>
+
+        ${tsize>1?`<div class="tournamentV3Section"><div class="tournamentV3SectionTitle">🔑 Tek Kullanımlık Davet Kodları</div><div class="tournamentV3InviteGrid">${inviteCards}</div></div>`:''}
+        <div class="tournamentV3Section"><div class="tournamentV3SectionTitle">💳 Ödeme Hareketleri</div><div class="tournamentV3PaymentList">${paymentCards}</div></div>
+      </div>`;
+  }).join('');
+
+  renderTournamentSubscriptionPayments(Array.isArray(data?.subscriptionPayments)?data.subscriptionPayments:[]);
+}
+
+async function regenerateTournamentInvite(encodedInviteId){
+  const inviteId=decodeURIComponent(encodedInviteId||'');
+  if(!inviteId) return;
+  if(!confirm('Bu davet kodu iptal edilip yeni tek kullanımlık kod oluşturulsun mu?')) return;
+  try{
+    const {r,d}=await api('/admin/tournament/v3/invite/regenerate',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({inviteId})
+    });
+    if(!r.ok||!d?.success) throw new Error(d?.error||`HTTP ${r.status}`);
+    await loadTournamentEntries(true);
+    showStatus('tournamentStatus','✅ Yeni davet kodu oluşturuldu.',true);
+  }catch(error){
+    showStatus('tournamentStatus','❌ '+esc(error.message||error),false);
+  }
+}
+
+async function copyTextAdmin(encodedValue){
+  const value=decodeURIComponent(encodedValue||'');
+  if(!value) return;
+  try{
+    await navigator.clipboard.writeText(value);
+    showStatus('tournamentStatus','✅ Davet kodu panoya kopyalandı.',true);
+  }catch{
+    prompt('Kodu kopyala:',value);
+  }
 }
 
 function renderTournamentSoloEntries(rows){
@@ -6246,7 +6550,7 @@ async function deleteTournamentTeam(encodedTeamId){
   if(!teamId || !confirm('Bu takım turnuvadan silinsin mi? Takımın bekleyen işlemleri de iptal edilir.')) return;
 
   try{
-    const {r,d} = await api('/admin/tournament/v2/team/delete',{
+    const {r,d} = await api('/admin/tournament/v3/team/delete',{
       method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({teamId})
     });
     if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
@@ -6306,7 +6610,7 @@ async function saveTournamentSlotEditor(){
       button.innerText = '⏳ Kaydediliyor...';
     }
 
-    const {r,d} = await api('/admin/tournament/v2/slot/update',{
+    const {r,d} = await api('/admin/tournament/v3/slot/update',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({slotId,plannedUsername,gameId})
@@ -6332,13 +6636,13 @@ async function deleteTournamentSlot(encodedSlotId){
   if(!slotId || !confirm('Bu oyuncu takımdan silinsin mi? Takım bu oyuncu olmadan devam edebilir.')) return;
 
   try{
-    const {r,d} = await api('/admin/tournament/v2/slot/delete',{
+    const {r,d} = await api('/admin/tournament/v3/slot/remove',{
       method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slotId})
     });
     if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
     await loadTournamentEntries(true);
     await loadTournamentConfig();
-    showStatus('tournamentStatus','✅ Oyuncu silindi. Takımın gerekli oyuncu sayısı yeniden hesaplandı.',true);
+    showStatus('tournamentStatus','✅ Oyuncu çıkarıldı. Yeni tek kullanımlık davet kodu oluşturuldu.',true);
   }catch(error){
     showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
   }
@@ -7014,6 +7318,9 @@ if(token()){
   openAdmin();
 }
 
+window.addEventListener('beforeunload', () => {
+  disconnectAdminRealtime();
+});
 
 
 /* =========================================================
