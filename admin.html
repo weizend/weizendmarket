@@ -5016,12 +5016,16 @@ async function selectAdminConversation(encodedUid, silent = false){
 }
 
 function backToAdminConversationList(){
-  // Seçili konuşmayı bellekte tutuyoruz; masaüstünde tekrar açılabilir.
-  // Ancak mobil liste modundayken polling/WebSocket bu konuşmayı otomatik açamaz.
+  // Mobilde yalnızca konuşma listesine dön.
+  // Arama kutusuna otomatik odak VERME: aksi halde geri tuşuna basınca
+  // arama alanı seçilmiş gibi olur ve mobil klavye yeniden açılabilir.
   adminConversationListOnlyMode = true;
   document.querySelector('#section-messages .dmShell')?.classList.remove('mobileChatOpen');
-  const search = document.getElementById('adminConversationSearch');
-  setTimeout(() => search?.focus({preventScroll:true}), 50);
+
+  // Mesaj yazma alanında veya geri butonunda kalan odağı kapat.
+  if(document.activeElement instanceof HTMLElement){
+    document.activeElement.blur();
+  }
 }
 
 function renderAdminConversation(){
