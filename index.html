@@ -648,7 +648,79 @@
             .tv2-request{align-items:flex-start;flex-direction:column}
             .tv2-actions .tv2-btn{flex:1 1 140px}
         }
-    </style>
+    
+
+        /* =========================================================
+           MARKET MESAJ KUTUSU - MOBİL KAYDIRMA SON DÜZELTME
+           ========================================================= */
+        #inboxModal {
+            overscroll-behavior:contain;
+        }
+        #inboxModal .inbox-modal-content {
+            display:flex;
+            flex-direction:column;
+            overflow:hidden !important;
+        }
+        #inboxModal .inbox-shell,
+        #inboxModal #inboxThreadView {
+            display:flex;
+            flex-direction:column;
+            flex:1 1 0;
+            min-height:0;
+            overflow:hidden;
+        }
+        #inboxModal #inboxMessages {
+            position:relative;
+            flex:1 1 0 !important;
+            min-height:0 !important;
+            height:auto !important;
+            max-height:none !important;
+            overflow-y:scroll !important;
+            overflow-x:hidden !important;
+            overscroll-behavior-y:contain;
+            -webkit-overflow-scrolling:touch;
+            touch-action:pan-y;
+            scrollbar-gutter:stable;
+        }
+        #inboxModal .inbox-thread-header,
+        #inboxModal .inbox-reply-box {
+            flex:0 0 auto;
+        }
+        @media (max-width:640px) {
+            #inboxModal {
+                padding:0 !important;
+                align-items:stretch !important;
+                overflow:hidden !important;
+            }
+            #inboxModal .inbox-modal-content {
+                width:100% !important;
+                height:100dvh !important;
+                min-height:100dvh !important;
+                max-height:100dvh !important;
+                border-radius:0 !important;
+            }
+            #inboxModal .inbox-shell,
+            #inboxModal #inboxThreadView {
+                height:100% !important;
+                min-height:0 !important;
+            }
+            #inboxModal #inboxMessages {
+                flex:1 1 0 !important;
+                min-height:0 !important;
+                overflow-y:scroll !important;
+                padding-bottom:24px !important;
+            }
+            #inboxModal .inbox-thread-header {
+                position:relative !important;
+                top:auto !important;
+            }
+            #inboxModal .inbox-reply-box {
+                position:relative !important;
+                bottom:auto !important;
+            }
+        }
+
+</style>
 </head>
 <body>
 
@@ -3695,11 +3767,11 @@ else if (deliveryType === 'manual') {
             const balanceRow = document.getElementById('purchaseBalance')?.parentElement;
 
             if (paymentType === 'points') {
-                document.getElementById('purchaseUnitPrice').innerText = formatPoints(Number(urun.pricePoints ?? pointNumber(urun.puan))) + ' / adet';
+                document.getElementById('purchaseUnitPrice').innerText = formatPoints(Number(urun.pricePoints ?? pointNumber(urun.puan)));
                 if (flowNote) flowNote.innerHTML = 'Onayladığında puan düşümü BotRix üzerinden otomatik doğrulanır. Kick sohbetine ayrıca komut yazmana gerek yoktur.';
                 if (balanceRow) balanceRow.style.display = '';
             } else if (paymentType === 'tl') {
-                document.getElementById('purchaseUnitPrice').innerText = formatTlFromCents(urun.priceTlCents) + ' / adet';
+                document.getElementById('purchaseUnitPrice').innerText = formatTlFromCents(urun.priceTlCents);
                 if (flowNote) flowNote.innerHTML = 'Onayladığında sana özel <b>tek kullanımlık BynoGame ödeme kodu</b> oluşturulur, otomatik kopyalanır ve 3 saniye sonra bağış sayfası açılır. Bağış mesajına bu kodu yapıştır.';
                 if (balanceRow) balanceRow.style.display = 'none';
             } else {
