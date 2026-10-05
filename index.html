@@ -1701,6 +1701,14 @@
                 .replaceAll("'", '&#039;');
         }
 
+        function safeImageUrl(value) {
+            const raw=String(value || '');
+            if (/[\u0000-\u0020<>"'`\\]/.test(raw)) return '';
+            try {const u=new URL(raw);return u.protocol==='https:' && !u.username && !u.password ? u.href : '';}
+            catch {return '';}
+        }
+        function htmlJsString(value) { return escapeHtml(JSON.stringify(String(value ?? ''))); }
+
         function delay(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
         }
@@ -2445,6 +2453,7 @@
             );
         }
 
+        let inboxLastFallbackAt = 0;
         async function pollInboxMessagesOnly() {
             if (
                 !marketAuthenticated ||
@@ -2453,6 +2462,9 @@
                 inboxLivePollInFlight
             ) return;
 
+            const fallbackMs = realtimeSocket?.readyState === WebSocket.OPEN ? 60000 : 10000;
+            if (Date.now()-inboxLastFallbackAt < fallbackMs) return;
+            inboxLastFallbackAt=Date.now();
             inboxLivePollInFlight = true;
 
             try {
@@ -2487,12 +2499,12 @@
 
         function startInboxBadgeWatcher() {
             // WebSocket ana yöntemdir. Mobil tarayıcı WebSocket'i uykuya alırsa
-            // yalnızca mesaj kutusu için hafif bir 2 saniyelik yedek kontrol çalışır.
+            // mesaj kutusu 10 saniyede kontrol edilir; bağlantı açıkken 60 saniyelik güvence kontrolü yapılır.
             stopInboxBadgeWatcher();
             pollInboxMessagesOnly().catch(() => {});
             inboxBadgeWatchTimer = setInterval(() => {
                 pollInboxMessagesOnly().catch(() => {});
-            }, 2000);
+            }, 10000);
         }
 
         function stopInboxBadgeWatcher() {
@@ -3668,6 +3680,11 @@
                 0
             ) + 1;
 
+            const activeServerIds = new Set(data.products.map(p=>String(p.id || '').toLowerCase()));
+            for (const item of URUNLER) {
+                const id=String(item.productId || '').toLowerCase();
+                if (id && !activeServerIds.has(id) && (item.webPurchase || item.catalogManaged)) item.durum='off';
+            }
             for (const serverProduct of data.products) {
                 const productId = String(serverProduct.id || '').toLowerCase();
                 if (!productId) continue;
@@ -3685,7 +3702,7 @@
 
                 const metadata = serverProduct.metadata || {};
                 const serverImages = Array.isArray(metadata.images)
-                    ? metadata.images.filter(Boolean)
+                    ? metadata.images.map(safeImageUrl).filter(Boolean)
                     : [];
 
                 if (!urun) {
@@ -3708,6 +3725,7 @@
                     URUNLER.push(urun);
                 }
 
+                urun.catalogManaged = true;
                 urun.durum = serverProduct.active === false ? 'off' : 'on';
 urun.ad = serverProduct.name || urun.ad;
 urun.kategori = serverProduct.category || urun.kategori;
@@ -3760,7 +3778,7 @@ urun.paymentType = String(serverProduct.paymentType || '').toLowerCase();
 
             benzersizKategoriler.forEach(kat => {
                 const aktifClass = aktifKategori === kat ? 'active' : '';
-                filterContainer.innerHTML += `<button class="filter-btn ${aktifClass}" onclick="filtrele('${kat}')">${kat}</button>`;
+                filterContainer.innerHTML += `<button class="filter-btn ${aktifClass}" onclick="filtrele(${htmlJsString(kat)})">${escapeHtml(kat)}</button>`;
             });
 
             const tukendiClass = aktifKategori === 'Tükendi' ? 'active' : '';
@@ -3842,14 +3860,14 @@ urun.paymentType = String(serverProduct.paymentType || '').toLowerCase();
                     thumbnailsHTML = '<div class="card-thumbnails">';
                     urun.gorseller.forEach((url, i) => {
                         const aktifClass = i === 0 ? 'active' : '';
-                        thumbnailsHTML += `<img src="${url}" class="card-thumb ${aktifClass}" onclick="kartIciResimDegistir(event, this, ${urun.orijinalId}, ${i}, '${url}')">`;
+                        thumbnailsHTML += `<img src="${escapeHtml(safeImageUrl(url))}" class="card-thumb ${aktifClass}" onclick="kartIciResimDegistir(event, this, ${Number(urun.orijinalId)}, ${i}, this.src)">`;
                     });
                     thumbnailsHTML += '</div>';
                 }
 
                 let stokAlaniHTML = `
                     <div class="stock-wrapper">
-                        <span class="stock-badge">Stok: ${urun.stok}</span>
+                        <span class="stock-badge">Stok: ${escapeHtml(urun.stok)}</span>
                         ${urun.stok === 'Sınırsız' ? '' : '<div class="stock-info-text">İşlem onaylandıktan sonra stok bilgisi güncellenmektedir.</div>'}
                     </div>
                 `;
@@ -3875,7 +3893,7 @@ if (
 ) {
     const yazi = webPurchase
         ? `Ürünü siteden satın aldıktan sonra size özel bir <b style="color:var(--weizend-red);">teslimat kodu</b> gösterilir. Bu kodu İnstagram <b><a href="https://instagram.com/weizendtv" target="_blank" rel="noopener noreferrer" style="color:var(--weizend-red);">@weizendtv</a></b> adresinden yayıncıya ileterek teslimat işlemlerini tamamlayabilirsiniz.<br><br><b>🚚 Ne Zaman Kargolanır?</b><br>En geç 5 iş gününde kargoda. Tüm ürünlerde kargo ücreti bize aittir.`
-        : `Ürünü Kick sohbetimizden <b><span style="color:var(--weizend-red);">${urun.komut}</span></b> yazıp aldıktan sonra İnstagram <b><a href="https://instagram.com/weizendtv" target="_blank" rel="noopener noreferrer" style="color:var(--weizend-red);">@weizendtv</a></b> adresine mesaj atarak teslimat işlemlerini tamamlayabilirsiniz.<br><br><b>🚚 Ne Zaman Kargolanır?</b><br>En geç 5 iş gününde kargoda. Tüm ürünlerde kargo ücreti bize aittir.`;
+        : `Ürünü Kick sohbetimizden <b><span style="color:var(--weizend-red);">${escapeHtml(urun.komut)}</span></b> yazıp aldıktan sonra İnstagram <b><a href="https://instagram.com/weizendtv" target="_blank" rel="noopener noreferrer" style="color:var(--weizend-red);">@weizendtv</a></b> adresine mesaj atarak teslimat işlemlerini tamamlayabilirsiniz.<br><br><b>🚚 Ne Zaman Kargolanır?</b><br>En geç 5 iş gününde kargoda. Tüm ürünlerde kargo ücreti bize aittir.`;
 
     teslimatKutusuHTML = `
         <details data-detail-key="urun-${urun.orijinalId}-teslimat">
@@ -3891,7 +3909,7 @@ else if (
 ) {
     const yazi = webPurchase
         ? `Ürünü siteden satın aldıktan sonra size özel bir <b style="color:var(--weizend-red);">teslimat kodu</b> gösterilir. Bu kodu Discord üzerinden yetkililere veya İnstagram <b><a href="https://instagram.com/weizendtv" target="_blank" rel="noopener noreferrer" style="color:var(--weizend-red);">@weizendtv</a></b> adresine ileterek dijital ürününüzü teslim alabilirsiniz.`
-        : `Ürünü Kick sohbetimizden <b><span style="color:var(--weizend-red);">${urun.komut}</span></b> yazıp aldıktan sonra Discord üzerinden yetkililere veya İnstagram <b><a href="https://instagram.com/weizendtv" target="_blank" rel="noopener noreferrer" style="color:var(--weizend-red);">@weizendtv</a></b> adresine ulaşarak dijital ürününüzü teslim alabilirsiniz.`;
+        : `Ürünü Kick sohbetimizden <b><span style="color:var(--weizend-red);">${escapeHtml(urun.komut)}</span></b> yazıp aldıktan sonra Discord üzerinden yetkililere veya İnstagram <b><a href="https://instagram.com/weizendtv" target="_blank" rel="noopener noreferrer" style="color:var(--weizend-red);">@weizendtv</a></b> adresine ulaşarak dijital ürününüzü teslim alabilirsiniz.`;
 
     teslimatKutusuHTML = `
         <details data-detail-key="urun-${urun.orijinalId}-teslimat">
@@ -3904,7 +3922,7 @@ else if (
 else if (deliveryType === 'manual') {
     const yazi = webPurchase
         ? `Ürünü siteden satın aldıktan sonra size özel bir <b style="color:var(--weizend-red);">teslimat kodu</b> gösterilir. Bu kodu İnstagram <b><a href="https://instagram.com/weizendtv" target="_blank" rel="noopener noreferrer" style="color:var(--weizend-red);">@weizendtv</a></b> adresinden yayıncıya veya Discord üzerinden yetkililere ileterek manuel teslimat işlemini tamamlayabilirsiniz.`
-        : `Ürünü Kick sohbetimizden <b><span style="color:var(--weizend-red);">${urun.komut}</span></b> yazıp aldıktan sonra İnstagram <b><a href="https://instagram.com/weizendtv" target="_blank" rel="noopener noreferrer" style="color:var(--weizend-red);">@weizendtv</a></b> adresinden yayıncıya veya Discord üzerinden yetkililere ulaşarak manuel teslimat işlemini tamamlayabilirsiniz.`;
+        : `Ürünü Kick sohbetimizden <b><span style="color:var(--weizend-red);">${escapeHtml(urun.komut)}</span></b> yazıp aldıktan sonra İnstagram <b><a href="https://instagram.com/weizendtv" target="_blank" rel="noopener noreferrer" style="color:var(--weizend-red);">@weizendtv</a></b> adresinden yayıncıya veya Discord üzerinden yetkililere ulaşarak manuel teslimat işlemini tamamlayabilirsiniz.`;
 
     teslimatKutusuHTML = `
         <details data-detail-key="urun-${urun.orijinalId}-teslimat">
@@ -3943,9 +3961,9 @@ else if (deliveryType === 'manual') {
                     ? ""
                     : (marketAuthenticated
                         ? (isStreamProduct
-                            ? `onclick="islemYapBaslat('${streamCommand.replaceAll("'","\\'")}')"`
+                            ? `onclick="islemYapBaslat(${htmlJsString(streamCommand)})"`
                             : isSiteProduct
-                                ? `onclick="startSitePurchase('${urun.productId}')"`
+                                ? `onclick="startSitePurchase(${htmlJsString(urun.productId)})"`
                                 : "")
                         : `onclick="goToVerification()"`);
 
@@ -3954,21 +3972,21 @@ else if (deliveryType === 'manual') {
                 const kart = `
                     <div class="${kartClass}">
                         <div class="img-container" data-current-index="0" onclick="modaliAc(${urun.orijinalId}, this.dataset.currentIndex)">
-                            <span class="category-badge">${urun.kategori}</span>
+                            <span class="category-badge">${escapeHtml(urun.kategori)}</span>
                             ${tukendiOverlayHTML}
-                            <img class="main-card-img" src="${ilkGorsel}" alt="${urun.ad}">
+                            <img class="main-card-img" src="${escapeHtml(safeImageUrl(ilkGorsel))}" alt="${escapeHtml(urun.ad)}">
                             <div class="zoom-hint">🔍 Büyüt</div>
                         </div>
                         
                         ${thumbnailsHTML}
 
-                        <h3 class="product-title">${urun.ad}</h3>
+                        <h3 class="product-title">${escapeHtml(urun.ad)}</h3>
                         
                         ${stokAlaniHTML}
 
                         <div class="price-command">
                             <span class="price">${urun.puan}</span>
-                            <span class="${komutClass}">${tukendiMi ? 'TÜKENDİ' : (isStreamProduct ? streamCommand : 'SİTE ÜZERİNDEN')}</span>
+                            <span class="${komutClass}">${tukendiMi ? 'TÜKENDİ' : (isStreamProduct ? escapeHtml(streamCommand) : 'SİTE ÜZERİNDEN')}</span>
                         </div>
 
                         <button class="${actionBtnClass}" ${actionBtnClick}>${actionBtnText}</button>
@@ -4552,6 +4570,13 @@ return;
 
             const order = data.order;
 
+            if (order.paymentType === 'points' && order.status === 'pending' && order.manualReviewReason) {
+                purchaseInFlight=false;
+                document.getElementById('purchaseCloseButton').disabled=false;
+                document.getElementById('purchaseSpinner').style.display='none';
+                document.getElementById('purchaseStatusText').textContent='Puan işlemi kesinleşmedi. Siparişin korundu ve yönetici kontrolü bekliyor. Tekrar satın alma yapma.';
+                return true;
+            }
             if (order.status === 'pending' || order.status === 'payment_pending') {
                 return false;
             }
@@ -4766,7 +4791,7 @@ return;
         }
 
         function galeriyiGuncelle() {
-            document.getElementById('modalMainImg').src = aktifGorselListesi[aktifResimIndex];
+            document.getElementById('modalMainImg').src = safeImageUrl(aktifGorselListesi[aktifResimIndex]);
             
             const thumbContainer = document.getElementById('modalThumbnails');
             thumbContainer.innerHTML = '';
@@ -4774,7 +4799,7 @@ return;
             if(aktifGorselListesi.length > 1) {
                 aktifGorselListesi.forEach((gorselUrl, i) => {
                     const aktifClass = i === aktifResimIndex ? 'active' : '';
-                    thumbContainer.innerHTML += `<img src="${gorselUrl}" class="modal-thumb ${aktifClass}" onclick="modalResmeAtla(${i})">`;
+                    thumbContainer.innerHTML += `<img src="${escapeHtml(safeImageUrl(gorselUrl))}" class="modal-thumb ${aktifClass}" onclick="modalResmeAtla(${i})">`;
                 });
             }
         }
