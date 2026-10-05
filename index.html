@@ -2405,6 +2405,7 @@
         let inboxRefreshInFlight = false;
         let inboxBadgeUnreadCount = 0;
         let inboxLivePollInFlight = false;
+        let inboxConversationRefreshInFlight = false;
 
         function inboxDateText(value) {
             if (!value) return '-';
@@ -2611,7 +2612,15 @@
             const draft = preserveDraft ? (document.getElementById('inboxReplyInput')?.value || '') : '';
             if (!messagesBox) return;
 
-            messagesBox.innerHTML = '<div class="inbox-empty">⏳ Mesajlar yükleniyor...</div>';
+            // WebSocket + 2 sn yedek kontrol aynı anda tetiklenebilir. Arka plandaki
+            // yenilemeler birbirinin üstüne binmesin ve ekranda sürekli
+            // "Mesajlar yükleniyor" yanıp sönmesin.
+            if (inboxConversationRefreshInFlight && preserveDraft) return;
+            inboxConversationRefreshInFlight = true;
+
+            if (!preserveDraft) {
+                messagesBox.innerHTML = '<div class="inbox-empty">⏳ Mesajlar yükleniyor...</div>';
+            }
 
             try {
                 const data = await inboxRequest(`/inbox/conversation?_=${Date.now()}`);
@@ -2649,7 +2658,13 @@
                 currentInboxThreads = [];
                 updateInboxBadge(0);
             } catch (error) {
-                messagesBox.innerHTML = `<div class="inbox-empty">❌ ${escapeHtml(error.message || error)}</div>`;
+                // Sessiz canlı yenilemede eski mesajları ekranda tut. İlk açılışta hata
+                // varsa kullanıcıya normal hata kartını göster.
+                if (!preserveDraft || !currentInboxConversation) {
+                    messagesBox.innerHTML = `<div class="inbox-empty">❌ ${escapeHtml(error.message || error)}</div>`;
+                }
+            } finally {
+                inboxConversationRefreshInFlight = false;
             }
         }
 
@@ -3068,6 +3083,9 @@
 
         function renderInboxMessages(items) {
             const box = document.getElementById('inboxMessages');
+            const previousScrollTop = box.scrollTop;
+            const previousScrollHeight = box.scrollHeight;
+            const wasNearBottom = (box.scrollHeight - box.scrollTop - box.clientHeight) < 90;
             box.innerHTML = '';
 
             if (!items.length) {
@@ -3113,7 +3131,16 @@
                 box.appendChild(bubble);
             });
 
-            box.scrollTop = box.scrollHeight;
+            // İlk açılışta veya kullanıcı zaten aşağıdaysa son mesaja git.
+            // Kullanıcı eski mesajları okuyorsa canlı yenileme kaydırma konumunu bozmasın.
+            requestAnimationFrame(() => {
+                if (!currentInboxConversation || previousScrollHeight === 0 || wasNearBottom) {
+                    box.scrollTop = box.scrollHeight;
+                } else {
+                    const heightDelta = box.scrollHeight - previousScrollHeight;
+                    box.scrollTop = Math.max(0, previousScrollTop + heightDelta);
+                }
+            });
         }
 
         function backToInbox(refresh = true) {
