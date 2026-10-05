@@ -2171,7 +2171,7 @@ body.dmModalOpen{overflow:hidden}
         <div class="btnRow" style="margin-top:8px;">
           <button class="secondary" onclick="loadTournamentEntries()">👥 Kayıtları Yenile</button>
           <button id="tSubscriptionSyncButton" class="secondary" onclick="syncTournamentSubscriptions()">⭐ Abonelikleri Kontrol Et</button>
-          <button id="tSubscriptionEventsButton" class="secondary" onclick="loadTournamentSubscriptionEvents()">📡 Sub/Gift Olayları</button>
+          <button id="tSubscriptionEventsButton" class="secondary" onclick="loadTournamentSubscriptionEvents()">📡 Destek Olayları</button>
           <button id="tDrawButton" class="warn" onclick="drawTournament()">🎲 Karıştır ve Fikstürü Oluştur</button>
         </div>
 
@@ -2215,8 +2215,8 @@ body.dmModalOpen{overflow:hidden}
       <div class="card" id="tournamentSubscriptionCard">
         <div class="sectionHeaderRow">
           <div>
-            <h2>⭐ Abonelik / Gift Takibi</h2>
-            <p class="muted">Bekleyen abonelik işlemleri ve MissXss üzerinden yakalanan abonelik hediyesi olayları.</p>
+            <h2>⭐ Abonelik / Gift / Bağış Takibi</h2>
+            <p class="muted">MissXss üzerinden yakalanan abonelik, abonelik hediyesi ve karşılıksız BynoGame bağış olayları. Çöp kutusuyla kaldırdığın eski olay bir daha bu listede görünmez; yeni bir destek yaparsa yeni olay yine görünür.</p>
           </div>
           <button class="secondary smallButton" onclick="loadTournamentSubscriptionEvents()">🔄 Olayları Yenile</button>
         </div>
@@ -2350,6 +2350,9 @@ let adminConversationTotalCount = 0;
 let adminConversationHasMore = false;
 let currentAdminConversationUid = '';
 let currentAdminConversation = null;
+// Mobilde kullanıcı geri tuşuyla konuşma listesine döndüğünde canlı mesaj yenilemesi
+// açık konuşmayı kendi kendine tekrar açmamalı.
+let adminConversationListOnlyMode = false;
 const ADMIN_CONVERSATIONS_PAGE_SIZE = 100;
 
 document.addEventListener('keydown', event => {
@@ -3181,7 +3184,9 @@ function renderSupportRewardEvents(){
 
   for(const item of items){
     const [statusText,statusBadge]=supportRewardStatusInfo(item.status);
-    const canCancel=['pending_identity','issuing','code_issued'].includes(String(item.status||''));
+    const eventStatus=String(item.status||'');
+    const canCancel=['pending_identity','issuing','code_issued'].includes(eventStatus);
+    const canDelete=eventStatus==='cancelled';
     const codeLast4=String(item.redeem_code_last4||'').trim();
     const giftStatus=String(item.gift_code_status||'').trim();
     const codeText=codeLast4
@@ -3201,7 +3206,9 @@ function renderSupportRewardEvents(){
       <td>${esc(dateText(item.occurred_at || item.created_at))}</td>
       <td>${canCancel
         ? `<button class="smallBtn danger" onclick="cancelSupportRewardEvent('${encodeURIComponent(item.id)}')">🚫 İptal Et</button>`
-        : '<span class="muted">-</span>'}</td>`;
+        : canDelete
+          ? `<button class="iconDanger" title="Bu iptal kaydını listeden sil" aria-label="Kaydı sil" onclick="deleteSupportRewardEvent('${encodeURIComponent(item.id)}')">🗑️</button>`
+          : '<span class="muted">-</span>'}</td>`;
     body.appendChild(tr);
   }
 }
@@ -3258,6 +3265,23 @@ async function cancelSupportRewardEvent(encodedId){
     showStatus('supportRewardEventsStatus','✅ Destek ödülü iptal edildi.',true);
     await loadSupportRewardEvents();
     await loadGiftCodes();
+  }catch(error){
+    showStatus('supportRewardEventsStatus','❌ '+esc(error.message || error),false);
+  }
+}
+
+async function deleteSupportRewardEvent(encodedId){
+  const id=decodeURIComponent(encodedId||'');
+  if(!id) return;
+  if(!confirm('Bu iptal edilmiş destek kaydı listeden kalıcı olarak silinsin mi?\n\nİptal edilen hediye kodu tekrar aktif olmaz.')) return;
+
+  try{
+    const {r,d}=await api('/admin/support-rewards/event/delete',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})
+    });
+    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+    showStatus('supportRewardEventsStatus','✅ İptal edilmiş destek kaydı listeden silindi.',true);
+    await loadSupportRewardEvents();
   }catch(error){
     showStatus('supportRewardEventsStatus','❌ '+esc(error.message || error),false);
   }
@@ -4673,7 +4697,7 @@ async function refreshAdminInboxAfterRealtime(){
 
       await loadAdminConversations(true,false);
 
-      if(currentAdminConversationUid){
+      if(currentAdminConversationUid && !adminConversationListOnlyMode){
         await selectAdminConversation(
           encodeURIComponent(currentAdminConversationUid),
           true
@@ -4837,7 +4861,7 @@ async function loadAdminConversations(silent = false, append = false){
     renderAdminConversationList();
     hideStatus('adminMessagesStatus');
 
-    if(currentAdminConversationUid){
+    if(currentAdminConversationUid && !adminConversationListOnlyMode){
       const stillExists = adminConversationsCache.some(c => c.kick_uid === currentAdminConversationUid);
       if(stillExists && !currentAdminConversation){
         await selectAdminConversation(encodeURIComponent(currentAdminConversationUid), true);
@@ -4897,6 +4921,7 @@ function renderAdminConversationList(){
 async function selectAdminConversation(encodedUid, silent = false){
   const uid = decodeURIComponent(encodedUid || '');
   if(!uid) return;
+  adminConversationListOnlyMode = false;
   currentAdminConversationUid = uid;
   document.querySelector('#section-messages .dmShell')?.classList.add('mobileChatOpen');
   renderAdminConversationList();
@@ -4936,6 +4961,9 @@ async function selectAdminConversation(encodedUid, silent = false){
 }
 
 function backToAdminConversationList(){
+  // Seçili konuşmayı bellekte tutuyoruz; masaüstünde tekrar açılabilir.
+  // Ancak mobil liste modundayken polling/WebSocket bu konuşmayı otomatik açamaz.
+  adminConversationListOnlyMode = true;
   document.querySelector('#section-messages .dmShell')?.classList.remove('mobileChatOpen');
   const search = document.getElementById('adminConversationSearch');
   setTimeout(() => search?.focus({preventScroll:true}), 50);
@@ -5181,6 +5209,7 @@ async function deleteCurrentAdminConversation(){
 
     currentAdminConversationUid = '';
     currentAdminConversation = null;
+    adminConversationListOnlyMode = true;
     document.getElementById('adminChatPanel')?.classList.add('hidden');
     document.getElementById('adminChatEmpty')?.classList.remove('hidden');
     document.querySelector('#section-messages .dmShell')?.classList.remove('mobileChatOpen');
@@ -7405,10 +7434,16 @@ async function loadTournamentSubscriptionEvents(silent=false){
     const summary =
       document.getElementById('tournamentSubscriptionSummary');
 
+    const subGiftEvents = events.filter(e => ['direct_sub','gift_sub'].includes(String(e.event_kind||'')));
+    const unallocated = subGiftEvents.reduce(
+      (sum,e)=>sum+Math.max(0,Number(e.quantity||0)-Number(e.allocated_quantity||0)),
+      0
+    );
+
     if(summary){
       summary.innerHTML =
         `<span class="tournamentPill">Son Olaylar: ${events.length}</span>` +
-        `<span class="tournamentPill">Dağıtılmamış Hak: ${events.reduce((sum,e)=>sum+Math.max(0,Number(e.quantity||0)-Number(e.allocated_quantity||0)),0)}</span>`;
+        `<span class="tournamentPill">Dağıtılmamış Sub/Gift Hakkı: ${unallocated}</span>`;
     }
 
     if(host){
@@ -7421,33 +7456,49 @@ async function loadTournamentSubscriptionEvents(silent=false){
                   <th>Tarih</th>
                   <th>Gönderen</th>
                   <th>Tür</th>
-                  <th>Adet</th>
+                  <th>Destek</th>
                   <th>Dağıtılan</th>
                   <th>Kalan</th>
+                  <th>İşlem</th>
                 </tr>
               </thead>
               <tbody>
-                ${events.map(e=>`
-                  <tr>
-                    <td>${esc(formatTournamentDate(e.event_time||e.created_at))}</td>
-                    <td><b>${esc(e.sender_username||'-')}</b></td>
-                    <td>${esc(e.event_kind==='gift'?'🎁 Gift':'⭐ Abonelik')}</td>
-                    <td>${Number(e.quantity||0)}</td>
-                    <td>${Number(e.allocated_quantity||0)}</td>
-                    <td>${Math.max(0,Number(e.quantity||0)-Number(e.allocated_quantity||0))}</td>
-                  </tr>
-                `).join('')}
+                ${events.map(e=>{
+                  const kind=String(e.event_kind||'');
+                  const isGift=kind==='gift_sub';
+                  const isDonation=kind==='bynogame_donation';
+                  const typeText=isGift?'🎁 Gift':isDonation?'💸 BynoGame':'⭐ Abonelik';
+                  const supportText=isDonation
+                    ? `${(Number(e.amount_cents||0)/100).toLocaleString('tr-TR',{minimumFractionDigits:0,maximumFractionDigits:2})} TL`
+                    : `${Number(e.quantity||0)} ${isGift?'Gift':'abonelik'}`;
+                  const allocatedText=isDonation?'—':Number(e.allocated_quantity||0);
+                  const remainingText=isDonation?'—':Math.max(0,Number(e.quantity||0)-Number(e.allocated_quantity||0));
+                  const trackingKey=encodeURIComponent(String(e.tracking_key||''));
+                  return `
+                    <tr>
+                      <td>${esc(formatTournamentDate(e.event_time||e.created_at))}</td>
+                      <td><b>${esc(e.sender_username||'-')}</b></td>
+                      <td>${esc(typeText)}</td>
+                      <td>${esc(supportText)}</td>
+                      <td>${allocatedText}</td>
+                      <td>${remainingText}</td>
+                      <td>
+                        <button class="iconDanger" title="Bu olayı listeden kaldır" onclick="hideTournamentSupportEvent('${trackingKey}')">🗑️</button>
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
               </tbody>
             </table>
           </div>
         `
-        : '<div class="tournamentEmpty">Henüz yakalanmış abonelik / gift olayı yok.</div>';
+        : '<div class="tournamentEmpty">Henüz yakalanmış abonelik / gift / bağış olayı yok.</div>';
     }
 
     if(!silent){
       showStatus(
         'tournamentStatus',
-        '✅ Abonelik / gift olayları yenilendi.',
+        '✅ Abonelik / gift / bağış olayları yenilendi.',
         true
       );
     }
@@ -7456,6 +7507,26 @@ async function loadTournamentSubscriptionEvents(silent=false){
     if(!silent){
       showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
     }
+  }
+}
+
+
+async function hideTournamentSupportEvent(encodedTrackingKey){
+  const trackingKey=decodeURIComponent(encodedTrackingKey||'');
+  if(!trackingKey) return;
+  if(!confirm('Bu destek olayı Son Olaylar listesinden kaldırılsın mı?\n\nBu işlem kazanılmış/dağıtılmış puan hakkını silmez. Aynı eski olay tekrar görünmez; kullanıcı gelecekte yeni destek yaparsa yeni olay yine listelenir.')) return;
+
+  try{
+    const {r,d}=await api('/admin/tournament/v2/subscription-events/hide',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({trackingKey})
+    });
+    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+    await loadTournamentSubscriptionEvents(true);
+    showStatus('tournamentStatus','✅ Destek olayı Son Olaylar listesinden kaldırıldı.',true);
+  }catch(error){
+    showStatus('tournamentStatus','❌ '+esc(error.message||error),false);
   }
 }
 
