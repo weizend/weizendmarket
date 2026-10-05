@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -4759,8 +4758,12 @@ async function refreshAdminInboxAfterRealtime(){
   }
 }
 
+let adminLastFallbackAt=0;
 async function pollAdminMessagesOnly(){
   if(!token() || document.hidden) return;
+  const fallbackMs=adminRealtimeSocket?.readyState===WebSocket.OPEN ? 60000 : 10000;
+  if(Date.now()-adminLastFallbackAt<fallbackMs) return;
+  adminLastFallbackAt=Date.now();
 
   try{
     if(adminMessagesTabIsOpen()){
@@ -4777,7 +4780,7 @@ async function pollAdminMessagesOnly(){
 
 function startAdminMessagesPolling(){
   // WebSocket ana yöntemdir. Mobil tarayıcı WebSocket'i uykuya alır veya
-  // bağlantıyı keserse yalnızca mesajlaşma için 2 saniyelik yedek kontrol çalışır.
+  // bağlantıyı keserse mesajlaşma 10 saniyede; bağlantı açıkken güvence amacıyla 60 saniyede kontrol edilir.
   if(adminMessagesPollTimer){
     clearInterval(adminMessagesPollTimer);
     adminMessagesPollTimer = null;
@@ -4788,7 +4791,7 @@ function startAdminMessagesPolling(){
 
   adminMessagesPollTimer = setInterval(() => {
     pollAdminMessagesOnly().catch(() => {});
-  },2000);
+  },10000);
 }
 
 async function refreshAdminMessagesBadge(){
@@ -5537,7 +5540,7 @@ function renderAdminOrders(){
 
       <td>
         <span class="badge ${orderStatusBadge(o.status)}">
-          ${esc(orderStatusText(o.status))}
+          ${esc(orderStatusText(o.status))}${o.manualReviewReason ? '<br><small>'+esc(o.manualReviewReason)+'</small>' : ''}
         </span>
       </td>
 
@@ -5547,6 +5550,9 @@ function renderAdminOrders(){
 
       <td>
         <div class="orderActions">
+          ${o.paymentType === 'points' && ['pending','expired','failed'].includes(o.status) ? `
+            <button class="smallBtn secondary" onclick="resolvePointReview('${encodeURIComponent(o.id)}','debited')">Puan silindi: onayla</button>
+            <button class="smallBtn secondary" onclick="resolvePointReview('${encodeURIComponent(o.id)}','not_debited')">Puan silinmedi: iptal</button>` : ''}
           ${o.paymentType === 'gift_code'
             ? `<span class="badge ok">🎁 Teslim Edildi</span>`
             : `<button
@@ -5566,6 +5572,21 @@ function renderAdminOrders(){
 
     body.appendChild(tr);
   }
+}
+
+async function resolvePointReview(encodedId,decision){
+  const orderId=decodeURIComponent(encodedId);
+  const warning=decision==='debited'
+    ? 'Bot işlem geçmişinde bu siparişin puanının gerçekten silindiğini kontrol ettin mi? Bu işlem tekrar puan silmez; siparişi onaylar.'
+    : 'Bot işlem geçmişinde bu sipariş için puan silinmediğinden ve gecikmiş komut kalmadığından emin misin? Sipariş iptal edilecek. Otomatik puan iadesi yapılmaz.';
+  if(!confirm(warning)) return;
+  try {
+    const {r,d}=await api('/admin/order/resolve-points',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({orderId,decision,confirmed:true})});
+    if(!r.ok || !d?.success) throw new Error(d?.error || 'İşlem tamamlanamadı.');
+    alert('İnceleme sonucu kaydedildi.');
+    await loadAdminOrders();
+  }catch(error){alert(error.message || String(error));}
 }
 
 async function hideAdminPurchase(encodedId,sourceType='order'){
