@@ -1317,7 +1317,7 @@
         </div>
     </div>
 
-    <div id="copyToast" class="copy-toast">✅ !doğrula komutu kopyalandı</div>
+    <div id="copyToast" class="copy-toast" style="display:none!important" aria-hidden="true"></div>
 
     <!-- MODAL 1: GÖRSEL BÜYÜTME GALERİSİ -->
     <div id="imageModal" class="modal-overlay" onclick="disariTiklaKapat(event)">
@@ -1413,6 +1413,42 @@
                 <input id="giftRedeemInput" class="gift-redeem-input" maxlength="40" autocomplete="off" placeholder="WZG-XXXX-XXXX">
                 <button id="giftRedeemButton" class="access-btn" style="margin-top:12px;" onclick="redeemGiftCode()">🎁 Kodu Kullan</button>
                 <div id="giftRedeemStatus" class="gift-redeem-status"></div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- PUAN / HEDİYE İŞLEM SONUÇ PENCERESİ -->
+    <div id="actionResultModal" class="modal-overlay">
+        <div class="modal-content" style="max-width:470px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 id="actionResultTitle">✅ İşlem Tamamlandı</h3>
+            </div>
+            <div class="redirect-modal-body">
+                <div id="actionResultMessage" class="gift-redeem-note" style="white-space:normal;"></div>
+
+                <div
+                    id="actionResultCode"
+                    class="purchase-code"
+                    style="display:none;margin-top:14px;"
+                    onclick="copyActionResultCode()"
+                    title="Kodu kopyalamak için dokun">
+                </div>
+
+                <div
+                    id="actionResultRefreshStatus"
+                    class="purchase-note"
+                    style="display:none;margin-top:14px;">
+                    🔄 Güncel hesap bilgilerin alınıyor...
+                </div>
+
+                <button
+                    id="actionResultOkButton"
+                    class="access-btn"
+                    style="margin-top:16px;width:100%;"
+                    onclick="confirmActionResult()">
+                    TAMAM
+                </button>
             </div>
         </div>
     </div>
@@ -1564,6 +1600,14 @@
         const REALTIME_PROFILE_REFRESH_DELAYS_MS = [0, 700, 1800, 3500];
         const REALTIME_AUTH_REFRESH_DELAYS_MS = [0, 500, 1200, 2500];
         let realtimeSocket = null;
+        let botrixCommandProfileRefreshInFlight = false;
+        const BOTRIX_PROFILE_REFRESH_COMMANDS = new Set([
+            'banka',
+            'puanbak',
+            'level',
+            'puanver',
+            'puansil'
+        ]);
         let realtimeUsername = '';
         let realtimeReconnectTimer = null;
         let realtimeReconnectAttempts = 0;
@@ -1930,9 +1974,6 @@
                 }
 
                 if (message.type === 'profile_changed') {
-                    // Sadece mesajlaşma olaylarını canlı yenile.
-                    // Puan / level / ürün / turnuva gibi diğer profil değişiklikleri
-                    // arka planda sorgulanmaz; mevcut hafif "sayfa yenileme" mantığı korunur.
                     const reason = String(
                         message?.reason ||
                         message?.payload?.reason ||
@@ -1942,7 +1983,37 @@
 
                     if (reason === 'inbox_changed') {
                         refreshInboxAfterRealtime().catch(() => {});
+                        return;
                     }
+
+                    // SADECE belirlediğimiz BotRix komutlarından gelen özel sinyalde
+                    // profil bir kez sessizce alınır. Polling / timer / F5 yok.
+                    if (reason === 'botrix_command') {
+                        const command = String(
+                            message?.command ||
+                            message?.payload?.command ||
+                            message?.data?.command ||
+                            ''
+                        ).trim().toLowerCase();
+
+                        if (
+                            BOTRIX_PROFILE_REFRESH_COMMANDS.has(command) &&
+                            marketAuthenticated &&
+                            !botrixCommandProfileRefreshInFlight
+                        ) {
+                            botrixCommandProfileRefreshInFlight = true;
+
+                            checkSession({
+                                silent:true,
+                                retries:0
+                            })
+                            .catch(() => false)
+                            .finally(() => {
+                                botrixCommandProfileRefreshInFlight = false;
+                            });
+                        }
+                    }
+
                     return;
                 }
 
@@ -2097,9 +2168,9 @@
                 urunleriYukle(aktifKategori || 'Tümü');
             }
 
-            // Hesap açıldıktan sonra realtime bağlantısını yalnızca mesaj bildirimi için
-            // açık tut. profile_changed olaylarının sadece reason=inbox_changed olanı
-            // işlenir; puan/level/ürün/turnuva otomatik yenilenmez.
+            // Realtime bağlantısı açık kalır ama profil kendi kendine yenilenmez.
+            // Yalnızca inbox_changed veya Worker'ın açıkça `reason=botrix_command`
+            // olarak işaretlediği belirli BotRix komutları tek seferlik işlem tetikler.
             connectRealtime(username);
         }
 
@@ -2866,6 +2937,7 @@
             const button = document.getElementById('giftRedeemButton');
             const status = document.getElementById('giftRedeemStatus');
             const code = String(input?.value || '').trim().toUpperCase();
+            const pointsBeforeRedeem = Number(currentMarketPoints) || 0;
 
             if (!code) {
                 if (status) status.innerHTML = '<span style="color:#ff8d8d">⚠️ Hediye kodunu yazmalısın.</span>';
@@ -2885,19 +2957,36 @@
                 if (input) input.value = '';
 
                 if (data?.pending === true && data?.rewardType === 'points') {
-                    if (status) {
-                        status.innerHTML = `<span style="color:#ffd166">⏳ ${escapeHtml(data.message || 'Puan gönderimi MissXss tarafından doğrulanıyor.')}</span>`;
-                    }
-                    showStatusToast('🪙 Puan hediyen gönderiliyor. Tamamlanınca mesaj kutuna anlık bildirim gelecek.', 4600);
-                    setTimeout(() => closeGiftRedeem(), 1400);
+                    const amount = Math.max(0, Math.trunc(Number(data?.pointsAmount || 0)));
+                    const expectedPoints = amount > 0
+                        ? pointsBeforeRedeem + amount
+                        : null;
+
+                    openActionResultModal({
+                        title: '🎁 Hediye Kodu Kullanıldı',
+                        messageHtml:
+                            `<div style="font-size:1.05rem;line-height:1.65;">` +
+                            `🪙 <b>${amount > 0 ? amount.toLocaleString('tr-TR') + ' Puan' : 'Puan hediyen'}</b> hesabına gönderiliyor.<br>` +
+                            `<span style="color:var(--text-muted);">BotRix işlemi onayladığında bakiyen otomatik olarak güncellenecek.</span>` +
+                            `</div>`,
+                        refreshProfile: true,
+                        expectedPoints,
+                        baselinePoints: pointsBeforeRedeem,
+                        closeGift: true,
+                        refreshCatalog: false
+                    });
                 } else {
-                    if (status) status.innerHTML = `<span style="color:#78e59a">✅ ${escapeHtml(data.message || 'Hediye kodu kullanıldı.')}</span>`;
-                    await refreshInboxBadge().catch(() => {});
-                    showStatusToast('🎁 Hediyen teslim edildi. Mesaj Kutunu kontrol et.', 4200);
-                    setTimeout(() => {
-                        closeGiftRedeem();
-                        openInbox();
-                    }, 800);
+                    openActionResultModal({
+                        title: '✅ Hediye Teslim Edildi',
+                        messageHtml:
+                            `<div style="font-size:1.05rem;line-height:1.65;">` +
+                            `${escapeHtml(data?.message || 'Hediye kodu başarıyla kullanıldı.')}<br>` +
+                            `<span style="color:var(--text-muted);">Teslimat detayını Mesaj Kutusu'ndan kontrol edebilirsin.</span>` +
+                            `</div>`,
+                        refreshProfile: false,
+                        closeGift: true,
+                        refreshCatalog: false
+                    });
                 }
             } catch (error) {
                 if (status) status.innerHTML = `<span style="color:#ff8d8d">❌ ${escapeHtml(error.message || error)}</span>`;
@@ -3558,13 +3647,138 @@
             document.getElementById('accessText').innerHTML = `<b>${escapeHtml(authState.username)}</b> hesabından Kick sohbetine <b>${escapeHtml(command)}</b> komutunu gönder. Gönderdikten sonra market sekmesine dönüp <b>Doğrulamayı Kontrol Et</b> butonuna bas; 60 saniyelik kontrol süresi o zaman başlayacak.`;
         }
 
+        // Alt tarafta çıkan toast bildirimleri kaldırıldı.
+        // Eski çağrılar bozulmasın diye fonksiyon korunuyor ama görsel üretmiyor.
         function showStatusToast(message, duration = 3500) {
             const toast = document.getElementById('copyToast');
-            if (!toast) return;
-            toast.innerText = message;
-            toast.classList.add('show');
-            clearTimeout(showStatusToast._timer);
-            showStatusToast._timer = setTimeout(() => toast.classList.remove('show'), duration);
+            if (toast) {
+                toast.classList.remove('show');
+                toast.style.display = 'none';
+                toast.textContent = '';
+            }
+        }
+
+        let actionResultContext = {
+            refreshProfile: false,
+            expectedPoints: null,
+            baselinePoints: null,
+            baselineUpdatedAt: '',
+            closePurchase: false,
+            closeGift: false,
+            refreshCatalog: false
+        };
+
+        function openActionResultModal({
+            title = '✅ İşlem Tamamlandı',
+            messageHtml = '',
+            refreshProfile = false,
+            expectedPoints = null,
+            baselinePoints = null,
+            closePurchase = false,
+            closeGift = false,
+            refreshCatalog = false,
+            deliveryCode = ''
+        } = {}) {
+            const modal = document.getElementById('actionResultModal');
+            const titleEl = document.getElementById('actionResultTitle');
+            const messageEl = document.getElementById('actionResultMessage');
+            const codeEl = document.getElementById('actionResultCode');
+            const refreshEl = document.getElementById('actionResultRefreshStatus');
+            const okBtn = document.getElementById('actionResultOkButton');
+
+            if (!modal || !titleEl || !messageEl || !okBtn) return;
+
+            actionResultContext = {
+                refreshProfile: refreshProfile === true,
+                expectedPoints: Number.isFinite(Number(expectedPoints))
+                    ? Math.max(0, Math.trunc(Number(expectedPoints)))
+                    : null,
+                baselinePoints: Number.isFinite(Number(baselinePoints))
+                    ? Math.max(0, Math.trunc(Number(baselinePoints)))
+                    : currentMarketPoints,
+                baselineUpdatedAt: getCachedProfileUpdatedAt(),
+                closePurchase: closePurchase === true,
+                closeGift: closeGift === true,
+                refreshCatalog: refreshCatalog === true
+            };
+
+            titleEl.textContent = title;
+            messageEl.innerHTML = messageHtml;
+
+            if (codeEl) {
+                const cleanCode = String(deliveryCode || '').trim();
+                codeEl.textContent = cleanCode;
+                codeEl.dataset.code = cleanCode;
+                codeEl.style.display = cleanCode ? 'block' : 'none';
+            }
+
+            if (refreshEl) {
+                refreshEl.style.display = 'none';
+                refreshEl.textContent = '🔄 Güncel hesap bilgilerin alınıyor...';
+            }
+
+            okBtn.disabled = false;
+            okBtn.textContent = 'TAMAM';
+
+            if (closeGift) {
+                closeGiftRedeem();
+            }
+
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function copyActionResultCode() {
+            const box = document.getElementById('actionResultCode');
+            const code = String(box?.dataset?.code || box?.textContent || '').trim();
+            if (!code) return;
+            copyTextReliable(code);
+        }
+
+        async function refreshProfileAfterPointAction() {
+            // Geriye dönük uyumluluk için tutuluyor.
+            // Profil yenileme artık yalnızca BotRix komut sinyaliyle yapılır.
+            return true;
+        }
+
+        async function confirmActionResult() {
+            const modal = document.getElementById('actionResultModal');
+            const refreshEl = document.getElementById('actionResultRefreshStatus');
+            const okBtn = document.getElementById('actionResultOkButton');
+
+            if (!modal || !okBtn) return;
+
+            okBtn.disabled = true;
+            okBtn.textContent = 'YENİLENİYOR...';
+
+            // Profil/bakiye TAMAM butonuyla yenilenmez.
+            // Güncelleme yalnızca izin verilen BotRix komutu Worker'a ulaştığında
+            // realtime sinyaliyle bir kez yapılır.
+
+            if (actionResultContext.refreshCatalog) {
+                await syncCatalogStock().catch(() => {});
+            }
+
+            await refreshInboxBadge().catch(() => {});
+
+            if (actionResultContext.closePurchase) {
+                closePurchaseModal(true);
+            }
+
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+            okBtn.disabled = false;
+            okBtn.textContent = 'TAMAM';
+
+            actionResultContext = {
+                refreshProfile: false,
+                expectedPoints: null,
+                baselinePoints: null,
+                baselineUpdatedAt: '',
+                closePurchase: false,
+                closeGift: false,
+                refreshCatalog: false
+            };
         }
 
         function copyTextReliable(text) {
@@ -4625,9 +4839,29 @@ return;
                 codeBox.style.display = order.deliveryCode ? 'block' : 'none';
                 document.getElementById('purchaseDeliveryNote').style.display = order.deliveryCode ? 'block' : 'none';
 
-                checkSession({ silent: true }).catch(() => {});
-                syncCatalogStock().catch(() => {});
-                refreshInboxBadge().catch(() => {});
+                if (paymentType === 'points') {
+                    openActionResultModal({
+                        title: '✅ Satın Alma Başarılı',
+                        messageHtml:
+                            `<div style="font-size:1.05rem;line-height:1.65;">` +
+                            `<b>${escapeHtml(urunAdi)}</b> × ${Number(order.quantity) || 1}<br>` +
+                            `Harcanan: <b>${formatPoints(order.totalPoints)}</b><br>` +
+                            `Kalan bakiye: <b>${formatPoints(order.pointsAfter)}</b><br>` +
+                            `<span style="color:var(--text-muted);">BotRix puan düşümünü onayladığında bakiyen otomatik olarak güncellenecek.</span>` +
+                            `</div>`,
+                        refreshProfile: true,
+                        expectedPoints: Number(order.pointsAfter),
+                        baselinePoints: currentMarketPoints,
+                        closePurchase: true,
+                        refreshCatalog: true,
+                        deliveryCode: order.deliveryCode || ''
+                    });
+                } else {
+                    checkSession({ silent: true }).catch(() => {});
+                    syncCatalogStock().catch(() => {});
+                    refreshInboxBadge().catch(() => {});
+                }
+
                 return true;
             }
 
