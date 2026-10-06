@@ -2404,6 +2404,33 @@ body.dmModalOpen{overflow:hidden}
 
       </div>
 
+
+      <div class="card">
+
+        <h2>🚪 Takibi Bırakanlar Son 20</h2>
+
+        <p class="muted">
+          MissXss veya Kick bu bilgiyi kullanıcı adıyla sağlıyorsa burada listelenir.
+          Kaynak unfollow geçmişi sunmuyorsa sistem kişi uydurmaz.
+        </p>
+
+        <button
+          class="secondary"
+          onclick="loadRecentActivity('unfollowers')">
+
+          Son 20 Takibi Bırakanı Göster
+
+        </button>
+
+        <div id="unfollowersActivityStatus" class="status"></div>
+
+        <div id="unfollowersActivityOutput" class="activityDashboard" style="display:none">
+          <div id="unfollowersActivitySummary" class="activitySummary"></div>
+          <div id="unfollowersActivityList" class="activityList"></div>
+        </div>
+
+      </div>
+
     </div>
 
   </div>
@@ -8363,10 +8390,21 @@ function recentSimpleActivityConfig(kind){
       summaryId:'followersActivitySummary',
       listId:'followersActivityList',
       statusId:'followersActivityStatus',
-      empty:'MissXss son aktivite verisinde takip kaydı bulunamadı.',
+      empty:'MissXss latest_followers listesinde takip kaydı bulunamadı.',
       icon:'👤',
       label:'Takip Eden',
       quantityLabel:'Takip'
+    },
+    unfollowers:{
+      rowsKey:'unfollowers',
+      outputId:'unfollowersActivityOutput',
+      summaryId:'unfollowersActivitySummary',
+      listId:'unfollowersActivityList',
+      statusId:'unfollowersActivityStatus',
+      empty:'Kick/MissXss şu anda kullanıcı bazlı unfollow geçmişi sağlamıyor veya henüz kayıt yok.',
+      icon:'🚪',
+      label:'Takibi Bırakan',
+      quantityLabel:'Takip Bırakma'
     }
   };
   return configs[kind] || null;
@@ -8384,6 +8422,9 @@ function renderSimpleRecentActivity(kind,data){
 
   const source = Array.isArray(data?.[config.rowsKey]) ? data[config.rowsKey] : [];
   const rows = source.slice(0,20);
+  const unfollowUnavailable =
+    kind === 'unfollowers' &&
+    data?.unfollowSourceAvailable !== true;
 
   const totalQuantity = rows.reduce((sum,item)=>{
     const q = Math.max(0,Math.trunc(Number(item?.quantity || (kind === 'followers' ? 1 : 0))));
@@ -8401,7 +8442,10 @@ function renderSimpleRecentActivity(kind,data){
   `;
 
   if(!rows.length){
-    list.innerHTML = `<div class="activityEmpty">${esc(config.empty)}</div>`;
+    const emptyText = unfollowUnavailable
+      ? 'Kick ve MissXss şu anda “kim takibi bıraktı?” bilgisini kullanıcı adıyla vermiyor. Bu yüzden yanlış kişi göstermemek için liste boş bırakıldı.'
+      : config.empty;
+    list.innerHTML = `<div class="activityEmpty">${esc(emptyText)}</div>`;
   }else{
     list.innerHTML = rows.map(item=>{
       const username = String(item?.username || 'Bilinmiyor');
@@ -8641,6 +8685,5 @@ async function invalidateAllUserSessions(){
     </div>
   </div>
 </div>
-
 </body>
 </html>
