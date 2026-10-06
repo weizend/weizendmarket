@@ -3503,7 +3503,12 @@
                     body: JSON.stringify({ threadId, message })
                 });
                 input.value = '';
-                await loadInbox(false);
+
+                // Mesaj gönderildikten sonra mevcut sohbeti ekrandan silme.
+                // Arka planda güncel konuşmayı çek; eski mesajlar görünür kalır.
+                // Böylece her gönderimde "Mesajlar yükleniyor..." ekranı yanıp sönmez.
+                await loadInbox(true);
+
                 showStatusToast('✅ Yanıtın gönderildi', 2600);
             } catch (error) {
                 showStatusToast(`❌ ${error.message || error}`, 4000);
