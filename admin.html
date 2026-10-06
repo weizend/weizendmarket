@@ -2297,13 +2297,13 @@ body.dmModalOpen{overflow:hidden}
 
       <div class="card">
 
-        <h2>💸 BynoGame Son Aktivite</h2>
+        <h2>💸 BynoGame Bağışlar Son 20</h2>
 
         <button
           class="secondary"
-          onclick="loadRecentActivity()">
+          onclick="loadRecentActivity('donations')">
 
-          Son Aktiviteyi Kontrol Et
+          Son 20 Bağışı Göster
 
         </button>
 
@@ -2316,6 +2316,90 @@ body.dmModalOpen{overflow:hidden}
             <summary>🧩 Teknik veriyi göster</summary>
             <pre id="activityRawOutput"></pre>
           </details>
+        </div>
+
+      </div>
+
+      <div class="card">
+
+        <h2>⭐ Abone Olanlar Son 20</h2>
+
+        <button
+          class="secondary"
+          onclick="loadRecentActivity('subscribers')">
+
+          Son 20 Aboneyi Göster
+
+        </button>
+
+        <div id="subscriberActivityStatus" class="status"></div>
+
+        <div id="subscriberActivityOutput" class="activityDashboard" style="display:none">
+          <div id="subscriberActivitySummary" class="activitySummary"></div>
+          <div id="subscriberActivityList" class="activityList"></div>
+        </div>
+
+      </div>
+
+      <div class="card">
+
+        <h2>🎁 Abonelik Hediyesi Gönderenler Son 20</h2>
+
+        <button
+          class="secondary"
+          onclick="loadRecentActivity('giftSubscriptions')">
+
+          Son 20 Gift Göndereni Göster
+
+        </button>
+
+        <div id="giftSubActivityStatus" class="status"></div>
+
+        <div id="giftSubActivityOutput" class="activityDashboard" style="display:none">
+          <div id="giftSubActivitySummary" class="activitySummary"></div>
+          <div id="giftSubActivityList" class="activityList"></div>
+        </div>
+
+      </div>
+
+      <div class="card">
+
+        <h2>💚 Kicks Gönderenler Son 20</h2>
+
+        <button
+          class="secondary"
+          onclick="loadRecentActivity('kicks')">
+
+          Son 20 Kicks Göndereni Göster
+
+        </button>
+
+        <div id="kicksActivityStatus" class="status"></div>
+
+        <div id="kicksActivityOutput" class="activityDashboard" style="display:none">
+          <div id="kicksActivitySummary" class="activitySummary"></div>
+          <div id="kicksActivityList" class="activityList"></div>
+        </div>
+
+      </div>
+
+      <div class="card">
+
+        <h2>👤 Takip Edenler Son 20</h2>
+
+        <button
+          class="secondary"
+          onclick="loadRecentActivity('followers')">
+
+          Son 20 Takipçiyi Göster
+
+        </button>
+
+        <div id="followersActivityStatus" class="status"></div>
+
+        <div id="followersActivityOutput" class="activityDashboard" style="display:none">
+          <div id="followersActivitySummary" class="activitySummary"></div>
+          <div id="followersActivityList" class="activityList"></div>
         </div>
 
       </div>
@@ -3033,7 +3117,7 @@ function renderGiftCodes(items){
             : ''}
           ${status === 'processing'
             ? ''
-            : `<button class="smallBtn iconDanger" title="${status === 'disabled' ? 'Listeden tamamen kaldır' : 'Geçersiz hale getir'}" onclick="deleteGiftCode('${encodeURIComponent(item.id)}','${esc(status)}')">🗑</button>`}
+            : `<button class="smallBtn iconDanger" title="${status === 'redeemed' || status === 'disabled' ? 'Listeden tamamen kaldır' : 'Geçersiz hale getir'}" onclick="deleteGiftCode('${encodeURIComponent(item.id)}','${esc(status)}')">🗑</button>`}
         </div>
       </td>`;
     body.appendChild(tr);
@@ -3084,10 +3168,14 @@ async function deleteGiftCode(encodedId,currentStatus=''){
   const id = decodeURIComponent(encodedId || '');
   if(!id) return;
 
-  const secondDelete = String(currentStatus || '') === 'disabled';
-  const question = secondDelete
-    ? 'Bu hediye kodu zaten geçersiz. Admin listesinden tamamen kaldırılsın mı?'
-    : 'Bu hediye kodu geçersiz hale getirilsin mi? İlk silmeden sonra kod artık kullanılamaz.';
+  const status = String(currentStatus || '');
+  const hardDelete = status === 'redeemed' || status === 'disabled';
+
+  const question = status === 'redeemed'
+    ? 'Bu kod zaten kullanıldı. Hediye kodları listesinden tamamen kaldırılsın mı?'
+    : status === 'disabled'
+      ? 'Bu kod zaten geçersiz. Hediye kodları listesinden tamamen kaldırılsın mı?'
+      : 'Bu kullanılmamış hediye kodu geçersiz hale getirilsin mi? İlk işlemden sonra kod artık kullanılamaz; ikinci çöp kutusunda listeden tamamen silinir.';
 
   if(!confirm(question)) return;
 
@@ -3103,8 +3191,8 @@ async function deleteGiftCode(encodedId,currentStatus=''){
     showStatus(
       'giftCodeStatus',
       d?.action === 'deleted'
-        ? '✅ Hediye kodu admin listesinden tamamen kaldırıldı.'
-        : '✅ Hediye kodu SİLİNDİ / GEÇERSİZ durumuna alındı ve artık kullanılamaz.',
+        ? '✅ Hediye kodu listeden tamamen kaldırıldı.'
+        : '✅ Kullanılmamış hediye kodu SİLİNDİ / GEÇERSİZ durumuna alındı. İstersen çöp kutusuna tekrar basıp listeden tamamen kaldırabilirsin.',
       true
     );
   }catch(error){
@@ -8139,9 +8227,15 @@ function activityDonorKey(item){
 }
 
 function recentActivityDonors(data){
-  const primary = Array.isArray(data?.donors) ? data.donors : [];
-  const fallback = Array.isArray(data?.missxss?.latest_donors) ? data.missxss.latest_donors : [];
-  const source = primary.length ? primary : fallback;
+  // Yeni endpoint donors alanını özellikle BynoGame bağışlarına filtreler.
+  // Alan mevcutsa boş olsa bile ham MissXss donors listesine geri dönme;
+  // aksi halde başka sağlayıcı kayıtları BynoGame diye görünebilir.
+  const hasFilteredDonors = Array.isArray(data?.donors);
+  const primary = hasFilteredDonors ? data.donors : [];
+  const fallback = !hasFilteredDonors && Array.isArray(data?.missxss?.latest_donors)
+    ? data.missxss.latest_donors
+    : [];
+  const source = hasFilteredDonors ? primary : fallback;
   const seen = new Set();
   const unique = [];
 
@@ -8167,7 +8261,7 @@ function renderRecentActivity(data){
   const raw = document.getElementById('activityRawOutput');
   if(!output || !summary || !list) return 0;
 
-  const donors = recentActivityDonors(data);
+  const donors = recentActivityDonors(data).slice(0,20);
   const totalAmount = donors.reduce((sum,item)=>{
     const n = Number(item?.amount || 0);
     return sum + (Number.isFinite(n) ? n : 0);
@@ -8175,13 +8269,13 @@ function renderRecentActivity(data){
   const latestDate = donors[0]?.date || null;
 
   summary.innerHTML = `
-    <span class="activitySummaryChip">🧾 Son Kayıt: <strong>${donors.length}</strong></span>
+    <span class="activitySummaryChip">🧾 Kayıt: <strong>${donors.length}/20</strong></span>
     <span class="activitySummaryChip">💰 Toplam: <strong>${totalAmount.toLocaleString('tr-TR',{maximumFractionDigits:2})} TL</strong></span>
     <span class="activitySummaryChip">🕒 Son İşlem: <strong>${esc(latestDate ? activityDateText(latestDate) : '-')}</strong></span>
   `;
 
   if(!donors.length){
-    list.innerHTML = '<div class="activityEmpty">Henüz BynoGame aktivitesi bulunamadı.</div>';
+    list.innerHTML = '<div class="activityEmpty">Henüz BynoGame bağışı bulunamadı.</div>';
   }else{
     list.innerHTML = donors.map(item=>{
       const username = String(item?.username || item?.displayname || 'Bilinmiyor');
@@ -8227,55 +8321,189 @@ function renderRecentActivity(data){
   return donors.length;
 }
 
-async function loadRecentActivity(){
 
-  const output = document.getElementById('activityOutput');
-  const list = document.getElementById('activityList');
+function recentSimpleActivityConfig(kind){
+  const configs = {
+    subscribers:{
+      rowsKey:'subscribers',
+      outputId:'subscriberActivityOutput',
+      summaryId:'subscriberActivitySummary',
+      listId:'subscriberActivityList',
+      statusId:'subscriberActivityStatus',
+      empty:'Henüz abonelik kaydı bulunamadı.',
+      icon:'⭐',
+      label:'Abone',
+      quantityLabel:'Abonelik'
+    },
+    giftSubscriptions:{
+      rowsKey:'giftSubscriptions',
+      outputId:'giftSubActivityOutput',
+      summaryId:'giftSubActivitySummary',
+      listId:'giftSubActivityList',
+      statusId:'giftSubActivityStatus',
+      empty:'Henüz abonelik hediyesi kaydı bulunamadı.',
+      icon:'🎁',
+      label:'Gift Gönderen',
+      quantityLabel:'Gift'
+    },
+    kicks:{
+      rowsKey:'kicks',
+      outputId:'kicksActivityOutput',
+      summaryId:'kicksActivitySummary',
+      listId:'kicksActivityList',
+      statusId:'kicksActivityStatus',
+      empty:'Henüz Kicks kaydı bulunamadı.',
+      icon:'💚',
+      label:'Kicks Gönderen',
+      quantityLabel:'Kicks'
+    },
+    followers:{
+      rowsKey:'followers',
+      outputId:'followersActivityOutput',
+      summaryId:'followersActivitySummary',
+      listId:'followersActivityList',
+      statusId:'followersActivityStatus',
+      empty:'MissXss son aktivite verisinde takip kaydı bulunamadı.',
+      icon:'👤',
+      label:'Takip Eden',
+      quantityLabel:'Takip'
+    }
+  };
+  return configs[kind] || null;
+}
+
+
+function renderSimpleRecentActivity(kind,data){
+  const config = recentSimpleActivityConfig(kind);
+  if(!config) return 0;
+
+  const output = document.getElementById(config.outputId);
+  const summary = document.getElementById(config.summaryId);
+  const list = document.getElementById(config.listId);
+  if(!output || !summary || !list) return 0;
+
+  const source = Array.isArray(data?.[config.rowsKey]) ? data[config.rowsKey] : [];
+  const rows = source.slice(0,20);
+
+  const totalQuantity = rows.reduce((sum,item)=>{
+    const q = Math.max(0,Math.trunc(Number(item?.quantity || (kind === 'followers' ? 1 : 0))));
+    return sum + q;
+  },0);
+
+  const latestDate = rows[0]?.date || rows[0]?.occurred_at || null;
+
+  summary.innerHTML = `
+    <span class="activitySummaryChip">🧾 Kayıt: <strong>${rows.length}/20</strong></span>
+    ${kind === 'giftSubscriptions' || kind === 'kicks'
+      ? `<span class="activitySummaryChip">📊 Toplam ${esc(config.quantityLabel)}: <strong>${totalQuantity.toLocaleString('tr-TR')}</strong></span>`
+      : ''}
+    <span class="activitySummaryChip">🕒 Son İşlem: <strong>${esc(latestDate ? activityDateText(latestDate) : '-')}</strong></span>
+  `;
+
+  if(!rows.length){
+    list.innerHTML = `<div class="activityEmpty">${esc(config.empty)}</div>`;
+  }else{
+    list.innerHTML = rows.map(item=>{
+      const username = String(item?.username || 'Bilinmiyor');
+      const quantity = Math.max(1,Math.trunc(Number(item?.quantity || 1)));
+      const date = item?.date || item?.occurred_at || '';
+      const id = String(item?.id || '');
+      const amountHtml = kind === 'giftSubscriptions'
+        ? `<div class="activityAmount">${quantity.toLocaleString('tr-TR')} Gift</div>`
+        : kind === 'kicks'
+          ? `<div class="activityAmount">${quantity.toLocaleString('tr-TR')} Kicks</div>`
+          : '';
+
+      return `
+        <div class="activityItem">
+          <div class="activityItemTop">
+            <div class="activityUser">
+              <div class="activityUserName">${config.icon} ${esc(username)}</div>
+            </div>
+            ${amountHtml}
+          </div>
+          <div class="activityMeta">
+            <span>🕒 ${esc(activityDateText(date))}</span>
+            <span>${config.icon} ${esc(config.label)}</span>
+            ${id ? `<span>#${esc(id)}</span>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  output.style.display = 'block';
+  return rows.length;
+}
+
+
+function recentActivityUi(kind){
+  if(kind === 'donations'){
+    return {
+      outputId:'activityOutput',
+      listId:'activityList',
+      statusId:'activityStatus',
+      loading:'⏳ Son 20 BynoGame bağışı yükleniyor...',
+      successLabel:'BynoGame bağışı'
+    };
+  }
+
+  const config = recentSimpleActivityConfig(kind);
+  if(!config) return null;
+
+  return {
+    outputId:config.outputId,
+    listId:config.listId,
+    statusId:config.statusId,
+    loading:'⏳ Son 20 kayıt yükleniyor...',
+    successLabel:config.label
+  };
+}
+
+
+async function loadRecentActivity(kind='donations'){
+  const ui = recentActivityUi(kind);
+  if(!ui) return;
+
+  const output = document.getElementById(ui.outputId);
+  const list = document.getElementById(ui.listId);
 
   try{
     if(output) output.style.display = 'block';
-    if(list) list.innerHTML = '<div class="activityEmpty">⏳ Son aktiviteler yükleniyor...</div>';
+    if(list) list.innerHTML = `<div class="activityEmpty">${esc(ui.loading)}</div>`;
 
-    const {r,d} =
-      await api(
-        '/admin/missxss-activity',
-        {
-          method:'POST'
-        }
-      );
+    const {r,d} = await api(
+      '/admin/missxss-activity',
+      { method:'POST' }
+    );
 
-    if(
-      !r.ok ||
-      !d?.success
-    ){
-      throw new Error(
-        d?.error ||
-        `HTTP ${r.status}`
-      );
+    if(!r.ok || !d?.success){
+      throw new Error(d?.error || `HTTP ${r.status}`);
     }
 
-    const count = renderRecentActivity(d);
+    const count = kind === 'donations'
+      ? renderRecentActivity(d)
+      : renderSimpleRecentActivity(kind,d);
 
     showStatus(
-      'activityStatus',
-      `✅ MissXss bağlantısı çalışıyor. Gösterilen BynoGame kaydı: ${count}`,
+      ui.statusId,
+      `✅ Son 20 listesi güncellendi. Gösterilen ${ui.successLabel} kaydı: ${count}`,
       true
     );
 
   }catch(error){
-
     if(list){
       list.innerHTML = `<div class="activityEmpty">❌ ${esc(error.message || error)}</div>`;
     }
 
     showStatus(
-      'activityStatus',
+      ui.statusId,
       '❌ ' + esc(error.message || error),
       false
     );
-
   }
 }
+
 
 
 /* =========================================================
