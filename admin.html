@@ -3028,12 +3028,55 @@ function renderGiftCodes(items){
             : status === 'processing'
               ? '<span class="muted">MissXss doğrulaması bekleniyor</span>'
               : ''}
+          ${status === 'processing' && rewardType === 'points'
+            ? `<button class="smallBtn" title="BotRix geçmişinde puanın gerçekten eklendiğini doğruladıysan işlemi tamamla" onclick="confirmGiftPoints('${encodeURIComponent(item.id)}',${Number(item.points_amount || 0)})">✅ Puan eklendi: onayla</button>`
+            : ''}
           ${status === 'processing'
             ? ''
             : `<button class="smallBtn iconDanger" title="${status === 'disabled' ? 'Listeden tamamen kaldır' : 'Geçersiz hale getir'}" onclick="deleteGiftCode('${encodeURIComponent(item.id)}','${esc(status)}')">🗑</button>`}
         </div>
       </td>`;
     body.appendChild(tr);
+  }
+}
+
+async function confirmGiftPoints(encodedId,pointsAmount=0){
+  const id=decodeURIComponent(encodedId || '');
+  if(!id) return;
+
+  const amount=Math.trunc(Number(pointsAmount || 0));
+  const answer=prompt(
+    `BotRix geçmişinde ${amount.toLocaleString('tr-TR')} puanın GERÇEKTEN eklendiğini kontrol et.\n\n` +
+    'BotRix üzerinde görünen GÜNCEL TOPLAM BAKİYEYİ yaz:',
+    ''
+  );
+
+  if(answer===null) return;
+  const pointsAfter=Math.trunc(Number(String(answer).replace(/\./g,'').replace(/,/g,'')));
+  if(!Number.isSafeInteger(pointsAfter) || pointsAfter<0){
+    alert('Geçerli güncel toplam bakiye girmelisin. Örnek: 305000');
+    return;
+  }
+
+  if(!confirm(
+    `Onaylıyor musun?\n\nHediye: ${amount.toLocaleString('tr-TR')} Puan\n` +
+    `BotRix güncel bakiye: ${pointsAfter.toLocaleString('tr-TR')} Puan\n\n` +
+    'Bu işlem tekrar !puanver göndermez; yalnızca mevcut bekleyen teslimatı tamamlar.'
+  )) return;
+
+  try{
+    const {r,d}=await api('/admin/gift-codes/confirm-points',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id,confirmed:true,pointsAfter})
+    });
+    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+
+    await loadGiftCodes();
+    if(typeof loadAdminOrders==='function') await loadAdminOrders().catch(()=>{});
+    showStatus('giftCodeStatus','✅ Puan hediye kodu teslim edildi olarak tamamlandı. Kullanıcı bakiyesi ve mesaj kaydı güncellendi.',true);
+  }catch(error){
+    showStatus('giftCodeStatus','❌ '+esc(error.message || error),false);
   }
 }
 
@@ -8373,4 +8416,3 @@ async function invalidateAllUserSessions(){
 
 </body>
 </html>
-
