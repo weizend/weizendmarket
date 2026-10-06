@@ -5631,6 +5631,18 @@ async function hideAdminPurchase(encodedId,sourceType='order'){
     String(o.sourceType || (o.paymentType === 'gift_code' ? 'gift_code' : 'order')).toLowerCase() === type
   );
 
+  const archiveView=document.getElementById('showArchivedOrders')?.checked===true;
+  if(archiveView || item?.adminArchived===true){
+    if(!confirm('Bu kayıt arşiv listesinden kalıcı olarak kaldırılsın mı? Bu işlem yeniden ödeme iptali veya puan iadesi başlatmaz.')) return;
+    try{
+      const {r,d}=await api('/admin/purchase/hide',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({sourceId,sourceType:type,archiveDelete:true})});
+      if(!r.ok || !d?.success) throw new Error(d?.error || 'Arşiv kaydı kaldırılamadı.');
+      await loadAdminOrders();
+    }catch(error){alert(error.message || String(error));}
+    return;
+  }
+
   const paymentType = String(item?.paymentType || '').toLowerCase();
   const status = String(item?.status || '').toLowerCase();
 
@@ -8358,5 +8370,7 @@ async function invalidateAllUserSessions(){
     </div>
   </div>
 </div>
+
 </body>
 </html>
+
