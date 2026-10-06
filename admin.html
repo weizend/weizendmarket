@@ -1641,7 +1641,7 @@ body.dmModalOpen{overflow:hidden}
 
     <label class="checkline" style="margin:0 0 14px;">
       <input id="showArchivedOrders" type="checkbox" onchange="loadAdminOrders()">
-      <span>🗃️ Arşivlenen geçmiş işlemleri göster</span>
+      <span>🗃️ Arşivlenen / gizlenen geçmiş işlemleri göster</span>
     </label>
 
     <div class="tableWrap">
@@ -5553,6 +5553,10 @@ function renderAdminOrders(){
           ${o.paymentType === 'points' && ['pending','expired','failed'].includes(o.status) ? `
             <button class="smallBtn secondary" onclick="resolvePointReview('${encodeURIComponent(o.id)}','debited')">Puan silindi: onayla</button>
             <button class="smallBtn secondary" onclick="resolvePointReview('${encodeURIComponent(o.id)}','not_debited')">Puan silinmedi: iptal</button>` : ''}
+          ${o.paymentType==='points' && o.status==='cancelled' &&
+            ['ADMIN_CANCELLED_PENDING_POINTS_AWAITING_DEBIT','ADMIN_CANCELLED_POINTS_REFUND_PENDING'].includes(o.manualReviewReason) ? `
+            <button class="smallBtn secondary" onclick="settleCancelledPoints('${encodeURIComponent(o.id)}','not_debited')">Puan hiç silinmedi: kapat</button>
+            <button class="smallBtn secondary" onclick="settleCancelledPoints('${encodeURIComponent(o.id)}','refunded')">Puan geri verildi: kapat</button>` : ''}
           ${o.paymentType === 'gift_code'
             ? `<span class="badge ok">🎁 Teslim Edildi</span>`
             : `<button
@@ -5589,6 +5593,20 @@ async function resolvePointReview(encodedId,decision){
   }catch(error){alert(error.message || String(error));}
 }
 
+async function settleCancelledPoints(encodedId,decision){
+  const warning=decision==='refunded'
+    ? 'Bu sipariş için silinen puanın TAMAMININ BotRix tarafından geri verildiğini ve bekleyen başka iade komutu olmadığını kontrol ettin mi? Bu düğme puan vermez; yalnızca doğruladığın sonucu kaydeder ve satın alma engelini kaldırır.'
+    : 'Bu siparişte puanın HİÇ silinmediğini ve gecikmiş puan silme komutu kalmadığını bot geçmişinden doğruladın mı? Puan silindiyse bu seçeneği kullanma. Bu düğme puan iadesi yapmaz.';
+  if(!confirm(warning)) return;
+  try{
+    const {r,d}=await api('/admin/order/settle-cancelled-points',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({orderId:decodeURIComponent(encodedId),decision,confirmed:true})});
+    if(!r.ok || !d?.success) throw new Error(d?.error || 'İşlem tamamlanamadı.');
+    alert('İptal edilen siparişin puan incelemesi tamamlandı.');
+    await loadAdminOrders();
+  }catch(error){alert(error.message || String(error));}
+}
+
 async function hideAdminPurchase(encodedId,sourceType='order'){
   const sourceId = decodeURIComponent(encodedId || '');
   const type = String(sourceType || 'order').trim().toLowerCase();
@@ -5602,6 +5620,13 @@ async function hideAdminPurchase(encodedId,sourceType='order'){
 
   const paymentType = String(item?.paymentType || '').toLowerCase();
   const status = String(item?.status || '').toLowerCase();
+
+  if(type==='order' && paymentType==='points' &&
+      (['pending','expired','failed'].includes(status) ||
+       (status==='cancelled' && ['ADMIN_CANCELLED_PENDING_POINTS_AWAITING_DEBIT','ADMIN_CANCELLED_POINTS_REFUND_PENDING'].includes(item?.manualReviewReason)))){
+    alert('Önce puan incelemesini ilgili düğmelerden tamamla. Çöp kutusu sonuçlanmamış puan işlemini kapatmaz.');
+    return;
+  }
 
   let confirmText = 'Bu işlem Satın Alınanlar geçmişinden kaldırılsın mı?';
 
@@ -5650,6 +5675,12 @@ async function hideAdminPurchase(encodedId,sourceType='order'){
       if(!r.ok || !d?.success){
         throw new Error(d?.error || `HTTP ${r.status}`);
       }
+    }
+
+    if(type==='order' && paymentType==='points' && ['paid','delivery_pending'].includes(status)){
+      await loadAdminOrders();
+      alert('İade talebi alındı. Bot onayı tamamlanana kadar sipariş görünür kalacak.');
+      return;
     }
 
     // 2) Operasyon güvenceye alındıktan sonra admin geçmişinden kaldır.
