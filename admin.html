@@ -5540,7 +5540,7 @@ function renderAdminOrders(){
 
       <td>
         <span class="badge ${orderStatusBadge(o.status)}">
-          ${esc(orderStatusText(o.status))}${o.manualReviewReason ? '<br><small>'+esc(o.manualReviewReason)+'</small>' : ''}
+          ${esc(o.refund?.status==='completed' ? 'İade Edildi' : o.refund?.status==='pending' ? 'İade Onayı Bekliyor' : orderStatusText(o.status))}${o.manualReviewReason ? '<br><small>'+esc(o.manualReviewReason)+'</small>' : ''}
         </span>
       </td>
 
@@ -5550,6 +5550,8 @@ function renderAdminOrders(){
 
       <td>
         <div class="orderActions">
+          ${o.paymentType==='points' && o.refund?.status==='pending' ? `
+            <button class="smallBtn secondary" onclick="confirmRefundReceived('${encodeURIComponent(o.id)}')">Puan iade edildi: onayla</button>` : ''}
           ${o.paymentType === 'points' && ['pending','expired','failed'].includes(o.status) ? `
             <button class="smallBtn secondary" onclick="resolvePointReview('${encodeURIComponent(o.id)}','debited')">Puan silindi: onayla</button>
             <button class="smallBtn secondary" onclick="resolvePointReview('${encodeURIComponent(o.id)}','not_debited')">Puan silinmedi: iptal</button>` : ''}
@@ -5590,6 +5592,17 @@ async function resolvePointReview(encodedId,decision){
     if(!r.ok || !d?.success) throw new Error(d?.error || 'İşlem tamamlanamadı.');
     alert('İnceleme sonucu kaydedildi.');
     await loadAdminOrders();
+  }catch(error){alert(error.message || String(error));}
+}
+
+async function confirmRefundReceived(encodedId){
+  if(!confirm('Bu siparişin puanının TAMAMININ kullanıcıya geri verildiğini BotRix geçmişinden doğruladın mı? Bu işlem tekrar puan göndermez; iadeyi tamamlar ve stoğu geri ekler.')) return;
+  try{
+    const {r,d}=await api('/admin/order/confirm-refund',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({orderId:decodeURIComponent(encodedId),confirmed:true})});
+    if(!r.ok || !d?.success) throw new Error(d?.error || 'İade onaylanamadı.');
+    await loadAdminOrders();
+    alert('İade tamamlandı. Stok güncellendi.');
   }catch(error){alert(error.message || String(error));}
 }
 
@@ -8345,6 +8358,5 @@ async function invalidateAllUserSessions(){
     </div>
   </div>
 </div>
-
 </body>
 </html>
