@@ -27,12 +27,14 @@
 })();
 </script>
 <style id="wz-v15-boot-css">
+/* V62: Sayfa yenilenirken gövdeyi tamamen gizlemiyoruz.
+   Doğru Market/Turnuva/Profil sınıfı body'nin ilk scriptinde uygulanıyor;
+   böylece Admin panelindeki gibi sayfa anında görünür. */
 html.wz-boot body{
-  visibility:hidden!important;
+  visibility:visible!important;
 }
 
-/* İlk görünüm hazırlanırken eski Market aktif rengi / buton durumları
-   bir kare bile animasyonla görünmesin. */
+/* İlk görünüm hazırlanırken eski aktif renk / geçiş animasyonu parlamasın. */
 html.wz-boot *,
 body.wz-initializing *{
   transition:none!important;
@@ -2773,6 +2775,24 @@ body.wz-page-modal-open{
 }
 </style>
 
+
+<style id="wz-inbox-interaction-v62">
+@media (min-width:641px){
+  html{scrollbar-gutter:stable}
+}
+html.wz-inbox-open,
+body.wz-inbox-open{
+  overflow:hidden!important;
+}
+
+/* Aç/kapa sırasında gereksiz hareket/flicker olmasın. */
+#inboxModal,
+#inboxModal .inbox-modal-content{
+  transition:none!important;
+  animation:none!important;
+}
+</style>
+
 </head>
 <body>
 <script id="wz-v58-prepaint-view">
@@ -3338,7 +3358,7 @@ body.wz-page-modal-open{
     <div class="wz-profile-section">
       <div class="wz-profile-section-title">Hızlı İşlemler</div>
       <div class="wz-profile-actions">
-        <button id="wzProfileMessagesAction" class="wz-profile-action wz-message-action" type="button" onclick="wzOpenMessages()">
+        <button id="wzProfileMessagesAction" class="wz-profile-action wz-message-action" type="button" onclick="event.stopPropagation();wzOpenMessages(event)">
           <span class="wz-action-icon wz-message-action-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" focusable="false">
               <rect x="3.5" y="5.5" width="17" height="13" rx="2.4"></rect>
@@ -3538,7 +3558,7 @@ body.wz-page-modal-open{
                             <h3 style="margin:0;">✉️ Mesaj Kutusu</h3>
                             <div id="inboxSummary" class="purchase-note" style="margin-top:4px;">Mesajlar yükleniyor...</div>
                         </div>
-                        <button class="close-icon" onclick="closeInbox()">✖</button>
+                        <button class="close-icon" onclick="event.stopPropagation();closeInbox(event)">✖</button>
                     </div>
 
                     <div class="inbox-body">
@@ -3569,7 +3589,7 @@ body.wz-page-modal-open{
                                 <div id="inboxThreadStatus" class="inbox-thread-status">Yönetici ve sistem mesajları</div>
                             </div>
                             <button class="inbox-mini-btn danger" style="margin-left:auto;width:auto;" onclick="clearInbox()">🧹 Temizle</button>
-                            <button class="close-icon" onclick="closeInbox()">✖</button>
+                            <button class="close-icon" onclick="event.stopPropagation();closeInbox(event)">✖</button>
                         </div>
                     </div>
 
@@ -4468,7 +4488,6 @@ body.wz-page-modal-open{
 
             // Sayfa açılışında bir kez güncel mesaj sayacını ve varsa bekleyen TL
             // ödemesini kontrol et. Sonrasında arka planda sürekli sorgu yapılmaz.
-            refreshInboxBadge().catch(() => {});
             startInboxBadgeWatcher();
             resumePendingTlPayment().catch(() => {});
 
@@ -4791,11 +4810,98 @@ body.wz-page-modal-open{
         let currentInboxThreads = [];
         let currentInboxThread = null;
         let currentInboxConversation = null;
-        const selectedInboxThreadIds = new Set();
+        const INBOX_CONVERSATION_CACHE_KEY = 'weizend_inbox_conversation_cache_v62';
+        let inboxUiBusy = false;
         let inboxRefreshInFlight = false;
+        const selectedInboxThreadIds = new Set();
         let inboxBadgeUnreadCount = 0;
         let inboxLivePollInFlight = false;
         let inboxConversationRefreshInFlight = false;
+
+        function saveInboxConversationCache(data) {
+            if (!data || typeof data !== 'object') return;
+            currentInboxConversation = data;
+            try {
+                sessionStorage.setItem(
+                    INBOX_CONVERSATION_CACHE_KEY,
+                    JSON.stringify({ savedAt: Date.now(), data })
+                );
+            } catch (_) {}
+        }
+
+        function readInboxConversationCache() {
+            if (currentInboxConversation && typeof currentInboxConversation === 'object') {
+                return currentInboxConversation;
+            }
+            try {
+                const raw = sessionStorage.getItem(INBOX_CONVERSATION_CACHE_KEY);
+                if (!raw) return null;
+                const parsed = JSON.parse(raw);
+                if (!parsed?.data) return null;
+                // Eski içerik anlık açılış için kullanılabilir; normal API çağrısı
+                // hemen ardından güncel veriyi getirir.
+                currentInboxConversation = parsed.data;
+                return parsed.data;
+            } catch (_) {
+                return null;
+            }
+        }
+
+        function applyInboxConversation(data, markLocalRead = false) {
+            if (!data || typeof data !== 'object') return false;
+
+            saveInboxConversationCache(data);
+
+            currentInboxThread = {
+                id:data.replyThreadId || data.appealThreadId || data.supportThreadId || 'WEIZEND',
+                subject:'Weizend',
+                thread_type:'admin',
+                allow_reply:data.replyAllowed ? 1 : 0,
+                status:data.replyAllowed ? 'open' : 'closed'
+            };
+
+            const listView = document.getElementById('inboxListView');
+            const threadView = document.getElementById('inboxThreadView');
+            const subject = document.getElementById('inboxThreadSubject');
+            const status = document.getElementById('inboxThreadStatus');
+
+            if (listView) listView.style.display = 'none';
+            if (threadView) threadView.style.display = 'flex';
+            if (subject) subject.textContent = 'Weizend';
+
+            const meta = ['(Yönetici) Weizend', `${Number(data.totalCount || 0)} mesaj`];
+            if (data.truncated) meta.push('son 500 mesaj gösteriliyor');
+            if (status) status.textContent = meta.join(' · ');
+
+            const replyAllowed = data.replyAllowed === true && !!data.replyThreadId;
+            const allowed = document.getElementById('inboxReplyAllowed');
+            const closed = document.getElementById('inboxReplyClosed');
+            if (allowed) allowed.style.display = replyAllowed ? 'block' : 'none';
+            if (closed) closed.style.display = replyAllowed ? 'none' : 'block';
+
+            const rows = Array.isArray(data.messages) ? data.messages : [];
+            renderInboxMessages(rows);
+            configureRestrictionAppeal(data,replyAllowed);
+            configureSupportRequest(data,replyAllowed);
+
+            if (markLocalRead) {
+                currentInboxThreads = [];
+                updateInboxBadge(0);
+            }
+            return true;
+        }
+
+        async function preloadInboxConversation() {
+            if (!marketAuthenticated || !localStorage.getItem(SESSION_STORAGE_KEY)) return null;
+            try {
+                const data = await inboxRequest(`/inbox/conversation?peek=1&_=${Date.now()}`);
+                saveInboxConversationCache(data);
+                return data;
+            } catch (error) {
+                console.warn('INBOX PRELOAD ERROR:', error);
+                return null;
+            }
+        }
 
         function inboxDateText(value) {
             if (!value) return '-';
@@ -4899,11 +5005,11 @@ body.wz-page-modal-open{
         }
 
         function startInboxBadgeWatcher() {
-            // V60: sürekli polling YOK.
-            // İlk açılışta bir kez okunmamış sayısını eşitle, sonrasında yalnız
-            // Realtime/WebSocket olayı geldiğinde yenile.
+            // Sürekli polling yok. İlk oturum yüklemesinde bir kez badge ve
+            // conversation peek alınır; sonrasında yalnız Realtime olayı çalışır.
             stopInboxBadgeWatcher();
             refreshInboxBadge().catch(() => {});
+            preloadInboxConversation().catch(() => {});
             connectRealtime();
         }
 
@@ -4991,10 +5097,14 @@ body.wz-page-modal-open{
                 }
 
                 const modal = document.getElementById('inboxModal');
-                if (modal?.style.display !== 'flex') return;
+                if (modal?.style.display !== 'flex') {
+                    // Mesaj olayı geldiği anda içeriği okundu yapmadan önbelleğe al.
+                    // Kullanıcı Mesaj Kutusu'na dokunduğunda içerik hazır olur.
+                    await preloadInboxConversation();
+                    return;
+                }
 
-                // Kullanıcı yazı yazıyorsa mevcut textarea'ya kesinlikle dokunma.
-                // Yeni mesaj bir sonraki blur/gönderim veya 2 sn yedek kontrolde gelir.
+                // Kullanıcı yazı yazıyorsa mevcut textarea'ya dokunma.
                 if (inboxComposerIsActive()) return;
 
                 await loadInbox(true);
@@ -5003,54 +5113,71 @@ body.wz-page-modal-open{
             }
         }
 
-        async function openInbox() {
+        async function openInbox(event) {
+            try { event?.stopPropagation?.(); } catch (_) {}
+
+            if (inboxUiBusy) return;
             if (!marketAuthenticated || !localStorage.getItem(SESSION_STORAGE_KEY)) {
                 goToVerification();
                 return;
             }
 
             const modal = document.getElementById('inboxModal');
-            const listView = document.getElementById('inboxListView');
-            const threadView = document.getElementById('inboxThreadView');
             const messagesBox = document.getElementById('inboxMessages');
+            if (!modal || !messagesBox) return;
 
-            if (!modal || !threadView || !messagesBox) return;
+            if (modal.style.display === 'flex') return;
 
-            document.documentElement.style.overflow = 'hidden';
-            document.body.style.overflow = 'hidden';
+            inboxUiBusy = true;
+            document.documentElement.classList.add('wz-inbox-open');
+            document.body.classList.add('wz-inbox-open');
 
-            if (listView) listView.style.display = 'none';
-            threadView.style.display = 'flex';
-
-            // API cevabını beklerken de pencere tam görünür olsun.
-            messagesBox.innerHTML =
-                '<div class="inbox-empty">⏳ Mesajlar yükleniyor...</div>';
+            // Önce varsa önbelleği tek karede göster; ağ cevabını bekleme.
+            const cached = readInboxConversationCache();
+            if (cached) {
+                applyInboxConversation(cached, false);
+            } else {
+                const listView = document.getElementById('inboxListView');
+                const threadView = document.getElementById('inboxThreadView');
+                if (listView) listView.style.display = 'none';
+                if (threadView) threadView.style.display = 'flex';
+                messagesBox.innerHTML =
+                    '<div class="inbox-empty">⏳ Mesajlar yükleniyor...</div>';
+            }
 
             modal.style.display = 'flex';
+            inboxUiBusy = false;
 
-            try {
-                await loadInbox(false);
-            } catch (error) {
-                messagesBox.innerHTML =
-                    `<div class="inbox-empty">❌ ${escapeHtml(error?.message || error)}</div>`;
-            }
+            // Modal zaten açıldı. Güncel veriyi arkada al ve gerçek açılış olduğu
+            // için sunucuda okunmuş olarak işaretle.
+            loadInbox(!!cached).catch(() => {});
         }
 
-        function closeInbox() {
+        function closeInbox(event) {
+            try { event?.stopPropagation?.(); } catch (_) {}
+            if (inboxUiBusy) return;
+
             const modal = document.getElementById('inboxModal');
-            if (modal) modal.style.display = 'none';
+            if (!modal || modal.style.display === 'none') return;
 
-            document.documentElement.style.overflow = '';
-            document.body.style.overflow = '';
+            inboxUiBusy = true;
+            modal.style.display = 'none';
 
+            document.documentElement.classList.remove('wz-inbox-open');
+            document.body.classList.remove('wz-inbox-open');
+
+            // Conversation cache'i bilerek silmiyoruz; tekrar açıldığında anında görünür.
             currentInboxThread = null;
-            currentInboxConversation = null;
             const input = document.getElementById('inboxReplyInput');
             if (input) input.value = '';
+
+            requestAnimationFrame(() => {
+                inboxUiBusy = false;
+            });
         }
 
         function closeInboxFromOutside(event) {
-            if (event.target?.id === 'inboxModal') closeInbox();
+            if (event.target?.id === 'inboxModal') closeInbox(event);
         }
 
         async function loadInbox(preserveDraft = false) {
@@ -5063,44 +5190,14 @@ body.wz-page-modal-open{
             if (inboxConversationRefreshInFlight && preserveDraft) return;
             inboxConversationRefreshInFlight = true;
 
-            if (!preserveDraft) {
+            if (!preserveDraft && !readInboxConversationCache()) {
                 messagesBox.innerHTML = '<div class="inbox-empty">⏳ Mesajlar yükleniyor...</div>';
             }
 
             try {
                 const data = await inboxRequest(`/inbox/conversation?_=${Date.now()}`);
-                currentInboxConversation = data;
-                currentInboxThread = {
-                    id:data.replyThreadId || data.appealThreadId || data.supportThreadId || 'WEIZEND',
-                    subject:'Weizend',
-                    thread_type:'admin',
-                    allow_reply:data.replyAllowed ? 1 : 0,
-                    status:data.replyAllowed ? 'open' : 'closed'
-                };
-
-                document.getElementById('inboxListView').style.display = 'none';
-                document.getElementById('inboxThreadView').style.display = 'flex';
-                document.getElementById('inboxThreadSubject').textContent = 'Weizend';
-
-                const meta = [];
-                meta.push('(Yönetici) Weizend');
-                meta.push(`${Number(data.totalCount || 0)} mesaj`);
-                if(data.truncated) meta.push('son 500 mesaj gösteriliyor');
-                document.getElementById('inboxThreadStatus').textContent = meta.join(' · ');
-
-                const replyAllowed = data.replyAllowed === true && !!data.replyThreadId;
-                document.getElementById('inboxReplyAllowed').style.display = replyAllowed ? 'block' : 'none';
-                document.getElementById('inboxReplyClosed').style.display = replyAllowed ? 'none' : 'block';
-
-                // Canlı yenilemelerde yazılan metne dokunma.
-                // Input yalnızca kullanıcı gönderdiğinde veya kutuyu kapattığında temizlenir.
-                const rows = Array.isArray(data.messages) ? data.messages : [];
-                renderInboxMessages(rows);
-                configureRestrictionAppeal(data,replyAllowed);
-                configureSupportRequest(data,replyAllowed);
-
-                currentInboxThreads = [];
-                updateInboxBadge(0);
+                // Tek render yolu: cache ve canlı API aynı DOM uygulamasını kullanır.
+                applyInboxConversation(data, true);
             } catch (error) {
                 // Sessiz canlı yenilemede eski mesajları ekranda tut. İlk açılışta hata
                 // varsa kullanıcıya görünür hata kartını göster.
@@ -10727,8 +10824,8 @@ return;
   }
   window.wzSyncProfile=syncProfile;
 
-  window.wzOpenMessages=function(){
-    if(typeof openInbox==='function') openInbox();
+  window.wzOpenMessages=function(event){
+    if(typeof openInbox==='function') openInbox(event);
   };
   window.wzOpenGiftFromInbox=function(){
     try{ if(typeof closeInbox==='function') closeInbox(); }catch(_){}
