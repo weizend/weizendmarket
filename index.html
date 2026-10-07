@@ -1396,7 +1396,8 @@ body.wz-view-tournament #wzDesktopMarket,body.wz-view-market #wzDesktopTournamen
 body.wz-view-tournament #wzEsportsHub{display:block}
 body.wz-view-tournament #tournamentMarketSection>.tv2-section-heading,
 body.wz-view-tournament #tournamentMarketSection>#tournamentMarketGrid,
-body.wz-view-tournament .market-search-wrap{display:none!important}
+body.wz-view-tournament .market-search-wrap,
+body.wz-view-tournament #wzMobileTournamentHero{display:none!important}
 
 .wz-turn-root{
   color:#fff;
@@ -1412,6 +1413,22 @@ body.wz-view-tournament .market-search-wrap{display:none!important}
   padding:34px 16px;border:1px dashed #34343b;border-radius:18px;background:#0d0e12;color:#9b9ca4;text-align:center
 }
 .wz-turn-list-page,.wz-turn-detail-page{display:block}
+.wz-turn-search-wrap{margin:0 0 14px}
+.wz-turn-search-box{
+  min-height:48px;display:flex;align-items:center;gap:10px;
+  border:1px solid #292d36;background:#101319;border-radius:16px;padding:0 12px
+}
+.wz-turn-search-icon{font-size:1rem;opacity:.78}
+.wz-turn-search-input{
+  flex:1;min-width:0;border:0;outline:0;background:transparent;color:#fff;
+  font:inherit;font-size:.88rem;font-weight:700
+}
+.wz-turn-search-input::placeholder{color:#777d88}
+.wz-turn-search-clear{
+  width:34px;height:34px;border:0;border-radius:10px;background:#1a1e26;color:#aeb3bc;
+  font-size:.78rem;font-weight:900;cursor:pointer
+}
+.wz-turn-search-info{margin-top:7px;color:#8f96a3;font-size:.7rem;font-weight:800;min-height:0}
 .wz-turn-toptabs{
   display:flex;gap:10px;align-items:center;padding:0 0 14px 0
 }
@@ -1504,6 +1521,12 @@ body.wz-view-tournament .market-search-wrap{display:none!important}
 }
 .wz-turn-hero-cover:before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(125deg,transparent 0 22px,rgba(255,255,255,.02) 23px 24px)}
 .wz-turn-hero-cover>*{position:relative;z-index:1}
+.wz-turn-cover-back{
+  position:absolute!important;top:14px;left:14px;z-index:4!important;
+  width:42px;height:42px;border-radius:14px;border:1px solid rgba(255,255,255,.16);
+  background:rgba(7,9,13,.78);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  color:#fff;font-size:1.15rem;font-weight:1000;display:grid;place-items:center;cursor:pointer
+}
 .wz-turn-hero-body{width:100%}
 .wz-turn-hero-title{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
 .wz-turn-h1{font-size:1.85rem;font-weight:1000;line-height:.92;text-transform:uppercase;max-width:70%}
@@ -10190,6 +10213,7 @@ return;
     selectedId:(()=>{try{return sessionStorage.getItem('wz_t_selected')||''}catch(_){return ''}})(),
     tab:(()=>{try{return sessionStorage.getItem('wz_t_tab')||'overview'}catch(_){return 'overview'}})(),
     bracketMode:(()=>{try{return sessionStorage.getItem('wz_t_bracket')||'tree'}catch(_){return 'tree'}})(),
+    search:(()=>{try{return sessionStorage.getItem('wz_t_search')||''}catch(_){return ''}})(),
     details:new Map(),
     loading:new Set(),
     openRules:new Set([0,1])
@@ -10202,6 +10226,7 @@ return;
       sessionStorage.setItem('wz_t_selected',state.selectedId);
       sessionStorage.setItem('wz_t_tab',state.tab);
       sessionStorage.setItem('wz_t_bracket',state.bracketMode);
+      sessionStorage.setItem('wz_t_search',state.search);
     }catch(_){}
   }
 
@@ -10373,21 +10398,52 @@ return;
     return 'Katılım bilgisi açıklanacak';
   }
   function getItem(id){ return catalog().find(x=>String(x?.tournament?.id||'')===String(id)) || null; }
+  function normalizeTournamentSearch(value){
+    return String(value||'').toLocaleLowerCase('tr-TR').trim();
+  }
+  function tournamentSearchText(item){
+    const t=item?.tournament||{}; const rule=item?.rule||{};
+    return normalizeTournamentSearch([
+      t.name,
+      gameName(t,rule),
+      modeText(t),
+      Number(t.teamSize||1)>1 ? `${Number(t.teamSize||1)}v${Number(t.teamSize||1)}` : '1v1',
+      mapDisplayName(t,rule),
+      mapTypeText(t,rule),
+      matchFormat(t,rule),
+      entryText(item)
+    ].filter(Boolean).join(' '));
+  }
   function filtered(){
-    const list=catalog();
-    return list.filter(item=>{
+    const q=normalizeTournamentSearch(state.search);
+    return catalog().filter(item=>{
       const l=lifecycle(item);
-      if(state.filter==='all') return l!=='completed' && l!=='passive';
-      if(state.filter==='soon') return (comingSoon(item) || registrationPhase(item)==='scheduled') && l!=='completed';
-      if(state.filter==='live') return l==='in_progress';
-      if(state.filter==='done') return l==='completed';
-      return true;
+      const phase=registrationPhase(item);
+      let tabMatch=false;
+
+      if(state.filter==='done'){
+        tabMatch = l==='completed';
+      }else if(state.filter==='live'){
+        tabMatch = l==='in_progress';
+      }else if(state.filter==='soon'){
+        tabMatch = l!=='completed' && l!=='in_progress' && l!=='passive'
+          && (comingSoon(item) || phase==='scheduled');
+      }else{
+        tabMatch = l!=='completed' && l!=='in_progress' && l!=='passive'
+          && !comingSoon(item) && phase!=='scheduled';
+      }
+
+      if(!tabMatch) return false;
+      if(!q) return true;
+      return tournamentSearchText(item).includes(q);
     });
   }
   function activeList(){
     return catalog().filter(item=>{
       const l=lifecycle(item);
-      return l!=='completed' && l!=='passive';
+      const phase=registrationPhase(item);
+      return l!=='completed' && l!=='in_progress' && l!=='passive'
+        && !comingSoon(item) && phase!=='scheduled';
     });
   }
   function completedList(){ return catalog().filter(item=>lifecycle(item)==='completed'); }
@@ -10528,6 +10584,19 @@ return;
       <button type="button" class="wz-turn-topbtn ${current==='tournament'?'active':''}" onclick="wzSetView && wzSetView('tournament')">TURNUVALAR</button>
     </div>`;
   }
+  function renderSearch(){
+    const value=esc(state.search);
+    return `<div class="wz-turn-search-wrap">
+      <div class="wz-turn-search-box">
+        <span class="wz-turn-search-icon">🔎</span>
+        <input id="wzTournamentSearchInput" class="wz-turn-search-input" type="search"
+          autocomplete="off" value="${value}"
+          placeholder="Turnuva, oyun, format veya harita ara..."
+          oninput="wzTurnSetSearch(this.value)">
+        ${state.search ? `<button type="button" class="wz-turn-search-clear" onclick="wzTurnClearSearch()" title="Aramayı temizle">✕</button>` : ''}
+      </div>
+    </div>`;
+  }
   function renderFilters(){
     const defs=[['all','Aktif'],['soon','Yaklaşan'],['live','Canlı'],['done','Tamamlanan']];
     return `<div class="wz-turn-strip">${defs.map(([id,name])=>`<button type="button" class="wz-turn-chip ${state.filter===id?'active':''}" onclick="wzTurnSetFilter('${id}')">${name}</button>`).join('')}</div>`;
@@ -10577,17 +10646,22 @@ return;
 
   function renderListPage(){
     const list=filtered();
-    const done=completedList();
-    const showingDone=state.filter==='done';
-    const activePart = showingDone ? '' : `${list.length?`<div class="wz-turn-cardlist">${list.map(item=>renderListCard(item,false)).join('')}</div>`:`<div class="wz-turn-empty">Bu bölümde turnuva bulunmuyor.</div>`}`;
-    const completedPart = (state.filter==='done' || (state.filter==='all' && done.length)) ? `
-      <div class="wz-turn-sectionlabel">Tamamlanan Turnuvalar</div>
-      <div class="wz-turn-cardlist">${done.length?done.map(item=>renderListCard(item,true)).join(''):'<div class="wz-turn-empty">Henüz tamamlanan turnuva yok.</div>'}</div>` : '';
+    const emptyText = state.search
+      ? 'Aramana uygun turnuva bulunamadı.'
+      : state.filter==='done'
+        ? 'Henüz tamamlanan turnuva yok.'
+        : state.filter==='live'
+          ? 'Şu anda canlı turnuva yok.'
+          : state.filter==='soon'
+            ? 'Yaklaşan turnuva bulunmuyor.'
+            : 'Aktif turnuva bulunmuyor.';
 
     return `<div class="wz-turn-list-page">
+      ${renderSearch()}
       ${renderFilters()}
-      ${activePart}
-      ${completedPart}
+      ${list.length
+        ? `<div class="wz-turn-cardlist">${list.map(item=>renderListCard(item,state.filter==='done')).join('')}</div>`
+        : `<div class="wz-turn-empty">${emptyText}</div>`}
     </div>`;
   }
 
@@ -10768,9 +10842,10 @@ return;
     const stream=safeHttpUrl(rule?.streamUrl || t?.streamUrl || 'https://kick.com/weizend');
     const openAt=registrationOpenAt(item); const closeAt=registrationCloseAt(item);
     return `<div class="wz-turn-detail-page">
-      <div class="wz-turn-detail-top"><button type="button" class="wz-turn-back" onclick="wzTurnBack()">←</button><div class="wz-turn-brand">WEIZEND</div></div>
       <section class="wz-turn-hero">
-        <div class="wz-turn-hero-cover"${heroStyle}><div class="wz-turn-hero-body">
+        <div class="wz-turn-hero-cover"${heroStyle}>
+          <button type="button" class="wz-turn-cover-back" onclick="wzTurnBack()" aria-label="Turnuvalara geri dön">←</button>
+          <div class="wz-turn-hero-body">
           <div class="wz-turn-hero-title"><div class="wz-turn-h1">${esc(String(t.name||'Turnuva').replace(/cup/i,'').trim() || 'CUP')}</div></div>
         </div></div>
         <div class="wz-turn-info-grid">
@@ -10835,6 +10910,27 @@ return;
     }catch(_){ }
   },60000);
 
+  window.wzTurnSetSearch=function(value){
+    state.search=String(value||'');
+    persistTournamentState();
+    render();
+    requestAnimationFrame(()=>{
+      const input=document.getElementById('wzTournamentSearchInput');
+      if(input){
+        input.focus({preventScroll:true});
+        try{ input.setSelectionRange(input.value.length,input.value.length); }catch(_){}
+      }
+    });
+  };
+  window.wzTurnClearSearch=function(){
+    state.search='';
+    persistTournamentState();
+    render();
+    requestAnimationFrame(()=>{
+      const input=document.getElementById('wzTournamentSearchInput');
+      if(input) input.focus({preventScroll:true});
+    });
+  };
   window.wzTurnSetFilter=function(filter){ state.filter=filter; persistTournamentState(); render(); };
   window.wzTurnOpen=function(id){ state.selectedId=String(id||''); state.screen='detail'; state.tab='overview'; state.bracketMode='tree'; persistTournamentState(); render(); };
   window.wzTurnBack=function(){ state.screen='list'; persistTournamentState(); render(); };
