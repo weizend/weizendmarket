@@ -10269,9 +10269,6 @@ return;
   }
   function mapDisplayName(t,rule){
     const name=String(mapName(t,rule)||'').trim();
-    const raw=String(rule?.mapType || t?.mapType || 'standard').toLowerCase();
-    if(raw==='collision' || raw==='collision_a') return `Çarpışma${name && name!=='Harita açıklanacak' ? ' ' + name : ''}`;
-    if(raw==='custom') return `Özel${name && name!=='Harita açıklanacak' ? ' ' + name : ''}`;
     return name || 'Harita açıklanacak';
   }
   function countdownTextUntil(value){
