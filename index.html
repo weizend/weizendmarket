@@ -10648,11 +10648,6 @@ return;
     return `<div class="wz-turn-box">
       <h3>Turnuva Hakkında</h3>
       <div class="wz-turn-about">${esc(about)}</div>
-      <div class="wz-turn-schedule">
-        <div class="wz-turn-schedule-item"><small>Kayıt Açılışı</small><b>${esc(comingSoon(item)?'YAKINDA':formatDate(openAt))}</b></div>
-        <div class="wz-turn-schedule-item"><small>Kayıt Kapanışı</small><b>${esc(comingSoon(item)?'YAKINDA':formatDate(closeAt))}</b></div>
-        <div class="wz-turn-schedule-item"><small>Turnuva Başlangıcı</small><b>${esc(comingSoon(item)?'YAKINDA':formatDate(startAt))}</b></div>
-      </div>
       <div class="wz-turn-stream-note"><div><strong>🔴 CANLI YAYIN · KICK / WEIZEND</strong><span>Tüm turnuva maçları kick.com/weizend kanalında canlı yayınlanır.</span></div>${stream?`<a href="${esc(stream)}" target="_blank" rel="noopener noreferrer">YAYINI AÇ</a>`:''}</div>
       <div class="wz-turn-detailrows">
         <div class="wz-turn-detailrow"><span>Oyun</span><b>${esc(gameName(t,rule))}</b></div>
