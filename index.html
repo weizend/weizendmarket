@@ -2391,6 +2391,72 @@ body.wz-page-modal-open{
 }
 </style>
 
+
+<style id="wz-pickem-v52-css">
+.wz-predict-title-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.wz-predict-title-row h3{margin:5px 0!important}
+.wz-predict-state{
+  flex:0 0 auto;border-radius:999px;padding:5px 9px;font-size:.62rem;font-weight:1000;
+  letter-spacing:.08em;border:1px solid #3a3f49;background:#151920;color:#aaa
+}
+.wz-predict-state.open{border-color:#216d3c;background:#0e2718;color:#73e799}
+.wz-predict-state.closed{border-color:#6b2929;background:#291112;color:#ff8383}
+.wz-predict-scoring{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.wz-predict-scoring span{
+  border:1px solid #292f38;background:#0d1116;border-radius:999px;
+  padding:5px 8px;color:#8f96a1;font-size:.65rem
+}
+.wz-predict-scoring b{color:#fff}
+.wz-predict-login{
+  margin:0 0 12px;border:1px solid #493217;background:#18130b;border-radius:14px;
+  padding:12px;display:flex;flex-direction:column;gap:6px
+}
+.wz-predict-login b{font-size:.8rem;color:#ffd27b}
+.wz-predict-login span{font-size:.69rem;color:#aaa;line-height:1.45}
+.wz-predict-login button{
+  margin-top:4px;border:0;border-radius:10px;min-height:40px;background:#e31b1b;color:#fff;
+  font-size:.72rem;font-weight:1000;cursor:pointer
+}
+.wz-predict-my-status{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px
+}
+.wz-predict-my-status>div{
+  border:1px solid #252b33;background:#0c1015;border-radius:12px;padding:9px 8px;text-align:center
+}
+.wz-predict-my-status span{display:block;color:#777f8b;font-size:.61rem;margin-bottom:3px}
+.wz-predict-my-status b{display:block;color:#fff;font-size:.75rem}
+.wz-pick-options.one{grid-template-columns:1fr}
+.wz-pick-btn:disabled{cursor:not-allowed;opacity:.78}
+.wz-pick-btn.correct{border-color:#238a48!important;background:#0c2c19!important;color:#9dffba!important}
+.wz-pick-btn.wrong{border-color:#842d35!important;background:#301116!important;color:#ff9ba4!important}
+.wz-pick-waiting{
+  grid-column:1/-1;border:1px dashed #2d323a;border-radius:10px;padding:11px;
+  color:#727985;text-align:center;font-size:.69rem
+}
+.wz-predict-leaderboard{
+  margin-top:14px;border:1px solid #272d35;background:#0b0f14;border-radius:14px;overflow:hidden
+}
+.wz-predict-leader-head{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:11px 12px;border-bottom:1px solid #242a31
+}
+.wz-predict-leader-head b{font-size:.78rem}
+.wz-predict-leader-head span{color:#747c88;font-size:.65rem}
+.wz-predict-score-head,.wz-predict-score-row{
+  display:grid;grid-template-columns:48px minmax(0,1fr) 58px;gap:8px;align-items:center;
+  padding:8px 11px
+}
+.wz-predict-score-head{color:#69717d;font-size:.6rem;text-transform:uppercase}
+.wz-predict-score-row{border-top:1px solid #1d2228;font-size:.71rem}
+.wz-predict-score-row>b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wz-predict-score-row>strong{text-align:right;color:#fff}
+.wz-predict-score-row.is-first{background:rgba(227,27,27,.07)}
+@media(max-width:520px){
+  .wz-predict-my-status{grid-template-columns:1fr 1fr 1fr}
+  .wz-predict-my-status b{font-size:.7rem}
+}
+</style>
+
 </head>
 <body>
 
@@ -10362,7 +10428,9 @@ return;
     search:(()=>{try{return sessionStorage.getItem('wz_t_search')||''}catch(_){return ''}})(),
     details:new Map(),
     loading:new Set(),
-    openRules:new Set([0,1])
+    openRules:new Set([0,1]),
+    predictionCache:new Map(),
+    predictionLoading:new Set()
   };
 
   function persistTournamentState(){
@@ -11288,64 +11356,379 @@ return;
     );
   }
 
-  function predictionKey(id){
-    return `weizend_pickem_${String(id||'')}`;
+  function predictionLoggedIn(){
+    try{
+      return (
+        typeof marketAuthenticated !== 'undefined' &&
+        marketAuthenticated === true &&
+        !!localStorage.getItem(
+          typeof SESSION_STORAGE_KEY !== 'undefined'
+            ? SESSION_STORAGE_KEY
+            : 'weizend_market_session_secure_v2'
+        )
+      );
+    }catch(_){
+      return false;
+    }
   }
 
-  function readPredictions(id){
+  function predictionLockText(reason){
+    const code=String(reason||'');
+    if(code==='NO_BRACKET') return 'Fikstür oluşturulduğunda tahminler açılabilir.';
+    if(code==='TOURNAMENT_STARTED') return 'Turnuva başladı. Tahminler kilitlendi.';
+    if(code==='MATCHES_STARTED') return 'Maç sonuçları girilmeye başladı. Tahminler kilitlendi.';
+    if(code==='TOURNAMENT_INACTIVE') return 'Turnuva aktif olmadığı için tahmin yapılamıyor.';
+    if(code==='TOURNAMENT_COMPLETED') return 'Turnuva tamamlandı. Tahminler kilitlendi.';
+    return 'Tahminler şu anda kapalı.';
+  }
+
+  async function loadPredictionState(tournamentId,force=false){
+    const id=String(tournamentId||'');
+    if(!id) return null;
+    if(state.predictionLoading.has(id)) return state.predictionCache.get(id)||null;
+    if(!force && state.predictionCache.has(id)) return state.predictionCache.get(id);
+
+    state.predictionLoading.add(id);
     try{
-      const raw=localStorage.getItem(predictionKey(id));
-      const parsed=raw?JSON.parse(raw):{};
-      return parsed && typeof parsed==='object' ? parsed : {};
-    }catch(_){ return {}; }
+      let data=null;
+
+      if(predictionLoggedIn() && typeof tv2AuthFetch==='function'){
+        data=await tv2AuthFetch(`/tournament/predictions/me?id=${encodeURIComponent(id)}&_=${Date.now()}`);
+      }else{
+        const response=await fetch(
+          `${MARKET_WORKER}/tournament/predictions?id=${encodeURIComponent(id)}&_=${Date.now()}`,
+          {headers:{'Accept':'application/json'},cache:'no-store'}
+        );
+        const payload=await response.json().catch(()=>({}));
+        if(!response.ok || !payload?.success){
+          throw new Error(payload?.error || `HTTP ${response.status}`);
+        }
+        data=payload;
+      }
+
+      state.predictionCache.set(id,data);
+
+      if(
+        state.screen==='detail' &&
+        state.tab==='predictions' &&
+        String(state.selectedId||'')===id
+      ){
+        render();
+      }
+      return data;
+    }catch(error){
+      state.predictionCache.set(id,{
+        __error:String(error?.message || error || 'Tahmin bilgileri alınamadı.')
+      });
+      if(
+        state.screen==='detail' &&
+        state.tab==='predictions' &&
+        String(state.selectedId||'')===id
+      ){
+        render();
+      }
+      return null;
+    }finally{
+      state.predictionLoading.delete(id);
+    }
+  }
+
+  function queuePredictionLoad(tournamentId){
+    const id=String(tournamentId||'');
+    if(!id || state.predictionLoading.has(id) || state.predictionCache.has(id)) return;
+    setTimeout(()=>loadPredictionState(id,false),0);
+  }
+
+  function predictionPickMap(data){
+    const map=new Map();
+    for(const pick of (Array.isArray(data?.myPicks)?data.myPicks:[])){
+      if(pick?.matchId && pick?.winnerId){
+        map.set(String(pick.matchId),String(pick.winnerId));
+      }
+    }
+    return map;
+  }
+
+  function predictionNameMap(detail){
+    const names=new Map();
+    for(const match of (Array.isArray(detail?.matches)?detail.matches:[])){
+      if(match?.participantAId && match?.participantAName){
+        names.set(String(match.participantAId),String(match.participantAName));
+      }
+      if(match?.participantBId && match?.participantBName){
+        names.set(String(match.participantBId),String(match.participantBName));
+      }
+      if(match?.winnerId && match?.winnerName){
+        names.set(String(match.winnerId),String(match.winnerName));
+      }
+    }
+    for(const p of (Array.isArray(detail?.participants)?detail.participants:[])){
+      if(p?.id) names.set(String(p.id),String(p.username||p.name||'-'));
+    }
+    for(const team of (Array.isArray(detail?.teams)?detail.teams:[])){
+      if(team?.id) names.set(String(team.id),String(team.name||'-'));
+    }
+    return names;
+  }
+
+  function predictionMatchKey(roundNumber,matchNumber,kind='main'){
+    return `${String(kind||'main')}:${Number(roundNumber||0)}:${Number(matchNumber||0)}`;
+  }
+
+  function predictionProjectedOptions(matches,picks,targetMatch){
+    const byKey=new Map();
+    for(const match of matches){
+      byKey.set(
+        predictionMatchKey(match.roundNumber,match.matchNumber,match.matchKind||'main'),
+        match
+      );
+    }
+
+    const mainRounds=matches
+      .filter(m=>String(m.matchKind||'main')==='main')
+      .map(m=>Number(m.roundNumber||0));
+    const maxRound=mainRounds.length?Math.max(...mainRounds):0;
+    const resolving=new Set();
+
+    const optionsFor=(match)=>{
+      if(!match) return [];
+      const recursionKey=String(match.id||'');
+      if(resolving.has(recursionKey)) return [];
+      resolving.add(recursionKey);
+
+      let options=[];
+      const kind=String(match.matchKind||'main');
+
+      if(kind==='third_place'){
+        const semiRound=Math.max(1,maxRound-1);
+        const semis=[
+          byKey.get(predictionMatchKey(semiRound,1,'main')),
+          byKey.get(predictionMatchKey(semiRound,2,'main'))
+        ].filter(Boolean);
+
+        options=semis.map(semi=>{
+          const semiOptions=optionsFor(semi);
+          const picked=picks.get(String(semi.id||''));
+          if(semiOptions.length!==2 || !picked || !semiOptions.includes(picked)) return null;
+          return semiOptions.find(id=>id!==picked)||null;
+        }).filter(Boolean);
+
+      }else if(Number(match.roundNumber||0)<=1){
+        options=[match.participantAId,match.participantBId].filter(Boolean).map(String);
+
+      }else{
+        const previousRound=Number(match.roundNumber||0)-1;
+        const feeders=[
+          Number(match.matchNumber||0)*2-1,
+          Number(match.matchNumber||0)*2
+        ];
+
+        options=feeders.map(number=>{
+          const feeder=byKey.get(predictionMatchKey(previousRound,number,'main'));
+          if(!feeder) return null;
+
+          const feederOptions=optionsFor(feeder);
+          if(feederOptions.length===1) return feederOptions[0];
+
+          const picked=picks.get(String(feeder.id||''));
+          return picked && feederOptions.includes(picked) ? picked : null;
+        }).filter(Boolean);
+      }
+
+      resolving.delete(recursionKey);
+      return [...new Set(options.map(String).filter(Boolean))];
+    };
+
+    return optionsFor(targetMatch);
+  }
+
+  function predictionRoundLabel(match,maxRound){
+    if(String(match?.matchKind||'main')==='third_place') return "🥉 3.'lük Maçı";
+    const round=Number(match?.roundNumber||0);
+    if(round===maxRound) return '🏆 Final';
+    if(round===maxRound-1) return '🔥 Yarı Final';
+    if(round===maxRound-2) return '⚔️ Çeyrek Final';
+    return `${round}. Tur`;
+  }
+
+  function predictionLeaderboardHtml(data){
+    const board=Array.isArray(data?.leaderboard)?data.leaderboard:[];
+    const stats=data?.stats||{};
+    if(!board.length){
+      return `<div class="wz-predict-leaderboard">
+        <div class="wz-predict-leader-head"><b>🏅 Tahmin Sıralaması</b><span>0 katılımcı</span></div>
+        <div class="wz-turn-empty">Henüz tahmin yapan kullanıcı yok.</div>
+      </div>`;
+    }
+
+    return `<div class="wz-predict-leaderboard">
+      <div class="wz-predict-leader-head">
+        <b>🏅 Tahmin Sıralaması</b>
+        <span>${Number(stats.participantCount||board.length)} katılımcı</span>
+      </div>
+      <div class="wz-predict-score-head"><span>Sıra</span><span>Kullanıcı</span><span>Puan</span></div>
+      ${board.slice(0,20).map(row=>`
+        <div class="wz-predict-score-row ${Number(row.rank)===1?'is-first':''}">
+          <span>${Number(row.rank)===1?'🏆':Number(row.rank)+'.'}</span>
+          <b>${esc(row.username||'-')}</b>
+          <strong>${Number(row.score||0)}</strong>
+        </div>
+      `).join('')}
+    </div>`;
   }
 
   function renderPredictions(detail,item){
     const t=detail?.tournament||item?.tournament||{};
-    const matches=Array.isArray(detail?.matches)?detail.matches:[];
-    const life=lifecycle(item);
-    const unlocked = !['in_progress','completed'].includes(life);
-    const picks=readPredictions(t.id);
+    const matches=(Array.isArray(detail?.matches)?detail.matches:[])
+      .map(m=>({...m,matchKind:String(m.matchKind||'main')}))
+      .filter(m=>String(m.status||'')!=='bye');
+
+    const data=state.predictionCache.get(String(t.id||''));
+
+    if(!data){
+      queuePredictionLoad(t.id);
+      return `<div class="wz-turn-box">
+        <div class="wz-predict-hero">
+          <small>WEIZEND PICK'EM</small>
+          <h3>Turnuva Tahminleri</h3>
+          <p>Tahmin sistemi yükleniyor...</p>
+          <div class="wz-predict-prize"><span>En İyi Tahmin Ödülü</span><strong>${esc(predictionPrize(item,detail))}</strong></div>
+        </div>
+        <div class="wz-turn-loading">Tahmin bilgileri yükleniyor...</div>
+      </div>`;
+    }
+
+    if(data.__error){
+      return `<div class="wz-turn-box">
+        <div class="wz-predict-hero">
+          <small>WEIZEND PICK'EM</small>
+          <h3>Turnuva Tahminleri</h3>
+          <p>${esc(data.__error)}</p>
+          <div class="wz-predict-prize"><span>En İyi Tahmin Ödülü</span><strong>${esc(predictionPrize(item,detail))}</strong></div>
+        </div>
+        <button type="button" class="wz-predict-save" onclick="wzTurnReloadPredictions('${esc(t.id)}')">TEKRAR DENE</button>
+      </div>`;
+    }
 
     if(!matches.length){
       return `<div class="wz-turn-box">
         <div class="wz-predict-hero">
-          <small>WEIZEND TAHMİN</small>
+          <small>WEIZEND PICK'EM</small>
           <h3>Turnuva Tahminleri</h3>
-          <p>Fikstür oluşturulduğunda kullanıcılar eşleşmelerde kazanan seçimlerini burada yapabilecek.</p>
+          <p>Fikstür oluşturulduğunda Pick'em sistemi burada aktif olacak.</p>
           <div class="wz-predict-prize"><span>En İyi Tahmin Ödülü</span><strong>${esc(predictionPrize(item,detail))}</strong></div>
         </div>
         <div class="wz-turn-empty">Tahminler için önce fikstürün oluşturulması gerekiyor.</div>
       </div>`;
     }
 
+    const settings=data.prediction||{};
+    const picks=predictionPickMap(data);
+    const names=predictionNameMap(detail);
+    const mainRounds=matches
+      .filter(m=>m.matchKind==='main')
+      .map(m=>Number(m.roundNumber||0));
+    const maxRound=mainRounds.length?Math.max(...mainRounds):0;
+    const selectableMatches=matches.filter(m=>m.status!=='bye');
+    const loggedIn=predictionLoggedIn();
+    const open=settings.open===true;
+    const myRank=data?.myRank||null;
+    const selectedCount=picks.size;
+
+    const sorted=[...selectableMatches].sort((a,b)=>{
+      if(a.matchKind==='third_place' && b.matchKind!=='third_place') return 1;
+      if(b.matchKind==='third_place' && a.matchKind!=='third_place') return -1;
+      return (Number(a.roundNumber||0)-Number(b.roundNumber||0)) ||
+        (Number(a.matchNumber||0)-Number(b.matchNumber||0));
+    });
+
+    const matchHtml=sorted.map(match=>{
+      const matchId=String(match.id||'');
+      const selected=String(picks.get(matchId)||'');
+      const options=predictionProjectedOptions(matches,picks,match);
+      const resultWinner=String(match.winnerId||'');
+      const resultKnown=String(match.status||'')==='completed' && !!resultWinner;
+      const canChoose=open && loggedIn && options.length===2;
+      const waiting=options.length<2;
+      const headText=resultKnown
+        ? 'Sonuçlandı'
+        : (!open
+            ? 'Tahmin kilitli'
+            : (!loggedIn
+                ? 'Hesabını doğrula'
+                : (waiting?'Önceki turu tamamla':'Kazananı seç')));
+
+      let optionsHtml='';
+      if(options.length){
+        optionsHtml=options.map(id=>{
+          const name=names.get(String(id))||'Oyuncu / Takım';
+          const isSelected=selected===String(id);
+          const isCorrect=resultKnown && isSelected && resultWinner===String(id);
+          const isWrong=resultKnown && isSelected && resultWinner!==String(id);
+          const resultClass=isCorrect?'correct':(isWrong?'wrong':'');
+          return `<button type="button"
+            class="wz-pick-btn ${isSelected?'active':''} ${resultClass}"
+            ${canChoose?'':'disabled'}
+            onclick="wzTurnPick('${esc(t.id)}','${esc(matchId)}','${esc(id)}')">
+            ${isCorrect?'✅ ':isWrong?'❌ ':''}${esc(name)}
+          </button>`;
+        }).join('');
+      }else{
+        optionsHtml=`<div class="wz-pick-waiting">Önce önceki tur tahminlerini tamamla.</div>`;
+      }
+
+      return `<div class="wz-pick-match">
+        <div class="wz-pick-match-head">
+          <span>${esc(predictionRoundLabel(match,maxRound))} · M${esc(match.matchNumber||'-')}</span>
+          <span>${esc(headText)}</span>
+        </div>
+        <div class="wz-pick-options ${options.length===1?'one':''}">${optionsHtml}</div>
+      </div>`;
+    }).join('');
+
+    const statusClass=open?'open':'closed';
+    const statusText=open?'TAHMİNLER AÇIK':predictionLockText(settings.lockReason);
+    const loginBox=(!loggedIn && open)
+      ? `<div class="wz-predict-login">
+          <b>🔐 Tahmin yapmak için Kick hesabını doğrula</b>
+          <span>Tahminlerin hesabına kaydedilir ve başka cihazdan da görünür.</span>
+          <button type="button" onclick="if(typeof goToVerification==='function'){goToVerification()}">HESABIMI DOĞRULA</button>
+        </div>`
+      : '';
+
     return `<div class="wz-turn-box">
       <div class="wz-predict-hero">
-        <small>WEIZEND TAHMİN</small>
-        <h3>Fikstürünü Tahmin Et</h3>
-        <p>${unlocked
-          ? 'Turnuva başlamadan önce her maç için kazanan tahminini seç. Turnuva başladığında seçimler kilitlenecek.'
-          : 'Turnuva başladığı için tahmin seçimleri kilitlendi.'}</p>
+        <small>WEIZEND PICK'EM</small>
+        <div class="wz-predict-title-row">
+          <h3>Fikstürünü Tahmin Et</h3>
+          <span class="wz-predict-state ${statusClass}">${open?'AÇIK':'KİLİTLİ'}</span>
+        </div>
+        <p>${esc(statusText)} ${open?'Her seçimin anında hesabına kaydedilir.':''}</p>
         <div class="wz-predict-prize"><span>En İyi Tahmin Ödülü</span><strong>${esc(predictionPrize(item,detail))}</strong></div>
+        <div class="wz-predict-scoring">
+          <span>İlk turlar <b>+1</b></span>
+          <span>Yarı final <b>+2</b></span>
+          <span>Final <b>+3</b></span>
+          ${sorted.some(m=>m.matchKind==='third_place')?`<span>3.'lük <b>+1</b></span>`:''}
+        </div>
       </div>
-      <div class="wz-pick-list">
-        ${matches.map(match=>{
-          const no=String(match.matchNumber||'');
-          const a=String(match.participantAName||'Bekleniyor');
-          const b=String(match.participantBName||'Bekleniyor');
-          const selected=String(picks[no]||'');
-          const disabled=!unlocked || a==='Bekleniyor' || b==='Bekleniyor';
-          return `<div class="wz-pick-match">
-            <div class="wz-pick-match-head"><span>M${esc(no||'-')}</span><span>${esc(disabled?'Seçim kapalı':'Kazananı seç')}</span></div>
-            <div class="wz-pick-options">
-              <button type="button" class="wz-pick-btn ${selected===a?'active':''}" ${disabled?'disabled':''} onclick="wzTurnPick('${esc(t.id)}','${esc(no)}','${esc(a)}')">${esc(a)}</button>
-              <button type="button" class="wz-pick-btn ${selected===b?'active':''}" ${disabled?'disabled':''} onclick="wzTurnPick('${esc(t.id)}','${esc(no)}','${esc(b)}')">${esc(b)}</button>
-            </div>
-          </div>`;
-        }).join('')}
+
+      ${loginBox}
+
+      ${loggedIn?`<div class="wz-predict-my-status">
+        <div><span>Kaydedilen</span><b>${selectedCount} Tahmin</b></div>
+        <div><span>Puanın</span><b>${Number(myRank?.score||0)} / ${Number(data?.stats?.maxScore||0)}</b></div>
+        <div><span>Sıralaman</span><b>${myRank?.rank ? '#'+Number(myRank.rank) : '-'}</b></div>
+      </div>`:''}
+
+      <div class="wz-pick-list">${matchHtml}</div>
+
+      <div class="wz-predict-note">
+        Seçim yaptığın anda Worker'a kaydedilir. Yönetici tahminleri kapatırsa veya turnuva başlarsa
+        daha önce kaydedilmiş seçimlerin korunur; yeni seçim ve değişiklik kabul edilmez.
       </div>
-      ${unlocked?`<button type="button" class="wz-predict-save" onclick="wzTurnSavePredictions('${esc(t.id)}')">TAHMİNLERİMİ KAYDET</button>`:''}
-      <div class="wz-predict-note">Tahmin ödülü admin panelinden gelir. Seçimler ise şimdilik test amacıyla yalnızca bu cihazda saklanır; gerçek kullanıcılar arası tahmin sıralaması ikinci aşamada Worker'a bağlanacaktır.</div>
+
+      ${predictionLeaderboardHtml(data)}
     </div>`;
   }
 
@@ -11507,24 +11890,58 @@ return;
   window.wzTurnSetFilter=function(filter){ state.filter=filter; persistTournamentState(); render(); };
   window.wzTurnOpen=function(id){ state.selectedId=String(id||''); state.screen='detail'; state.tab='overview'; state.bracketMode='tree'; persistTournamentState(); render(); };
   window.wzTurnBack=function(){ state.screen='list'; persistTournamentState(); render(); };
-  window.wzTurnSetTab=function(tab){ state.tab=['overview','rules','prizes','bracket','predictions'].includes(tab)?tab:'overview'; persistTournamentState(); render(); };
+  window.wzTurnSetTab=function(tab){
+    state.tab=['overview','rules','prizes','bracket','predictions'].includes(tab)?tab:'overview';
+    persistTournamentState();
+    render();
+    if(state.tab==='predictions' && state.selectedId){
+      loadPredictionState(state.selectedId,true);
+    }
+  };
   window.wzTurnSetBracket=function(mode){ state.bracketMode=(mode==='list'?'list':'tree'); persistTournamentState(); render(); };
   window.wzTurnToggleRule=function(index){ if(state.openRules.has(index)) state.openRules.delete(index); else state.openRules.add(index); render(); };
 
-  window.wzTurnPick=function(tournamentId,matchNumber,name){
-    const picks=readPredictions(tournamentId);
-    picks[String(matchNumber)]=String(name||'');
-    try{ localStorage.setItem(predictionKey(tournamentId),JSON.stringify(picks)); }catch(_){}
-    render();
+  window.wzTurnReloadPredictions=function(tournamentId){
+    state.predictionCache.delete(String(tournamentId||''));
+    loadPredictionState(tournamentId,true);
   };
 
-  window.wzTurnSavePredictions=function(tournamentId){
+  window.wzTurnPick=async function(tournamentId,matchId,winnerId){
+    if(!predictionLoggedIn()){
+      if(typeof goToVerification==='function') goToVerification();
+      return;
+    }
+
+    const id=String(tournamentId||'');
     try{
-      const count=Object.keys(readPredictions(tournamentId)).length;
+      const data=await tv2AuthFetch('/tournament/predictions/pick',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          tournamentId:id,
+          matchId:String(matchId||''),
+          winnerId:String(winnerId||'')
+        })
+      });
+
+      state.predictionCache.set(id,data);
+      render();
+
       if(typeof showStatusToast==='function'){
-        showStatusToast(`✅ ${count} tahmin bu cihazda kaydedildi.`,2500);
+        const removed=Number(data?.removedInvalidPicks||0);
+        showStatusToast(
+          removed>0
+            ? `✅ Tahmin kaydedildi. Değişen seçim nedeniyle ${removed} sonraki tur tahmini temizlendi.`
+            : '✅ Tahmin anında hesabına kaydedildi.',
+          removed>0 ? 4200 : 2200
+        );
       }
-    }catch(_){}
+    }catch(error){
+      await loadPredictionState(id,true);
+      if(typeof showStatusToast==='function'){
+        showStatusToast(`🔒 ${String(error?.message||error||'Tahmin kaydedilemedi.')}`,3800);
+      }
+    }
   };
 
   window.wzTournamentRegistration=function(id){
