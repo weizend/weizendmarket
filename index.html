@@ -1473,6 +1473,9 @@ body.wz-view-tournament .market-search-wrap{display:none!important}
 .wz-turn-datehint{color:#8f96a3;font-size:.72rem;font-weight:900;letter-spacing:.02em;text-transform:uppercase;margin-bottom:6px}
 .wz-turn-minirow{display:flex;gap:12px;align-items:flex-start;color:#d8dbe2;font-size:.79rem;margin-bottom:10px;flex-wrap:wrap}
 .wz-turn-minirow span{display:inline-flex;align-items:center;gap:6px}
+.wz-turn-start-stack{display:flex;flex-direction:column;gap:3px;margin-bottom:12px}
+.wz-turn-start-stack b{font-size:.9rem;color:#f3f4f6}
+.wz-turn-start-stack span{font-size:.78rem;color:#aeb3bc;font-weight:800}
 .wz-turn-card-actions{display:flex;gap:10px;align-items:center}
 .wz-turn-ghostbtn,.wz-turn-mainbtn{
   min-height:42px;border-radius:14px;padding:0 16px;font-weight:1000;font-size:.84rem;border:0;cursor:pointer
@@ -1525,6 +1528,8 @@ body.wz-view-tournament .market-search-wrap{display:none!important}
 }
 .wz-turn-date span{display:block;margin:0;color:#9ea2ab;font-size:.7rem;font-weight:800}
 .wz-turn-date b{display:block;margin-top:6px;font-size:.9rem;line-height:1.35}
+.wz-turn-date-grid.wz-turn-start-only{grid-template-columns:1fr}
+.wz-turn-start-date strong{display:block;margin-top:3px;font-size:.9rem;color:#fff}
 .wz-turn-livebox{margin:0 12px 12px;border:1px solid #35252a;background:linear-gradient(135deg,#1c1013,#10141b);border-radius:15px;padding:12px 13px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .wz-turn-livebox div{min-width:0}
 .wz-turn-livebox b{display:block;font-size:.86rem}
@@ -10559,14 +10564,13 @@ return;
               <div class="wz-turn-card-sub">${esc(modeText(t))} • ${Number(t.capacity||0)||'-'} ${Number(t.teamSize||1)>1?'Takım':'Oyuncu'} • ${esc(mapDisplayName(t,rule))} • ${esc(matchFormat(t,rule))}</div>
             </div>
           </div>
-          <span class="wz-turn-badge ${statusClass(item)}" data-wz-list-status="${esc(id)}">${tournamentStatusMarkup(item)}</span>
+
         </div>
       </div>
       <div class="wz-turn-card-body">
-        <div class="wz-turn-datehint">Turnuva Başlangıç Tarihi</div>
-        <div class="wz-turn-minirow">
-          <span>🗓 ${esc(formatShortDate(t.eventDate))}</span>
-          <span>🕒 ${esc(formatShortTime(t.eventDate))}</span>
+        <div class="wz-turn-start-stack">
+          <b>${esc(formatShortDate(t.eventDate))}</b>
+          <span>${esc(formatShortTime(t.eventDate))}</span>
         </div>
         ${completed && fin.champion ? `<div class="wz-turn-completed-note">Şampiyon: <b>${esc(fin.champion)}</b></div>` : ''}
         <div class="wz-turn-card-actions">
@@ -10772,7 +10776,7 @@ return;
       <div class="wz-turn-detail-top"><button type="button" class="wz-turn-back" onclick="wzTurnBack()">←</button><div class="wz-turn-brand">WEIZEND</div></div>
       <section class="wz-turn-hero">
         <div class="wz-turn-hero-cover"${heroStyle}><div class="wz-turn-hero-body">
-          <div class="wz-turn-hero-title"><div class="wz-turn-h1">${esc(String(t.name||'Turnuva').replace(/cup/i,'').trim() || 'CUP')}</div><span id="wzTurnHeroStatus" class="wz-turn-badge ${status}">${tournamentStatusMarkup(item)}</span></div>
+          <div class="wz-turn-hero-title"><div class="wz-turn-h1">${esc(String(t.name||'Turnuva').replace(/cup/i,'').trim() || 'CUP')}</div></div>
         </div></div>
         <div class="wz-turn-info-grid">
           <div class="wz-turn-info"><b>${esc(modeText(t))}</b><span>${Number(t.teamSize||1)>1?'Takımlı':'Solo'}</span></div>
@@ -10780,10 +10784,12 @@ return;
           <div class="wz-turn-info"><b>${esc(mapDisplayName(t,rule))}</b><span>Harita</span></div>
           <div class="wz-turn-info"><b>${esc(matchFormat(t,rule))}</b><span>Maç Formatı</span></div>
         </div>
-        <div class="wz-turn-date-grid">
-          <div class="wz-turn-date"><span>Kayıt Açılışı</span><b>${esc(comingSoon(item)?'YAKINDA':formatDate(openAt))}</b></div>
-          <div class="wz-turn-date"><span>Kayıt Kapanışı</span><b>${esc(comingSoon(item)?'YAKINDA':formatDate(closeAt))}</b></div>
-          <div class="wz-turn-date"><span>Turnuva Başlangıcı</span><b>${esc(comingSoon(item)?'YAKINDA':formatDate(t.eventDate))}</b></div>
+        <div class="wz-turn-date-grid wz-turn-start-only">
+          <div class="wz-turn-date wz-turn-start-date">
+            <span>Turnuva Başlangıcı</span>
+            <b>${esc(comingSoon(item)?'YAKINDA':formatShortDate(t.eventDate))}</b>
+            ${comingSoon(item) ? '' : `<strong>${esc(formatShortTime(t.eventDate))}</strong>`}
+          </div>
         </div>
         <button type="button" class="wz-turn-register ${registrationIsOpen(item)?'':'is-disabled'}" ${registrationIsOpen(item) ? `onclick="wzTournamentRegistration('${esc(id)}')"` : 'disabled'}>KAYIT OL</button>
         <nav class="wz-turn-tabs">${tabButtons.map(([id2,name])=>`<button type="button" class="wz-turn-tab ${state.tab===id2?'active':''}" onclick="wzTurnSetTab('${id2}')">${name}</button>`).join('')}</nav>
@@ -10821,20 +10827,6 @@ return;
     await ensureDetail(id);
     if(state.selectedId===id && state.screen==='detail') render();
   }
-
-  const wzTurnHeroStatusTimer=setInterval(()=>{
-    try{
-      const badge=document.getElementById('wzTurnHeroStatus');
-      if(badge && state.screen==='detail' && state.selectedId){
-        const item=getItem(state.selectedId);
-        if(item) badge.innerHTML=tournamentStatusMarkup(item);
-      }
-      document.querySelectorAll('[data-wz-list-status]').forEach(node=>{
-        const item=getItem(node.getAttribute('data-wz-list-status'));
-        if(item) node.innerHTML=tournamentStatusMarkup(item);
-      });
-    }catch(_){ }
-  },60000);
 
   window.wzTurnSetFilter=function(filter){ state.filter=filter; persistTournamentState(); render(); };
   window.wzTurnOpen=function(id){ state.selectedId=String(id||''); state.screen='detail'; state.tab='overview'; state.bracketMode='tree'; persistTournamentState(); render(); };
