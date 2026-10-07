@@ -6,13 +6,8 @@
 (function(){
   document.documentElement.classList.add('wz-boot');
   try{
-    const allowed=['market','tournament','profile'];
-    const historyView=history.state && allowed.includes(history.state.wzView)
-      ? history.state.wzView
-      : '';
-
-    let view=historyView || sessionStorage.getItem('wz_current_view') || 'market';
-    if(!allowed.includes(view)) view='market';
+    let view=sessionStorage.getItem('wz_current_view') || 'market';
+    if(!['market','tournament','profile'].includes(view)) view='market';
 
     const token=localStorage.getItem('weizend_market_session_secure_v2') || '';
     if(view==='profile' && !token){
@@ -20,36 +15,24 @@
       sessionStorage.setItem('wz_current_view','market');
     }
 
-    try{
-      history.replaceState(
-        Object.assign({},history.state||{},{wzView:view}),
-        '',
-        location.href
-      );
-    }catch(_){}
-
     window.__WZ_INITIAL_VIEW__=view;
     document.documentElement.dataset.wzInitialView=view;
-    document.documentElement.dataset.wzCurrentView=view;
   }catch(_){
     window.__WZ_INITIAL_VIEW__='market';
     document.documentElement.dataset.wzInitialView='market';
-    document.documentElement.dataset.wzCurrentView='market';
   }
 
-  // Failsafe only.
+  // Failsafe only: never leave the site invisible if another script errors.
   setTimeout(()=>document.documentElement.classList.remove('wz-boot'),2500);
 })();
 </script>
 <style id="wz-v15-boot-css">
-/* V62: Sayfa yenilenirken gövdeyi tamamen gizlemiyoruz.
-   Doğru Market/Turnuva/Profil sınıfı body'nin ilk scriptinde uygulanıyor;
-   böylece Admin panelindeki gibi sayfa anında görünür. */
 html.wz-boot body{
-  visibility:visible!important;
+  visibility:hidden!important;
 }
 
-/* İlk görünüm hazırlanırken eski aktif renk / geçiş animasyonu parlamasın. */
+/* İlk görünüm hazırlanırken eski Market aktif rengi / buton durumları
+   bir kare bile animasyonla görünmesin. */
 html.wz-boot *,
 body.wz-initializing *{
   transition:none!important;
@@ -2790,151 +2773,14 @@ body.wz-page-modal-open{
 }
 </style>
 
-
-<style id="wz-inbox-interaction-v62">
-@media (min-width:641px){
-  html{scrollbar-gutter:stable}
-}
-html.wz-inbox-open,
-body.wz-inbox-open{
-  overflow:hidden!important;
-}
-
-/* Aç/kapa sırasında gereksiz hareket/flicker olmasın. */
-#inboxModal,
-#inboxModal .inbox-modal-content{
-  transition:none!important;
-  animation:none!important;
-}
-</style>
-
-
-<style id="wz-v63-zero-flash-prepaint">
-/* =========================================================
-   V63 · ZERO FLASH VIEW STATE
-   <html> görünüm durumu CSS çizilmeden önce belirlendiği için
-   Market / Turnuva / Profil birbiri üzerinden asla parlamaz.
-   ========================================================= */
-
-/* MARKET */
-html[data-wz-current-view="market"] #marketContent{
-  display:block!important;
-}
-html[data-wz-current-view="market"] #wzEsportsHub,
-html[data-wz-current-view="market"] #wzMobileProfileView{
-  display:none!important;
-}
-
-/* TURNUVA */
-html[data-wz-current-view="tournament"] #marketContent,
-html[data-wz-current-view="tournament"] #wzMobileProfileView{
-  display:none!important;
-}
-html[data-wz-current-view="tournament"] #wzEsportsHub{
-  display:block!important;
-}
-
-/* PROFİL */
-html[data-wz-current-view="profile"] #marketContent,
-html[data-wz-current-view="profile"] #wzEsportsHub{
-  display:none!important;
-}
-html[data-wz-current-view="profile"] #wzMobileProfileView{
-  display:block!important;
-  visibility:visible!important;
-}
-
-/* İlk yüklemede eski .active sınıfı Market'i kırmızı göstermesin. */
-html[data-wz-current-view="market"] #wzDesktopMarket{
-  color:#fff!important;
-  background:linear-gradient(180deg,#ed2727,#b30e0e)!important;
-}
-html[data-wz-current-view="market"] #wzDesktopTournament{
-  color:#9898a2!important;
-  background:transparent!important;
-}
-html[data-wz-current-view="tournament"] #wzDesktopTournament{
-  color:#fff!important;
-  background:linear-gradient(180deg,#ed2727,#b30e0e)!important;
-}
-html[data-wz-current-view="tournament"] #wzDesktopMarket,
-html[data-wz-current-view="profile"] #wzDesktopMarket,
-html[data-wz-current-view="profile"] #wzDesktopTournament{
-  color:#9898a2!important;
-  background:transparent!important;
-}
-
-/* Mobil alt menü ilk kareden doğru sekmeyi göstersin. */
-@media(max-width:768px){
-  html[data-wz-current-view="market"] #wzNavMarket{
-    background:#211011!important;
-    color:#fff!important;
-  }
-  html[data-wz-current-view="tournament"] #wzNavTournament{
-    background:#211011!important;
-    color:#fff!important;
-  }
-  html[data-wz-current-view="profile"] #wzNavMarket,
-  html[data-wz-current-view="profile"] #wzNavTournament{
-    background:transparent!important;
-    color:#81818b!important;
-  }
-}
-
-/* Android/Chrome'un dokunma sırasında bıraktığı mavi dikdörtgeni kaldır.
-   Klavye kullanıcılarında :focus-visible erişilebilirliği korunur. */
-@media (pointer:coarse){
-  button,
-  a,
-  summary,
-  [role="button"],
-  .wz-profile-action,
-  .wz-mobile-nav-btn,
-  .wz-desktop-nav-btn,
-  .filter-btn,
-  .wz-turn-chip,
-  .wz-turn-tab,
-  .inbox-appeal-btn,
-  .inbox-appeal-send,
-  .inbox-send-btn,
-  .gift-redeem-btn,
-  .close-icon{
-    -webkit-tap-highlight-color:transparent!important;
-  }
-
-  button:focus:not(:focus-visible),
-  a:focus:not(:focus-visible),
-  summary:focus:not(:focus-visible),
-  [role="button"]:focus:not(:focus-visible){
-    outline:none!important;
-  }
-}
-</style>
-
-
-<style id="wz-v63-profile-stability-override">
-html[data-wz-current-view="profile"] body.wz-view-profile #wzMobileProfileView{
-  visibility:visible!important;
-}
-</style>
-
 </head>
 <body>
 <script id="wz-v58-prepaint-view">
 (function(){
   try{
     const view=(window.__WZ_INITIAL_VIEW__ || 'market');
-    document.documentElement.dataset.wzCurrentView=view;
     document.body.classList.add('wz-initializing','wz-view-'+view);
-
-    // Profil cache'i varsa shell'i gizlemeye gerek yok.
-    if(view==='profile'){
-      const token=localStorage.getItem('weizend_market_session_secure_v2') || '';
-      const cache=localStorage.getItem('weizend_market_profile_secure_v2') || '';
-      if(token && cache) document.body.classList.add('wz-profile-ready');
-    }
   }catch(_){
-    document.documentElement.dataset.wzCurrentView='market';
     document.body.classList.add('wz-initializing','wz-view-market');
   }
 })();
@@ -3492,7 +3338,7 @@ html[data-wz-current-view="profile"] body.wz-view-profile #wzMobileProfileView{
     <div class="wz-profile-section">
       <div class="wz-profile-section-title">Hızlı İşlemler</div>
       <div class="wz-profile-actions">
-        <button id="wzProfileMessagesAction" class="wz-profile-action wz-message-action" type="button" onclick="event.stopPropagation();wzOpenMessages(event)">
+        <button id="wzProfileMessagesAction" class="wz-profile-action wz-message-action" type="button" onclick="wzOpenMessages()">
           <span class="wz-action-icon wz-message-action-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" focusable="false">
               <rect x="3.5" y="5.5" width="17" height="13" rx="2.4"></rect>
@@ -3537,48 +3383,6 @@ html[data-wz-current-view="profile"] body.wz-view-profile #wzMobileProfileView{
     <button type="button" onclick="wzGoToLogin()">Kick Hesabını Doğrula</button>
   </div>
 </section>
-<script id="wz-v63-profile-cache-hydrate">
-(function(){
-  try{
-    if((window.__WZ_INITIAL_VIEW__||'')!=='profile') return;
-
-    const token=localStorage.getItem('weizend_market_session_secure_v2') || '';
-    if(!token) return;
-
-    const raw=localStorage.getItem('weizend_market_profile_secure_v2');
-    if(!raw) return;
-
-    const c=JSON.parse(raw);
-    const set=(id,value)=>{
-      const el=document.getElementById(id);
-      if(el && value!==undefined && value!==null && String(value)!==''){
-        el.textContent=String(value);
-      }
-    };
-
-    const name=String(c.username || localStorage.getItem('weizend_market_username') || 'Kullanıcı').trim();
-    const points=Number.isFinite(Number(c.points))
-      ? Number(c.points).toLocaleString('tr-TR')+' Puan'
-      : '-';
-    const level=Number.isFinite(Number(c.level))
-      ? Number(c.level).toLocaleString('tr-TR')
-      : '-';
-
-    const status=String(c.accountStatus || 'active').toLowerCase();
-    const statusText=status==='blocked'?'Kısıtlı':status==='archived'?'Arşivlenmiş':'Aktif';
-
-    set('wzProfileName',name);
-    set('wzProfileKick',name);
-    set('wzProfilePoints',points);
-    set('wzProfileLevel',level);
-    set('wzProfileAccountStatus',statusText);
-    set('wzTopProfileName',name);
-    set('wzProfileState',status==='active'?'Doğrulanmış Kick hesabı':`Hesap durumu: ${statusText}`);
-
-    document.body.classList.add('wz-profile-ready');
-  }catch(_){}
-})();
-</script>
     </div>
 
     <div id="copyToast" class="copy-toast" style="display:none!important" aria-hidden="true"></div>
@@ -3734,7 +3538,7 @@ html[data-wz-current-view="profile"] body.wz-view-profile #wzMobileProfileView{
                             <h3 style="margin:0;">✉️ Mesaj Kutusu</h3>
                             <div id="inboxSummary" class="purchase-note" style="margin-top:4px;">Mesajlar yükleniyor...</div>
                         </div>
-                        <button class="close-icon" onclick="event.stopPropagation();closeInbox(event)">✖</button>
+                        <button class="close-icon" onclick="closeInbox()">✖</button>
                     </div>
 
                     <div class="inbox-body">
@@ -3765,7 +3569,7 @@ html[data-wz-current-view="profile"] body.wz-view-profile #wzMobileProfileView{
                                 <div id="inboxThreadStatus" class="inbox-thread-status">Yönetici ve sistem mesajları</div>
                             </div>
                             <button class="inbox-mini-btn danger" style="margin-left:auto;width:auto;" onclick="clearInbox()">🧹 Temizle</button>
-                            <button class="close-icon" onclick="event.stopPropagation();closeInbox(event)">✖</button>
+                            <button class="close-icon" onclick="closeInbox()">✖</button>
                         </div>
                     </div>
 
@@ -4664,6 +4468,7 @@ html[data-wz-current-view="profile"] body.wz-view-profile #wzMobileProfileView{
 
             // Sayfa açılışında bir kez güncel mesaj sayacını ve varsa bekleyen TL
             // ödemesini kontrol et. Sonrasında arka planda sürekli sorgu yapılmaz.
+            refreshInboxBadge().catch(() => {});
             startInboxBadgeWatcher();
             resumePendingTlPayment().catch(() => {});
 
@@ -4986,98 +4791,11 @@ html[data-wz-current-view="profile"] body.wz-view-profile #wzMobileProfileView{
         let currentInboxThreads = [];
         let currentInboxThread = null;
         let currentInboxConversation = null;
-        const INBOX_CONVERSATION_CACHE_KEY = 'weizend_inbox_conversation_cache_v62';
-        let inboxUiBusy = false;
-        let inboxRefreshInFlight = false;
         const selectedInboxThreadIds = new Set();
+        let inboxRefreshInFlight = false;
         let inboxBadgeUnreadCount = 0;
         let inboxLivePollInFlight = false;
         let inboxConversationRefreshInFlight = false;
-
-        function saveInboxConversationCache(data) {
-            if (!data || typeof data !== 'object') return;
-            currentInboxConversation = data;
-            try {
-                sessionStorage.setItem(
-                    INBOX_CONVERSATION_CACHE_KEY,
-                    JSON.stringify({ savedAt: Date.now(), data })
-                );
-            } catch (_) {}
-        }
-
-        function readInboxConversationCache() {
-            if (currentInboxConversation && typeof currentInboxConversation === 'object') {
-                return currentInboxConversation;
-            }
-            try {
-                const raw = sessionStorage.getItem(INBOX_CONVERSATION_CACHE_KEY);
-                if (!raw) return null;
-                const parsed = JSON.parse(raw);
-                if (!parsed?.data) return null;
-                // Eski içerik anlık açılış için kullanılabilir; normal API çağrısı
-                // hemen ardından güncel veriyi getirir.
-                currentInboxConversation = parsed.data;
-                return parsed.data;
-            } catch (_) {
-                return null;
-            }
-        }
-
-        function applyInboxConversation(data, markLocalRead = false) {
-            if (!data || typeof data !== 'object') return false;
-
-            saveInboxConversationCache(data);
-
-            currentInboxThread = {
-                id:data.replyThreadId || data.appealThreadId || data.supportThreadId || 'WEIZEND',
-                subject:'Weizend',
-                thread_type:'admin',
-                allow_reply:data.replyAllowed ? 1 : 0,
-                status:data.replyAllowed ? 'open' : 'closed'
-            };
-
-            const listView = document.getElementById('inboxListView');
-            const threadView = document.getElementById('inboxThreadView');
-            const subject = document.getElementById('inboxThreadSubject');
-            const status = document.getElementById('inboxThreadStatus');
-
-            if (listView) listView.style.display = 'none';
-            if (threadView) threadView.style.display = 'flex';
-            if (subject) subject.textContent = 'Weizend';
-
-            const meta = ['(Yönetici) Weizend', `${Number(data.totalCount || 0)} mesaj`];
-            if (data.truncated) meta.push('son 500 mesaj gösteriliyor');
-            if (status) status.textContent = meta.join(' · ');
-
-            const replyAllowed = data.replyAllowed === true && !!data.replyThreadId;
-            const allowed = document.getElementById('inboxReplyAllowed');
-            const closed = document.getElementById('inboxReplyClosed');
-            if (allowed) allowed.style.display = replyAllowed ? 'block' : 'none';
-            if (closed) closed.style.display = replyAllowed ? 'none' : 'block';
-
-            const rows = Array.isArray(data.messages) ? data.messages : [];
-            renderInboxMessages(rows);
-            configureRestrictionAppeal(data,replyAllowed);
-            configureSupportRequest(data,replyAllowed);
-
-            if (markLocalRead) {
-                currentInboxThreads = [];
-                updateInboxBadge(0);
-            }
-            return true;
-        }
-
-        async function preloadInboxConversation() {
-            if (!marketAuthenticated || !localStorage.getItem(SESSION_STORAGE_KEY)) return null;
-            try {
-                const data = await inboxRequest(`/inbox/conversation?peek=1&_=${Date.now()}`);
-                saveInboxConversationCache(data);
-                return data;
-            } catch (error) {
-                console.warn('INBOX PRELOAD ERROR:', error);
-                return null;
-            }
-        }
 
         function inboxDateText(value) {
             if (!value) return '-';
@@ -5181,11 +4899,11 @@ html[data-wz-current-view="profile"] body.wz-view-profile #wzMobileProfileView{
         }
 
         function startInboxBadgeWatcher() {
-            // Sürekli polling yok. İlk oturum yüklemesinde bir kez badge ve
-            // conversation peek alınır; sonrasında yalnız Realtime olayı çalışır.
+            // V60: sürekli polling YOK.
+            // İlk açılışta bir kez okunmamış sayısını eşitle, sonrasında yalnız
+            // Realtime/WebSocket olayı geldiğinde yenile.
             stopInboxBadgeWatcher();
             refreshInboxBadge().catch(() => {});
-            preloadInboxConversation().catch(() => {});
             connectRealtime();
         }
 
@@ -5273,14 +4991,10 @@ html[data-wz-current-view="profile"] body.wz-view-profile #wzMobileProfileView{
                 }
 
                 const modal = document.getElementById('inboxModal');
-                if (modal?.style.display !== 'flex') {
-                    // Mesaj olayı geldiği anda içeriği okundu yapmadan önbelleğe al.
-                    // Kullanıcı Mesaj Kutusu'na dokunduğunda içerik hazır olur.
-                    await preloadInboxConversation();
-                    return;
-                }
+                if (modal?.style.display !== 'flex') return;
 
-                // Kullanıcı yazı yazıyorsa mevcut textarea'ya dokunma.
+                // Kullanıcı yazı yazıyorsa mevcut textarea'ya kesinlikle dokunma.
+                // Yeni mesaj bir sonraki blur/gönderim veya 2 sn yedek kontrolde gelir.
                 if (inboxComposerIsActive()) return;
 
                 await loadInbox(true);
@@ -5289,71 +5003,54 @@ html[data-wz-current-view="profile"] body.wz-view-profile #wzMobileProfileView{
             }
         }
 
-        async function openInbox(event) {
-            try { event?.stopPropagation?.(); } catch (_) {}
-
-            if (inboxUiBusy) return;
+        async function openInbox() {
             if (!marketAuthenticated || !localStorage.getItem(SESSION_STORAGE_KEY)) {
                 goToVerification();
                 return;
             }
 
             const modal = document.getElementById('inboxModal');
+            const listView = document.getElementById('inboxListView');
+            const threadView = document.getElementById('inboxThreadView');
             const messagesBox = document.getElementById('inboxMessages');
-            if (!modal || !messagesBox) return;
 
-            if (modal.style.display === 'flex') return;
+            if (!modal || !threadView || !messagesBox) return;
 
-            inboxUiBusy = true;
-            document.documentElement.classList.add('wz-inbox-open');
-            document.body.classList.add('wz-inbox-open');
+            document.documentElement.style.overflow = 'hidden';
+            document.body.style.overflow = 'hidden';
 
-            // Önce varsa önbelleği tek karede göster; ağ cevabını bekleme.
-            const cached = readInboxConversationCache();
-            if (cached) {
-                applyInboxConversation(cached, false);
-            } else {
-                const listView = document.getElementById('inboxListView');
-                const threadView = document.getElementById('inboxThreadView');
-                if (listView) listView.style.display = 'none';
-                if (threadView) threadView.style.display = 'flex';
-                messagesBox.innerHTML =
-                    '<div class="inbox-empty">⏳ Mesajlar yükleniyor...</div>';
-            }
+            if (listView) listView.style.display = 'none';
+            threadView.style.display = 'flex';
+
+            // API cevabını beklerken de pencere tam görünür olsun.
+            messagesBox.innerHTML =
+                '<div class="inbox-empty">⏳ Mesajlar yükleniyor...</div>';
 
             modal.style.display = 'flex';
-            inboxUiBusy = false;
 
-            // Modal zaten açıldı. Güncel veriyi arkada al ve gerçek açılış olduğu
-            // için sunucuda okunmuş olarak işaretle.
-            loadInbox(!!cached).catch(() => {});
+            try {
+                await loadInbox(false);
+            } catch (error) {
+                messagesBox.innerHTML =
+                    `<div class="inbox-empty">❌ ${escapeHtml(error?.message || error)}</div>`;
+            }
         }
 
-        function closeInbox(event) {
-            try { event?.stopPropagation?.(); } catch (_) {}
-            if (inboxUiBusy) return;
-
+        function closeInbox() {
             const modal = document.getElementById('inboxModal');
-            if (!modal || modal.style.display === 'none') return;
+            if (modal) modal.style.display = 'none';
 
-            inboxUiBusy = true;
-            modal.style.display = 'none';
+            document.documentElement.style.overflow = '';
+            document.body.style.overflow = '';
 
-            document.documentElement.classList.remove('wz-inbox-open');
-            document.body.classList.remove('wz-inbox-open');
-
-            // Conversation cache'i bilerek silmiyoruz; tekrar açıldığında anında görünür.
             currentInboxThread = null;
+            currentInboxConversation = null;
             const input = document.getElementById('inboxReplyInput');
             if (input) input.value = '';
-
-            requestAnimationFrame(() => {
-                inboxUiBusy = false;
-            });
         }
 
         function closeInboxFromOutside(event) {
-            if (event.target?.id === 'inboxModal') closeInbox(event);
+            if (event.target?.id === 'inboxModal') closeInbox();
         }
 
         async function loadInbox(preserveDraft = false) {
@@ -5366,14 +5063,44 @@ html[data-wz-current-view="profile"] body.wz-view-profile #wzMobileProfileView{
             if (inboxConversationRefreshInFlight && preserveDraft) return;
             inboxConversationRefreshInFlight = true;
 
-            if (!preserveDraft && !readInboxConversationCache()) {
+            if (!preserveDraft) {
                 messagesBox.innerHTML = '<div class="inbox-empty">⏳ Mesajlar yükleniyor...</div>';
             }
 
             try {
                 const data = await inboxRequest(`/inbox/conversation?_=${Date.now()}`);
-                // Tek render yolu: cache ve canlı API aynı DOM uygulamasını kullanır.
-                applyInboxConversation(data, true);
+                currentInboxConversation = data;
+                currentInboxThread = {
+                    id:data.replyThreadId || data.appealThreadId || data.supportThreadId || 'WEIZEND',
+                    subject:'Weizend',
+                    thread_type:'admin',
+                    allow_reply:data.replyAllowed ? 1 : 0,
+                    status:data.replyAllowed ? 'open' : 'closed'
+                };
+
+                document.getElementById('inboxListView').style.display = 'none';
+                document.getElementById('inboxThreadView').style.display = 'flex';
+                document.getElementById('inboxThreadSubject').textContent = 'Weizend';
+
+                const meta = [];
+                meta.push('(Yönetici) Weizend');
+                meta.push(`${Number(data.totalCount || 0)} mesaj`);
+                if(data.truncated) meta.push('son 500 mesaj gösteriliyor');
+                document.getElementById('inboxThreadStatus').textContent = meta.join(' · ');
+
+                const replyAllowed = data.replyAllowed === true && !!data.replyThreadId;
+                document.getElementById('inboxReplyAllowed').style.display = replyAllowed ? 'block' : 'none';
+                document.getElementById('inboxReplyClosed').style.display = replyAllowed ? 'none' : 'block';
+
+                // Canlı yenilemelerde yazılan metne dokunma.
+                // Input yalnızca kullanıcı gönderdiğinde veya kutuyu kapattığında temizlenir.
+                const rows = Array.isArray(data.messages) ? data.messages : [];
+                renderInboxMessages(rows);
+                configureRestrictionAppeal(data,replyAllowed);
+                configureSupportRequest(data,replyAllowed);
+
+                currentInboxThreads = [];
+                updateInboxBadge(0);
             } catch (error) {
                 // Sessiz canlı yenilemede eski mesajları ekranda tut. İlk açılışta hata
                 // varsa kullanıcıya görünür hata kartını göster.
@@ -7888,19 +7615,9 @@ return;
     // =========================================================
     const TV2_KICK_CHANNEL_URL = 'https://kick.com/weizend/subscribe';
     const TV2_PENDING_TL_KEY = 'weizend_tv2_pending_tl_v1';
-    const TV2_CATALOG_CACHE_KEY = 'weizend_tv2_catalog_cache_v63';
-
-    let tv2Catalog = (() => {
-        try {
-            const cached = JSON.parse(sessionStorage.getItem(TV2_CATALOG_CACHE_KEY) || '[]');
-            return Array.isArray(cached) ? cached : [];
-        } catch (_) {
-            return [];
-        }
-    })();
-
+    let tv2Catalog = [];
     let tv2CatalogLoadPromise = null;
-    let tv2CatalogLoadedOnce = tv2Catalog.length > 0;
+    let tv2CatalogLoadedOnce = false;
     let tv2State = {
         tournamentId: '',
         publicData: null,
@@ -8098,12 +7815,6 @@ return;
                     legacySolo:String(tournament.mode || '') === 'solo'
                 }));
                 tv2CatalogLoadedOnce = true;
-                try {
-                    sessionStorage.setItem(
-                        TV2_CATALOG_CACHE_KEY,
-                        JSON.stringify(tv2Catalog)
-                    );
-                } catch (_) {}
                 urunleriYukle(aktifKategori || 'Tümü');
             } catch (error) {
                 console.error('TV2 CATALOG ERROR:', error);
@@ -10875,15 +10586,6 @@ return;
 
     currentView=view;
     try{ sessionStorage.setItem('wz_current_view',view); }catch(_){}
-    try{
-      history.replaceState(
-        Object.assign({},history.state||{},{wzView:view}),
-        '',
-        location.href
-      );
-    }catch(_){}
-
-    document.documentElement.dataset.wzCurrentView=view;
     document.body.classList.remove('wz-view-market','wz-view-tournament','wz-view-profile');
     document.body.classList.add('wz-view-'+view);
     updateTopbar(view);
@@ -11025,8 +10727,8 @@ return;
   }
   window.wzSyncProfile=syncProfile;
 
-  window.wzOpenMessages=function(event){
-    if(typeof openInbox==='function') openInbox(event);
+  window.wzOpenMessages=function(){
+    if(typeof openInbox==='function') openInbox();
   };
   window.wzOpenGiftFromInbox=function(){
     try{ if(typeof closeInbox==='function') closeInbox(); }catch(_){}
@@ -11144,7 +10846,6 @@ return;
         document.body.classList.add('wz-ready');
         document.documentElement.classList.remove('wz-boot');
         document.documentElement.removeAttribute('data-wz-initial-view');
-        document.documentElement.dataset.wzCurrentView=currentView;
 
         requestAnimationFrame(()=>{
           document.body.classList.remove('wz-initializing');
@@ -11162,17 +10863,6 @@ return;
 </script>
 <script id="wz-esports-v6-js">
 (function(){
-  const WZ_T_DETAIL_CACHE_KEY='weizend_tournament_detail_cache_v63';
-
-  const cachedDetailEntries=(()=>{
-    try{
-      const parsed=JSON.parse(sessionStorage.getItem(WZ_T_DETAIL_CACHE_KEY)||'{}');
-      return parsed && typeof parsed==='object' ? Object.entries(parsed) : [];
-    }catch(_){
-      return [];
-    }
-  })();
-
   const state={
     filter:(()=>{try{return sessionStorage.getItem('wz_t_filter')||'all'}catch(_){return 'all'}})(),
     screen:(()=>{try{return sessionStorage.getItem('wz_t_screen')||'list'}catch(_){return 'list'}})(),
@@ -11180,26 +10870,12 @@ return;
     tab:(()=>{try{return sessionStorage.getItem('wz_t_tab')||'overview'}catch(_){return 'overview'}})(),
     bracketMode:(()=>{try{return sessionStorage.getItem('wz_t_bracket')||'tree'}catch(_){return 'tree'}})(),
     search:(()=>{try{return sessionStorage.getItem('wz_t_search')||''}catch(_){return ''}})(),
-    details:new Map(cachedDetailEntries),
+    details:new Map(),
     loading:new Set(),
     openRules:new Set([0,1]),
     predictionCache:new Map(),
     predictionLoading:new Set()
   };
-
-  function persistDetailCache(){
-    try{
-      const obj={};
-      let count=0;
-      for(const [id,data] of state.details.entries()){
-        if(!id || !data || data.__error) continue;
-        obj[id]=data;
-        count++;
-        if(count>=8) break;
-      }
-      sessionStorage.setItem(WZ_T_DETAIL_CACHE_KEY,JSON.stringify(obj));
-    }catch(_){}
-  }
 
   function persistTournamentState(){
     try{
@@ -11812,7 +11488,6 @@ return;
       }
 
       state.details.set(id,data);
-      persistDetailCache();
       return data;
     }catch(error){
       state.details.set(id,{__error:String(error?.message||error)});
@@ -12758,23 +12433,8 @@ return;
 
   function init(){
     const grid=document.getElementById('tournamentMarketGrid');
-    if(grid){
-      new MutationObserver(()=>{
-        if(document.body.classList.contains('wz-view-tournament')) render();
-      }).observe(grid,{childList:true,subtree:true});
-    }
-
-    if(document.body.classList.contains('wz-view-tournament')){
-      // Session cache varsa ilk karede mevcut turnuva ekranını çiz.
-      render();
-
-      // Sonra sessizce güncel veriyi al. Eski ekran kaybolmaz.
-      try{
-        if(typeof tv2LoadCatalog==='function'){
-          tv2LoadCatalog(false).catch(()=>{});
-        }
-      }catch(_){}
-    }
+    if(grid){ new MutationObserver(()=>{ if(document.body.classList.contains('wz-view-tournament')) render(); }).observe(grid,{childList:true,subtree:true}); }
+    if(document.body.classList.contains('wz-view-tournament')) render();
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init,{once:true});
   else init();
