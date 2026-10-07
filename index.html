@@ -2142,6 +2142,51 @@ body.wz-view-profile.wz-profile-ready #wzMobileProfileView{
 </style>
 
 
+
+<style id="wz-v41-search-alignment">
+body.wz-view-tournament #marketContent{
+  display:none!important;
+}
+body.wz-view-tournament #wzEsportsHub{
+  padding-top:12px!important;
+}
+
+.wz-turn-search-wrap{
+  margin:0 0 14px!important;
+}
+.wz-turn-search-box{
+  min-height:54px!important;
+  background:#0d0d10!important;
+  border:1px solid #292930!important;
+  border-radius:16px!important;
+  padding:8px 11px 8px 15px!important;
+  box-shadow:none!important;
+}
+.wz-turn-search-box:focus-within{
+  border-color:#7f2929!important;
+  box-shadow:0 0 0 3px rgba(227,27,27,.08)!important;
+}
+.wz-turn-search-input{
+  font-size:16px!important;
+}
+.wz-turn-search-clear{
+  border-radius:10px!important;
+}
+
+@media(max-width:768px){
+  body.wz-view-tournament #wzEsportsHub{
+    padding-top:10px!important;
+  }
+  .wz-turn-search-wrap{
+    margin-bottom:10px!important;
+  }
+  .wz-turn-search-box{
+    min-height:50px!important;
+    border-radius:14px!important;
+  }
+}
+</style>
+
 <style id="wz-v21-market-safety">
 body.wz-view-market #marketContent{
   display:block!important;
@@ -10980,6 +11025,13 @@ return;
   function render(){
     const host=document.getElementById('wzEsportsHub');
     if(!host) return;
+
+    const catalogLoaded = (()=>{ try{return tv2CatalogLoadedOnce===true}catch(_){return false} })();
+    if(!catalogLoaded){
+      host.innerHTML = `<div class="wz-turn-root">${renderSearch()}${renderFilters()}<div class="wz-turn-loading">Turnuvalar yükleniyor...</div></div>`;
+      return;
+    }
+
     const all=visibleCatalog();
     if(!all.length){ host.innerHTML = `<div class="wz-turn-root">${renderSearch()}${renderFilters()}<div class="wz-turn-empty">Henüz yayınlanmış turnuva yok.</div></div>`; return; }
     if(!state.selectedId){
