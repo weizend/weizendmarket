@@ -10646,7 +10646,7 @@ return;
         <button type="button" class="wz-turn-subbtn ${state.bracketMode==='list'?'active':''}" onclick="wzTurnSetBracket('list')">Maç Listesi</button>
       </div>
       ${state.bracketMode==='tree' ? bracketTree(detail) : bracketList(detail)}
-      <div class="wz-turn-mapbox"><div class="wz-turn-mapcover"${mapStyle}></div><div class="wz-turn-mapcontent"><b>${esc(mapDisplayName(t,rule))}</b><span>${esc(gameName(t,rule))} Harita Bilgisi</span></div></div>
+      <div class="wz-turn-mapbox"><div class="wz-turn-mapcover"${mapStyle}></div><div class="wz-turn-mapcontent"><b>${esc(`${mapTypeText(t,rule)} ${mapDisplayName(t,rule)}`.trim())}</b><span>${esc(gameName(t,rule))} Harita Bilgisi</span></div></div>
     </div>`;
   }
 
