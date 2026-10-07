@@ -2517,6 +2517,49 @@ body.wz-page-modal-open{
 }
 </style>
 
+
+<style id="wz-turn-chip-hover-v55">
+.wz-turn-chip:hover{
+  background:#ffffff!important;
+  color:#111111!important;
+  border-color:#ffffff!important;
+}
+</style>
+
+
+<style id="wz-inbox-viewport-fix-v56">
+#inboxModal{
+  position:fixed!important;
+  inset:0!important;
+  z-index:60000!important;
+}
+#inboxModal .inbox-modal-content{
+  position:relative!important;
+  z-index:60001!important;
+  opacity:1!important;
+  visibility:visible!important;
+  transform:none!important;
+}
+</style>
+
+
+<style id="wz-kick-profile-edge-fix-v57">
+/* Kick PNG'nin dış kenarındaki açık renk/halo piksellerini kırp.
+   Hem üst profil butonunda hem Profil ekranındaki büyük avatarda uygulanır. */
+.wz-kick-profile-icon{
+  background-color:#090909!important;
+  background-size:112% 112%!important;
+  background-position:center!important;
+  background-repeat:no-repeat!important;
+  box-shadow:inset 0 0 0 2px #090909!important;
+  border-radius:50%!important;
+  overflow:hidden!important;
+}
+#wzProfileAvatar.wz-kick-profile-icon{
+  box-shadow:inset 0 0 0 3px #090909!important;
+}
+</style>
+
 </head>
 <body>
 
@@ -3581,7 +3624,6 @@ body.wz-page-modal-open{
             'purchaseModal',
             'giftRedeemModal',
             'actionResultModal',
-            'inboxModal',
             'tv2Modal',
             'verificationWaitModal',
             'wzProductInfoModal'
@@ -4693,16 +4735,29 @@ body.wz-page-modal-open{
                 return;
             }
 
-            document.getElementById('inboxModal').style.display = 'flex';
+            const modal = document.getElementById('inboxModal');
+            if (!modal) return;
+
+            // Mesaj kutusunda body'yi position:fixed yapmıyoruz.
+            // Profil aşağı kaydırılmışken fixed-body kilidi pencereyi viewport dışına
+            // taşıyabiliyordu ve ekranda yalnızca siyah overlay görünüyordu.
+            document.documentElement.style.overflow = 'hidden';
             document.body.style.overflow = 'hidden';
+
+            modal.style.display = 'flex';
             document.getElementById('inboxListView').style.display = 'none';
             document.getElementById('inboxThreadView').style.display = 'flex';
+
             await loadInbox(false);
         }
 
         function closeInbox() {
-            document.getElementById('inboxModal').style.display = 'none';
+            const modal = document.getElementById('inboxModal');
+            if (modal) modal.style.display = 'none';
+
+            document.documentElement.style.overflow = '';
             document.body.style.overflow = '';
+
             currentInboxThread = null;
             currentInboxConversation = null;
             const input = document.getElementById('inboxReplyInput');
@@ -6626,10 +6681,23 @@ return;
             try { data = await response.json(); } catch (_) {}
 
             if (!response.ok || !data?.payment) {
+                if (response.status === 404) {
+                    // Tarayıcıda kalmış eski bir ödeme kimliği Worker/D1'da artık yoksa
+                    // her sayfa açılışında tekrar tekrar /payment/check 404 üretmesin.
+                    localStorage.removeItem(PENDING_TL_PAYMENT_KEY);
+                    stopTlPaymentWatcher();
+                    purchaseInFlight = false;
+                    currentPurchasePaymentId = '';
+                    currentPurchaseOrderId = '';
+                    return true;
+                }
+
                 if (response.status === 410) {
                     localStorage.removeItem(PENDING_TL_PAYMENT_KEY);
                     stopTlPaymentWatcher();
                     purchaseInFlight = false;
+                    currentPurchasePaymentId = '';
+                    currentPurchaseOrderId = '';
                     showStatusToast('⚠️ BynoGame ödeme süresi doldu.', 4500);
                     return true;
                 }
