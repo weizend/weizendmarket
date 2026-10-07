@@ -1,6 +1,37 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
+
+<script id="wz-v15-boot">
+(function(){
+  document.documentElement.classList.add('wz-boot');
+  try{
+    let view=sessionStorage.getItem('wz_current_view') || 'market';
+    if(!['market','tournament','profile'].includes(view)) view='market';
+
+    const token=localStorage.getItem('weizend_market_session_secure_v2') || '';
+    if(view==='profile' && !token){
+      view='market';
+      sessionStorage.setItem('wz_current_view','market');
+    }
+
+    window.__WZ_INITIAL_VIEW__=view;
+    document.documentElement.dataset.wzInitialView=view;
+  }catch(_){
+    window.__WZ_INITIAL_VIEW__='market';
+    document.documentElement.dataset.wzInitialView='market';
+  }
+
+  // Failsafe only: never leave the site invisible if another script errors.
+  setTimeout(()=>document.documentElement.classList.remove('wz-boot'),2500);
+})();
+</script>
+<style id="wz-v15-boot-css">
+html.wz-boot body{
+  visibility:hidden!important;
+}
+</style>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weizend Market</title>
@@ -876,10 +907,1394 @@
         }
 
 </style>
+
+
+<style id="wz-experience-v5">
+:root{
+  --wz-bg:#050506;
+  --wz-surface:#0d0d10;
+  --wz-surface-2:#121216;
+  --wz-surface-3:#17171c;
+  --wz-line:#28282f;
+  --wz-line-soft:#1f1f25;
+  --wz-text:#ffffff;
+  --wz-muted:#92929d;
+  --wz-red:#e31b1b;
+  --wz-red-2:#ff3434;
+  --wz-red-dark:#8f1010;
+  --wz-green:#35d979;
+  --wz-gold:#f2c94c;
+  --wz-radius:18px;
+  --wz-shadow:0 22px 70px rgba(0,0,0,.34);
+}
+*{box-sizing:border-box}
+html{background:var(--wz-bg);scroll-behavior:smooth}
+body{
+  background:
+    radial-gradient(circle at 12% -10%,rgba(227,27,27,.12),transparent 28%),
+    radial-gradient(circle at 100% 10%,rgba(227,27,27,.06),transparent 24%),
+    var(--wz-bg)!important;
+  color:var(--wz-text);
+}
+body.wz-modal-lock{overflow:hidden!important}
+
+/* ---------- App bar ---------- */
+.wz-appbar{
+  position:sticky;top:0;z-index:850;
+  width:100%;
+  background:rgba(5,5,6,.91);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.wz-appbar-inner{
+  width:min(1380px,100%);
+  margin:0 auto;
+  min-height:72px;
+  padding:10px 18px;
+  display:grid;
+  grid-template-columns:minmax(220px,1fr) auto minmax(220px,1fr);
+  align-items:center;
+  gap:18px;
+}
+.wz-brand-button,.wz-profile-top-btn,.wz-desktop-nav-btn{
+  font:inherit;color:inherit;cursor:pointer
+}
+.wz-brand-button{
+  border:0;background:transparent;padding:0;
+  display:flex;align-items:center;gap:11px;justify-self:start;text-align:left
+}
+.wz-brand-button img{
+  width:46px;height:46px;border-radius:50%;object-fit:cover;background:#000;
+  border:1px solid rgba(227,27,27,.65);
+  box-shadow:0 0 28px rgba(227,27,27,.18)
+}
+.wz-brand-copy{display:flex;flex-direction:column;min-width:0}
+.wz-brand-copy strong{font-size:1.02rem;letter-spacing:2px;font-weight:1000}
+.wz-brand-copy small{margin-top:4px;color:#777782;font-size:.64rem;font-weight:900;letter-spacing:1.4px}
+.wz-desktop-nav{
+  display:flex;align-items:center;gap:5px;
+  padding:5px;border:1px solid #24242a;border-radius:14px;background:#0b0b0e
+}
+.wz-desktop-nav-btn{
+  min-width:136px;border:0;border-radius:10px;background:transparent;
+  color:#9898a2;padding:10px 16px;font-weight:900;transition:.18s
+}
+.wz-desktop-nav-btn.active{
+  color:#fff;background:linear-gradient(180deg,#ed2727,#b30e0e);
+  box-shadow:0 8px 20px rgba(227,27,27,.22)
+}
+.wz-profile-top-btn{
+  justify-self:end;
+  max-width:220px;min-width:160px;
+  display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:10px;
+  padding:6px 9px;border:1px solid #29292f;border-radius:14px;background:#0e0e11;text-align:left
+}
+.wz-profile-top-btn.active{border-color:#783030;background:#1a0e10}
+.wz-profile-top-btn img{width:38px;height:38px;border-radius:50%;object-fit:cover;background:#111;border:1px solid #3a3a40}
+.wz-profile-top-copy{display:flex;flex-direction:column;min-width:0}
+.wz-profile-top-copy strong{font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wz-profile-top-copy small{margin-top:2px;color:#777780;font-size:.65rem}
+.wz-profile-chevron{font-size:1.4rem;color:#777}
+
+/* ---------- Original header becomes auth-only ---------- */
+body>.container:first-of-type{width:min(1380px,calc(100% - 36px));max-width:none;margin:0 auto}
+header{padding:18px 0 4px!important;margin:0!important;border:0!important}
+header>.logo-img,header>h1,header>p,.header-buttons,.user-wallet-wrapper{display:none!important}
+#accountRestrictionBanner{border-radius:16px!important;margin:0 0 16px!important}
+#accessCard{
+  max-width:760px!important;margin:0 auto 20px!important;
+  padding:20px!important;border-radius:20px!important;
+  background:linear-gradient(145deg,#121216,#09090b)!important;
+  border-color:#3c1718!important;box-shadow:var(--wz-shadow)!important
+}
+
+/* ---------- Main content ---------- */
+#marketContent{padding:12px 0 34px}
+.wz-mobile-page-intro,.wz-mobile-tournament-hero{
+  display:block;position:relative;overflow:hidden;
+  border:1px solid #42181a;
+  background:
+    radial-gradient(circle at 82% 20%,rgba(227,27,27,.24),transparent 34%),
+    repeating-linear-gradient(128deg,transparent 0 22px,rgba(255,255,255,.012) 23px 24px),
+    linear-gradient(135deg,#17171b,#09090b 68%,#16090a);
+  box-shadow:var(--wz-shadow)
+}
+.wz-mobile-page-intro{
+  display:flex;align-items:center;justify-content:space-between;gap:24px;
+  min-height:176px;margin:0 0 18px;padding:30px 32px;border-radius:24px
+}
+.wz-mobile-page-intro:after{
+  content:'W';position:absolute;right:25px;top:-58px;
+  color:rgba(255,255,255,.025);font-size:230px;font-weight:1000;transform:skew(-7deg);pointer-events:none
+}
+.wz-mobile-kicker{color:#ff6262;font-size:.72rem;font-weight:1000;letter-spacing:2px}
+.wz-mobile-page-intro h2{margin:8px 0 7px;font-size:clamp(1.9rem,3.4vw,3.2rem);line-height:.98}
+.wz-mobile-page-intro p{margin:0;max-width:650px;color:#a5a5ae;line-height:1.6}
+.wz-mobile-intro-mark{
+  position:relative;z-index:1;width:72px;height:72px;flex:0 0 72px;border-radius:22px;
+  display:grid;place-items:center;
+  background:linear-gradient(145deg,#f22c2c,#941010);font-size:2rem;font-weight:1000;
+  box-shadow:0 16px 38px rgba(227,27,27,.24)
+}
+
+/* Search */
+.market-search-wrap{max-width:none!important;margin:0 0 14px!important}
+.market-search-box{
+  min-height:54px;background:#0d0d10!important;border:1px solid #292930!important;
+  border-radius:16px!important;padding:8px 11px 8px 15px!important;box-shadow:none!important
+}
+.market-search-box:focus-within{border-color:#7f2929!important;box-shadow:0 0 0 3px rgba(227,27,27,.08)!important}
+.market-search-input{font-size:16px!important}
+.market-search-clear{border-radius:10px!important}
+.market-search-info{min-height:8px!important;margin-top:5px!important}
+
+/* Categories */
+.category-filters{
+  justify-content:flex-start!important;gap:8px!important;flex-wrap:wrap!important;margin:0 0 18px!important
+}
+.filter-btn{
+  border-radius:999px!important;background:#101014!important;border-color:#292930!important;color:#aaaab3!important;
+  padding:9px 14px!important;font-size:.8rem!important;font-weight:850!important
+}
+.filter-btn.active,.filter-btn:hover{
+  background:#e31b1b!important;border-color:#e31b1b!important;color:#fff!important;
+  box-shadow:0 7px 18px rgba(227,27,27,.15)
+}
+.filter-btn.wz-hide-nav{display:none!important}
+
+/* Product grid/card */
+.grid{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:16px!important;align-items:start!important
+}
+.card{
+  min-width:0!important;padding:13px!important;border-radius:19px!important;
+  border:1px solid #24242a!important;
+  background:linear-gradient(180deg,#111115,#0b0b0e)!important;
+  box-shadow:0 12px 35px rgba(0,0,0,.22)!important;
+  overflow:hidden;transform:none!important;transition:border-color .18s,transform .18s,box-shadow .18s!important
+}
+@media(hover:hover) and (pointer:fine){
+  .card:hover{transform:translateY(-4px)!important;border-color:#682326!important;box-shadow:0 18px 45px rgba(0,0,0,.33)!important}
+}
+.img-container{
+  height:auto!important;aspect-ratio:1/1!important;margin:0 0 11px!important;border-radius:14px!important;
+  background:#08080a!important;border-color:#27272d!important
+}
+.img-container img{object-fit:contain!important;padding:4px}
+.category-badge{
+  top:8px!important;right:8px!important;border-radius:999px!important;padding:5px 8px!important;
+  font-size:.61rem!important;box-shadow:0 6px 18px rgba(0,0,0,.28)
+}
+.product-title{margin:0 1px 7px!important;font-size:.98rem!important;line-height:1.24!important}
+.stock-wrapper{margin:0 0 8px!important}
+.stock-badge{border-radius:999px!important;padding:4px 8px!important;font-size:.66rem!important}
+.price-command{gap:7px!important;margin-bottom:9px!important}
+.price{font-size:1rem!important}
+.command{font-size:.66rem!important;border-radius:8px!important}
+.action-btn{border-radius:12px!important;min-height:44px!important;box-shadow:0 8px 18px rgba(227,27,27,.14)!important}
+
+/* Product details become modal launchers, never inline-expand */
+#urunGrid .card details{
+  margin:6px 0 0!important;border-radius:11px!important;background:#111115!important;border:1px solid #292930!important;overflow:hidden!important
+}
+#urunGrid .card details>summary{
+  padding:10px 11px!important;font-size:.76rem!important;font-weight:850!important;color:#d1d1d7!important;
+  list-style:none!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px
+}
+#urunGrid .card details>summary::-webkit-details-marker{display:none!important}
+#urunGrid .card details>summary:after{content:'↗'!important;color:#ff5555!important;font-size:.86rem!important}
+#urunGrid .card details>.details-content{display:none!important}
+#urunGrid .card details[open]>summary:after{content:'↗'!important}
+
+/* ---------- Tournament page ---------- */
+body.wz-view-market #tournamentMarketSection{display:none!important}
+body.wz-view-market #urunGrid{display:grid!important}
+body.wz-view-tournament #urunGrid{display:none!important}
+body.wz-view-tournament #tournamentMarketSection{display:block!important}
+body.wz-view-tournament .category-filters{display:none!important}
+body.wz-view-profile #marketContent,body.wz-view-profile header{display:none!important}
+
+.wz-mobile-tournament-hero{
+  min-height:190px;margin:0 0 18px;padding:30px 32px;border-radius:24px
+}
+.wz-mobile-tournament-hero:after{
+  content:'🏆';position:absolute;right:34px;top:15px;font-size:7rem;opacity:.055;filter:grayscale(1)
+}
+.wz-mobile-tournament-hero h2{margin:8px 0 7px;font-size:clamp(1.9rem,3.2vw,3rem)}
+.wz-mobile-tournament-hero p{margin:0;max-width:720px;color:#a0a0aa;line-height:1.6}
+.tv2-market-section{padding:0!important;margin:0!important;background:transparent!important;border:0!important}
+.tv2-section-heading{margin:0 0 14px!important;padding:0 2px!important;align-items:center!important}
+.tv2-section-heading h2{font-size:1.3rem!important;margin:3px 0!important}
+.tv2-section-heading p{color:#8f8f99!important}
+.tv2-refresh-btn{width:auto!important;border-radius:11px!important}
+.tv2-market-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:14px!important}
+.tv2-market-card{
+  border:1px solid #26262c!important;border-radius:18px!important;
+  background:linear-gradient(180deg,#111115,#0b0b0e)!important;
+  padding:16px!important;box-shadow:0 12px 34px rgba(0,0,0,.22)!important;transform:none!important
+}
+@media(hover:hover) and (pointer:fine){
+  .tv2-market-card:hover{transform:translateY(-4px)!important;border-color:#6f282a!important}
+}
+.tv2-card-badge,.tv2-status-pill{border-radius:999px!important}
+.tv2-card-meta{gap:8px!important}
+.tv2-meta-box{background:#0a0a0d!important;border-color:#25252b!important;border-radius:11px!important}
+.tv2-card-action{min-height:46px!important;border-radius:12px!important;font-weight:950!important}
+
+/* ---------- Profile ---------- */
+#wzMobileProfileView{
+  display:none;
+  width:min(980px,calc(100% - 36px));
+  margin:24px auto 50px
+}
+body.wz-view-profile #wzMobileProfileView{display:block}
+.wz-profile-hero{
+  border:1px solid #45191a;border-radius:24px;padding:24px;
+  background:
+    radial-gradient(circle at 85% 10%,rgba(227,27,27,.22),transparent 32%),
+    linear-gradient(135deg,#151518,#09090b 70%);
+  box-shadow:var(--wz-shadow)
+}
+.wz-profile-head{display:flex;align-items:center;gap:15px}
+.wz-profile-avatar{width:74px;height:74px;border-radius:50%;object-fit:cover;border:2px solid #8c2628;background:#090909}
+.wz-profile-name{font-size:1.45rem;font-weight:1000}
+.wz-profile-state{display:flex;align-items:center;gap:7px;color:#9999a3;font-size:.78rem;margin-top:5px}
+.wz-profile-state i{width:7px;height:7px;border-radius:50%;background:#35d979;box-shadow:0 0 10px rgba(53,217,121,.5)}
+.wz-profile-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+.wz-profile-stat{background:rgba(0,0,0,.28);border:1px solid #28282e;border-radius:14px;padding:14px}
+.wz-profile-stat span{display:block;color:#8e8e98;font-size:.76rem;margin-bottom:6px}
+.wz-profile-stat strong{font-size:1.12rem}
+.wz-profile-section{
+  margin-top:14px;border:1px solid #26262c;border-radius:20px;background:#0d0d10;padding:17px;
+  box-shadow:0 10px 32px rgba(0,0,0,.18)
+}
+.wz-profile-section-title{font-size:.75rem;color:#ff6868;font-weight:1000;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:10px}
+.wz-profile-info-row{display:flex;justify-content:space-between;gap:16px;padding:11px 2px;border-bottom:1px solid #202026}
+.wz-profile-info-row:last-child{border-bottom:0}
+.wz-profile-info-row span{color:#90909a;font-size:.82rem}
+.wz-profile-info-row strong{text-align:right;font-size:.85rem}
+.wz-profile-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.wz-profile-action{
+  width:100%;min-height:64px;border:1px solid #2b2b31;border-radius:14px;background:#111115;color:#fff;
+  padding:11px 12px;display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:10px;
+  text-align:left;text-decoration:none;cursor:pointer
+}
+.wz-profile-action.featured{border-color:#6f2729;background:#1a0e10}
+.wz-profile-action.danger{border-color:#512123;background:#160b0c}
+.wz-profile-action .wz-action-icon{
+  width:36px;height:36px;border-radius:11px;display:grid;place-items:center;background:#1a1a1f;color:#fff;font-weight:900
+}
+.wz-profile-action.featured .wz-action-icon{background:#e31b1b}
+.wz-profile-action span:nth-child(2){display:flex;flex-direction:column;min-width:0}
+.wz-profile-action b{font-size:.84rem}
+.wz-profile-action small{margin-top:3px;color:#777781;font-size:.68rem;line-height:1.3}
+.wz-profile-action i{font-style:normal;color:#777;font-size:1.1rem}
+.wz-profile-login{
+  border:1px solid #3c1819;border-radius:22px;padding:24px;background:#0d0d10;text-align:center;color:#999;line-height:1.6
+}
+.wz-profile-login strong{display:block;color:#fff;font-size:1.15rem;margin-bottom:8px}
+.wz-profile-login button{margin-top:15px;border:0;border-radius:12px;background:#e31b1b;color:#fff;padding:12px 16px;font-weight:900}
+
+/* ---------- Existing modal polish / forced centering ---------- */
+.modal-overlay,.verify-wait-overlay{
+  align-items:center!important;justify-content:center!important;
+  padding:16px!important
+}
+.modal-content,.purchase-modal-content,.gift-modal-content,.notifications-modal-content,.inbox-modal-content{
+  border-radius:20px!important;
+  max-height:min(88vh,760px)!important;
+  box-shadow:0 30px 90px rgba(0,0,0,.65)!important
+}
+#inboxModal{align-items:center!important;padding:16px!important}
+#inboxModal .inbox-modal-content{
+  width:min(900px,100%)!important;height:auto!important;max-width:900px!important;max-height:88vh!important;
+  border:1px solid #303038!important;border-radius:20px!important;overflow:hidden!important
+}
+#inboxModal .inbox-shell{height:min(78vh,720px)!important;min-height:0!important}
+.modal-header{position:sticky;top:0;z-index:5;background:#0e0e11!important;border-bottom:1px solid #292930!important}
+
+/* ---------- Product information modal ---------- */
+.wz-product-info-overlay{
+  display:none;position:fixed;inset:0;z-index:12050;
+  align-items:center;justify-content:center;padding:18px;
+  background:rgba(0,0,0,.78);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)
+}
+.wz-product-info-overlay.open{display:flex}
+.wz-product-info-card{
+  width:min(680px,100%);max-height:min(82vh,760px);
+  display:flex;flex-direction:column;overflow:hidden;
+  border:1px solid #33333b;border-radius:22px;background:#0d0d10;box-shadow:0 32px 100px rgba(0,0,0,.72)
+}
+.wz-product-info-head{
+  flex:0 0 auto;position:sticky;top:0;z-index:3;
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  padding:17px 18px;background:#0e0e11;border-bottom:1px solid #292930
+}
+.wz-product-info-kicker{color:#ff6464;font-size:.63rem;font-weight:1000;letter-spacing:1.7px}
+.wz-product-info-head h3{margin:4px 0 0;font-size:1.13rem}
+.wz-product-info-close{
+  flex:0 0 42px;width:42px;height:42px;border-radius:12px;border:1px solid #37373e;background:#17171b;color:#fff;
+  font-size:1.25rem;font-weight:800;cursor:pointer
+}
+.wz-product-info-body{
+  flex:1;min-height:0;overflow:auto;padding:19px 20px 24px;color:#c2c2ca;line-height:1.7;
+  overscroll-behavior:contain
+}
+.wz-product-info-body ul{padding-left:20px;margin:4px 0}
+.wz-product-info-body li{margin:7px 0}
+.wz-product-info-body b,.wz-product-info-body strong{color:#fff}
+.wz-product-info-body a{color:#ff5a5a}
+
+/* ---------- View state ---------- */
+body:not(.wz-view-profile) #wzMobileProfileView{display:none}
+body.wz-view-profile .wz-profile-top-btn{border-color:#7b292b;background:#1a0e10}
+body.wz-view-tournament #wzDesktopTournament,body.wz-view-market #wzDesktopMarket{color:#fff;background:linear-gradient(180deg,#ed2727,#b30e0e)}
+body.wz-view-tournament #wzDesktopMarket,body.wz-view-market #wzDesktopTournament{color:#9898a2;background:transparent}
+
+/* ---------- Mobile ---------- */
+.wz-mobile-bottom-nav{display:none}
+@media(max-width:980px){
+  .grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  .tv2-market-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:768px){
+  body{padding:0 10px calc(84px + env(safe-area-inset-bottom))!important;overflow-x:hidden!important}
+  body>.container:first-of-type{width:100%;margin:0;padding:0}
+  .wz-appbar-inner{
+    min-height:64px;padding:9px 12px;
+    grid-template-columns:minmax(0,1fr) auto
+  }
+  .wz-brand-button img{width:40px;height:40px}
+  .wz-brand-copy strong{font-size:.92rem}
+  .wz-brand-copy small{font-size:.6rem}
+  .wz-desktop-nav{display:none}
+  .wz-profile-top-btn{
+    min-width:44px;max-width:44px;width:44px;height:44px;padding:3px;
+    display:grid;grid-template-columns:1fr;border-radius:14px
+  }
+  .wz-profile-top-btn img{width:36px;height:36px}
+  .wz-profile-top-copy,.wz-profile-chevron{display:none}
+
+  header{padding:12px 0 0!important}
+  #accessCard{margin:0 0 14px!important;padding:17px!important;border-radius:18px!important}
+  .access-input{font-size:16px!important;min-width:0!important;max-width:none!important;width:100%!important}
+  .access-form{align-items:stretch!important}
+
+  #marketContent{padding:10px 0 20px}
+  .wz-mobile-page-intro{
+    min-height:138px;margin:0 0 12px;padding:19px 17px;border-radius:19px;gap:12px
+  }
+  .wz-mobile-page-intro:after{right:-10px;top:-34px;font-size:132px}
+  .wz-mobile-page-intro h2{font-size:1.42rem;margin:5px 0}
+  .wz-mobile-page-intro p{font-size:.79rem;line-height:1.45;max-width:260px}
+  .wz-mobile-intro-mark{width:48px;height:48px;flex-basis:48px;border-radius:15px;font-size:1.25rem}
+
+  .market-search-wrap{margin-bottom:10px!important}
+  .market-search-box{min-height:50px!important;border-radius:14px!important}
+  .category-filters{
+    display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;scrollbar-width:none;
+    margin:0 -2px 13px!important;padding:2px 2px 5px!important
+  }
+  .category-filters::-webkit-scrollbar{display:none}
+  .filter-btn{flex:0 0 auto!important;white-space:nowrap!important;padding:8px 12px!important;font-size:.75rem!important}
+
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}
+  .card{padding:9px!important;border-radius:16px!important}
+  .img-container{margin-bottom:8px!important;border-radius:12px!important}
+  .product-title{
+    font-size:.86rem!important;line-height:1.2!important;min-height:33px!important;
+    display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden
+  }
+  .stock-info-text{display:none!important}
+  .price{font-size:.86rem!important}
+  .price-command{display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:5px!important}
+  .command{max-width:100%;font-size:.58rem!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .action-btn{min-height:41px!important;padding:8px 6px!important;font-size:.73rem!important}
+  #urunGrid .card details>summary{padding:9px!important;font-size:.68rem!important}
+
+  .wz-mobile-tournament-hero{
+    min-height:145px;margin:0 0 12px;padding:20px 17px;border-radius:19px
+  }
+  .wz-mobile-tournament-hero:after{right:12px;top:12px;font-size:4rem}
+  .wz-mobile-tournament-hero h2{font-size:1.42rem;margin:5px 0}
+  .wz-mobile-tournament-hero p{font-size:.79rem;line-height:1.45;max-width:86%}
+  .tv2-section-heading{margin-bottom:10px!important}
+  .tv2-section-heading h2{font-size:1.05rem!important}
+  .tv2-section-heading p{display:none!important}
+  .tv2-market-grid{grid-template-columns:1fr!important;gap:10px!important}
+  .tv2-market-card{padding:13px!important;border-radius:16px!important}
+  .tv2-card-title{font-size:.98rem!important}
+  .tv2-card-meta{grid-template-columns:1fr 1fr!important}
+  .tv2-meta-box{padding:9px!important}
+  .tv2-card-action{min-height:43px!important;font-size:.78rem!important}
+
+  #wzMobileProfileView{width:100%;margin:12px 0 20px}
+  .wz-profile-hero{border-radius:19px;padding:17px}
+  .wz-profile-avatar{width:62px;height:62px}
+  .wz-profile-name{font-size:1.2rem}
+  .wz-profile-section{border-radius:17px;padding:14px;margin-top:10px}
+  .wz-profile-actions{grid-template-columns:1fr}
+  .wz-profile-action{min-height:62px;border-radius:13px}
+
+  .modal-overlay,.verify-wait-overlay{padding:12px!important;align-items:center!important}
+  .modal-content,.purchase-modal-content,.gift-modal-content,.notifications-modal-content{
+    width:min(94vw,680px)!important;max-height:84dvh!important;border-radius:18px!important
+  }
+  #inboxModal{padding:12px!important;align-items:center!important}
+  #inboxModal .inbox-modal-content{
+    width:100%!important;height:auto!important;max-height:84dvh!important;border-radius:18px!important
+  }
+  #inboxModal .inbox-shell{height:78dvh!important;max-height:700px!important}
+  .inbox-body{padding:12px!important}
+  .inbox-reply-box{padding-bottom:calc(10px + env(safe-area-inset-bottom))!important}
+
+  .wz-product-info-overlay{padding:12px}
+  .wz-product-info-card{max-height:84dvh;border-radius:19px}
+  .wz-product-info-head{padding:14px 15px}
+  .wz-product-info-body{padding:16px 16px 22px;font-size:.9rem}
+
+  .wz-mobile-bottom-nav{
+    display:grid;grid-template-columns:1fr 1fr;gap:8px;
+    position:fixed;left:10px;right:10px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:900;
+    padding:6px;border:1px solid rgba(255,255,255,.09);border-radius:18px;
+    background:rgba(9,9,11,.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+    box-shadow:0 18px 55px rgba(0,0,0,.56)
+  }
+  .wz-mobile-nav-btn{
+    position:relative;min-height:53px;border:0;border-radius:13px;background:transparent;color:#81818b;
+    display:flex;align-items:center;justify-content:center;gap:9px;font-weight:900;font-size:.76rem
+  }
+  .wz-mobile-nav-btn svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  .wz-mobile-nav-btn.active{background:#211011;color:#fff}
+  .wz-mobile-nav-btn.active:before{
+    content:'';position:absolute;top:0;width:34px;height:2px;border-radius:999px;background:#f42d2d;
+    box-shadow:0 0 11px rgba(244,45,45,.5)
+  }
+
+}
+@media(max-width:390px){
+  .grid{grid-template-columns:1fr!important}
+  .product-title{min-height:auto!important}
+  .tv2-card-meta{grid-template-columns:1fr!important}
+}
+@media(prefers-reduced-motion:reduce){
+  *{scroll-behavior:auto!important;transition:none!important;animation:none!important}
+}
+</style>
+
+
+
+<style id="wz-esports-v6-css">
+/* ==========================================
+   WEIZEND TURNUVA · V8 MOCKUP STYLE
+   Closer to the provided mobile mockup
+========================================== */
+#wzEsportsHub{display:none}
+body.wz-view-tournament #wzEsportsHub{display:block}
+body.wz-view-tournament #tournamentMarketSection>.tv2-section-heading,
+body.wz-view-tournament #tournamentMarketSection>#tournamentMarketGrid,
+body.wz-view-tournament .market-search-wrap{display:none!important}
+
+.wz-turn-root{
+  color:#fff;
+  --wz-red:#e21212;
+  --wz-red2:#ff3a3a;
+  --wz-soft:#9c9ca6;
+  --wz-card:#101014;
+  --wz-card2:#141419;
+  --wz-line:#25252b;
+  --wz-bg:#07080b;
+}
+.wz-turn-loading,.wz-turn-empty{
+  padding:34px 16px;border:1px dashed #34343b;border-radius:18px;background:#0d0e12;color:#9b9ca4;text-align:center
+}
+.wz-turn-list-page,.wz-turn-detail-page{display:block}
+.wz-turn-toptabs{
+  display:flex;gap:10px;align-items:center;padding:0 0 14px 0
+}
+.wz-turn-topbtn{
+  flex:1;border:1px solid #23252d;background:#0d1016;color:#c3c6cf;border-radius:14px;padding:13px 14px;font-size:.84rem;font-weight:900;letter-spacing:.3px;text-align:center
+}
+.wz-turn-topbtn.active{
+  color:#fff;border-color:#5a1616;background:linear-gradient(180deg,rgba(226,18,18,.22),rgba(226,18,18,.06));box-shadow:inset 0 -2px 0 var(--wz-red)
+}
+.wz-turn-strip{
+  display:flex;gap:8px;overflow:auto;padding:0 0 14px;scrollbar-width:none
+}
+.wz-turn-strip::-webkit-scrollbar{display:none}
+.wz-turn-chip{
+  flex:0 0 auto;border:1px solid #2a2d36;background:#101319;color:#b5b7c0;border-radius:999px;padding:9px 14px;font-size:.74rem;font-weight:900
+}
+.wz-turn-chip.active{background:#fff;color:#000;border-color:#fff}
+.wz-turn-cardlist{display:grid;gap:12px}
+.wz-turn-sectionlabel{margin:18px 0 10px;color:#ffffff;font-size:.93rem;font-weight:1000;letter-spacing:.2px}
+.wz-turn-card{
+  border:1px solid #262931;border-radius:20px;background:linear-gradient(180deg,#11141a,#0a0c10);overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.18)
+}
+.wz-turn-card-head{
+  min-height:112px;padding:14px;display:flex;flex-direction:column;justify-content:space-between;position:relative;
+  background:
+    linear-gradient(180deg,rgba(0,0,0,.18),rgba(0,0,0,.56)),
+    radial-gradient(circle at 82% 24%,rgba(226,18,18,.42),transparent 22%),
+    linear-gradient(135deg,#2c1212 0%,#141821 48%,#0b0d12 100%)
+}
+.wz-turn-card-head:before{
+  content:'';position:absolute;inset:0;background:repeating-linear-gradient(125deg,transparent 0 24px,rgba(255,255,255,.025) 25px 26px);pointer-events:none
+}
+.wz-turn-card-head > *{position:relative;z-index:1}
+.wz-turn-card-row{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.wz-turn-game{
+  display:flex;align-items:center;gap:10px;min-width:0
+}
+.wz-turn-game-logo{
+  width:40px;height:40px;border-radius:13px;background:linear-gradient(180deg,#3d0f0f,#150606);display:grid;place-items:center;font-weight:1000;font-size:1.05rem;color:#fff;border:1px solid rgba(255,255,255,.08)
+}
+.wz-turn-card-title{font-size:1.08rem;font-weight:1000;line-height:1.05;text-transform:uppercase;word-break:break-word}
+.wz-turn-card-sub{margin-top:4px;color:#d2d6dd;font-size:.73rem;font-weight:800;opacity:.88}
+.wz-turn-badge{
+  flex:0 0 auto;padding:8px 14px;border-radius:999px;font-size:.7rem;font-weight:1000;border:1px solid transparent
+}
+.wz-turn-badge.live{background:#ff2b2b;color:#fff}
+.wz-turn-badge.soon{background:#ffffff;color:#111}
+.wz-turn-badge.done{background:#1f232b;color:#fff;border-color:#333843}
+.wz-turn-badge.open{background:#fff;color:#111}
+.wz-turn-card-body{padding:12px 14px 14px}
+.wz-turn-minirow{display:flex;gap:12px;align-items:flex-start;color:#d8dbe2;font-size:.79rem;margin-bottom:10px;flex-wrap:wrap}
+.wz-turn-minirow span{display:inline-flex;align-items:center;gap:6px}
+.wz-turn-card-actions{display:flex;gap:10px;align-items:center}
+.wz-turn-ghostbtn,.wz-turn-mainbtn{
+  min-height:42px;border-radius:14px;padding:0 16px;font-weight:1000;font-size:.84rem;border:0;cursor:pointer
+}
+.wz-turn-mainbtn{background:linear-gradient(180deg,#ff3a3a,#c40f0f);color:#fff;box-shadow:0 10px 24px rgba(226,18,18,.22)}
+.wz-turn-ghostbtn{background:#181c24;color:#d0d3db;border:1px solid #2a2f39}
+.wz-turn-completed-note{margin-top:6px;color:#b5b8c1;font-size:.76rem}
+
+.wz-turn-detail-top{
+  display:flex;align-items:center;gap:10px;padding:0 0 14px
+}
+.wz-turn-back{
+  width:44px;height:44px;border-radius:14px;border:1px solid #252933;background:#0e1117;color:#fff;font-size:1.1rem;font-weight:1000;cursor:pointer
+}
+.wz-turn-brand{
+  font-weight:1000;font-size:1rem;letter-spacing:.4px
+}
+.wz-turn-hero{
+  border:1px solid #252933;border-radius:24px;overflow:hidden;background:linear-gradient(180deg,#10131a,#090b0f);box-shadow:0 14px 42px rgba(0,0,0,.24)
+}
+.wz-turn-hero-cover{
+  min-height:185px;padding:18px;display:flex;align-items:flex-end;position:relative;
+  background:
+    linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.68)),
+    radial-gradient(circle at 82% 22%,rgba(226,18,18,.40),transparent 24%),
+    linear-gradient(135deg,#311414 0%,#18212f 52%,#0d0f14 100%)
+}
+.wz-turn-hero-cover:before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(125deg,transparent 0 22px,rgba(255,255,255,.02) 23px 24px)}
+.wz-turn-hero-cover>*{position:relative;z-index:1}
+.wz-turn-hero-body{width:100%}
+.wz-turn-hero-title{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.wz-turn-h1{font-size:1.85rem;font-weight:1000;line-height:.92;text-transform:uppercase;max-width:70%}
+.wz-turn-h1 small{display:block;font-size:1.1rem;opacity:.95}
+.wz-turn-badges{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.wz-turn-info-grid{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:12px 12px 0 12px
+}
+.wz-turn-info{
+  border:1px solid #232730;background:#10141b;border-radius:14px;padding:12px 10px;text-align:center
+}
+.wz-turn-info b{display:block;font-size:.95rem;margin-bottom:3px}
+.wz-turn-info span{display:block;color:#9ea2ab;font-size:.67rem;font-weight:700}
+.wz-turn-date-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px
+}
+.wz-turn-date{
+  border:1px solid #232730;background:#10141b;border-radius:14px;padding:12px
+}
+.wz-turn-date b{display:block;font-size:.9rem}
+.wz-turn-date span{display:block;margin-top:4px;color:#9ea2ab;font-size:.7rem}
+.wz-turn-register{
+  width:calc(100% - 24px);margin:0 12px 14px;min-height:50px;border:0;border-radius:16px;background:linear-gradient(180deg,#ff4242,#c10f0f);color:#fff;font-size:.96rem;font-weight:1000;box-shadow:0 10px 24px rgba(226,18,18,.25);cursor:pointer
+}
+.wz-turn-tabs{
+  display:flex;gap:4px;overflow:auto;padding:0 12px 12px;scrollbar-width:none
+}
+.wz-turn-tabs::-webkit-scrollbar{display:none}
+.wz-turn-tab{flex:0 0 auto;background:transparent;border:0;color:#b8bbc4;padding:9px 8px;font-size:.82rem;font-weight:900;border-bottom:2px solid transparent;cursor:pointer}
+.wz-turn-tab.active{color:#fff;border-color:#ff3131}
+.wz-turn-panel{padding:0 12px 14px}
+.wz-turn-box{
+  border:1px solid #232730;background:#0e1218;border-radius:18px;padding:14px
+}
+.wz-turn-box h3{margin:0 0 12px;font-size:1rem}
+.wz-turn-about{color:#c5c8cf;font-size:.82rem;line-height:1.65;margin-bottom:14px}
+.wz-turn-detailrows{display:grid;gap:10px}
+.wz-turn-detailrow{display:flex;justify-content:space-between;gap:16px;padding-bottom:10px;border-bottom:1px solid #1f232b}
+.wz-turn-detailrow:last-child{border-bottom:0;padding-bottom:0}
+.wz-turn-detailrow span{color:#9ca0a8;font-size:.79rem}
+.wz-turn-detailrow b{text-align:right;font-size:.8rem}
+.wz-turn-subtoggle{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.wz-turn-subbtn{
+  min-height:42px;border-radius:14px;border:1px solid #2a2f39;background:#10141b;color:#d2d5dd;font-weight:900;cursor:pointer
+}
+.wz-turn-subbtn.active{background:#191020;color:#fff;border-color:#ff3131;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.wz-turn-bracket-wrap{overflow:auto;padding-bottom:4px;scrollbar-width:thin}
+.wz-turn-bracket{
+  min-width:820px;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(170px,1fr);gap:18px;align-items:center
+}
+.wz-turn-round{display:flex;flex-direction:column;gap:12px}
+.wz-turn-round-title{text-align:center;color:#b8bcc3;font-size:.72rem;font-weight:1000;text-transform:uppercase}
+.wz-turn-match{position:relative;border:1px solid #2a2f39;background:#10141b;border-radius:14px;padding:8px}
+.wz-turn-match:after{content:'';position:absolute;top:50%;right:-18px;width:18px;height:2px;background:#8f2020}
+.wz-turn-round:last-child .wz-turn-match:after{display:none}
+.wz-turn-team{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:9px 8px;border-radius:10px;font-size:.73rem;align-items:center}
+.wz-turn-team+.wz-turn-team{border-top:1px solid #20252e}
+.wz-turn-team.win{background:#251214}
+.wz-turn-team span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wz-turn-score{font-weight:1000}
+.wz-turn-mapbox{
+  margin-top:14px;border:1px solid #232730;background:#11151c;border-radius:16px;overflow:hidden
+}
+.wz-turn-mapcover{height:110px;background:linear-gradient(135deg,#331515 0%,#18212f 58%,#0d1014 100%)}
+.wz-turn-mapcontent{padding:12px}
+.wz-turn-mapcontent b{display:block;font-size:1rem}
+.wz-turn-mapcontent span{display:block;color:#a6abb3;font-size:.75rem;margin-top:4px}
+.wz-turn-acc{display:grid;gap:10px}
+.wz-turn-accitem{border:1px solid #232730;background:#0f1319;border-radius:14px;overflow:hidden}
+.wz-turn-accbtn{
+  width:100%;display:flex;justify-content:space-between;gap:10px;align-items:center;background:none;border:0;color:#fff;padding:13px 14px;font-size:.84rem;font-weight:900;cursor:pointer;text-align:left
+}
+.wz-turn-acccontent{padding:0 14px 14px;color:#c4c8cf;font-size:.78rem;line-height:1.6;display:none}
+.wz-turn-accitem.open .wz-turn-acccontent{display:block}
+.wz-turn-prizes{display:grid;gap:10px}
+.wz-turn-prize{
+  display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid #2a2f39;background:#10141b;border-radius:14px;padding:12px
+}
+.wz-turn-prize.pos1{background:linear-gradient(180deg,#2c2012,#17120d);border-color:#60411a}
+.wz-turn-prize.pos2{background:linear-gradient(180deg,#1c1f26,#11141b);border-color:#373c46}
+.wz-turn-prize.pos3{background:linear-gradient(180deg,#2b1914,#151016);border-color:#5d2f20}
+.wz-turn-prize .icon{font-size:1.5rem;text-align:center}
+.wz-turn-prize b{font-size:1.05rem}
+.wz-turn-prize span{display:block;color:#afb3bb;font-size:.75rem;margin-top:2px}
+.wz-turn-prize strong{font-size:.96rem}
+.wz-turn-matchlist{display:grid;gap:9px}
+.wz-turn-matchrow{
+  display:grid;grid-template-columns:58px minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid #2a2f39;background:#10141b;border-radius:12px;padding:10px
+}
+.wz-turn-matchrow small{display:block;color:#8f949c}
+.wz-turn-matchrow b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wz-turn-ranking{
+  margin-top:14px;border-top:1px solid #21252d;padding-top:14px
+}
+.wz-turn-ranking h4{margin:0 0 10px;font-size:.95rem}
+.wz-turn-rankrow{display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid #1d2128}
+.wz-turn-rankrow:last-child{border-bottom:0}
+.wz-turn-rankbadge{width:28px;height:28px;border-radius:9px;background:#171b22;display:grid;place-items:center;font-size:.75rem;font-weight:1000}
+
+@media(max-width:768px){
+  body{padding-bottom:calc(92px + env(safe-area-inset-bottom))!important}
+  .wz-mobile-bottom-nav{position:fixed!important;left:10px!important;right:10px!important;bottom:calc(8px + env(safe-area-inset-bottom))!important;z-index:20000!important}
+  .wz-turn-info-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media(max-width:520px){
+  .wz-turn-info-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .wz-turn-info{padding:10px 6px}
+  .wz-turn-info b{font-size:.82rem}
+  .wz-turn-info span{font-size:.61rem}
+  .wz-turn-h1{font-size:1.75rem;max-width:72%}
+  .wz-turn-detailrow{gap:10px}
+}
+@media(max-width:390px){
+  .wz-turn-card-actions{flex-direction:column;align-items:stretch}
+  .wz-turn-game-logo{width:36px;height:36px}
+}
+</style>
+
+
+
+<style id="wz-tournament-v7-overrides">
+/* Tournament simplification */
+body.wz-view-tournament #wzViewName{display:block!important}
+body.wz-view-tournament .wz-profile-top-copy small{display:none!important}
+body.wz-view-tournament .wz-esports-kicker{color:#ff4d4d!important}
+body.wz-view-tournament .wz-esports-stage{display:block!important}
+body.wz-view-tournament .wz-esports-sidebar{
+  position:static!important;
+  margin-bottom:12px!important;
+  border-radius:18px!important;
+}
+body.wz-view-tournament .wz-esports-sidehead{
+  padding:14px 14px 10px!important;
+}
+body.wz-view-tournament .wz-esports-sidehead p{
+  display:none!important;
+}
+body.wz-view-tournament .wz-esports-filters{
+  padding:9px 10px 2px!important;
+}
+body.wz-view-tournament .wz-esports-list{
+  display:grid!important;
+  grid-auto-flow:column!important;
+  grid-auto-columns:minmax(260px, 320px)!important;
+  gap:8px!important;
+  max-height:none!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  padding:8px 10px 12px!important;
+  scrollbar-width:none!important;
+  scroll-snap-type:x proximity!important;
+}
+body.wz-view-tournament .wz-esports-list::-webkit-scrollbar{display:none!important}
+body.wz-view-tournament .wz-esports-event{
+  margin:0!important;
+  background:#111115!important;
+  border:1px solid #2a2a30!important;
+  border-radius:16px!important;
+  scroll-snap-align:start!important;
+}
+body.wz-view-tournament .wz-esports-event.active{
+  background:#190f11!important;
+  border-color:#7a272a!important;
+}
+body.wz-view-tournament .wz-esports-main{
+  border-radius:18px!important;
+}
+body.wz-view-tournament .wz-esports-hero{
+  min-height:185px!important;
+  padding:18px!important;
+}
+body.wz-view-tournament .wz-esports-hero:before{
+  font-size:150px!important;
+  top:-16%!important;
+  right:-6%!important;
+}
+body.wz-view-tournament .wz-esports-hero h2{
+  font-size:1.8rem!important;
+  line-height:.96!important;
+}
+body.wz-view-tournament .wz-esports-subtitle{
+  font-size:.82rem!important;
+}
+body.wz-view-tournament .wz-esports-summary{
+  grid-template-columns:1fr 1fr!important;
+  gap:8px!important;
+  padding:10px!important;
+}
+body.wz-view-tournament .wz-esports-stat{
+  padding:10px!important;
+}
+body.wz-view-tournament .wz-esports-tabs{
+  padding:8px!important;
+}
+body.wz-view-tournament .wz-esports-tab{
+  font-size:.7rem!important;
+  padding:8px 10px!important;
+}
+body.wz-view-tournament .wz-esports-body{
+  padding:12px!important;
+}
+body.wz-view-tournament .wz-esports-overview{
+  grid-template-columns:1fr!important;
+}
+body.wz-view-tournament .wz-esports-panel{
+  border-radius:16px!important;
+  padding:14px!important;
+}
+body.wz-view-tournament .wz-results-podium{
+  grid-template-columns:1fr!important;
+}
+body.wz-view-tournament .wz-esports-kicker + h3,
+body.wz-view-tournament .wz-esports-kicker + h2{
+  letter-spacing:0!important;
+}
+body.wz-view-tournament .wz-bracket-round-title,
+body.wz-view-tournament .wz-esports-section-title h3,
+body.wz-view-tournament .wz-podium-card strong,
+body.wz-view-tournament .wz-result-row .winner{
+  color:#fff!important;
+}
+@media (min-width: 769px){
+  body.wz-view-tournament .wz-esports-list{
+    grid-auto-columns:minmax(280px, 320px)!important;
+  }
+}
+</style>
+
+
+<style id="wz-v9-cleanup">
+/* ===== V9 cleanup ===== */
+
+/* Market: remove the large introductory promo block entirely */
+#wzMobileMarketIntro{display:none!important}
+
+/* Tournament: one clean title at the top, before the list */
+body.wz-view-tournament #wzMobileTournamentHero{
+  display:block!important;
+  min-height:auto!important;
+  margin:0 0 12px!important;
+  padding:16px 18px!important;
+  border-radius:18px!important;
+  border:1px solid #2a2a30!important;
+  background:
+    radial-gradient(circle at 88% 30%,rgba(226,18,18,.18),transparent 30%),
+    linear-gradient(135deg,#121216,#09090b)!important;
+  box-shadow:none!important;
+}
+body.wz-view-tournament #wzMobileTournamentHero:after{display:none!important}
+body.wz-view-tournament #wzMobileTournamentHero .wz-mobile-kicker{
+  font-size:.64rem!important;
+  color:#ff4a4a!important;
+}
+body.wz-view-tournament #wzMobileTournamentHero h2{
+  margin:4px 0!important;
+  font-size:1.45rem!important;
+}
+body.wz-view-tournament #wzMobileTournamentHero p{
+  max-width:760px!important;
+  margin:0!important;
+  color:#92929d!important;
+  font-size:.78rem!important;
+  line-height:1.45!important;
+}
+
+/* Old tournament headings should never appear. */
+body.wz-view-tournament .tv2-section-heading{display:none!important}
+
+/* Desktop uses the header navigation. Mobile uses the fixed bottom navigation. */
+@media(max-width:768px){
+  .wz-desktop-nav{display:none!important}
+  .wz-mobile-bottom-nav{
+    display:grid!important;
+    position:fixed!important;
+    left:10px!important;
+    right:10px!important;
+    bottom:calc(8px + env(safe-area-inset-bottom))!important;
+    z-index:22000!important;
+  }
+}
+@media(min-width:769px){
+  .wz-mobile-bottom-nav{display:none!important}
+  .wz-desktop-nav{display:flex!important}
+}
+
+
+
+/* Prediction UI */
+.wz-predict-hero{
+  border:1px solid #542021;
+  border-radius:16px;
+  padding:14px;
+  background:
+    radial-gradient(circle at 90% 15%,rgba(226,18,18,.18),transparent 30%),
+    #101318;
+  margin-bottom:12px;
+}
+.wz-predict-hero small{
+  display:block;color:#ff5656;font-size:.65rem;font-weight:1000;letter-spacing:1.3px
+}
+.wz-predict-hero h3{margin:5px 0 5px;font-size:1rem}
+.wz-predict-hero p{margin:0;color:#a9adb6;font-size:.77rem;line-height:1.5}
+.wz-predict-prize{
+  margin-top:10px;
+  display:flex;justify-content:space-between;gap:12px;align-items:center;
+  border:1px solid #292e37;background:#0c1015;border-radius:12px;padding:10px 12px
+}
+.wz-predict-prize span{color:#969ba5;font-size:.72rem}
+.wz-predict-prize strong{font-size:.82rem;text-align:right}
+.wz-pick-list{display:grid;gap:10px}
+.wz-pick-match{
+  border:1px solid #262b34;background:#0f1319;border-radius:14px;padding:10px
+}
+.wz-pick-match-head{
+  display:flex;justify-content:space-between;gap:10px;align-items:center;
+  margin-bottom:8px;color:#8f949d;font-size:.66rem
+}
+.wz-pick-options{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.wz-pick-btn{
+  min-height:42px;border-radius:11px;border:1px solid #2b3039;background:#151920;color:#d5d8df;
+  padding:8px 10px;font-size:.73rem;font-weight:900;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.wz-pick-btn.active{border-color:#e31b1b;background:#281012;color:#fff;box-shadow:inset 0 0 0 1px rgba(227,27,27,.15)}
+.wz-predict-save{
+  width:100%;margin-top:12px;min-height:46px;border:0;border-radius:13px;
+  background:linear-gradient(180deg,#ef2c2c,#b60f0f);color:#fff;font-weight:1000;cursor:pointer
+}
+.wz-predict-note{
+  margin-top:9px;color:#777d87;font-size:.68rem;line-height:1.45
+}
+</style>
+
+
+<style id="wz-v10-bottom-fix">
+@media(max-width:768px){
+  body{
+    padding-bottom:calc(78px + env(safe-area-inset-bottom))!important;
+  }
+  .wz-mobile-bottom-nav{
+    left:0!important;
+    right:0!important;
+    bottom:0!important;
+    width:100%!important;
+    margin:0!important;
+    gap:0!important;
+    padding:6px 8px calc(6px + env(safe-area-inset-bottom))!important;
+    border-left:0!important;
+    border-right:0!important;
+    border-bottom:0!important;
+    border-radius:18px 18px 0 0!important;
+    background:rgba(7,7,9,.985)!important;
+    box-shadow:0 -8px 32px rgba(0,0,0,.55)!important;
+  }
+  .wz-mobile-nav-btn{
+    border-radius:12px!important;
+  }
+}
+</style>
+
+
+<style id="wz-v11-image-zoom">
+#imageModal .main-slider{
+  overflow:hidden!important;
+  position:relative!important;
+  touch-action:none;
+}
+#imageModal #modalMainImg{
+  transform-origin:center center;
+  transition:transform .16s ease;
+  cursor:zoom-in;
+  user-select:none;
+  -webkit-user-drag:none;
+  max-height:68vh;
+  object-fit:contain;
+}
+#imageModal #modalMainImg[style*="scale(2"],
+#imageModal #modalMainImg[style*="scale(3"],
+#imageModal #modalMainImg[style*="scale(4"]{
+  cursor:zoom-out;
+}
+.wz-image-zoom-controls{
+  position:absolute;
+  left:50%;
+  bottom:42px;
+  transform:translateX(-50%);
+  z-index:9;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:5px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:14px;
+  background:rgba(8,8,10,.88);
+  backdrop-filter:blur(12px);
+  box-shadow:0 8px 28px rgba(0,0,0,.45);
+}
+.wz-zoom-btn,.wz-zoom-reset{
+  height:38px;
+  border:1px solid #303038;
+  border-radius:10px;
+  background:#17171c;
+  color:#fff;
+  font-weight:1000;
+  cursor:pointer;
+}
+.wz-zoom-btn{
+  width:40px;
+  font-size:1.25rem;
+}
+.wz-zoom-reset{
+  min-width:62px;
+  padding:0 10px;
+  font-size:.75rem;
+}
+#imageModal .zoom-info{
+  bottom:10px!important;
+  left:50%!important;
+  transform:translateX(-50%)!important;
+  white-space:nowrap;
+}
+@media(max-width:768px){
+  #imageModal .modal-content{
+    width:calc(100vw - 20px)!important;
+    max-width:none!important;
+  }
+  #imageModal #modalMainImg{
+    max-height:60dvh;
+  }
+  .wz-image-zoom-controls{
+    bottom:44px;
+  }
+}
+</style>
+
+
+<style id="wz-v12-image-pan">
+#imageModal .main-slider{
+  touch-action:none!important;
+  overscroll-behavior:none!important;
+}
+#imageModal #modalMainImg{
+  will-change:transform;
+  touch-action:none!important;
+}
+#imageModal #modalMainImg.wz-dragging{
+  cursor:grabbing!important;
+}
+</style>
+
+
+<style id="wz-v13-profile-visibility">
+#wzProfileTopBtn[style*="display:none"]{display:none!important}
+</style>
+
+
+<script id="wz-v14-avatar-helper">
+window.wzAvatarData = function(name){
+  const clean=String(name||'W').trim();
+  const parts=clean.split(/[\s_-]+/).filter(Boolean);
+  let initials='';
+  if(parts.length>=2){
+    initials=(parts[0][0]||'')+(parts[1][0]||'');
+  }else{
+    initials=clean.slice(0,2);
+  }
+  initials=(initials||'W').toUpperCase();
+  const svg=
+    `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">`+
+    `<rect width="128" height="128" rx="64" fill="#151519"/>`+
+    `<circle cx="64" cy="64" r="61" fill="none" stroke="#e31b1b" stroke-width="4"/>`+
+    `<text x="64" y="72" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="42" font-weight="800" fill="#ffffff">${initials.replace(/[<>&"]/g,'')}</text>`+
+    `</svg>`;
+  return 'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg);
+};
+</script>
+
+
+<style id="wz-v14-profile-stability">
+body.wz-view-profile:not(.wz-profile-ready) #wzMobileProfileView{
+  visibility:hidden!important;
+}
+body.wz-view-profile.wz-profile-ready #wzMobileProfileView{
+  visibility:visible!important;
+}
+</style>
+
+
+<style id="wz-v15-tabs-fix">
+@media(max-width:768px){
+  .wz-turn-tabs{
+    display:grid!important;
+    grid-template-columns:repeat(5,minmax(0,1fr))!important;
+    width:100%!important;
+    overflow:visible!important;
+    gap:0!important;
+    padding:0 8px 12px!important;
+  }
+  .wz-turn-tab{
+    min-width:0!important;
+    width:100%!important;
+    padding:9px 2px!important;
+    font-size:.67rem!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:clip!important;
+    text-align:center!important;
+  }
+}
+@media(max-width:390px){
+  .wz-turn-tab{font-size:.62rem!important}
+}
+</style>
+
+
+<style id="wz-v17-nav-parse-fix">
+@media(max-width:768px){
+  .wz-mobile-bottom-nav{
+    display:grid!important;
+    visibility:visible!important;
+    opacity:1!important;
+    position:fixed!important;
+    left:0!important;
+    right:0!important;
+    bottom:0!important;
+    z-index:30000!important;
+  }
+}
+</style>
+
+
+<style id="wz-v18-category-touch-fix">
+@media(max-width:768px){
+  .category-filters{
+    touch-action:pan-x!important;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-x:contain;
+  }
+
+  /* Mobile browsers can keep :hover stuck after a swipe.
+     Only .active is allowed to stay red on touch devices. */
+  .filter-btn:hover:not(.active){
+    background:#101014!important;
+    border-color:#292930!important;
+    color:#aaaab3!important;
+    box-shadow:none!important;
+  }
+
+  .filter-btn.tukenenler-btn:hover:not(.active){
+    color:var(--weizend-red)!important;
+    border-color:var(--weizend-red)!important;
+    background:rgba(227,27,27,.1)!important;
+  }
+}
+
+@media(hover:hover) and (pointer:fine){
+  .filter-btn:hover{
+    background:var(--weizend-red)!important;
+    border-color:var(--weizend-red)!important;
+    color:#fff!important;
+  }
+}
+</style>
+
+
+<style id="wz-v19-nav-state">
+@media(max-width:768px){
+  body.wz-view-profile #wzNavMarket,
+  body.wz-view-profile #wzNavTournament{
+    background:transparent!important;
+    color:#81818b!important;
+  }
+  body.wz-view-profile #wzNavMarket:before,
+  body.wz-view-profile #wzNavTournament:before{
+    display:none!important;
+  }
+}
+</style>
+
+
+<style id="wz-v21-market-safety">
+body.wz-view-market #marketContent{
+  display:block!important;
+}
+body.wz-view-market .market-search-wrap{
+  display:block!important;
+}
+body.wz-view-market #filters{
+  display:flex!important;
+}
+body.wz-view-market #urunGrid{
+  display:grid!important;
+}
+body.wz-view-market #tournamentMarketSection{
+  display:none!important;
+}
+</style>
+
+
+<style id="wz-v22-view-safety">
+body.wz-view-market #marketContent{
+  display:block!important;
+}
+body.wz-view-market > .container:first-of-type header{
+  display:block!important;
+}
+body.wz-view-market #urunGrid{
+  display:grid!important;
+}
+body.wz-view-market .market-search-wrap{
+  display:block!important;
+}
+body.wz-view-market #filters{
+  display:flex!important;
+}
+
+body.wz-view-profile #marketContent,
+body.wz-view-profile > .container:first-of-type header{
+  display:none!important;
+}
+</style>
+
+
+<style id="wz-v23-scroll-stability">
+#marketContent,
+#wzEsportsHub,
+#wzMobileProfileView,
+#urunGrid,
+.wz-turn-root{
+  overflow-anchor:none!important;
+}
+
+/* Switching views must never animate document scroll. */
+html,
+body{
+  scroll-behavior:auto!important;
+}
+</style>
+
+
+<script id="wz-v23-history-scroll">
+try{
+  if('scrollRestoration' in history){
+    history.scrollRestoration='manual';
+  }
+}catch(_){}
+</script>
+
+
+<style id="wz-v24-modal-scroll-lock">
+html.wz-page-modal-open,
+body.wz-page-modal-open{
+  overscroll-behavior:none!important;
+}
+
+body.wz-page-modal-open{
+  touch-action:none!important;
+}
+
+/* Every overlay must sit over the fixed Market/Turnuva navigation. */
+.modal-overlay,
+.verify-wait-overlay,
+.wz-product-info-overlay{
+  z-index:50000!important;
+  overscroll-behavior:none!important;
+  touch-action:none!important;
+}
+
+/* Only these inner surfaces may scroll while a window is open. */
+.modal-content,
+.modal-body,
+.redirect-modal-body,
+.purchase-body,
+.gift-modal-content,
+.notifications-modal-content,
+.inbox-modal-content,
+.inbox-body,
+.inbox-list,
+.inbox-conversation,
+#tv2ModalBody,
+.wz-product-info-card,
+.wz-product-info-body{
+  overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+  touch-action:pan-y!important;
+}
+
+/* Image viewer: pinch/pan remains enabled only inside the image area. */
+#imageModal .main-slider,
+#imageModal #modalMainImg{
+  touch-action:none!important;
+}
+
+/* Prevent scroll chaining from an inner modal to the frozen document. */
+.modal-content,
+.purchase-modal-content,
+.gift-modal-content,
+.inbox-modal-content,
+.wz-product-info-card{
+  max-height:88dvh!important;
+}
+
+@media(max-width:768px){
+  body.wz-page-modal-open .wz-mobile-bottom-nav{
+    pointer-events:none!important;
+  }
+}
+</style>
+
 </head>
 <body>
 
-    <script>
+<div class="wz-appbar" id="wzAppbar">
+  <div class="wz-appbar-inner">
+    <button class="wz-brand-button" type="button" onclick="wzSetView('market')" aria-label="Weizend Market">
+      <img src="https://i.hizliresim.com/fo5evkh4.png" alt="Weizend">
+      <span class="wz-brand-copy">
+        <strong>WEIZEND</strong>
+        <small id="wzViewName">MARKET</small>
+      </span>
+    </button>
+
+    <nav class="wz-desktop-nav" aria-label="Ana menü">
+      <button id="wzDesktopMarket" class="wz-desktop-nav-btn active" type="button" onclick="wzSetView('market')">
+        <span>Market</span>
+      </button>
+      <button id="wzDesktopTournament" class="wz-desktop-nav-btn" type="button" onclick="wzSetView('tournament')">
+        <span>Turnuvalar</span>
+      </button>
+    </nav>
+
+    <button class="wz-profile-top-btn" id="wzProfileTopBtn" type="button" style="display:none" onclick="wzSetView('profile')" aria-label="Profil">
+      <img id="wzTopProfileAvatar" src="https://i.hizliresim.com/fo5evkh4.png" alt="">
+      <span class="wz-profile-top-copy">
+        <strong id="wzTopProfileName">Profil</strong>
+        <small>Hesabım</small>
+      </span>
+      <span class="wz-profile-chevron">›</span>
+    </button>
+  </div>
+</div>
+
+<nav class="wz-mobile-bottom-nav" id="wzMobileBottomNav" aria-label="Mobil ana menü">
+  <button class="wz-mobile-nav-btn" id="wzNavMarket" type="button" onclick="wzSetView('market')" aria-label="Market">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18l-1.5 9h-15z"/><path d="M8 7a4 4 0 0 1 8 0"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg>
+    <span>Market</span>
+  </button>
+  <button class="wz-mobile-nav-btn" id="wzNavTournament" type="button" onclick="wzSetView('tournament')" aria-label="Turnuvalar">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M12 13v4"/><path d="M8 21h8"/><path d="M6 6H3v1a4 4 0 0 0 4 4"/><path d="M18 6h3v1a4 4 0 0 1-4 4"/></svg>
+    <span>Turnuva</span>
+  </button>
+</nav>
+
+
+<script id="wz-v12-early-profile">
+(function(){
+  function sessionToken(){
+    try{
+      return localStorage.getItem('weizend_market_session_secure_v2') || '';
+    }catch(_){ return ''; }
+  }
+
+  function hydrate(){
+    const token=sessionToken();
+    const button=document.getElementById('wzProfileTopBtn');
+
+    // Visitor: no profile/logo button at all.
+    if(!token){
+      if(button) button.style.display='none';
+      return;
+    }
+
+    if(button) button.style.display='grid';
+
+    try{
+      const raw=localStorage.getItem('weizend_market_profile_secure_v2');
+      const cache=raw?JSON.parse(raw):null;
+      if(!cache) return;
+
+      const name=String(cache.username || 'Profil').trim();
+      const avatar=String(
+        cache.avatarUrl ||
+        cache.avatar ||
+        cache.profileImage ||
+        (window.wzAvatarData ? window.wzAvatarData(name) : '')
+      );
+
+      const img=document.getElementById('wzTopProfileAvatar');
+      const label=document.getElementById('wzTopProfileName');
+      if(img) img.src=avatar;
+      if(label) label.textContent=name;
+    }catch(_){}
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',hydrate,{once:true});
+  }else{
+    hydrate();
+  }
+})();
+</script>
+
+<script>
         // TÜM ÜRÜN TASLAKLARI
         const URUNLER = [
             {
@@ -1302,6 +2717,11 @@
             <div class="category-filters" id="filters"></div>
 
             <section id="tournamentMarketSection" class="tv2-market-section" style="display:none;">
+                <div class="wz-mobile-tournament-hero" id="wzMobileTournamentHero">
+  <div class="wz-mobile-kicker">WEIZEND</div>
+  <h2>Turnuvalar</h2>
+  <p>Aktif ve tamamlanan turnuvaları, katılımcıları, kayıt durumunu ve fikstürü tek yerden takip et.</p>
+</div>
                 <div class="tv2-section-heading">
                     <div>
                         <div class="tv2-section-kicker">🏆 WEIZEND TURNUVALARI</div>
@@ -1315,6 +2735,76 @@
 
             <div class="grid" id="urunGrid"></div>
         </div>
+                <div id="wzEsportsHub" class="wz-esports-hub">
+                    <div class="wz-esports-loading">🏆 Turnuva merkezi hazırlanıyor...</div>
+                </div>
+    </div>
+
+    <div class="container">
+        <section id="wzMobileProfileView" aria-label="Profil">
+  <div id="wzProfileAuthenticated">
+    <div class="wz-profile-hero">
+      <div class="wz-profile-head">
+        <img id="wzProfileAvatar" class="wz-profile-avatar" src="https://ui-avatars.com/api/?name=W&background=e31b1b&color=fff&bold=true&size=128" alt="Profil">
+        <div style="min-width:0;">
+          <div id="wzProfileName" class="wz-profile-name">Kullanıcı</div>
+          <div class="wz-profile-state"><i></i><span id="wzProfileState">Doğrulanmış Kick hesabı</span></div>
+        </div>
+      </div>
+      <div class="wz-profile-stats">
+        <div class="wz-profile-stat"><span>🪙 Bakiye</span><strong id="wzProfilePoints">-</strong></div>
+        <div class="wz-profile-stat"><span>⭐ Level</span><strong id="wzProfileLevel">-</strong></div>
+      </div>
+    </div>
+
+    <div class="wz-profile-section">
+      <div class="wz-profile-section-title">Hesap Bilgileri</div>
+      <div class="wz-profile-info-row"><span>Kick Kullanıcı Adı</span><strong id="wzProfileKick">-</strong></div>
+      <div class="wz-profile-info-row"><span>Hesap Durumu</span><strong id="wzProfileAccountStatus">Aktif</strong></div>
+    </div>
+
+    <div class="wz-profile-section">
+      <div class="wz-profile-section-title">Hızlı İşlemler</div>
+      <div class="wz-profile-actions">
+        <button class="wz-profile-action featured" type="button" onclick="wzOpenMessages()">
+          <span class="wz-action-icon">✉</span>
+          <span><b>Mesaj Kutusu</b><small>Yönetici ve sistem mesajlarını görüntüle</small></span>
+          <i>›</i>
+        </button>
+        <button class="wz-profile-action" type="button" onclick="openGiftRedeem()">
+          <span class="wz-action-icon">🎁</span>
+          <span><b>Hediye Kodu</b><small>Tek kullanımlık kodunu hesabına tanımla</small></span>
+          <i>›</i>
+        </button>
+        <a class="wz-profile-action" href="https://weizend.github.io/weizendbilgi/" target="_blank" rel="noopener noreferrer">
+          <span class="wz-action-icon">?</span>
+          <span><b>Puan Nasıl Kazanılır?</b><small>Weizend puan sistemi hakkında bilgi al</small></span>
+          <i>↗</i>
+        </a>
+        <a class="wz-profile-action" href="https://instagram.com/weizendtv" target="_blank" rel="noopener noreferrer">
+          <span class="wz-action-icon">◎</span>
+          <span><b>İletişim</b><small>Instagram @weizendtv</small></span>
+          <i>↗</i>
+        </a>
+        <button class="wz-profile-action" type="button" onclick="location.reload()">
+          <span class="wz-action-icon">↻</span>
+          <span><b>Bilgileri Yenile</b><small>Puan, level ve stok bilgilerini yeniden al</small></span>
+          <i>›</i>
+        </button>
+        <button class="wz-profile-action danger" type="button" onclick="logoutAccount()">
+          <span class="wz-action-icon">↪</span>
+          <span><b>Çıkış Yap</b><small>Güvenli oturumu kapat</small></span>
+          <i>›</i>
+        </button>
+      </div>
+    </div>
+  </div>
+  <div id="wzProfileGuest" class="wz-profile-login" style="display:none;">
+    <strong>Profilini görüntülemek için hesabını doğrula</strong>
+    Kick hesabın doğrulandığında puanın, levelin ve hesap bilgilerin burada görünür.
+    <button type="button" onclick="wzGoToLogin()">Kick Hesabını Doğrula</button>
+  </div>
+</section>
     </div>
 
     <div id="copyToast" class="copy-toast" style="display:none!important" aria-hidden="true"></div>
@@ -1330,9 +2820,16 @@
             <div class="modal-body">
                 <div class="main-slider" id="modalSlider">
                     <button class="nav-btn prev-btn" id="prevBtn" onclick="oncekiResim(event)">❮</button>
-                    <img id="modalMainImg" src="" alt="Önizleme">
+                    <img id="modalMainImg" src="" alt="Önizleme" onclick="resmeTiklaZoom(event)">
                     <button class="nav-btn next-btn" id="nextBtn" onclick="sonrakiResim(event)">❯</button>
-                    <div class="zoom-info">Fare tekerleği ile yakınlaştır</div>
+
+                    <div class="wz-image-zoom-controls" onclick="event.stopPropagation()">
+                        <button type="button" class="wz-zoom-btn" onclick="zoomAzalt(event)" aria-label="Uzaklaştır">−</button>
+                        <button type="button" class="wz-zoom-reset" id="wzZoomLevel" onclick="zoomSifirla(); zoomEtiketiGuncelle();" aria-label="Yakınlaştırmayı sıfırla">100%</button>
+                        <button type="button" class="wz-zoom-btn" onclick="zoomArtir(event)" aria-label="Yakınlaştır">+</button>
+                    </div>
+
+                    <div class="zoom-info">Dokunarak veya + / − ile yakınlaştır</div>
                 </div>
                 <div class="thumbnail-list" id="modalThumbnails"></div>
             </div>
@@ -1479,6 +2976,9 @@
                         <div id="inboxList" class="inbox-list">
                             <div class="inbox-empty">Mesajlar yükleniyor...</div>
                         </div>
+                        <div class="wz-inbox-extra" id="wzInboxExtra">
+  <button type="button" onclick="wzOpenGiftFromInbox()">🎁 Hediye Kodu Kullan</button>
+</div>
                     </div>
                 </div>
 
@@ -1567,6 +3067,13 @@
         let redirectTimer = null;
         let pendingKickWindow = null;
         let zoomLevel = 1;
+        let wzPanX = 0;
+        let wzPanY = 0;
+        let wzPanStartX = 0;
+        let wzPanStartY = 0;
+        let wzPanBaseX = 0;
+        let wzPanBaseY = 0;
+        let wzImageDragging = false;
         let currentUsername = "";
         let currentMarketPoints = 0;
         let currentPurchaseProductId = "";
@@ -1761,45 +3268,80 @@
             'redirectModal',
             'purchaseModal',
             'giftRedeemModal',
+            'actionResultModal',
             'inboxModal',
             'tv2Modal',
-            'verificationWaitModal'
+            'verificationWaitModal',
+            'wzProductInfoModal'
         ];
+
         let marketScrollLocked = false;
         let marketLockedScrollY = 0;
         let marketModalObserver = null;
 
         function isMarketModalVisible(element) {
             if (!element) return false;
+
+            // Custom product-info modal uses the .open class.
+            if (element.id === 'wzProductInfoModal') {
+                return element.classList.contains('open');
+            }
+
             const style = window.getComputedStyle(element);
-            return style.display !== 'none' && style.visibility !== 'hidden';
+            return style.display !== 'none'
+                && style.visibility !== 'hidden'
+                && Number(style.opacity || 1) !== 0;
         }
 
         function lockMarketPageScroll() {
             if (marketScrollLocked) return;
-            marketLockedScrollY = window.scrollY || window.pageYOffset || 0;
+
+            marketLockedScrollY = Math.max(
+                0,
+                window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0
+            );
             marketScrollLocked = true;
+
+            // Classic fixed-body lock:
+            // The background keeps the exact same visual position and cannot move.
+            document.documentElement.classList.add('wz-page-modal-open');
+            document.body.classList.add('wz-page-modal-open');
 
             document.body.style.position = 'fixed';
             document.body.style.top = `-${marketLockedScrollY}px`;
             document.body.style.left = '0';
             document.body.style.right = '0';
             document.body.style.width = '100%';
+
+            document.documentElement.style.overflow = 'hidden';
             document.body.style.overflow = 'hidden';
         }
 
         function unlockMarketPageScroll() {
             if (!marketScrollLocked) return;
+
+            const restoreY = marketLockedScrollY;
             marketScrollLocked = false;
+
+            document.documentElement.classList.remove('wz-page-modal-open');
+            document.body.classList.remove('wz-page-modal-open');
 
             document.body.style.position = '';
             document.body.style.top = '';
             document.body.style.left = '';
             document.body.style.right = '';
             document.body.style.width = '';
+            document.documentElement.style.overflow = '';
             document.body.style.overflow = '';
 
-            window.scrollTo(0, marketLockedScrollY);
+            // Restore synchronously so there is no "top -> old position" animation.
+            const oldHtml = document.documentElement.style.scrollBehavior;
+            const oldBody = document.body.style.scrollBehavior;
+            document.documentElement.style.scrollBehavior = 'auto';
+            document.body.style.scrollBehavior = 'auto';
+            window.scrollTo(0, restoreY);
+            document.documentElement.style.scrollBehavior = oldHtml;
+            document.body.style.scrollBehavior = oldBody;
         }
 
         function syncMarketModalScrollLock() {
@@ -1815,15 +3357,17 @@
             if (marketModalObserver) return;
 
             marketModalObserver = new MutationObserver(() => {
-                requestAnimationFrame(syncMarketModalScrollLock);
+                // Run in the same task; don't leave one paint where the background is free.
+                syncMarketModalScrollLock();
             });
 
             for (const id of MARKET_MODAL_IDS) {
                 const element = document.getElementById(id);
                 if (!element) continue;
+
                 marketModalObserver.observe(element, {
                     attributes:true,
-                    attributeFilter:['style','class']
+                    attributeFilter:['style','class','aria-hidden']
                 });
             }
 
@@ -2292,7 +3836,7 @@
             document.getElementById('marketContent').style.display = 'block';
 
             document.getElementById('walletUsername').innerText = username;
-            document.getElementById('walletAvatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=e31b1b&color=fff&bold=true&size=128`;
+            document.getElementById('walletAvatar').src = window.wzAvatarData ? window.wzAvatarData(username) : '';
             document.getElementById('walletPoints').innerText = (points ?? 0).toLocaleString('tr-TR') + ' Puan';
             document.getElementById('walletLevel').innerText = level !== null ? level.toLocaleString('tr-TR') : '-';
 
@@ -5112,23 +6656,175 @@ return;
             thumbElement.classList.add('active');
         }
 
+        function zoomEtiketiGuncelle() {
+            const label = document.getElementById('wzZoomLevel');
+            if(label) label.textContent = `${Math.round(zoomLevel * 100)}%`;
+        }
+
+        function wzPanSinirla() {
+            if(zoomLevel <= 1) {
+                wzPanX = 0;
+                wzPanY = 0;
+                return;
+            }
+
+            const slider = document.getElementById('modalSlider');
+            const img = document.getElementById('modalMainImg');
+            if(!slider || !img) return;
+
+            const sliderRect = slider.getBoundingClientRect();
+            const imgRect = img.getBoundingClientRect();
+
+            const scaledW = Math.max(img.offsetWidth * zoomLevel, imgRect.width);
+            const scaledH = Math.max(img.offsetHeight * zoomLevel, imgRect.height);
+
+            const maxX = Math.max(0, (scaledW - sliderRect.width) / 2 + 40);
+            const maxY = Math.max(0, (scaledH - sliderRect.height) / 2 + 40);
+
+            wzPanX = Math.min(Math.max(wzPanX, -maxX), maxX);
+            wzPanY = Math.min(Math.max(wzPanY, -maxY), maxY);
+        }
+
+        function zoomUygula() {
+            zoomLevel = Math.min(Math.max(1, zoomLevel), 4);
+            if(zoomLevel <= 1) {
+                wzPanX = 0;
+                wzPanY = 0;
+            }
+
+            wzPanSinirla();
+
+            const img = document.getElementById('modalMainImg');
+            if(img) {
+                img.style.transform = `translate3d(${wzPanX}px, ${wzPanY}px, 0) scale(${zoomLevel})`;
+                img.style.cursor = zoomLevel > 1 ? (wzImageDragging ? 'grabbing' : 'grab') : 'zoom-in';
+            }
+            zoomEtiketiGuncelle();
+        }
+
         function zoomSifirla() {
             zoomLevel = 1;
-            document.getElementById('modalMainImg').style.transform = `scale(1)`;
+            wzPanX = 0;
+            wzPanY = 0;
+            wzImageDragging = false;
+            zoomUygula();
+        }
+
+        function zoomArtir(event) {
+            if(event) event.stopPropagation();
+            zoomLevel += 0.25;
+            zoomUygula();
+        }
+
+        function zoomAzalt(event) {
+            if(event) event.stopPropagation();
+            zoomLevel -= 0.25;
+            zoomUygula();
+        }
+
+        let wzLastDragEndedAt = 0;
+
+        function resmeTiklaZoom(event) {
+            event.stopPropagation();
+            if(Date.now() - wzLastDragEndedAt < 180) return;
+            if(zoomLevel > 1) {
+                zoomLevel = 1;
+                wzPanX = 0;
+                wzPanY = 0;
+            } else {
+                zoomLevel = 2;
+            }
+            zoomUygula();
         }
 
         document.getElementById('modalSlider').addEventListener('wheel', function(e) {
             e.preventDefault();
-            if (e.deltaY < 0) {
-                zoomLevel += 0.2; 
-            } else {
-                zoomLevel -= 0.2; 
+            zoomLevel += e.deltaY < 0 ? 0.2 : -0.2;
+            zoomUygula();
+        }, { passive:false });
+
+        // Mobilde iki parmakla pinch-to-zoom
+        let wzPinchStartDistance = 0;
+        let wzPinchStartZoom = 1;
+
+        function wzTouchDistance(touches) {
+            if(!touches || touches.length < 2) return 0;
+            const dx = touches[0].clientX - touches[1].clientX;
+            const dy = touches[0].clientY - touches[1].clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        document.getElementById('modalSlider').addEventListener('touchstart', function(e) {
+            if(e.touches.length === 2) {
+                wzPinchStartDistance = wzTouchDistance(e.touches);
+                wzPinchStartZoom = zoomLevel;
+                wzImageDragging = false;
+            } else if(e.touches.length === 1 && zoomLevel > 1) {
+                wzImageDragging = true;
+                wzPanStartX = e.touches[0].clientX;
+                wzPanStartY = e.touches[0].clientY;
+                wzPanBaseX = wzPanX;
+                wzPanBaseY = wzPanY;
+                zoomUygula();
             }
-            zoomLevel = Math.min(Math.max(1, zoomLevel), 4);
-            document.getElementById('modalMainImg').style.transform = `scale(${zoomLevel})`;
+        }, { passive:true });
+
+        document.getElementById('modalSlider').addEventListener('touchmove', function(e) {
+            if(e.touches.length === 2 && wzPinchStartDistance > 0) {
+                e.preventDefault();
+                const currentDistance = wzTouchDistance(e.touches);
+                zoomLevel = wzPinchStartZoom * (currentDistance / wzPinchStartDistance);
+                zoomUygula();
+            } else if(e.touches.length === 1 && wzImageDragging && zoomLevel > 1) {
+                e.preventDefault();
+                wzPanX = wzPanBaseX + (e.touches[0].clientX - wzPanStartX);
+                wzPanY = wzPanBaseY + (e.touches[0].clientY - wzPanStartY);
+                zoomUygula();
+            }
+        }, { passive:false });
+
+        document.getElementById('modalSlider').addEventListener('touchend', function(e) {
+            if(e.touches.length < 2) {
+                wzPinchStartDistance = 0;
+            }
+            if(e.touches.length === 0) {
+                if(wzImageDragging) wzLastDragEndedAt = Date.now();
+                wzImageDragging = false;
+                zoomUygula();
+            }
+        }, { passive:true });
+
+        const wzModalImage = document.getElementById('modalMainImg');
+
+        wzModalImage.addEventListener('mousedown', function(e) {
+            if(zoomLevel <= 1) return;
+            e.preventDefault();
+            wzImageDragging = true;
+            wzPanStartX = e.clientX;
+            wzPanStartY = e.clientY;
+            wzPanBaseX = wzPanX;
+            wzPanBaseY = wzPanY;
+            zoomUygula();
         });
 
+        window.addEventListener('mousemove', function(e) {
+            if(!wzImageDragging || zoomLevel <= 1) return;
+            e.preventDefault();
+            wzPanX = wzPanBaseX + (e.clientX - wzPanStartX);
+            wzPanY = wzPanBaseY + (e.clientY - wzPanStartY);
+            zoomUygula();
+        });
+
+        window.addEventListener('mouseup', function() {
+            if(!wzImageDragging) return;
+            wzLastDragEndedAt = Date.now();
+            wzImageDragging = false;
+            zoomUygula();
+        });
+
+
         function modaliAc(urunId, baslangicIndex) {
+            wzProductGalleryScrollY = window.scrollY || document.documentElement.scrollTop || 0;
             const urun = URUNLER.find(u => u.orijinalId === urunId);
             if(!urun) return;
 
@@ -7890,6 +9586,1238 @@ return;
         }
     });
     </script>
+
+
+<div id="wzProductInfoModal" class="wz-product-info-overlay" aria-hidden="true">
+  <div class="wz-product-info-card" role="dialog" aria-modal="true" aria-labelledby="wzProductInfoTitle">
+    <div class="wz-product-info-head">
+      <div>
+        <div class="wz-product-info-kicker">WEIZEND MARKET</div>
+        <h3 id="wzProductInfoTitle">Ürün Bilgisi</h3>
+      </div>
+      <button type="button" class="wz-product-info-close" onclick="wzCloseProductInfo()" aria-label="Kapat">✕</button>
+    </div>
+    <div id="wzProductInfoBody" class="wz-product-info-body"></div>
+  </div>
+</div>
+
+
+<script id="wz-experience-v5-js">
+(function(){
+  let currentView=(()=>{
+    try{
+      const early=window.__WZ_INITIAL_VIEW__;
+      if(['market','tournament','profile'].includes(early)) return early;
+      const saved=sessionStorage.getItem('wz_current_view') || 'market';
+      return ['market','tournament','profile'].includes(saved) ? saved : 'market';
+    }catch(_){ return 'market'; }
+  })();
+
+  function setText(id,value){
+    const el=document.getElementById(id);
+    if(el) el.textContent=value;
+  }
+  function getSessionToken(){
+    try{
+      const key=(typeof SESSION_STORAGE_KEY!=='undefined'?SESSION_STORAGE_KEY:'weizend_market_session_secure_v2');
+      return localStorage.getItem(key)||'';
+    }catch(_){return ''}
+  }
+  function getProfileCache(){
+    try{
+      const key=(typeof PROFILE_CACHE_KEY!=='undefined'?PROFILE_CACHE_KEY:'weizend_market_profile_cache_v1');
+      const raw=localStorage.getItem(key);
+      return raw?JSON.parse(raw):null;
+    }catch(_){return null}
+  }
+  function normalizeView(view){
+    return ['market','tournament','profile'].includes(view)?view:'market';
+  }
+  function updateTopbar(view){
+    const names={market:'MARKET',tournament:'TURNUVA',profile:'PROFİL'};
+    setText('wzViewName',names[view]||'WEIZEND');
+    document.getElementById('wzDesktopMarket')?.classList.toggle('active',view==='market');
+    document.getElementById('wzDesktopTournament')?.classList.toggle('active',view==='tournament');
+    document.getElementById('wzProfileTopBtn')?.classList.toggle('active',view==='profile');
+    document.getElementById('wzNavMarket')?.classList.toggle('active',view==='market');
+    document.getElementById('wzNavTournament')?.classList.toggle('active',view==='tournament');
+  }
+
+  const WZ_SCROLL_KEY_PREFIX='wz_v23_scroll_';
+
+  const wzViewScroll = {
+    market: Number(sessionStorage.getItem(WZ_SCROLL_KEY_PREFIX+'market') || 0),
+    tournament: Number(sessionStorage.getItem(WZ_SCROLL_KEY_PREFIX+'tournament') || 0),
+    profile: Number(sessionStorage.getItem(WZ_SCROLL_KEY_PREFIX+'profile') || 0)
+  };
+
+  let wzRestoringScroll=false;
+
+  function wzViewIsActuallyVisible(view){
+    return document.body.classList.contains('wz-view-'+view);
+  }
+
+  function wzRememberCurrentScroll(){
+    if(wzRestoringScroll) return;
+    if(!wzViewIsActuallyVisible(currentView)) return;
+
+    const y=Math.max(0,window.scrollY || document.documentElement.scrollTop || 0);
+    wzViewScroll[currentView]=y;
+
+    try{
+      sessionStorage.setItem(WZ_SCROLL_KEY_PREFIX+currentView,String(y));
+    }catch(_){}
+  }
+
+  function wzRestoreViewScroll(view){
+    let y=Math.max(0,Number(wzViewScroll[view] || 0));
+
+    // The visible page can change height after a category/product/tournament update.
+    // Never restore to an empty coordinate below the current page.
+    const maxY=Math.max(
+      0,
+      Math.max(
+        document.documentElement.scrollHeight || 0,
+        document.body.scrollHeight || 0
+      ) - window.innerHeight
+    );
+    y=Math.min(y,maxY);
+
+    wzRestoringScroll=true;
+
+    const oldHtml=document.documentElement.style.scrollBehavior;
+    const oldBody=document.body.style.scrollBehavior;
+    document.documentElement.style.scrollBehavior='auto';
+    document.body.style.scrollBehavior='auto';
+
+    window.scrollTo(0,y);
+
+    document.documentElement.style.scrollBehavior=oldHtml;
+    document.body.style.scrollBehavior=oldBody;
+
+    wzViewScroll[view]=y;
+    try{
+      sessionStorage.setItem(WZ_SCROLL_KEY_PREFIX+view,String(y));
+    }catch(_){}
+
+    queueMicrotask(()=>{
+      wzRestoringScroll=false;
+    });
+  }
+
+  window.wzRememberCurrentScroll=wzRememberCurrentScroll;
+  window.wzRestoreViewScroll=wzRestoreViewScroll;
+
+
+  let wzMarketCategory=(()=>{
+    try{
+      const saved=sessionStorage.getItem('wz_market_category_v20');
+      if(saved && saved !== 'Turnuva') return saved;
+
+      if(typeof aktifKategori!=='undefined' && aktifKategori && aktifKategori!=='Turnuva'){
+        return aktifKategori;
+      }
+    }catch(_){}
+    return 'Tümü';
+  })();
+
+  function wzSaveMarketCategory(category){
+    const value=String(category||'').trim();
+    if(!value || value==='Turnuva') return;
+    wzMarketCategory=value;
+    try{ sessionStorage.setItem('wz_market_category_v20',value); }catch(_){}
+  }
+  window.wzSaveMarketCategory=wzSaveMarketCategory;
+
+
+  // ----------------------------------------------------------
+  // MARKET/TURNUVA IZOLASYONU
+  // Yeni Turnuva sayfası artık eski "Turnuva ürün kategorisi" değildir.
+  // Eski kategori akışından kalan hiçbir çağrı Market gridini boşaltamaz.
+  // ----------------------------------------------------------
+  const wzLegacyFiltrele = (typeof filtrele==='function') ? filtrele : null;
+  const wzLegacyUrunleriYukle = (typeof urunleriYukle==='function') ? urunleriYukle : null;
+
+  function wzValidMarketCategory(category){
+    const requested=String(category||'').trim();
+
+    if(!requested || requested==='Turnuva') return 'Tümü';
+    if(requested==='Tümü' || requested==='Tükendi') return requested;
+
+    try{
+      const categories=new Set(
+        (Array.isArray(URUNLER)?URUNLER:[])
+          .filter(u=>u && u.durum==='on')
+          .map(u=>String(u.kategori||'').trim())
+          .filter(Boolean)
+      );
+      return categories.has(requested) ? requested : 'Tümü';
+    }catch(_){
+      return 'Tümü';
+    }
+  }
+
+  function wzRenderMarketNow(){
+    const market=document.getElementById('marketContent');
+    const filters=document.getElementById('filters');
+    const productGrid=document.getElementById('urunGrid');
+    const tournamentSection=document.getElementById('tournamentMarketSection');
+
+    if(market) market.style.display='block';
+    if(tournamentSection) tournamentSection.style.display='none';
+
+    let category=wzValidMarketCategory(wzMarketCategory);
+    wzMarketCategory=category;
+
+    try{
+      sessionStorage.setItem('wz_market_category_v20',category);
+    }catch(_){}
+
+    // Force the legacy global state back to a real Market category.
+    try{
+      if(typeof aktifKategori!=='undefined'){
+        aktifKategori=category;
+      }
+    }catch(_){}
+
+    try{
+      // Prefer the original product renderer captured before Tournament V2
+      // wrapped urunleriYukle(). This bypasses the old Turnuva-category branch.
+      if(typeof tv2BaseGridRender==='function'){
+        tv2BaseGridRender(category);
+      }else if(wzLegacyUrunleriYukle){
+        wzLegacyUrunleriYukle(category);
+      }
+    }catch(error){
+      console.error('WZ MARKET RENDER ERROR:',error);
+    }
+
+    // If a removed/renamed category was remembered, retry safely with Tümü.
+    try{
+      const hasProducts=productGrid && productGrid.querySelector('.card');
+      const hasEmptyMessage=productGrid && productGrid.querySelector('.market-empty-search');
+
+      if(!hasProducts && !hasEmptyMessage && Array.isArray(URUNLER) && URUNLER.length){
+        category='Tümü';
+        wzMarketCategory='Tümü';
+        aktifKategori='Tümü';
+        sessionStorage.setItem('wz_market_category_v20','Tümü');
+
+        if(typeof tv2BaseGridRender==='function'){
+          tv2BaseGridRender('Tümü');
+        }else if(wzLegacyUrunleriYukle){
+          wzLegacyUrunleriYukle('Tümü');
+        }
+      }
+    }catch(_){}
+
+    // Legacy Tournament category button may still be created internally,
+    // but it must never be visible in the new navigation.
+    cleanFilters();
+
+    if(filters) filters.style.removeProperty('display');
+    if(productGrid) productGrid.style.removeProperty('display');
+  }
+
+  // Any old code that still calls filtrele('Turnuva') is redirected to
+  // the new Tournament page instead of corrupting aktifKategori.
+  if(wzLegacyFiltrele){
+    filtrele=function(category){
+      const clean=String(category||'').trim();
+
+      if(clean==='Turnuva'){
+        if(typeof window.wzSetView==='function'){
+          window.wzSetView('tournament');
+        }
+        return;
+      }
+
+      const valid=wzValidMarketCategory(clean);
+      wzSaveMarketCategory(valid);
+      return wzLegacyFiltrele(valid);
+    };
+  }
+
+  // Any asynchronous legacy call with "Turnuva" is neutralized too.
+  if(wzLegacyUrunleriYukle){
+    urunleriYukle=function(category){
+      const clean=String(category||'').trim();
+      if(clean==='Turnuva'){
+        return wzLegacyUrunleriYukle(wzValidMarketCategory(wzMarketCategory));
+      }
+      return wzLegacyUrunleriYukle(wzValidMarketCategory(clean));
+    };
+  }
+
+  window.wzRenderMarketNow=wzRenderMarketNow;
+
+  window.wzSetView=function(view){
+    view=normalizeView(view);
+
+    if(view!==currentView){
+      wzRememberCurrentScroll();
+    }
+
+    currentView=view;
+    try{ sessionStorage.setItem('wz_current_view',view); }catch(_){}
+    document.body.classList.remove('wz-view-market','wz-view-tournament','wz-view-profile');
+    document.body.classList.add('wz-view-'+view);
+    updateTopbar(view);
+
+    if(view==='market'){
+      // Rebuild only the normal Market surface.
+      // Clear stale inline visibility from Profile/legacy flows first.
+      const marketEl=document.getElementById('marketContent');
+      const headerEl=document.querySelector('body > .container:first-of-type header');
+      if(marketEl) marketEl.style.display='block';
+      if(headerEl) headerEl.style.removeProperty('display');
+
+      // This never touches the legacy Turnuva category.
+      wzRenderMarketNow();
+      updateSearchMode('market');
+    }else if(view==='tournament'){
+      // The new Tournament page is independent from the Market product grid.
+      // Keep the legacy category variable pinned to the user's last Market category.
+      try{
+        if(typeof aktifKategori!=='undefined'){
+          aktifKategori=wzValidMarketCategory(wzMarketCategory);
+        }
+      }catch(_){}
+      updateSearchMode('tournament');
+      cleanFilters();
+      try{
+        if(typeof tv2LoadCatalog==='function' && typeof tv2CatalogLoadedOnce!=='undefined' && !tv2CatalogLoadedOnce){
+          tv2LoadCatalog(false).catch(()=>{});
+        }
+      }catch(_){}
+    }else{
+      syncProfile();
+    }
+
+    if(view==='market'){
+      // The Market DOM renderer above is synchronous.
+      // Restore before this click handler returns, so the browser never paints
+      // frame 0 at the top of the Market page.
+      wzRestoreViewScroll('market');
+    }else if(view!=='tournament'){
+      wzRestoreViewScroll(view);
+    }
+  };
+
+  let wzScrollRememberTimer=null;
+  window.addEventListener('scroll',()=>{
+    if(wzRestoringScroll) return;
+
+    clearTimeout(wzScrollRememberTimer);
+    wzScrollRememberTimer=setTimeout(()=>{
+      wzRememberCurrentScroll();
+    },80);
+  },{passive:true});
+
+  window.addEventListener('pagehide',()=>{
+    wzRememberCurrentScroll();
+  },{passive:true});
+
+  window.wzSetMobileView=window.wzSetView;
+
+  function updateSearchMode(view){
+    const input=document.getElementById('productSearchInput');
+    if(!input) return;
+    input.placeholder=view==='tournament'?'Turnuva adı, format veya oyun ara...':'Ürün adı, kategori veya komut ara...';
+  }
+
+  function cleanFilters(){
+    const filters=document.getElementById('filters');
+    if(!filters) return;
+    filters.querySelectorAll('button').forEach(btn=>{
+      btn.classList.toggle('wz-hide-nav',btn.textContent.trim()==='Turnuva');
+    });
+  }
+
+  function syncProfile(){
+    document.body.classList.remove('wz-profile-ready');
+    const token=getSessionToken();
+    const cache=getProfileCache()||{};
+    // A valid local session token means we keep the profile shell stable while
+    // the Worker silently revalidates in the background.
+    const authed=!!token;
+    const auth=document.getElementById('wzProfileAuthenticated');
+    const guest=document.getElementById('wzProfileGuest');
+    const topButton=document.getElementById('wzProfileTopBtn');
+    if(auth) auth.style.display=authed?'block':'none';
+    if(guest) guest.style.display=authed?'none':'block';
+    if(topButton) topButton.style.display=authed?'grid':'none';
+
+    if(!authed){
+      setText('wzTopProfileName','Profil');
+      const topAv=document.getElementById('wzTopProfileAvatar');
+      if(topAv) topAv.removeAttribute('src');
+      document.body.classList.add('wz-profile-ready');
+      return;
+    }
+
+    const walletName=(document.getElementById('walletUsername')?.textContent||'').trim();
+    const name=(cache.username || walletName || 'Kullanıcı').trim();
+
+    const cacheHasPoints=(cache.points !== undefined && cache.points !== null && Number.isFinite(Number(cache.points)));
+    const cacheHasLevel=(cache.level !== undefined && cache.level !== null && Number.isFinite(Number(cache.level)));
+
+    const cachedPoints=cacheHasPoints
+      ? Number(cache.points).toLocaleString('tr-TR') + ' Puan'
+      : '';
+    const cachedLevel=cacheHasLevel
+      ? Number(cache.level).toLocaleString('tr-TR')
+      : '';
+
+    const walletPointsRaw=(document.getElementById('walletPoints')?.textContent||'').trim();
+    const walletLevelRaw=(document.getElementById('walletLevel')?.textContent||'').trim();
+
+    const walletPointsValid=walletPointsRaw && walletPointsRaw !== '-' && !/^0\s*Puan$/i.test(walletPointsRaw);
+    const walletLevelValid=walletLevelRaw && walletLevelRaw !== '-';
+
+    // On refresh the hidden wallet can temporarily contain '-'.
+    // Never let that replace a valid cached value.
+    const points=(walletPointsValid ? walletPointsRaw : (cachedPoints || walletPointsRaw || '-')).trim();
+    const level=(walletLevelValid ? walletLevelRaw : (cachedLevel || walletLevelRaw || '-')).trim();
+
+    const cachedAvatar=String(cache.avatarUrl || cache.avatar || cache.profileImage || '');
+    const avatar=cachedAvatar || (window.wzAvatarData ? window.wzAvatarData(name) : '');
+    const status=String(cache.accountStatus || (typeof currentAccountStatus!=='undefined'?currentAccountStatus:'active') || 'active').toLowerCase();
+    const statusText=status==='blocked'?'Kısıtlı':status==='archived'?'Arşivlenmiş':'Aktif';
+
+    setText('wzProfileName',name);
+    setText('wzProfileKick',name);
+    setText('wzProfilePoints',points);
+    setText('wzProfileLevel',level);
+    setText('wzProfileAccountStatus',statusText);
+    setText('wzTopProfileName',name);
+
+    const av=document.getElementById('wzProfileAvatar'); if(av) av.src=avatar;
+    const topAv=document.getElementById('wzTopProfileAvatar'); if(topAv) topAv.src=avatar;
+    const state=document.getElementById('wzProfileState');
+    if(state) state.textContent=status==='active'?'Doğrulanmış Kick hesabı':`Hesap durumu: ${statusText}`;
+    document.body.classList.add('wz-profile-ready');
+  }
+  window.wzSyncProfile=syncProfile;
+
+  window.wzOpenMessages=function(){
+    if(typeof openInbox==='function') openInbox();
+  };
+  window.wzOpenGiftFromInbox=function(){
+    try{ if(typeof closeInbox==='function') closeInbox(); }catch(_){}
+    setTimeout(()=>{ if(typeof openGiftRedeem==='function') openGiftRedeem(); },80);
+  };
+  window.wzGoToLogin=function(){
+    wzSetView('market');
+    setTimeout(()=>{
+      const card=document.getElementById('accessCard');
+      if(card) card.scrollIntoView({behavior:'smooth',block:'center'});
+    },100);
+  };
+
+  let wzProductGalleryScrollY = 0;
+  let wzProductInfoScrollY = 0;
+
+  /* Product Detail / Shipping modal */
+  window.wzCloseProductInfo=function(){
+    const overlay=document.getElementById('wzProductInfoModal');
+    if(!overlay) return;
+    overlay.classList.remove('open');
+    overlay.setAttribute('aria-hidden','true');
+    document.body.classList.remove('wz-modal-lock');
+    try{ syncMarketModalScrollLock(); }catch(_){}
+  };
+  function openProductInfo(title,html){
+    wzProductInfoScrollY=window.scrollY||document.documentElement.scrollTop||0;
+    const overlay=document.getElementById('wzProductInfoModal');
+    const body=document.getElementById('wzProductInfoBody');
+    if(!overlay||!body) return;
+    setText('wzProductInfoTitle',title||'Ürün Bilgisi');
+    body.innerHTML=html||'<p>Bilgi bulunamadı.</p>';
+    body.scrollTop=0;
+    overlay.classList.add('open');
+    overlay.setAttribute('aria-hidden','false');
+    document.body.classList.add('wz-modal-lock');
+    try{ syncMarketModalScrollLock(); }catch(_){}
+  }
+
+  document.addEventListener('click',function(event){
+    const summary=event.target.closest('#urunGrid .card details > summary');
+    if(summary){
+      event.preventDefault();
+      event.stopPropagation();
+      const details=summary.parentElement;
+      if(details) details.open=false;
+      const content=details?.querySelector('.details-content');
+      openProductInfo(summary.textContent.trim(),content?.innerHTML||'');
+      return;
+    }
+
+    const overlay=event.target.closest('#wzProductInfoModal');
+    if(overlay && event.target===overlay) wzCloseProductInfo();
+  },true);
+
+  document.addEventListener('keydown',function(event){
+    if(event.key==='Escape'){
+      const overlay=document.getElementById('wzProductInfoModal');
+      if(overlay?.classList.contains('open')) wzCloseProductInfo();
+    }
+  });
+
+  /* Prevent inline detail boxes from being restored open after product rerenders. */
+  const productGrid=document.getElementById('urunGrid');
+  if(productGrid){
+    new MutationObserver(()=>{
+      productGrid.querySelectorAll('details[open]').forEach(d=>d.open=false);
+    }).observe(productGrid,{childList:true,subtree:true});
+  }
+
+  /* Keep modal/body scrolling sane for existing overlays. */
+  function syncModalLock(){
+    const productOpen=document.getElementById('wzProductInfoModal')?.classList.contains('open');
+    const existing=[...document.querySelectorAll('.modal-overlay,.verify-wait-overlay')].some(el=>{
+      const style=getComputedStyle(el);
+      return style.display!=='none' && style.visibility!=='hidden';
+    });
+    document.body.classList.toggle('wz-modal-lock',!!productOpen||existing);
+  }
+  document.querySelectorAll('.modal-overlay,.verify-wait-overlay').forEach(modal=>{
+    new MutationObserver(syncModalLock).observe(modal,{attributes:true,attributeFilter:['style','class']});
+  });
+
+  function init(){
+    try{
+      if(typeof aktifKategori!=='undefined'){
+        aktifKategori=wzValidMarketCategory(wzMarketCategory);
+      }
+    }catch(_){}
+
+    // Profile cannot be the initial view without a valid session.
+    if(currentView==='profile' && !getSessionToken()){
+      currentView='market';
+      try{ sessionStorage.setItem('wz_current_view','market'); }catch(_){}
+    }
+
+    cleanFilters();
+    syncProfile();
+
+    const filters=document.getElementById('filters');
+    if(filters) new MutationObserver(cleanFilters).observe(filters,{childList:true,subtree:true});
+
+    ['walletUsername','walletPoints','walletLevel','walletAvatar'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) new MutationObserver(syncProfile).observe(el,{childList:true,attributes:true,subtree:true,characterData:true});
+    });
+
+    // Restore exactly the section that was open before refresh.
+    window.wzSetView(currentView);
+
+    // Tournament view renders from a zero-delay task. Queue our reveal after it.
+    setTimeout(()=>{
+      requestAnimationFrame(()=>{
+        document.body.classList.add('wz-ready');
+        document.documentElement.classList.remove('wz-boot');
+        document.documentElement.removeAttribute('data-wz-initial-view');
+      });
+    },0);
+
+    /* Do not show tournaments mixed into the market home. */
+    setTimeout(()=>{ if(currentView==='market') document.getElementById('tournamentMarketSection')?.style.removeProperty('display'); },0);
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init,{once:true});
+  else init();
+})();
+</script>
+<script id="wz-esports-v6-js">
+(function(){
+  const state={
+    filter:(()=>{try{return sessionStorage.getItem('wz_t_filter')||'all'}catch(_){return 'all'}})(),
+    screen:(()=>{try{return sessionStorage.getItem('wz_t_screen')||'list'}catch(_){return 'list'}})(),
+    selectedId:(()=>{try{return sessionStorage.getItem('wz_t_selected')||''}catch(_){return ''}})(),
+    tab:(()=>{try{return sessionStorage.getItem('wz_t_tab')||'overview'}catch(_){return 'overview'}})(),
+    bracketMode:(()=>{try{return sessionStorage.getItem('wz_t_bracket')||'tree'}catch(_){return 'tree'}})(),
+    details:new Map(),
+    loading:new Set(),
+    openRules:new Set([0,1])
+  };
+
+  function persistTournamentState(){
+    try{
+      sessionStorage.setItem('wz_t_filter',state.filter);
+      sessionStorage.setItem('wz_t_screen',state.screen);
+      sessionStorage.setItem('wz_t_selected',state.selectedId);
+      sessionStorage.setItem('wz_t_tab',state.tab);
+      sessionStorage.setItem('wz_t_bracket',state.bracketMode);
+    }catch(_){}
+  }
+
+  function esc(value){
+    try{ if(typeof tv2Esc==='function') return tv2Esc(value); }catch(_){ }
+    return String(value ?? '').replace(/[&<>"']/g,ch=>({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[ch]));
+  }
+  function catalog(){ try{return Array.isArray(tv2Catalog)?tv2Catalog:[]}catch(_){return []} }
+  function lifecycle(item){
+    const t=item?.tournament||{};
+    return String(t.lifecycleStatus || (t.registrationOpen?'registration_open':'registration_closed'));
+  }
+  function comingSoon(item){ return item?.rule?.comingSoon===true || item?.tournament?.comingSoon===true; }
+  function statusClass(item){
+    const l=lifecycle(item);
+    if(l==='completed') return 'done';
+    if(l==='in_progress') return 'live';
+    if(comingSoon(item) && l!=='completed') return 'soon';
+    if(l==='registration_open') return 'open';
+    return 'open';
+  }
+  function statusLabel(item){
+    const l=lifecycle(item);
+    if(comingSoon(item) && l!=='completed' && l!=='in_progress') return 'YAKLAŞAN';
+    const map={completed:'TAMAMLANDI',in_progress:'CANLI',registration_open:'AKTİF',registration_closed:'KAPALI',registration_complete:'KAYIT DOLU',passive:'PASİF'};
+    return map[l] || 'AKTİF';
+  }
+  function modeText(t){
+    const n=Math.max(1,Number(t?.teamSize||1));
+    return n<=1?'1v1':'%sv%s'.replace('%s',n).replace('%s',n);
+  }
+  function matchFormat(t,rule){
+    return String(rule?.matchFormat || t?.matchFormat || t?.bestOf || rule?.bestOf || 'BO1').toUpperCase();
+  }
+  function mapName(t,rule){
+    return rule?.mapName || rule?.map || t?.mapName || t?.map || 'Harita açıklanacak';
+  }
+  function gameName(t,rule){ return rule?.gameName || t?.gameName || 'VALORANT'; }
+  function formatDate(value){
+    if(!value) return 'Tarih açıklanmadı';
+    try{ const d=new Date(value); return Number.isNaN(d.getTime())?String(value):d.toLocaleString('tr-TR',{dateStyle:'medium',timeStyle:'short'}); }catch(_){ return String(value); }
+  }
+  function formatShortDate(value){
+    if(!value) return 'Tarih açıklanacak';
+    try{ const d=new Date(value); return Number.isNaN(d.getTime())?String(value):d.toLocaleDateString('tr-TR',{day:'2-digit',month:'long',year:'numeric'}); }catch(_){ return String(value); }
+  }
+  function formatShortTime(value){
+    if(!value) return 'Saat açıklanacak';
+    try{ const d=new Date(value); return Number.isNaN(d.getTime())?String(value):d.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}); }catch(_){ return String(value); }
+  }
+  function entryText(item){
+    try{ if(typeof tv2EntryLabel==='function') return tv2EntryLabel(item?.rule||{},item?.tournament||{}); }catch(_){ }
+    return 'Katılım bilgisi açıklanacak';
+  }
+  function getItem(id){ return catalog().find(x=>String(x?.tournament?.id||'')===String(id)) || null; }
+  function filtered(){
+    const list=catalog();
+    return list.filter(item=>{
+      const l=lifecycle(item);
+      if(state.filter==='all') return l!=='completed' && l!=='passive';
+      if(state.filter==='soon') return comingSoon(item) && l!=='completed';
+      if(state.filter==='live') return l==='in_progress';
+      if(state.filter==='done') return l==='completed';
+      return true;
+    });
+  }
+  function activeList(){
+    return catalog().filter(item=>{
+      const l=lifecycle(item);
+      return l!=='completed' && l!=='passive';
+    });
+  }
+  function completedList(){ return catalog().filter(item=>lifecycle(item)==='completed'); }
+
+  async function ensureDetail(id){
+    if(!id) return null;
+    if(state.details.has(id)) return state.details.get(id);
+    if(state.loading.has(id)){
+      for(let i=0;i<70;i++){
+        await new Promise(r=>setTimeout(r,100));
+        if(state.details.has(id)) return state.details.get(id);
+        if(!state.loading.has(id)) break;
+      }
+      return state.details.get(id) || null;
+    }
+    state.loading.add(id);
+    try{
+      let data=null;
+      if(typeof tv2FetchPublicDetail==='function'){
+        data=await tv2FetchPublicDetail(id);
+      }else{
+        const controller=new AbortController();
+        const timeout=setTimeout(()=>controller.abort(),10000);
+        let r;
+        try{
+          r=await fetch(`${MARKET_WORKER}/tournament/public?id=${encodeURIComponent(id)}&_=${Date.now()}`,{cache:'no-store',signal:controller.signal});
+        }finally{ clearTimeout(timeout); }
+        data=await r.json();
+        if(!r.ok || !data?.success) throw new Error(data?.error || `HTTP ${r.status}`);
+      }
+      state.details.set(id,data);
+      return data;
+    }catch(error){
+      state.details.set(id,{__error:String(error?.message||error)});
+      return state.details.get(id);
+    }finally{ state.loading.delete(id); }
+  }
+
+  function scoreParts(match){
+    let a='',b='';
+    const raw=typeof match?.result==='object' && match.result ? String(match.result.score||'') : '';
+    const m=raw.match(/(\d+)\s*[-:]\s*(\d+)/);
+    if(m){ a=m[1]; b=m[2]; }
+    return [a,b,raw];
+  }
+  function finalInfo(detail){
+    const matches=Array.isArray(detail?.matches)?detail.matches:[];
+    if(!matches.length) return {champion:'',runner:'',third:''};
+    const maxRound=Math.max(...matches.map(m=>Number(m.roundNumber||0)));
+    const finals=matches.filter(m=>Number(m.roundNumber||0)===maxRound);
+    const final=finals.find(m=>m.winnerName) || finals[0] || null;
+    let champion='', runner='';
+    if(final){
+      champion=String(final.winnerName||'');
+      const a=String(final.participantAName||'');
+      const b=String(final.participantBName||'');
+      if(champion){ runner=(a && a!==champion)?a:((b && b!==champion)?b:''); }
+    }
+    let third='';
+    const semis=matches.filter(m=>Number(m.roundNumber||0)===maxRound-1);
+    if(semis.length===2){
+      const losers=[];
+      semis.forEach(m=>{
+        const a=String(m.participantAName||''); const b=String(m.participantBName||''); const w=String(m.winnerName||'');
+        if(a && a!==w) losers.push(a);
+        if(b && b!==w) losers.push(b);
+      });
+      third=losers[0]||'';
+    }
+    return {champion,runner,third};
+  }
+  function cardGameIcon(name){
+    const t=String(name||'').toUpperCase();
+    if(t.includes('VALORANT')) return 'V';
+    if(t.includes('CS')) return 'C';
+    if(t.includes('PUBG')) return 'P';
+    return 'W';
+  }
+  function extractPrizes(detail,item){
+    const t=detail?.tournament||item?.tournament||{};
+    const r=item?.rule||{};
+    const get=(keys)=>{ for(const k of keys){ if(t?.[k] || r?.[k]) return String(t?.[k] || r?.[k]); } return ''; };
+    return [
+      {place:'1.', label:'Şampiyon', icon:'🏆', className:'pos1', value:get(['firstPrize','prize1','prizeFirst','first_place_prize']) || 'Açıklanmadı'},
+      {place:'2.', label:'Finalist', icon:'🥈', className:'pos2', value:get(['secondPrize','prize2','prizeSecond','second_place_prize']) || 'Açıklanmadı'},
+      {place:'3.', label:'Üçüncü', icon:'🥉', className:'pos3', value:get(['thirdPrize','prize3','prizeThird','third_place_prize']) || 'Açıklanmadı'}
+    ];
+  }
+  function defaultRules(item){
+    const t=item?.tournament||{}; const rule=item?.rule||{}; const team=Number(t.teamSize||1)>1;
+    const map=mapName(t,rule); const mf=matchFormat(t,rule);
+    const list=[
+      ['Genel Kurallar','Organizasyon duyuruları bağlayıcıdır. Maç saatinde hazır bulunmak ve belirtilen kurallara uymak zorunludur.'],
+      ['Harita Kuralları',`${map} haritası kullanılır. Harita veya özel format organizasyon duyurusuna göre güncellenebilir.`],
+      ['Silah Kuralları','Vandal / Phantom serbesttir. Özel round kuralları varsa turnuva detayında ayrıca belirtilir.'],
+      ['İletişim Kuralları', team ? 'Oyuncular yalnızca kendi takım arkadaşlarıyla konuşabilir. Grup konuşması ve rakiple iletişim yasaktır.' : 'Oyuncu, maç süresince rekabet bütünlüğünü bozacak harici iletişim araçları kullanamaz.' ],
+      ['Maç Kuralları',`Maç formatı ${mf}. İtiraz ve sonuç değerlendirmelerinde organizasyon kararı esastır.`]
+    ];
+    return list;
+  }
+
+  function renderTopTabs(current){
+    return `<div class="wz-turn-toptabs">
+      <button type="button" class="wz-turn-topbtn ${current==='market'?'active':''}" onclick="wzSetView && wzSetView('market')">MARKET</button>
+      <button type="button" class="wz-turn-topbtn ${current==='tournament'?'active':''}" onclick="wzSetView && wzSetView('tournament')">TURNUVALAR</button>
+    </div>`;
+  }
+  function renderFilters(){
+    const defs=[['all','Aktif'],['soon','Yaklaşan'],['live','Canlı'],['done','Tamamlanan']];
+    return `<div class="wz-turn-strip">${defs.map(([id,name])=>`<button type="button" class="wz-turn-chip ${state.filter===id?'active':''}" onclick="wzTurnSetFilter('${id}')">${name}</button>`).join('')}</div>`;
+  }
+  function renderListCard(item,completed=false){
+    const t=item?.tournament||{}; const rule=item?.rule||{}; const id=String(t.id||'');
+    const d=state.details.get(id); const fin=d && !d.__error ? finalInfo(d):{champion:''};
+    return `<article class="wz-turn-card">
+      <div class="wz-turn-card-head">
+        <div class="wz-turn-card-row">
+          <div class="wz-turn-game">
+            <div class="wz-turn-game-logo">${esc(cardGameIcon(gameName(t,rule)))}</div>
+            <div>
+              <div class="wz-turn-card-title">${esc(t.name||'Turnuva')}</div>
+              <div class="wz-turn-card-sub">${esc(modeText(t))} • ${Number(t.capacity||0)||'-'} ${Number(t.teamSize||1)>1?'Takım':'Oyuncu'} • ${esc(mapName(t,rule))} • ${esc(matchFormat(t,rule))}</div>
+            </div>
+          </div>
+          <span class="wz-turn-badge ${statusClass(item)}">${esc(statusLabel(item))}</span>
+        </div>
+      </div>
+      <div class="wz-turn-card-body">
+        <div class="wz-turn-minirow">
+          <span>🗓 ${esc(formatShortDate(t.eventDate))}</span>
+          <span>🕒 ${esc(formatShortTime(t.eventDate))}</span>
+        </div>
+        ${completed && fin.champion ? `<div class="wz-turn-completed-note">Şampiyon: <b>${esc(fin.champion)}</b></div>` : ''}
+        <div class="wz-turn-card-actions">
+          <button type="button" class="wz-turn-mainbtn" onclick="wzTurnOpen('${esc(id)}')">Detayları Gör</button>
+        </div>
+      </div>
+    </article>`;
+  }
+
+  function renderListPage(){
+    const list=filtered();
+    const done=completedList();
+    const showingDone=state.filter==='done';
+    const activePart = showingDone ? '' : `${list.length?`<div class="wz-turn-cardlist">${list.map(item=>renderListCard(item,false)).join('')}</div>`:`<div class="wz-turn-empty">Bu bölümde turnuva bulunmuyor.</div>`}`;
+    const completedPart = (state.filter==='done' || (state.filter==='all' && done.length)) ? `
+      <div class="wz-turn-sectionlabel">Tamamlanan Turnuvalar</div>
+      <div class="wz-turn-cardlist">${done.length?done.map(item=>renderListCard(item,true)).join(''):'<div class="wz-turn-empty">Henüz tamamlanan turnuva yok.</div>'}</div>` : '';
+
+    return `<div class="wz-turn-list-page">
+      ${renderFilters()}
+      ${activePart}
+      ${completedPart}
+    </div>`;
+  }
+
+  function bracketTree(detail){
+    const matches=Array.isArray(detail?.matches)?detail.matches:[];
+    if(!matches.length) return `<div class="wz-turn-empty">Fikstür henüz oluşturulmadı.</div>`;
+    const rounds=new Map();
+    matches.forEach(m=>{ const r=Number(m.roundNumber||0); if(!rounds.has(r)) rounds.set(r,[]); rounds.get(r).push(m); });
+    const total=rounds.size;
+    const roundName=r=> r===total?'Final' : r===total-1?'Yarı Final' : r===total-2?'Çeyrek Final' : `${r}. Tur`;
+    return `<div class="wz-turn-bracket-wrap"><div class="wz-turn-bracket">${[...rounds.entries()].sort((a,b)=>a[0]-b[0]).map(([round,list])=>`
+      <div class="wz-turn-round">
+        <div class="wz-turn-round-title">${esc(roundName(round))}</div>
+        ${list.sort((a,b)=>Number(a.matchNumber||0)-Number(b.matchNumber||0)).map(match=>{
+          const [sa,sb]=scoreParts(match);
+          const wa=String(match.winnerName||'')===String(match.participantAName||'');
+          const wb=String(match.winnerName||'')===String(match.participantBName||'');
+          return `<div class="wz-turn-match">
+            <div class="wz-turn-team ${wa?'win':''}"><span>${esc(match.participantAName||'Bekleniyor')}</span><span class="wz-turn-score">${esc(sa||'')}</span></div>
+            <div class="wz-turn-team ${wb?'win':''}"><span>${esc(match.participantBName||'Bekleniyor')}</span><span class="wz-turn-score">${esc(sb||'')}</span></div>
+          </div>`;
+        }).join('')}
+      </div>`).join('')}</div></div>`;
+  }
+  function bracketList(detail){
+    const matches=Array.isArray(detail?.matches)?detail.matches:[];
+    if(!matches.length) return `<div class="wz-turn-empty">Henüz maç listesi oluşturulmadı.</div>`;
+    return `<div class="wz-turn-matchlist">${matches.slice().sort((a,b)=>Number(a.roundNumber||0)-Number(b.roundNumber||0)||Number(a.matchNumber||0)-Number(b.matchNumber||0)).map(m=>{
+      const raw=typeof m.result==='object' && m.result ? String(m.result.score||'-') : '-';
+      return `<div class="wz-turn-matchrow"><small>M${Number(m.matchNumber||0)}</small><b>${esc((m.participantAName||'Bekleniyor')+' vs '+(m.participantBName||'Bekleniyor'))}</b><span>${esc(m.winnerName?raw:'Bekleniyor')}</span></div>`;
+    }).join('')}</div>`;
+  }
+  function renderRules(item){
+    const rules=defaultRules(item);
+    return `<div class="wz-turn-box"><h3>Turnuva Kuralları</h3><div class="wz-turn-acc">${rules.map((r,i)=>`<div class="wz-turn-accitem ${state.openRules.has(i)?'open':''}"><button type="button" class="wz-turn-accbtn" onclick="wzTurnToggleRule(${i})"><span>${esc(r[0])}</span><span>${state.openRules.has(i)?'−':'+'}</span></button><div class="wz-turn-acccontent">${esc(r[1])}</div></div>`).join('')}</div></div>`;
+  }
+  function renderPrizes(detail,item){
+    const prizes=extractPrizes(detail,item); const fin=finalInfo(detail);
+    const rankings=[
+      {name: fin.champion || 'Henüz yok', pts: fin.champion ? '320 Puan' : '—'},
+      {name: fin.runner || 'Henüz yok', pts: fin.runner ? '280 Puan' : '—'},
+      {name: fin.third || 'Henüz yok', pts: fin.third ? '250 Puan' : '—'}
+    ];
+    return `<div class="wz-turn-box"><h3>Ödüller</h3><div class="wz-turn-prizes">${prizes.map(p=>`<div class="wz-turn-prize ${p.className}"><div class="icon">${p.icon}</div><div><b>${p.place}</b><span>${p.label}</span></div><strong>${esc(p.value)}</strong></div>`).join('')}</div>
+      <div class="wz-turn-ranking"><h4>Sıralama</h4>${rankings.map((r,i)=>`<div class="wz-turn-rankrow"><div class="wz-turn-rankbadge">${i+1}</div><div>${esc(r.name)}</div><div>${esc(r.pts)}</div></div>`).join('')}</div>
+    </div>`;
+  }
+  function renderOverview(detail,item){
+    const t=detail?.tournament||item?.tournament||{}; const rule=item?.rule||{};
+    const about=`${t.name || 'Bu turnuva'}, ${modeText(t)} formatında düzenlenen, rekabet dolu bir ${gameName(t,rule)} turnuvasıdır. Turnuva detayları ve fikstür bilgileri aşağıda görüntülenir.`;
+    return `<div class="wz-turn-box">
+      <h3>Turnuva Hakkında</h3>
+      <div class="wz-turn-about">${esc(about)}</div>
+      <div class="wz-turn-detailrows">
+        <div class="wz-turn-detailrow"><span>Oyun</span><b>${esc(gameName(t,rule))}</b></div>
+        <div class="wz-turn-detailrow"><span>Format</span><b>${esc(modeText(t))} ${Number(t.teamSize||1)>1?'(Takımlı)':'(Solo)'}</b></div>
+        <div class="wz-turn-detailrow"><span>Harita</span><b>${esc(mapName(t,rule))}</b></div>
+        <div class="wz-turn-detailrow"><span>Maç Formatı</span><b>${esc(matchFormat(t,rule))}</b></div>
+        <div class="wz-turn-detailrow"><span>Kontenjan</span><b>${Number(t.capacity||0)||'-'} ${Number(t.teamSize||1)>1?'Takım':'Oyuncu'}</b></div>
+        <div class="wz-turn-detailrow"><span>Kayıt Kapanışı</span><b>${esc(formatShortTime(t.registrationCloseAt || t.registrationClosesAt || t.eventDate))}</b></div>
+      </div>
+    </div>`;
+  }
+  function renderBracket(detail,item){
+    const t=detail?.tournament||item?.tournament||{}; const rule=item?.rule||{};
+    return `<div class="wz-turn-box"><h3>Fikstür & Maçlar</h3>
+      <div class="wz-turn-subtoggle">
+        <button type="button" class="wz-turn-subbtn ${state.bracketMode==='tree'?'active':''}" onclick="wzTurnSetBracket('tree')">Tur Ağacı</button>
+        <button type="button" class="wz-turn-subbtn ${state.bracketMode==='list'?'active':''}" onclick="wzTurnSetBracket('list')">Maç Listesi</button>
+      </div>
+      ${state.bracketMode==='tree' ? bracketTree(detail) : bracketList(detail)}
+      <div class="wz-turn-mapbox"><div class="wz-turn-mapcover"></div><div class="wz-turn-mapcontent"><b>${esc(mapName(t,rule))}</b><span>${esc(gameName(t,rule))} Harita Bilgisi</span></div></div>
+    </div>`;
+  }
+
+
+  function predictionPrize(item,detail){
+    const t=detail?.tournament||item?.tournament||{};
+    const r=item?.rule||{};
+    return String(
+      r.predictionPrize ||
+      r.pickemPrize ||
+      t.predictionPrize ||
+      t.pickemPrize ||
+      'Belirlenmedi'
+    );
+  }
+
+  function predictionKey(id){
+    return `weizend_pickem_${String(id||'')}`;
+  }
+
+  function readPredictions(id){
+    try{
+      const raw=localStorage.getItem(predictionKey(id));
+      const parsed=raw?JSON.parse(raw):{};
+      return parsed && typeof parsed==='object' ? parsed : {};
+    }catch(_){ return {}; }
+  }
+
+  function renderPredictions(detail,item){
+    const t=detail?.tournament||item?.tournament||{};
+    const matches=Array.isArray(detail?.matches)?detail.matches:[];
+    const life=lifecycle(item);
+    const unlocked = !['in_progress','completed'].includes(life);
+    const picks=readPredictions(t.id);
+
+    if(!matches.length){
+      return `<div class="wz-turn-box">
+        <div class="wz-predict-hero">
+          <small>WEIZEND TAHMİN</small>
+          <h3>Turnuva Tahminleri</h3>
+          <p>Fikstür oluşturulduğunda kullanıcılar eşleşmelerde kazanan seçimlerini burada yapabilecek.</p>
+          <div class="wz-predict-prize"><span>En İyi Tahmin Ödülü</span><strong>${esc(predictionPrize(item,detail))}</strong></div>
+        </div>
+        <div class="wz-turn-empty">Tahminler için önce fikstürün oluşturulması gerekiyor.</div>
+      </div>`;
+    }
+
+    return `<div class="wz-turn-box">
+      <div class="wz-predict-hero">
+        <small>WEIZEND TAHMİN</small>
+        <h3>Fikstürünü Tahmin Et</h3>
+        <p>${unlocked
+          ? 'Turnuva başlamadan önce her maç için kazanan tahminini seç. Turnuva başladığında seçimler kilitlenecek.'
+          : 'Turnuva başladığı için tahmin seçimleri kilitlendi.'}</p>
+        <div class="wz-predict-prize"><span>En İyi Tahmin Ödülü</span><strong>${esc(predictionPrize(item,detail))}</strong></div>
+      </div>
+      <div class="wz-pick-list">
+        ${matches.map(match=>{
+          const no=String(match.matchNumber||'');
+          const a=String(match.participantAName||'Bekleniyor');
+          const b=String(match.participantBName||'Bekleniyor');
+          const selected=String(picks[no]||'');
+          const disabled=!unlocked || a==='Bekleniyor' || b==='Bekleniyor';
+          return `<div class="wz-pick-match">
+            <div class="wz-pick-match-head"><span>M${esc(no||'-')}</span><span>${esc(disabled?'Seçim kapalı':'Kazananı seç')}</span></div>
+            <div class="wz-pick-options">
+              <button type="button" class="wz-pick-btn ${selected===a?'active':''}" ${disabled?'disabled':''} onclick="wzTurnPick('${esc(t.id)}','${esc(no)}','${esc(a)}')">${esc(a)}</button>
+              <button type="button" class="wz-pick-btn ${selected===b?'active':''}" ${disabled?'disabled':''} onclick="wzTurnPick('${esc(t.id)}','${esc(no)}','${esc(b)}')">${esc(b)}</button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+      ${unlocked?`<button type="button" class="wz-predict-save" onclick="wzTurnSavePredictions('${esc(t.id)}')">TAHMİNLERİMİ KAYDET</button>`:''}
+      <div class="wz-predict-note">Bu V9 arayüzünde seçimler test amacıyla cihazda saklanır. Gerçek kullanıcılar arası tahmin sıralaması ve admin ödül tanımlaması için Worker/Admin bağlantısını ayrıca ekleyeceğiz.</div>
+    </div>`;
+  }
+
+  function renderDetailPage(){
+    const item=getItem(state.selectedId);
+    if(!item) return `<div class="wz-turn-empty">Turnuva bulunamadı.</div>`;
+    const t=item?.tournament||{}; const rule=item?.rule||{}; const id=String(t.id||'');
+    const detail=state.details.get(id) || null;
+    const status=statusClass(item);
+    const loading = !detail;
+    const tabButtons=[['overview','Genel Bakış'],['rules','Kurallar'],['prizes','Ödüller'],['bracket','Fikstür'],['predictions','Tahminler']];
+    let panel = `<div class="wz-turn-loading">Turnuva detayları yükleniyor...</div>`;
+    if(detail?.__error) panel = `<div class="wz-turn-empty">${esc(detail.__error)}</div>`;
+    else if(detail){
+      if(state.tab==='overview') panel = renderOverview(detail,item);
+      if(state.tab==='rules') panel = renderRules(item);
+      if(state.tab==='prizes') panel = renderPrizes(detail,item);
+      if(state.tab==='bracket') panel = renderBracket(detail,item);
+      if(state.tab==='predictions') panel = renderPredictions(detail,item);
+    }
+    return `<div class="wz-turn-detail-page">
+      <div class="wz-turn-detail-top"><button type="button" class="wz-turn-back" onclick="wzTurnBack()">←</button><div class="wz-turn-brand">WEIZEND</div></div>
+      <section class="wz-turn-hero">
+        <div class="wz-turn-hero-cover"><div class="wz-turn-hero-body">
+          <div class="wz-turn-hero-title"><div class="wz-turn-h1">${esc(String(t.name||'Turnuva').replace(/cup/i,'').trim() || 'CUP')}</div><span class="wz-turn-badge ${status}">${esc(statusLabel(item))}</span></div>
+        </div></div>
+        <div class="wz-turn-info-grid">
+          <div class="wz-turn-info"><b>${esc(modeText(t))}</b><span>${Number(t.teamSize||1)>1?'Takımlı':'Solo'}</span></div>
+          <div class="wz-turn-info"><b>${Number(t.capacity||0)||'-'}</b><span>${Number(t.teamSize||1)>1?'Takım':'Oyuncu'}</span></div>
+          <div class="wz-turn-info"><b>${esc(mapName(t,rule))}</b><span>Harita</span></div>
+          <div class="wz-turn-info"><b>${esc(matchFormat(t,rule))}</b><span>Maç Formatı</span></div>
+        </div>
+        <div class="wz-turn-date-grid">
+          <div class="wz-turn-date"><b>${esc(formatDate(t.eventDate))}</b><span>Turnuva Tarihi</span></div>
+          <div class="wz-turn-date"><b>${esc(formatShortTime(t.registrationCloseAt || t.registrationClosesAt || t.eventDate))}</b><span>Kayıt Kapanışı</span></div>
+        </div>
+        ${(lifecycle(item)==='registration_open') ? `<button type="button" class="wz-turn-register" onclick="wzTournamentRegistration('${esc(id)}')">KAYIT OL</button>` : ''}
+        <nav class="wz-turn-tabs">${tabButtons.map(([id2,name])=>`<button type="button" class="wz-turn-tab ${state.tab===id2?'active':''}" onclick="wzTurnSetTab('${id2}')">${name}</button>`).join('')}</nav>
+        <div class="wz-turn-panel">${panel}</div>
+      </section>
+    </div>`;
+  }
+
+  function render(){
+    const host=document.getElementById('wzEsportsHub');
+    if(!host) return;
+    const all=catalog();
+    if(!all.length){ host.innerHTML = `<div class="wz-turn-root"><div class="wz-turn-loading">Turnuvalar yükleniyor...</div></div>`; return; }
+    if(!state.selectedId){
+      const first=activeList()[0] || all[0];
+      state.selectedId=String(first?.tournament?.id || '');
+    }
+    const preserveY = document.body.classList.contains('wz-view-tournament')
+      ? (window.scrollY || document.documentElement.scrollTop || 0)
+      : null;
+
+    host.innerHTML = `<div class="wz-turn-root">${state.screen==='detail' ? renderDetailPage() : renderListPage()}</div>`;
+
+    if(preserveY !== null){
+      // Re-rendering the currently visible tournament must never move the viewport.
+      window.scrollTo(0,preserveY);
+    }
+
+    if(state.screen==='detail' && state.selectedId && !state.details.has(state.selectedId) && !state.loading.has(state.selectedId)){
+      loadSelected();
+    }
+  }
+  async function loadSelected(){
+    const id=state.selectedId; if(!id) return;
+    await ensureDetail(id);
+    if(state.selectedId===id && state.screen==='detail') render();
+  }
+
+  window.wzTurnSetFilter=function(filter){ state.filter=filter; persistTournamentState(); render(); };
+  window.wzTurnOpen=function(id){ state.selectedId=String(id||''); state.screen='detail'; state.tab='overview'; state.bracketMode='tree'; persistTournamentState(); render(); };
+  window.wzTurnBack=function(){ state.screen='list'; persistTournamentState(); render(); };
+  window.wzTurnSetTab=function(tab){ state.tab=['overview','rules','prizes','bracket','predictions'].includes(tab)?tab:'overview'; persistTournamentState(); render(); };
+  window.wzTurnSetBracket=function(mode){ state.bracketMode=(mode==='list'?'list':'tree'); persistTournamentState(); render(); };
+  window.wzTurnToggleRule=function(index){ if(state.openRules.has(index)) state.openRules.delete(index); else state.openRules.add(index); render(); };
+
+  window.wzTurnPick=function(tournamentId,matchNumber,name){
+    const picks=readPredictions(tournamentId);
+    picks[String(matchNumber)]=String(name||'');
+    try{ localStorage.setItem(predictionKey(tournamentId),JSON.stringify(picks)); }catch(_){}
+    render();
+  };
+
+  window.wzTurnSavePredictions=function(tournamentId){
+    try{
+      const count=Object.keys(readPredictions(tournamentId)).length;
+      if(typeof showStatusToast==='function'){
+        showStatusToast(`✅ ${count} tahmin bu cihazda kaydedildi.`,2500);
+      }
+    }catch(_){}
+  };
+
+  window.wzTournamentRegistration=function(id){
+    try{
+      if(typeof marketAuthenticated!=='undefined' && marketAuthenticated && typeof tv2Open==='function'){ tv2Open(id); return; }
+      if(typeof tv2OpenPublic==='function'){ tv2OpenPublic(id); return; }
+    }catch(_){ }
+  };
+
+  const baseSetView=window.wzSetView;
+  if(typeof baseSetView==='function'){
+    window.wzSetView=function(view){
+      const enteringTournament =
+        view==='tournament' &&
+        !document.body.classList.contains('wz-view-tournament');
+
+      baseSetView(view);
+
+      if(view==='tournament'){
+        // Synchronous render + synchronous restore:
+        // no visible "top of page -> saved position" jump.
+        render();
+
+        if(enteringTournament && typeof window.wzRestoreViewScroll==='function'){
+          window.wzRestoreViewScroll('tournament');
+        }
+
+        try{
+          if(typeof tv2LoadCatalog==='function' && catalog().length===0){
+            const keepY=window.scrollY || document.documentElement.scrollTop || 0;
+
+            tv2LoadCatalog(false)
+              .then(()=>{
+                const stableY=window.scrollY || document.documentElement.scrollTop || keepY;
+                render();
+                window.scrollTo(0,stableY);
+              })
+              .catch(()=>{});
+          }
+        }catch(_){}
+      }
+    };
+    window.wzSetMobileView=window.wzSetView;
+  }
+
+  function init(){
+    const grid=document.getElementById('tournamentMarketGrid');
+    if(grid){ new MutationObserver(()=>{ if(document.body.classList.contains('wz-view-tournament')) render(); }).observe(grid,{childList:true,subtree:true}); }
+    if(document.body.classList.contains('wz-view-tournament')) render();
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init,{once:true});
+  else init();
+})();
+</script>
+
+
+<script id="wz-v18-category-swipe-guard">
+(function(){
+  let startX=0;
+  let startY=0;
+  let moved=false;
+  let suppressClickUntil=0;
+
+  function rail(){ return document.getElementById('filters'); }
+
+  document.addEventListener('touchstart',function(e){
+    const r=rail();
+    if(!r || !e.target.closest('#filters')) return;
+    if(!e.touches || e.touches.length!==1) return;
+
+    startX=e.touches[0].clientX;
+    startY=e.touches[0].clientY;
+    moved=false;
+  },{passive:true,capture:true});
+
+  document.addEventListener('touchmove',function(e){
+    const r=rail();
+    if(!r || !e.target.closest('#filters')) return;
+    if(!e.touches || e.touches.length!==1) return;
+
+    const dx=Math.abs(e.touches[0].clientX-startX);
+    const dy=Math.abs(e.touches[0].clientY-startY);
+
+    // Horizontal movement means "scroll categories", not "press category".
+    if(dx>8 && dx>dy){
+      moved=true;
+    }
+  },{passive:true,capture:true});
+
+  document.addEventListener('touchend',function(e){
+    if(!e.target.closest('#filters')) return;
+    if(moved){
+      suppressClickUntil=Date.now()+450;
+    }
+  },{passive:true,capture:true});
+
+  document.addEventListener('click',function(e){
+    const btn=e.target.closest('#filters .filter-btn');
+    if(!btn) return;
+
+    if(Date.now()<suppressClickUntil){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+  },true);
+})();
+</script>
+
+
+<script id="wz-v20-market-category-state">
+(function(){
+  document.addEventListener('click',function(event){
+    const btn=event.target.closest('#filters .filter-btn');
+    if(!btn) return;
+
+    const label=String(btn.textContent||'').trim();
+    if(!label || label==='Turnuva') return;
+
+    // Run after the original button onclick/filtrele handler.
+    setTimeout(()=>{
+      try{
+        if(typeof wzSaveMarketCategory==='function'){
+          wzSaveMarketCategory(label);
+        }else{
+          sessionStorage.setItem('wz_market_category_v20',label);
+        }
+      }catch(_){}
+    },0);
+  });
+})();
+</script>
+
+
+<script id="wz-v24-modal-touch-guard">
+(function(){
+  function visible(el){
+    if(!el) return false;
+    if(el.id==='wzProductInfoModal') return el.classList.contains('open');
+    const s=getComputedStyle(el);
+    return s.display!=='none' && s.visibility!=='hidden' && Number(s.opacity||1)!==0;
+  }
+
+  function activeOverlay(){
+    const selectors=[
+      '#wzProductInfoModal',
+      '#imageModal',
+      '#redirectModal',
+      '#purchaseModal',
+      '#giftRedeemModal',
+      '#actionResultModal',
+      '#inboxModal',
+      '#tv2Modal',
+      '#verificationWaitModal'
+    ];
+
+    for(const selector of selectors){
+      const el=document.querySelector(selector);
+      if(visible(el)) return el;
+    }
+    return null;
+  }
+
+  function allowedScroller(target,overlay){
+    if(!target || !overlay || !overlay.contains(target)) return null;
+
+    return target.closest(
+      '.modal-body,'+
+      '.redirect-modal-body,'+
+      '.purchase-body,'+
+      '.gift-modal-content,'+
+      '.notifications-modal-content,'+
+      '.inbox-body,'+
+      '.inbox-list,'+
+      '.inbox-conversation,'+
+      '#tv2ModalBody,'+
+      '.wz-product-info-body,'+
+      '#imageModal .main-slider'
+    );
+  }
+
+  document.addEventListener('touchmove',function(event){
+    const overlay=activeOverlay();
+    if(!overlay) return;
+
+    const scroller=allowedScroller(event.target,overlay);
+
+    // Touch outside the active window: background is never allowed to move.
+    if(!scroller){
+      event.preventDefault();
+      return;
+    }
+
+    // Image modal owns its own pinch/drag logic.
+    if(scroller.matches('#imageModal .main-slider')) return;
+
+    // Stop iOS/Android scroll chaining at the top/bottom of modal content.
+    const canScroll=scroller.scrollHeight > scroller.clientHeight + 1;
+    if(!canScroll){
+      event.preventDefault();
+    }
+  },{passive:false,capture:true});
+})();
+</script>
 
 </body>
 </html>
