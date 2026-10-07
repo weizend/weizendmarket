@@ -1452,9 +1452,9 @@ body.wz-view-tournament .market-search-wrap{display:none!important}
   display:flex;align-items:center;gap:10px;min-width:0
 }
 .wz-turn-game-logo{
-  width:40px;height:40px;border-radius:13px;background:linear-gradient(180deg,#3d0f0f,#150606);display:grid;place-items:center;font-weight:1000;font-size:1.05rem;color:#fff;border:1px solid rgba(255,255,255,.08);overflow:hidden
+  width:44px;height:44px;border-radius:999px;background:transparent;display:grid;place-items:center;font-weight:1000;font-size:1.05rem;color:#fff;border:0;overflow:hidden;flex:0 0 44px
 }
-.wz-turn-game-logo img{width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block}
+.wz-turn-game-logo img{width:100%;height:100%;object-fit:contain;border-radius:50%;display:block;background:transparent}
 .wz-turn-card-title{font-size:1.08rem;font-weight:1000;line-height:1.05;text-transform:uppercase;word-break:break-word}
 .wz-turn-card-sub{margin-top:4px;color:#d2d6dd;font-size:.73rem;font-weight:800;opacity:.88}
 .wz-turn-badge{
@@ -1465,6 +1465,7 @@ body.wz-view-tournament .market-search-wrap{display:none!important}
 .wz-turn-badge.done{background:#1f232b;color:#fff;border-color:#333843}
 .wz-turn-badge.open{background:#fff;color:#111}
 .wz-turn-card-body{padding:12px 14px 14px}
+.wz-turn-datehint{color:#8f96a3;font-size:.72rem;font-weight:900;letter-spacing:.02em;text-transform:uppercase;margin-bottom:6px}
 .wz-turn-minirow{display:flex;gap:12px;align-items:flex-start;color:#d8dbe2;font-size:.79rem;margin-bottom:10px;flex-wrap:wrap}
 .wz-turn-minirow span{display:inline-flex;align-items:center;gap:6px}
 .wz-turn-card-actions{display:flex;gap:10px;align-items:center}
@@ -1534,6 +1535,9 @@ body.wz-view-tournament .market-search-wrap{display:none!important}
 .wz-turn-stream-note a{color:#fff;text-decoration:none;font-size:.72rem;font-weight:1000;background:#d71920;padding:8px 10px;border-radius:10px}
 .wz-turn-register{
   width:calc(100% - 24px);margin:0 12px 14px;min-height:50px;border:0;border-radius:16px;background:linear-gradient(180deg,#ff4242,#c10f0f);color:#fff;font-size:.96rem;font-weight:1000;box-shadow:0 10px 24px rgba(226,18,18,.25);cursor:pointer
+}
+.wz-turn-register[disabled],.wz-turn-register.is-disabled{
+  background:linear-gradient(180deg,#5d6168,#3d424a);color:#d8dbe2;box-shadow:none;cursor:not-allowed;opacity:.95
 }
 .wz-turn-tabs{
   display:flex;gap:4px;overflow:auto;padding:0 12px 12px;scrollbar-width:none
@@ -10250,6 +10254,29 @@ return;
     if(p==='closed') return 'KAYITLAR KAPALI';
     return 'KAYITLAR AÇIK';
   }
+  function listCardPhase(item){
+    const p=registrationPhase(item);
+    const t=item?.tournament||{};
+    const openAt=registrationOpenAt(item);
+    const closeAt=registrationCloseAt(item);
+    const startAt=t.eventDate || null;
+    const now=Date.now();
+    const openTs=openAt?Date.parse(openAt):NaN;
+    const closeTs=closeAt?Date.parse(closeAt):NaN;
+    const startTs=startAt?Date.parse(startAt):NaN;
+
+    if(p==='completed') return { label:'TAMAMLANDI', when:startAt || closeAt || openAt || null };
+    if(p==='live') return { label:'CANLI', when:startAt || null };
+    if(p==='soon') return { label:'YAKINDA', when:openAt || startAt || null };
+    if(p==='full') return { label:'KAYIT DOLU', when:closeAt || startAt || null };
+    if(p==='passive') return { label:'PASİF', when:startAt || null };
+
+    if(Number.isFinite(openTs) && now<openTs) return { label:'KAYIT AÇILIŞI', when:openAt };
+    if(Number.isFinite(closeTs) && now<closeTs && item?.tournament?.registrationOpen) return { label:'KAYIT KAPANIŞI', when:closeAt };
+    if(Number.isFinite(startTs) && now<startTs) return { label:'TURNUVA BAŞLANGICI', when:startAt };
+    if(Number.isFinite(startTs)) return { label:'TURNUVA BAŞLANGICI', when:startAt };
+    return { label:'KAYIT KAPALI', when:closeAt || openAt || startAt || null };
+  }
   function registrationIsOpen(item){ return registrationPhase(item)==='open'; }
   function modeText(t){
     const n=Math.max(1,Number(t?.teamSize||1));
@@ -10521,6 +10548,7 @@ return;
     const heroImage=cssUrl(tournamentHeroUrl(item));
     const cardHeadStyle=heroImage ? ` style="--wz-turn-cover-image:url(${heroImage})"` : '';
     const logo=tournamentLogoUrl(item);
+    const phaseInfo=listCardPhase(item);
     return `<article class="wz-turn-card">
       <div class="wz-turn-card-head"${cardHeadStyle}>
         <div class="wz-turn-card-row">
@@ -10531,13 +10559,14 @@ return;
               <div class="wz-turn-card-sub">${esc(modeText(t))} • ${Number(t.capacity||0)||'-'} ${Number(t.teamSize||1)>1?'Takım':'Oyuncu'} • ${esc(mapDisplayName(t,rule))} • ${esc(matchFormat(t,rule))}</div>
             </div>
           </div>
-          <span class="wz-turn-badge ${statusClass(item)}">${esc(statusLabel(item))}</span>
+          <span class="wz-turn-badge ${statusClass(item)}">${esc(phaseInfo.label)}</span>
         </div>
       </div>
       <div class="wz-turn-card-body">
+        <div class="wz-turn-datehint">${esc(phaseInfo.label)}</div>
         <div class="wz-turn-minirow">
-          <span>🗓 ${esc(formatShortDate(t.eventDate))}</span>
-          <span>🕒 ${esc(formatShortTime(t.eventDate))}</span>
+          <span>🗓 ${esc(formatShortDate(phaseInfo.when))}</span>
+          <span>🕒 ${esc(formatShortTime(phaseInfo.when))}</span>
         </div>
         ${completed && fin.champion ? `<div class="wz-turn-completed-note">Şampiyon: <b>${esc(fin.champion)}</b></div>` : ''}
         <div class="wz-turn-card-actions">
@@ -10761,7 +10790,7 @@ return;
           <div class="wz-turn-date"><span>Kayıt Kapanışı</span><b>${esc(comingSoon(item)?'YAKINDA':formatDate(closeAt))}</b></div>
           <div class="wz-turn-date"><span>Turnuva Başlangıcı</span><b>${esc(comingSoon(item)?'YAKINDA':formatDate(t.eventDate))}</b></div>
         </div>
-        ${registrationIsOpen(item) ? `<button type="button" class="wz-turn-register" onclick="wzTournamentRegistration('${esc(id)}')">KAYIT OL</button>` : ''}
+        <button type="button" class="wz-turn-register ${registrationIsOpen(item)?'':'is-disabled'}" ${registrationIsOpen(item) ? `onclick="wzTournamentRegistration('${esc(id)}')"` : 'disabled'}>KAYIT OL</button>
         <nav class="wz-turn-tabs">${tabButtons.map(([id2,name])=>`<button type="button" class="wz-turn-tab ${state.tab===id2?'active':''}" onclick="wzTurnSetTab('${id2}')">${name}</button>`).join('')}</nav>
         <div class="wz-turn-panel">${panel}</div>
       </section>
