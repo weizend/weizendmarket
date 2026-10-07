@@ -1360,6 +1360,24 @@ body.dmModalOpen{overflow:hidden}
 }
 </style>
 
+<style id="wz-admin-tournament-template-v34">
+.tournamentPill.template{
+  background:#251c08!important;
+  border-color:#6f5717!important;
+  color:#ffd76c!important;
+}
+.tournamentTemplateNotice{
+  margin:12px 0;
+  padding:12px 14px;
+  border:1px solid #6f5717;
+  border-radius:12px;
+  background:#171204;
+  color:#f5d77f;
+  line-height:1.5;
+}
+.tournamentTemplateNotice b{color:#ffe79f}
+</style>
+
 
 <style id="wz-admin-pickem-v31-css">
 .tPredictionBox{
@@ -2440,7 +2458,7 @@ body.dmModalOpen{overflow:hidden}
 
     <div id="section-tournaments" class="section">
 
-      <div class="card">
+      <div class="card" id="newTournamentCard">
         <h2>➕ Yeni Turnuva Oluştur</h2>
         <p class="muted">
           Turnuvalar davet kodu / koltuk / ödeme sistemiyle yönetilir. Takım turnuvalarında kaptan yalnızca kendisini kaydeder; kalan oyuncular tek kullanımlık davet kodlarıyla katılır.
@@ -2608,10 +2626,10 @@ body.dmModalOpen{overflow:hidden}
       </div>
 
 
-      <div class="card">
+      <div class="card" id="tournamentManagerCard">
         <h2>🏆 Turnuva Yönetim Merkezi</h2>
         <p class="muted">
-          Aktif, pasif, tamamlanmış turnuvalar; kayıtlar, fikstür, skorlar ve katılım sistemi bu bölümden yönetilir.
+          Aktif / pasif turnuvaları buradan yönetebilirsin. Kullanıcı tarafında sildiğin eski turnuvalar burada <b>ŞABLON</b> olarak kalır; yeni turnuva oluştururken ayarlarını kopyalayabilirsin.
         </p>
 
         <div class="searchBox">
@@ -2778,15 +2796,21 @@ body.dmModalOpen{overflow:hidden}
           <span>Kayıt sistemi aktif (açılış / kapanış tarihleri uygulanır)</span>
         </label>
 
-        <div class="btnRow">
-          <button id="saveTournamentButton" onclick="saveTournamentConfig()">💾 Ayarları Kaydet</button>
-          <button class="success" onclick="setTournamentLifecycle('active')">🟢 Aktif Yap</button>
-          <button class="secondary" onclick="setTournamentLifecycle('passive')">⚫ Pasife Al</button>
-          <button class="warn" onclick="setTournamentLifecycle('completed')">🏁 Tamamlandı Yap</button>
-          <button class="danger" onclick="deleteTournamentFromPanel()">🗑 Turnuvayı Sil</button>
+        <div id="tournamentTemplateNotice" class="tournamentTemplateNotice" style="display:none;">
+          📋 <b>Şablon modu:</b> Bu kayıt kullanıcı tarafında görünmez. Eski turnuva verilerini canlı sisteme geri döndürmeden,
+          ayarlarını yeni turnuva formuna kopyalayabilirsin.
         </div>
 
-        <div class="btnRow" style="margin-top:8px;">
+        <div class="btnRow">
+          <button id="saveTournamentButton" onclick="saveTournamentConfig()">💾 Ayarları Kaydet</button>
+          <button id="tActivateButton" class="success" onclick="setTournamentLifecycle('active')">🟢 Aktif Yap</button>
+          <button id="tPassiveButton" class="secondary" onclick="setTournamentLifecycle('passive')">⚫ Pasife Al</button>
+          <button id="tCompleteButton" class="warn" onclick="setTournamentLifecycle('completed')">🏁 Tamamlandı Yap</button>
+          <button id="tDeleteButton" class="danger" onclick="deleteTournamentFromPanel()">🗑 Turnuvayı Sil</button>
+          <button id="tTemplateCopyButton" class="warn" style="display:none;" onclick="copyTournamentTemplateToCreate()">📋 ŞABLONU YENİ TURNUVAYA KOPYALA</button>
+        </div>
+
+        <div id="tournamentLiveOpsRow" class="btnRow" style="margin-top:8px;">
           <button class="secondary" onclick="loadTournamentEntries()">👥 Kayıtları Yenile</button>
           <button id="tSubscriptionSyncButton" class="secondary" onclick="syncTournamentSubscriptions()">⭐ Abonelikleri Kontrol Et</button>
           <button id="tSubscriptionEventsButton" class="secondary" onclick="loadTournamentSubscriptionEvents()">📡 Katılım Takibi</button>
@@ -2794,7 +2818,7 @@ body.dmModalOpen{overflow:hidden}
         </div>
 
         <h3 class="subTitle">🎯 Tahmin / Pick'em Sistemi</h3>
-        <div class="tPredictionBox">
+        <div id="tPredictionBox" class="tPredictionBox">
           <div id="tPredictionSummary" class="tPredictionSummary">
             Fikstür oluşturulduktan sonra tahmin sistemini buradan açabilirsin.
           </div>
@@ -2818,7 +2842,8 @@ body.dmModalOpen{overflow:hidden}
             <h2>🗃️ Geçmiş Turnuvalar</h2>
             <p class="muted">
               Tamamlandı yaptığın turnuvalar otomatik olarak buraya taşınır. Burada yönetim paneli bulunmaz.
-              Turnuva kullanıcı tarafında Tamamlanan sekmesinde görünmeye devam eder; silersen kullanıcı tarafında da kaldırılır.
+              Buradan kaldırdığın turnuva kullanıcı tarafındaki Tamamlanan listesinden çıkar; fakat aynı isim tekrar oluşturulmasın ve ayarları tekrar kullanılabilsin diye
+              Turnuva Yönetim Merkezi'nde <b>ŞABLON</b> olarak saklanır.
             </p>
           </div>
           <button class="secondary smallButton" onclick="loadTournamentList(true)">🔄 Yenile</button>
@@ -2830,7 +2855,7 @@ body.dmModalOpen{overflow:hidden}
       </div>
 
 
-      <div class="card">
+      <div class="card" id="tournamentEntriesCard">
         <div class="sectionHeaderRow">
           <div>
             <h2>👥 Katılanlar / Takımlar / Kadrolar</h2>
@@ -2847,7 +2872,7 @@ body.dmModalOpen{overflow:hidden}
       </div>
 
 
-      <div class="card">
+      <div class="card" id="tournamentBracketCard">
         <div class="sectionHeaderRow">
           <div>
             <h2>🎮 Fikstür ve Skor Yönetimi</h2>
@@ -7222,6 +7247,7 @@ function tournamentEntryModeText(mode){
 
 function tournamentLifecycleText(status){
   const map = {
+    template:'📋 ŞABLON',
     passive:'⚫ PASİF',
     completed:'🏁 TAMAMLANDI',
     in_progress:'🎮 TURNUVA BAŞLADI',
@@ -7501,13 +7527,13 @@ async function loadTournamentList(force=false){
       currentTournamentEntries = null;
       currentTournamentBracket = null;
       document.getElementById('tournamentQuickInfo').innerHTML = '';
-      document.getElementById('tournamentEntrySummary').innerHTML = 'Yönetilecek aktif / pasif turnuva bulunmuyor.';
+      document.getElementById('tournamentEntrySummary').innerHTML = 'Yönetilecek turnuva / şablon bulunmuyor.';
       document.getElementById('tournamentEntriesView').innerHTML = '';
-      document.getElementById('tournamentBracketSummary').innerHTML = 'Yönetilecek aktif / pasif turnuva bulunmuyor.';
+      document.getElementById('tournamentBracketSummary').innerHTML = 'Yönetilecek turnuva / şablon bulunmuyor.';
       document.getElementById('tournamentBracketView').innerHTML = '';
       showStatus(
         'tournamentStatus',
-        'ℹ️ Yönetilecek aktif / pasif turnuva bulunmuyor. Tamamlanan turnuvalar Geçmiş Turnuvalar bölümünde.',
+        'ℹ️ Yönetilecek turnuva / şablon bulunmuyor. Tamamlanan turnuvalar Geçmiş Turnuvalar bölümünde.',
         true
       );
     }
@@ -7527,20 +7553,25 @@ function renderTournamentOptions(){
 
   const previous = select.value;
 
-  // Tamamlanan turnuvalar artık yönetim seçiminde görünmez.
-  // Onlar aşağıdaki "Geçmiş Turnuvalar" bölümünde sade şekilde listelenir.
-  const list = tournamentCatalogCache.filter(
-    t => String(t?.lifecycleStatus || '').toLowerCase() !== 'completed'
-  );
+  // Tamamlanan turnuvalar Geçmiş Turnuvalar'da kalır.
+  // Kullanıcı tarafında silinmiş olan kayıtlar ise product aynası olmadığı için
+  // adminTemplate=true gelir ve burada "ŞABLON" olarak görünür.
+  const list = tournamentCatalogCache.filter(t => {
+    const lifecycle = String(t?.lifecycleStatus || '').toLowerCase();
+    const isTemplate = t?.adminTemplate === true || lifecycle === 'template';
+    return isTemplate || lifecycle !== 'completed';
+  });
 
   select.innerHTML = list.length
     ? list.map(t => {
         const format = Number(t.teamSize || 1) <= 1
           ? '1v1'
           : `${Number(t.teamSize)}v${Number(t.teamSize)}`;
-        return `<option value="${esc(t.id)}">${esc(t.name)} · ${format} · ${esc(tournamentLifecycleText(t.lifecycleStatus))}</option>`;
+        const isTemplate = t?.adminTemplate === true || String(t?.lifecycleStatus || '').toLowerCase() === 'template';
+        const status = isTemplate ? '📋 ŞABLON' : tournamentLifecycleText(t.lifecycleStatus);
+        return `<option value="${esc(t.id)}">${esc(t.name)} · ${format} · ${esc(status)}</option>`;
       }).join('')
-    : '<option value="">Yönetilecek aktif / pasif turnuva bulunamadı</option>';
+    : '<option value="">Yönetilecek turnuva / şablon bulunamadı</option>';
 
   if(previous && list.some(t => String(t.id) === String(previous))){
     select.value = previous;
@@ -7570,7 +7601,10 @@ function renderPastTournaments(){
   if(!host) return;
 
   const list = tournamentCatalogCache
-    .filter(t => String(t?.lifecycleStatus || '').toLowerCase() === 'completed')
+    .filter(t =>
+      String(t?.lifecycleStatus || '').toLowerCase() === 'completed' &&
+      t?.adminTemplate !== true
+    )
     .sort((a,b) => pastTournamentSortValue(b) - pastTournamentSortValue(a));
 
   if(!list.length){
@@ -7597,7 +7631,7 @@ function renderPastTournaments(){
           </div>
         </div>
         <button class="danger pastTournamentDelete"
-          onclick="deletePastTournament('${id}')">🗑️ Sil</button>
+          onclick="deletePastTournament('${id}')">🗑️ Kaldır</button>
       </div>
     `;
   }).join('');
@@ -7612,8 +7646,8 @@ async function deletePastTournament(encodedId){
   );
 
   if(!confirm(
-    `"${item?.name || tournamentId}" geçmiş turnuvalardan silinsin mi?\n\n` +
-    `Bu işlem turnuvayı kullanıcı tarafındaki Tamamlanan listesinden de kaldırır. Audit kayıtları korunur.`
+    `"${item?.name || tournamentId}" geçmiş turnuvalardan kaldırılsın mı?\n\n` +
+    `Kullanıcı tarafındaki Tamamlanan listesinden çıkarılır. Aynı isim tekrar oluşturulmasın ve ayarları tekrar kullanılabilsin diye Yönetim Merkezi'nde ŞABLON olarak saklanır.`
   )) return;
 
   try{
@@ -7632,9 +7666,15 @@ async function deletePastTournament(encodedId){
     tournamentCatalogCache = [];
     await loadTournamentList(true);
 
+    const select = document.getElementById('tournamentSelect');
+    if(select && [...select.options].some(o=>o.value===tournamentId)){
+      select.value = tournamentId;
+      await loadTournamentConfig();
+    }
+
     showStatus(
       'pastTournamentStatus',
-      '✅ Turnuva geçmişten ve kullanıcı tarafındaki Tamamlanan listesinden kaldırıldı.',
+      '✅ Turnuva kullanıcı tarafındaki geçmişten kaldırıldı ve Yönetim Merkezi\'nde ŞABLON olarak saklandı.',
       true
     );
   }catch(error){
@@ -7672,6 +7712,120 @@ function filterTournamentOptions(){
   }
 }
 
+
+function isCurrentTournamentTemplate(){
+  const id = document.getElementById('tournamentSelect')?.value || '';
+  const item = tournamentCatalogCache.find(x => String(x?.id || '') === String(id));
+  return item?.adminTemplate === true || String(item?.lifecycleStatus || '').toLowerCase() === 'template';
+}
+
+function setTournamentTemplateMode(isTemplate){
+  const fieldIds = [
+    'tName','tTeamSize','tCapacity','tRegistrationOpensAt','tRegistrationClosesAt','tEventDate',
+    'tComingSoon','tEntryMode','tFee','tGameName','tGameIdLabel','tAboutText','tHeroImageUrl',
+    'tLogoImageUrl','tStreamUrl','tBestOf','tMapName','tMapImageUrl','tThirdPlaceEnabled',
+    'tRulesText','tPrizeFirst','tPrizeSecond','tPrizeThird','tPredictionPrize','tRegistrationOpen'
+  ];
+
+  for(const id of fieldIds){
+    const el = document.getElementById(id);
+    if(el) el.disabled = !!isTemplate;
+  }
+
+  const normalButtons = [
+    'saveTournamentButton','tActivateButton','tPassiveButton','tCompleteButton','tDeleteButton'
+  ];
+  for(const id of normalButtons){
+    const el = document.getElementById(id);
+    if(el) el.style.display = isTemplate ? 'none' : '';
+  }
+
+  const templateCopy = document.getElementById('tTemplateCopyButton');
+  if(templateCopy) templateCopy.style.display = isTemplate ? '' : 'none';
+
+  const notice = document.getElementById('tournamentTemplateNotice');
+  if(notice) notice.style.display = isTemplate ? 'block' : 'none';
+
+  const ops = document.getElementById('tournamentLiveOpsRow');
+  if(ops) ops.style.display = isTemplate ? 'none' : 'grid';
+
+  const predictionBox = document.getElementById('tPredictionBox');
+  if(predictionBox) predictionBox.style.display = isTemplate ? 'none' : '';
+
+  const entriesCard = document.getElementById('tournamentEntriesCard');
+  if(entriesCard) entriesCard.style.display = isTemplate ? 'none' : '';
+
+  const bracketCard = document.getElementById('tournamentBracketCard');
+  if(bracketCard) bracketCard.style.display = isTemplate ? 'none' : '';
+}
+
+function copyTournamentTemplateToCreate(){
+  if(!isCurrentTournamentTemplate()) return;
+
+  const copyValue = (from,to) => {
+    const src = document.getElementById(from);
+    const dst = document.getElementById(to);
+    if(src && dst) dst.value = src.value || '';
+  };
+  const copyChecked = (from,to) => {
+    const src = document.getElementById(from);
+    const dst = document.getElementById(to);
+    if(src && dst) dst.checked = !!src.checked;
+  };
+
+  // Kimlik/ad ve eski tarihler kopyalanmaz.
+  // Böylece aynı isim hatasına düşmeden yeni etkinliği güvenli şekilde hazırlarsın.
+  const nameInput = document.getElementById('tcName');
+  if(nameInput) nameInput.value = '';
+
+  copyValue('tTeamSize','tcTeamSize');
+  copyValue('tCapacity','tcCapacity');
+  copyValue('tEntryMode','tcEntryMode');
+  copyValue('tFee','tcFee');
+  copyValue('tGameName','tcGameName');
+  copyValue('tGameIdLabel','tcGameIdLabel');
+  copyValue('tAboutText','tcAboutText');
+  copyValue('tHeroImageUrl','tcHeroImageUrl');
+  copyValue('tLogoImageUrl','tcLogoImageUrl');
+  copyValue('tStreamUrl','tcStreamUrl');
+  copyValue('tBestOf','tcBestOf');
+  copyValue('tMapName','tcMapName');
+  copyValue('tMapImageUrl','tcMapImageUrl');
+  copyValue('tRulesText','tcRulesText');
+  copyValue('tPrizeFirst','tcPrizeFirst');
+  copyValue('tPrizeSecond','tcPrizeSecond');
+  copyValue('tPrizeThird','tcPrizeThird');
+  copyValue('tPredictionPrize','tcPredictionPrize');
+  copyChecked('tThirdPlaceEnabled','tcThirdPlaceEnabled');
+
+  // Eski turnuvanın tarih/kayıt durumunu yeni turnuvaya taşımıyoruz.
+  for(const id of ['tcRegistrationOpensAt','tcRegistrationClosesAt','tcEventDate']){
+    const el=document.getElementById(id);
+    if(el) el.value='';
+  }
+
+  const comingSoon=document.getElementById('tcComingSoon');
+  if(comingSoon) comingSoon.checked=true;
+
+  const active=document.getElementById('tcActive');
+  if(active) active.checked=false;
+
+  const regOpen=document.getElementById('tcRegistrationOpen');
+  if(regOpen) regOpen.checked=false;
+
+  updateCreateTournamentEntryFields();
+  updateCreateTournamentDateField();
+
+  showStatus(
+    'createTournamentStatus',
+    '📋 Şablon ayarları kopyalandı. Yeni turnuva adını yaz; tarihleri/ödülleri istediğin gibi güncelle. Aynı isimle yeni turnuva oluşturulamaz.',
+    true
+  );
+
+  document.getElementById('newTournamentCard')?.scrollIntoView({behavior:'smooth',block:'start'});
+  setTimeout(()=>document.getElementById('tcName')?.focus({preventScroll:true}),350);
+}
+
 async function loadTournamentConfig(){
   const id = document.getElementById('tournamentSelect')?.value || '';
   if(!id) return;
@@ -7699,7 +7853,8 @@ async function loadTournamentConfig(){
       ...t,
       lifecycleStatus:catalogItem.lifecycleStatus || 'registration_closed',
       registeredCount:Number(catalogItem.registeredCount || 0),
-      completedCount:Number(catalogItem.completedCount || 0)
+      completedCount:Number(catalogItem.completedCount || 0),
+      adminTemplate:catalogItem.adminTemplate === true || String(catalogItem.lifecycleStatus || '').toLowerCase() === 'template'
     };
     currentTournamentRule = rule;
 
@@ -7757,9 +7912,14 @@ async function loadTournamentConfig(){
     document.getElementById('tThirdPlaceEnabled').checked =
       rule.thirdPlaceEnabled === true || catalogItem.thirdPlaceEnabled === true;
 
+    const isTemplate =
+      catalogItem.adminTemplate === true ||
+      String(catalogItem.lifecycleStatus || '').toLowerCase() === 'template';
+
     const lifecycle =
-      catalogItem.lifecycleStatus ||
-      'registration_closed';
+      isTemplate
+        ? 'template'
+        : (catalogItem.lifecycleStatus || 'registration_closed');
 
     const quick = document.getElementById('tournamentQuickInfo');
 
@@ -7773,7 +7933,7 @@ async function loadTournamentConfig(){
         <span class="tournamentPill">${esc(rule.mapName || catalogItem.mapName || 'Harita açıklanmadı')}</span>
         <span class="tournamentPill">Kayıt Açılışı: ${rule.comingSoon === true ? 'YAKINDA' : esc(dateText(rule.registrationOpensAt || catalogItem.registrationOpensAt))}</span>
         <span class="tournamentPill">Başlangıç: ${rule.comingSoon === true ? 'YAKINDA' : esc(dateText(t.eventDate))}</span>
-        <span class="tournamentPill">${esc(tournamentLifecycleText(lifecycle))}</span>
+        <span class="tournamentPill ${isTemplate ? 'template' : ''}">${esc(tournamentLifecycleText(lifecycle))}</span>
       `;
     }
 
@@ -7808,6 +7968,24 @@ async function loadTournamentConfig(){
     }
 
     updateTournamentEntryFields();
+    setTournamentTemplateMode(isTemplate);
+
+    if(isTemplate){
+      currentTournamentEntries = null;
+      currentTournamentBracket = null;
+
+      document.getElementById('tournamentEntrySummary').innerHTML = '📋 Bu kayıt bir şablondur; eski katılımcı verileri canlı yönetim ekranında gösterilmez.';
+      document.getElementById('tournamentEntriesView').innerHTML = '';
+      document.getElementById('tournamentBracketSummary').innerHTML = '📋 Bu kayıt bir şablondur; eski fikstür canlı yönetim ekranında gösterilmez.';
+      document.getElementById('tournamentBracketView').innerHTML = '';
+
+      showStatus(
+        'tournamentStatus',
+        `📋 ${esc(t.name)} şablonu yüklendi. "ŞABLONU YENİ TURNUVAYA KOPYALA" butonuyla ayarları yeni turnuva formuna aktarabilirsin.`,
+        true
+      );
+      return;
+    }
 
     await Promise.all([
       loadTournamentEntries(true),
@@ -7866,6 +8044,11 @@ function updateTournamentEntryFields(){
 async function saveTournamentConfig(){
   const tournamentId = document.getElementById('tournamentSelect')?.value || '';
   if(!tournamentId) return;
+
+  if(isCurrentTournamentTemplate()){
+    showStatus('tournamentStatus','📋 Şablon doğrudan kaydedilemez. Önce "ŞABLONU YENİ TURNUVAYA KOPYALA" butonunu kullan.',false);
+    return;
+  }
 
   const button = document.getElementById('saveTournamentButton');
 
@@ -8161,6 +8344,11 @@ async function setTournamentLifecycle(state){
   const tournamentId = document.getElementById('tournamentSelect')?.value || '';
   if(!tournamentId) return;
 
+  if(isCurrentTournamentTemplate()){
+    showStatus('tournamentStatus','📋 Şablon canlı turnuva değildir. Yeni turnuva oluşturmak için şablonu kopyala.',false);
+    return;
+  }
+
   const labels = {
     active:'aktif yapılsın',
     passive:'pasife alınsın',
@@ -8208,12 +8396,17 @@ async function deleteTournamentFromPanel(){
   const tournamentId = document.getElementById('tournamentSelect')?.value || '';
   if(!tournamentId) return;
 
+  if(isCurrentTournamentTemplate()){
+    showStatus('tournamentStatus','📋 Bu kayıt zaten şablon olarak saklanıyor.',true);
+    return;
+  }
+
   const item =
     tournamentCatalogCache.find(x => String(x.id) === String(tournamentId));
 
   if(!confirm(
-    `"${item?.name || tournamentId}" turnuvası silinsin mi?\n\n` +
-    `Turnuva marketten ve yönetim listesinden kaldırılır. Audit kayıtları korunur.`
+    `"${item?.name || tournamentId}" turnuvası kullanıcı tarafında kaldırılsın mı?\n\n` +
+    `Market / Turnuva ekranından kaldırılır. Yönetim Merkezi'nde ŞABLON olarak saklanır ve aynı isimle yeni turnuva oluşturulamaz.`
   )) return;
 
   try{
@@ -8230,9 +8423,15 @@ async function deleteTournamentFromPanel(){
     tournamentCatalogCache = [];
     await loadTournamentList(true);
 
+    const select = document.getElementById('tournamentSelect');
+    if(select && [...select.options].some(o=>o.value===tournamentId)){
+      select.value = tournamentId;
+      await loadTournamentConfig();
+    }
+
     showStatus(
       'tournamentStatus',
-      '✅ Turnuva silindi.',
+      '✅ Turnuva kullanıcı tarafında kaldırıldı ve Yönetim Merkezi\'nde ŞABLON olarak saklandı.',
       true
     );
 
