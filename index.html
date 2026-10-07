@@ -1598,6 +1598,12 @@ body.wz-view-tournament #wzMobileTournamentHero{display:none!important}
   background:rgba(255,255,255,.07);color:#fff;font-size:.72rem;font-weight:1000;text-align:center
 }
 .wz-turn-date.is-live .wz-turn-stage-state{background:#d71920}
+.wz-turn-stage-state.is-link{
+  text-decoration:none;cursor:pointer;transition:transform .15s ease,filter .15s ease;
+  display:flex;align-items:center;justify-content:center
+}
+.wz-turn-stage-state.is-link:active{transform:scale(.97)}
+.wz-turn-stage-state.is-link:hover{filter:brightness(1.08)}
 .wz-turn-date.is-completed .wz-turn-stage-state{background:#252a32}
 .wz-turn-livebox{margin:0 12px 12px;border:1px solid #35252a;background:linear-gradient(135deg,#1c1013,#10141b);border-radius:15px;padding:12px 13px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .wz-turn-livebox div{min-width:0}
@@ -7204,13 +7210,29 @@ return;
     }
 
     function tv2RegistrationClosed(item) {
-        const lifecycle = String(item?.tournament?.lifecycleStatus || '').toLowerCase();
-        if (['completed','in_progress','registration_complete','registration_closed'].includes(lifecycle)) return true;
-        if (!item?.tournament?.registrationOpen) return true;
-        const open = item?.rule?.registrationOpensAt || item?.tournament?.registrationOpensAt;
-        if (open && Number.isFinite(Date.parse(open)) && Date.now() < Date.parse(open)) return true;
-        const close = item?.rule?.registrationClosesAt || item?.tournament?.registrationClosesAt;
-        return Boolean(close && Number.isFinite(Date.parse(close)) && Date.now() >= Date.parse(close));
+        const t = item?.tournament || {};
+        const rule = item?.rule || {};
+        const lifecycle = String(t.lifecycleStatus || '').toLowerCase();
+
+        if (rule?.comingSoon === true || t?.comingSoon === true) return true;
+        if (['completed','in_progress','registration_complete'].includes(lifecycle)) return true;
+
+        const now = Date.now();
+        const open = rule.registrationOpensAt || t.registrationOpensAt;
+        const close = rule.registrationClosesAt || t.registrationClosesAt;
+        const openTs = open && Number.isFinite(Date.parse(open)) ? Date.parse(open) : NaN;
+        const closeTs = close && Number.isFinite(Date.parse(close)) ? Date.parse(close) : NaN;
+
+        // Planlı kayıt varsa saat gelince registrationOpen alanından bağımsız otomatik açılır.
+        if (Number.isFinite(openTs)) {
+            if (now < openTs) return true;
+            if (Number.isFinite(closeTs) && now >= closeTs) return true;
+            return false;
+        }
+
+        // Planlı açılış yoksa eski manuel açık/kapalı mantığı.
+        if (Number.isFinite(closeTs) && now >= closeTs) return true;
+        return t.registrationOpen !== true;
     }
 
     async function tv2LoadCatalog(showToast=false) {
@@ -10594,9 +10616,10 @@ return;
           {
             key:'start',
             cls:'is-live',
-            title:'CANLI MAÇLAR OYNANIYOR',
+            title:'MAÇLAR OYNANIYOR',
             date:formatDate(startAt),
-            state:'CANLI MAÇLAR OYNANIYOR'
+            state:'CANLI İZLE',
+            actionUrl:safeHttpUrl(item?.rule?.streamUrl || t?.streamUrl || 'https://kick.com/weizend')
           }
         ]
       };
@@ -10686,7 +10709,9 @@ return;
         ${row.countdown
           ? countdownMarkup(row.countdown)
           : row.state
-            ? `<div class="wz-turn-stage-state">${esc(row.state)}</div>`
+            ? (row.actionUrl
+                ? `<a class="wz-turn-stage-state is-link" href="${esc(row.actionUrl)}" target="_blank" rel="noopener noreferrer">${esc(row.state)}</a>`
+                : `<div class="wz-turn-stage-state">${esc(row.state)}</div>`)
             : ''}
       </div>`).join('')}</div>`;
   }
@@ -11363,9 +11388,31 @@ return;
     if(state.selectedId===id && state.screen==='detail') render();
   }
 
-  const wzTurnTimelineTimer=setInterval(()=>{
-    try{ updateTournamentTimelineDom(); }catch(_){ }
-  },1000);
+  let wzTurnTimelineTimer=null;
+  function wzScheduleTurnTimelineTick(){
+    try{ updateTournamentTimelineDom(); }catch(_){}
+
+    // Her çalışmada bir sonraki tam saniye sınırına yeniden hizalanır.
+    // Böylece setInterval birikimli gecikme/drift yapmaz.
+    const now=Date.now();
+    const delay=Math.max(80, 1000-(now%1000)+20);
+    clearTimeout(wzTurnTimelineTimer);
+    wzTurnTimelineTimer=setTimeout(wzScheduleTurnTimelineTick,delay);
+  }
+  wzScheduleTurnTimelineTick();
+
+  document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden){
+      clearTimeout(wzTurnTimelineTimer);
+      updateTournamentTimelineDom();
+      wzScheduleTurnTimelineTick();
+    }
+  });
+  window.addEventListener('focus',()=>{
+    clearTimeout(wzTurnTimelineTimer);
+    updateTournamentTimelineDom();
+    wzScheduleTurnTimelineTick();
+  });
 
   window.wzTurnSetSearch=function(value){
     state.search=String(value||'');
