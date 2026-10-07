@@ -10364,15 +10364,22 @@ return;
   function registrationCloseAt(item){ return item?.rule?.registrationClosesAt || item?.tournament?.registrationClosesAt || null; }
   function registrationPhase(item){
     const l=lifecycle(item);
+    const now=Date.now();
+    const startAt=item?.tournament?.eventDate || null;
+    const startTs=startAt?Date.parse(startAt):NaN;
 
-    // Manuel "Yakında" modu tarih/saatten bağımsızdır.
-    if(comingSoon(item) && !['completed','in_progress'].includes(l)) return 'soon';
+    // Tamamlandı admin/lifecycle tarafından kesin durumdur.
     if(l==='completed') return 'completed';
-    if(l==='in_progress') return 'live';
+
+    // Turnuva başlangıç saati geçtiyse lifecycle güncellenmesini beklemeden CANLI göster.
+    // Böylece dış kart, detay zaman çizelgesiyle aynı durumu kullanır.
+    if(l==='in_progress' || (Number.isFinite(startTs) && now>=startTs)) return 'live';
+
+    // Manuel "Yakında" modu tarih/saatten bağımsızdır ama başlamış turnuvayı ezmez.
+    if(comingSoon(item)) return 'soon';
     if(l==='registration_complete') return 'full';
     if(l==='passive') return 'passive';
 
-    const now=Date.now();
     const open=registrationOpenAt(item);
     const close=registrationCloseAt(item);
     const openTs=open?Date.parse(open):NaN;
@@ -10776,11 +10783,10 @@ return;
     return catalog().filter(item=>!isHiddenTournamentDraft(item));
   }
   function tournamentCategory(item){
-    const l=lifecycle(item);
     const phase=registrationPhase(item);
 
-    if(l==='completed' || phase==='completed') return 'done';
-    if(l==='in_progress' || phase==='live') return 'live';
+    if(phase==='completed') return 'done';
+    if(phase==='live') return 'live';
     if(phase==='soon' || phase==='scheduled') return 'soon';
     if(phase==='open') return 'active';
     if(phase==='closed' || phase==='full' || phase==='passive') return 'closed';
@@ -11373,6 +11379,10 @@ return;
 
     host.innerHTML = `<div class="wz-turn-root">${state.screen==='detail' ? renderDetailPage() : renderListPage()}</div>`;
 
+    if(state.screen==='list'){
+      wzTurnListStatusSignature=wzTournamentListStatusSignature();
+    }
+
     if(preserveY !== null){
       // Re-rendering the currently visible tournament must never move the viewport.
       window.scrollTo(0,preserveY);
@@ -11389,8 +11399,33 @@ return;
   }
 
   let wzTurnTimelineTimer=null;
+  let wzTurnListStatusSignature='';
+  function wzTournamentListStatusSignature(){
+    try{
+      return visibleCatalog()
+        .map(item=>`${String(item?.tournament?.id||'')}:${tournamentCategory(item)}`)
+        .join('|');
+    }catch(_){
+      return '';
+    }
+  }
+  function wzSyncTournamentListStatus(){
+    if(state.screen!=='list') return;
+    const next=wzTournamentListStatusSignature();
+    if(!wzTurnListStatusSignature){
+      wzTurnListStatusSignature=next;
+      return;
+    }
+    if(next!==wzTurnListStatusSignature){
+      wzTurnListStatusSignature=next;
+      render();
+    }
+  }
   function wzScheduleTurnTimelineTick(){
-    try{ updateTournamentTimelineDom(); }catch(_){}
+    try{
+      updateTournamentTimelineDom();
+      wzSyncTournamentListStatus();
+    }catch(_){}
 
     // Her çalışmada bir sonraki tam saniye sınırına yeniden hizalanır.
     // Böylece setInterval birikimli gecikme/drift yapmaz.
