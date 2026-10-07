@@ -2568,6 +2568,211 @@ body.wz-page-modal-open{
 }
 </style>
 
+
+<style id="wz-inbox-final-layout-v61">
+/* =========================================================
+   WEIZEND MESAJ KUTUSU V61
+   Masaüstü + mobil için tek ve kesin layout.
+   Eski üst üste binmiş inbox CSS kurallarını override eder.
+   ========================================================= */
+
+#inboxModal{
+  position:fixed!important;
+  inset:0!important;
+  z-index:60000!important;
+  display:none;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:16px!important;
+  overflow:hidden!important;
+  background:rgba(0,0,0,.88)!important;
+}
+
+#inboxModal .inbox-modal-content{
+  position:relative!important;
+  z-index:60001!important;
+  display:flex!important;
+  flex-direction:column!important;
+
+  width:min(900px,calc(100vw - 32px))!important;
+  height:min(760px,calc(100dvh - 32px))!important;
+  min-height:420px!important;
+  max-width:900px!important;
+  max-height:760px!important;
+
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+
+  opacity:1!important;
+  visibility:visible!important;
+  transform:none!important;
+
+  border:1px solid #303038!important;
+  border-radius:20px!important;
+  background:#0d0d10!important;
+  color:#fff!important;
+  box-shadow:0 28px 90px rgba(0,0,0,.72)!important;
+}
+
+#inboxModal .inbox-shell{
+  display:flex!important;
+  flex-direction:column!important;
+  flex:1 1 auto!important;
+
+  width:100%!important;
+  height:auto!important;
+  min-width:0!important;
+  min-height:0!important;
+  max-height:none!important;
+
+  overflow:hidden!important;
+  background:#0d0d10!important;
+}
+
+#inboxModal #inboxListView,
+#inboxModal #inboxThreadView{
+  flex:1 1 auto!important;
+  width:100%!important;
+  height:auto!important;
+  min-width:0!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow:hidden!important;
+}
+
+#inboxModal #inboxThreadView{
+  flex-direction:column!important;
+}
+
+#inboxModal .modal-header,
+#inboxModal .inbox-thread-header{
+  position:relative!important;
+  top:auto!important;
+  flex:0 0 auto!important;
+  width:100%!important;
+  min-height:64px!important;
+
+  padding:14px 18px!important;
+  background:#0e0e11!important;
+  border-bottom:1px solid #292930!important;
+
+  opacity:1!important;
+  visibility:visible!important;
+  color:#fff!important;
+}
+
+#inboxModal .inbox-thread-header-row{
+  display:flex!important;
+  align-items:center!important;
+  gap:10px!important;
+  width:100%!important;
+}
+
+#inboxModal .inbox-thread-subject{
+  color:#fff!important;
+}
+
+#inboxModal .inbox-thread-status{
+  color:#8f9099!important;
+}
+
+#inboxModal #inboxMessages{
+  position:relative!important;
+  display:flex!important;
+  flex-direction:column!important;
+  flex:1 1 0!important;
+
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+
+  padding:18px!important;
+  gap:12px!important;
+
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+
+  background:#070707!important;
+  opacity:1!important;
+  visibility:visible!important;
+}
+
+#inboxModal #inboxMessages .inbox-empty{
+  display:block!important;
+  width:100%!important;
+  color:#a8a8b0!important;
+  background:#0c0c0f!important;
+  border:1px dashed #34343c!important;
+}
+
+#inboxModal .inbox-reply-box{
+  position:relative!important;
+  top:auto!important;
+  bottom:auto!important;
+  flex:0 0 auto!important;
+
+  width:100%!important;
+  padding:14px 18px!important;
+
+  background:#0c0c0f!important;
+  border-top:1px solid #292930!important;
+
+  opacity:1!important;
+  visibility:visible!important;
+}
+
+#inboxModal .inbox-reply-row{
+  display:flex!important;
+  align-items:flex-end!important;
+  gap:10px!important;
+}
+
+#inboxModal .inbox-reply-input{
+  min-width:0!important;
+}
+
+@media(max-width:640px){
+  #inboxModal{
+    padding:0!important;
+    align-items:stretch!important;
+  }
+
+  #inboxModal .inbox-modal-content{
+    width:100%!important;
+    height:100dvh!important;
+    min-height:100dvh!important;
+    max-width:none!important;
+    max-height:100dvh!important;
+
+    border-left:0!important;
+    border-right:0!important;
+    border-radius:0!important;
+  }
+
+  #inboxModal .modal-header,
+  #inboxModal .inbox-thread-header{
+    padding:12px!important;
+    min-height:58px!important;
+  }
+
+  #inboxModal #inboxMessages{
+    padding:14px 12px 22px!important;
+  }
+
+  #inboxModal .inbox-reply-box{
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom))!important;
+  }
+
+  #inboxModal .inbox-reply-row{
+    gap:8px!important;
+  }
+}
+</style>
+
 </head>
 <body>
 <script id="wz-v58-prepaint-view">
@@ -4007,6 +4212,9 @@ body.wz-page-modal-open{
                 // kaçmış olabilir. Bağlantı geri geldiğinde sadece küçük komut
                 // sürümünü kontrol et; değişiklik yoksa profil sorgulama.
                 if (marketAuthenticated) {
+                    // Bağlantı yeniden kurulduğunda kaçmış bir inbox olayı varsa
+                    // kullanıcı 10/60 saniye beklemeden rozeti hemen görsün.
+                    refreshInboxBadge().catch(() => {});
                     checkBotrixProfileSignal().catch(() => {});
                 }
 
@@ -4061,6 +4269,13 @@ body.wz-page-modal-open{
                     if (reason === 'inbox_changed') {
                         refreshInboxAfterRealtime().catch(() => {});
                         return;
+                    }
+
+                    // Bazı Realtime sürümleri event tipini iletip payload/reason alanını
+                    // düşürebilir. Böyle bir generic profile_changed geldiğinde de
+                    // en azından inbox sayacını kontrol et; yeni mesaj varsa anında görünür.
+                    if (!reason) {
+                        refreshInboxAfterRealtime().catch(() => {});
                     }
 
                     // İzin verilen BotRix komutu canlı olarak geldiyse yalnızca
@@ -4645,7 +4860,10 @@ body.wz-page-modal-open{
                 inboxLivePollInFlight
             ) return;
 
-            const fallbackMs = realtimeSocket?.readyState === WebSocket.OPEN ? 60000 : 10000;
+            // Realtime ana yöntem olmaya devam eder; ancak bazı mobil/edge durumlarında
+            // event payload'ı eksik gelebilir. Bu yüzden WebSocket açık olsa bile
+            // hafif unread-count endpointi en fazla 10 saniyede bir güvence kontrolü yapar.
+            const fallbackMs = 10000;
             if (Date.now()-inboxLastFallbackAt < fallbackMs) return;
             inboxLastFallbackAt=Date.now();
             inboxLivePollInFlight = true;
@@ -4681,13 +4899,12 @@ body.wz-page-modal-open{
         }
 
         function startInboxBadgeWatcher() {
-            // WebSocket ana yöntemdir. Mobil tarayıcı WebSocket'i uykuya alırsa
-            // mesaj kutusu 10 saniyede kontrol edilir; bağlantı açıkken 60 saniyelik güvence kontrolü yapılır.
+            // V60: sürekli polling YOK.
+            // İlk açılışta bir kez okunmamış sayısını eşitle, sonrasında yalnız
+            // Realtime/WebSocket olayı geldiğinde yenile.
             stopInboxBadgeWatcher();
-            pollInboxMessagesOnly().catch(() => {});
-            inboxBadgeWatchTimer = setInterval(() => {
-                pollInboxMessagesOnly().catch(() => {});
-            }, 10000);
+            refreshInboxBadge().catch(() => {});
+            connectRealtime();
         }
 
         function stopInboxBadgeWatcher() {
@@ -4697,6 +4914,19 @@ body.wz-page-modal-open{
             }
             inboxLivePollInFlight = false;
         }
+
+        // Telefon/sekme geri geldiğinde yalnızca BİR kez senkron kontrol yap.
+        // Bu periyodik istek değildir; uyku sırasında kaçmış Realtime olayını telafi eder.
+        function wakeInboxWatcher() {
+            if (!marketAuthenticated || !localStorage.getItem(SESSION_STORAGE_KEY)) return;
+            refreshInboxAfterRealtime().catch(() => {});
+            connectRealtime();
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) wakeInboxWatcher();
+        });
+        window.addEventListener('focus', wakeInboxWatcher);
 
         async function inboxRequest(path, options = {}) {
             const token = localStorage.getItem(SESSION_STORAGE_KEY) || '';
@@ -4780,19 +5010,30 @@ body.wz-page-modal-open{
             }
 
             const modal = document.getElementById('inboxModal');
-            if (!modal) return;
+            const listView = document.getElementById('inboxListView');
+            const threadView = document.getElementById('inboxThreadView');
+            const messagesBox = document.getElementById('inboxMessages');
 
-            // Mesaj kutusunda body'yi position:fixed yapmıyoruz.
-            // Profil aşağı kaydırılmışken fixed-body kilidi pencereyi viewport dışına
-            // taşıyabiliyordu ve ekranda yalnızca siyah overlay görünüyordu.
+            if (!modal || !threadView || !messagesBox) return;
+
             document.documentElement.style.overflow = 'hidden';
             document.body.style.overflow = 'hidden';
 
-            modal.style.display = 'flex';
-            document.getElementById('inboxListView').style.display = 'none';
-            document.getElementById('inboxThreadView').style.display = 'flex';
+            if (listView) listView.style.display = 'none';
+            threadView.style.display = 'flex';
 
-            await loadInbox(false);
+            // API cevabını beklerken de pencere tam görünür olsun.
+            messagesBox.innerHTML =
+                '<div class="inbox-empty">⏳ Mesajlar yükleniyor...</div>';
+
+            modal.style.display = 'flex';
+
+            try {
+                await loadInbox(false);
+            } catch (error) {
+                messagesBox.innerHTML =
+                    `<div class="inbox-empty">❌ ${escapeHtml(error?.message || error)}</div>`;
+            }
         }
 
         function closeInbox() {
@@ -4862,9 +5103,13 @@ body.wz-page-modal-open{
                 updateInboxBadge(0);
             } catch (error) {
                 // Sessiz canlı yenilemede eski mesajları ekranda tut. İlk açılışta hata
-                // varsa kullanıcıya normal hata kartını göster.
+                // varsa kullanıcıya görünür hata kartını göster.
                 if (!preserveDraft || !currentInboxConversation) {
-                    messagesBox.innerHTML = `<div class="inbox-empty">❌ ${escapeHtml(error.message || error)}</div>`;
+                    const message = escapeHtml(error?.message || error);
+                    messagesBox.innerHTML = `<div class="inbox-empty">❌ ${message}</div>`;
+
+                    const status = document.getElementById('inboxThreadStatus');
+                    if (status) status.textContent = 'Mesajlar alınamadı';
                 }
             } finally {
                 inboxConversationRefreshInFlight = false;
