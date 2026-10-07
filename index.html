@@ -11075,7 +11075,9 @@ return;
           autocomplete="off" value="${value}"
           placeholder="Turnuva, oyun, format veya harita ara..."
           oninput="wzTurnSetSearch(this.value)">
-        ${state.search ? `<button type="button" class="wz-turn-search-clear" onclick="wzTurnClearSearch()" title="Aramayı temizle">✕</button>` : ''}
+        <button id="wzTournamentSearchClear" type="button" class="wz-turn-search-clear"
+          onclick="wzTurnClearSearch()" title="Aramayı temizle"
+          style="${state.search?'':'display:none'}">✕</button>
       </div>
     </div>`;
   }
@@ -11134,9 +11136,8 @@ return;
     </article>`;
   }
 
-  function renderListPage(){
-    const list=filtered();
-    const emptyText = state.search
+  function tournamentListEmptyText(){
+    return state.search
       ? 'Aramana uygun turnuva bulunamadı.'
       : state.filter==='done'
         ? 'Henüz tamamlanan turnuva yok.'
@@ -11149,13 +11150,27 @@ return;
               : state.filter==='active'
                 ? 'Aktif turnuva bulunmuyor.'
                 : 'Henüz yayınlanmış turnuva yok.';
-
+  }
+  function renderTournamentListResults(){
+    const list=filtered();
+    const content=list.length
+      ? `<div class="wz-turn-cardlist">${list.map(item=>renderListCard(item,tournamentCategory(item)==='done')).join('')}</div>`
+      : `<div class="wz-turn-empty">${tournamentListEmptyText()}</div>`;
+    return `<div id="wzTournamentResults">${content}</div>`;
+  }
+  function refreshTournamentListResults(){
+    const current=document.getElementById('wzTournamentResults');
+    if(!current) return;
+    const shell=document.createElement('div');
+    shell.innerHTML=renderTournamentListResults();
+    const next=shell.firstElementChild;
+    if(next) current.replaceWith(next);
+  }
+  function renderListPage(){
     return `<div class="wz-turn-list-page">
       ${renderSearch()}
       ${renderFilters()}
-      ${list.length
-        ? `<div class="wz-turn-cardlist">${list.map(item=>renderListCard(item,tournamentCategory(item)==='done')).join('')}</div>`
-        : `<div class="wz-turn-empty">${emptyText}</div>`}
+      ${renderTournamentListResults()}
     </div>`;
   }
 
@@ -11452,23 +11467,29 @@ return;
   window.wzTurnSetSearch=function(value){
     state.search=String(value||'');
     persistTournamentState();
-    render();
-    requestAnimationFrame(()=>{
-      const input=document.getElementById('wzTournamentSearchInput');
-      if(input){
-        input.focus({preventScroll:true});
-        try{ input.setSelectionRange(input.value.length,input.value.length); }catch(_){}
-      }
-    });
+
+    // Sadece sonuç listesini güncelle. Arama input'u DOM'da aynı kalır.
+    refreshTournamentListResults();
+
+    const clear=document.getElementById('wzTournamentSearchClear');
+    if(clear) clear.style.display=state.search ? '' : 'none';
   };
   window.wzTurnClearSearch=function(){
     state.search='';
     persistTournamentState();
-    render();
-    requestAnimationFrame(()=>{
-      const input=document.getElementById('wzTournamentSearchInput');
-      if(input) input.focus({preventScroll:true});
-    });
+
+    const input=document.getElementById('wzTournamentSearchInput');
+    if(input) input.value='';
+
+    const clear=document.getElementById('wzTournamentSearchClear');
+    if(clear) clear.style.display='none';
+
+    refreshTournamentListResults();
+
+    if(input){
+      input.focus({preventScroll:true});
+      try{ input.setSelectionRange(0,0); }catch(_){}
+    }
   };
   window.wzTurnSetFilter=function(filter){ state.filter=filter; persistTournamentState(); render(); };
   window.wzTurnOpen=function(id){ state.selectedId=String(id||''); state.screen='detail'; state.tab='overview'; state.bracketMode='tree'; persistTournamentState(); render(); };
