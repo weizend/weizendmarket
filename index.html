@@ -10529,6 +10529,61 @@ return;
       .sort((a,b)=>compareTournamentItems(a,b,sourceIndex));
   }
 
+  async function ensureDetail(id){
+    if(!id) return null;
+    if(state.details.has(id)) return state.details.get(id);
+
+    if(state.loading.has(id)){
+      for(let i=0;i<70;i++){
+        await new Promise(r=>setTimeout(r,100));
+        if(state.details.has(id)) return state.details.get(id);
+        if(!state.loading.has(id)) break;
+      }
+      return state.details.get(id) || null;
+    }
+
+    state.loading.add(id);
+
+    try{
+      let data=null;
+
+      if(typeof tv2FetchPublicDetail==='function'){
+        data=await tv2FetchPublicDetail(id);
+      }else{
+        const controller=new AbortController();
+        const timeout=setTimeout(()=>controller.abort(),10000);
+
+        let response;
+        try{
+          response=await fetch(
+            `${MARKET_WORKER}/tournament/public?id=${encodeURIComponent(id)}&_=${Date.now()}`,
+            {
+              cache:'no-store',
+              signal:controller.signal,
+              headers:{'Accept':'application/json'}
+            }
+          );
+        }finally{
+          clearTimeout(timeout);
+        }
+
+        data=await response.json();
+
+        if(!response.ok || !data?.success){
+          throw new Error(data?.error || `HTTP ${response.status}`);
+        }
+      }
+
+      state.details.set(id,data);
+      return data;
+    }catch(error){
+      state.details.set(id,{__error:String(error?.message||error)});
+      return state.details.get(id);
+    }finally{
+      state.loading.delete(id);
+    }
+  }
+
   function scoreParts(match){
     let a='',b='';
     const raw=typeof match?.result==='object' && match.result ? String(match.result.score||'') : '';
