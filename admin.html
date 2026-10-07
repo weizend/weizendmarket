@@ -987,6 +987,379 @@ body.dmModalOpen{overflow:hidden}
   }
 </style>
 
+
+<style id="wz-admin-mobile-clean-v30">
+/* WEIZEND ADMIN · TEMİZ MOBİL GÖRÜNÜM
+   Yalnızca görünüm/ergonomi. JS/API mantığı değiştirilmez. */
+
+@media (max-width: 760px){
+  html{
+    -webkit-text-size-adjust:100%;
+    scroll-behavior:auto;
+  }
+
+  body{
+    margin:0!important;
+    padding:0!important;
+    padding-bottom:calc(18px + env(safe-area-inset-bottom))!important;
+    background:#050505;
+  }
+
+  .wrap{
+    width:100%!important;
+    max-width:none!important;
+    margin:0!important;
+    padding:8px 10px 0!important;
+  }
+
+  h1{
+    margin:8px 2px 12px!important;
+    font-size:1.05rem!important;
+    line-height:1.25!important;
+    letter-spacing:.06em!important;
+    text-align:left!important;
+  }
+
+  h2{
+    font-size:1.08rem!important;
+    line-height:1.3!important;
+  }
+
+  h3{
+    font-size:1rem!important;
+    line-height:1.3!important;
+  }
+
+  /* Giriş kartı */
+  #loginCard{
+    margin-top:10px!important;
+    padding:18px!important;
+    border-radius:18px!important;
+  }
+
+  #loginCard input{
+    min-height:48px!important;
+    font-size:16px!important;
+  }
+
+  #loginCard button{
+    min-height:48px!important;
+    width:100%!important;
+    font-size:.96rem!important;
+  }
+
+  /* Üst yönetim başlığı */
+  #adminArea > .topbar{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) auto!important;
+    align-items:center!important;
+    gap:10px!important;
+    margin:4px 0 10px!important;
+    padding:12px 13px!important;
+    border:1px solid #292929!important;
+    border-radius:15px!important;
+    background:linear-gradient(145deg,#111,#090909)!important;
+  }
+
+  #adminArea > .topbar > div{
+    min-width:0!important;
+  }
+
+  #adminArea > .topbar h2{
+    margin:0 0 2px!important;
+    font-size:1rem!important;
+  }
+
+  #adminArea > .topbar .muted{
+    font-size:.72rem!important;
+  }
+
+  #adminArea > .topbar > button{
+    width:auto!important;
+    min-width:82px!important;
+    min-height:40px!important;
+    padding:8px 10px!important;
+    font-size:.76rem!important;
+    white-space:nowrap!important;
+  }
+
+  /* Ana sekmeler */
+  #adminArea > .tabs{
+    position:sticky!important;
+    top:0!important;
+    z-index:800!important;
+    display:flex!important;
+    flex-wrap:nowrap!important;
+    gap:7px!important;
+    width:calc(100% + 20px)!important;
+    margin-left:-10px!important;
+    margin-right:-10px!important;
+    margin-bottom:12px!important;
+    padding:8px 10px 9px!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    -webkit-overflow-scrolling:touch!important;
+    overscroll-behavior-x:contain!important;
+    scrollbar-width:none!important;
+    background:rgba(5,5,5,.98)!important;
+    border-top:1px solid rgba(255,255,255,.04)!important;
+    border-bottom:1px solid #242424!important;
+    box-shadow:0 8px 20px rgba(0,0,0,.28)!important;
+  }
+
+  #adminArea > .tabs::-webkit-scrollbar{
+    display:none!important;
+  }
+
+  #adminArea > .tabs button{
+    flex:0 0 auto!important;
+    width:auto!important;
+    min-width:max-content!important;
+    min-height:42px!important;
+    padding:9px 12px!important;
+    border-radius:12px!important;
+    font-size:.78rem!important;
+    line-height:1.1!important;
+    white-space:nowrap!important;
+  }
+
+  #adminArea > .tabs button.active{
+    border-color:#ff4141!important;
+    box-shadow:0 0 0 1px rgba(227,27,27,.18),0 6px 18px rgba(227,27,27,.13)!important;
+  }
+
+  /* Genel kartlar */
+  .card{
+    padding:14px!important;
+    margin-bottom:12px!important;
+    border-radius:15px!important;
+  }
+
+  .muted{
+    font-size:.82rem!important;
+    line-height:1.5!important;
+  }
+
+  .grid2,
+  .grid3{
+    grid-template-columns:1fr!important;
+    gap:8px!important;
+  }
+
+  .field{
+    margin-bottom:10px!important;
+  }
+
+  label.title{
+    margin-bottom:5px!important;
+    font-size:.78rem!important;
+  }
+
+  input,
+  select,
+  textarea{
+    width:100%!important;
+    min-height:46px!important;
+    padding:11px 12px!important;
+    border-radius:11px!important;
+    font-size:16px!important;
+  }
+
+  textarea{
+    min-height:96px!important;
+    line-height:1.45!important;
+  }
+
+  button{
+    min-height:44px!important;
+    border-radius:11px!important;
+    touch-action:manipulation!important;
+  }
+
+  .btnRow{
+    display:grid!important;
+    grid-template-columns:1fr!important;
+    gap:8px!important;
+  }
+
+  .btnRow button{
+    width:100%!important;
+    min-width:0!important;
+    margin:0!important;
+  }
+
+  .sectionHeaderRow{
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:stretch!important;
+    gap:9px!important;
+  }
+
+  .sectionHeaderRow > button,
+  .sectionHeaderRow > .smallButton{
+    width:100%!important;
+  }
+
+  .smallButton{
+    width:100%!important;
+  }
+
+  /* Checkbox satırları */
+  .checkline{
+    min-height:42px!important;
+    padding:7px 9px!important;
+    margin:6px 0!important;
+    border:1px solid #252525!important;
+    border-radius:10px!important;
+    background:#0b0b0b!important;
+  }
+
+  .checkline input{
+    width:20px!important;
+    height:20px!important;
+    flex:0 0 20px!important;
+  }
+
+  /* Tablolar */
+  .tableWrap{
+    width:100%!important;
+    overflow-x:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+    border-radius:11px!important;
+  }
+
+  table{
+    min-width:680px!important;
+    font-size:.78rem!important;
+  }
+
+  th,td{
+    padding:9px 8px!important;
+    white-space:nowrap!important;
+  }
+
+  td button,
+  th button{
+    min-height:36px!important;
+    padding:7px 9px!important;
+    font-size:.72rem!important;
+  }
+
+  /* Turnuva yönetimi */
+  #section-tournaments .tournamentV3Grid,
+  #section-tournaments .tournamentV3PaymentGrid,
+  #section-tournaments .tournamentV3InviteGrid{
+    grid-template-columns:1fr!important;
+  }
+
+  #section-tournaments .tournamentTeamCard{
+    padding:11px!important;
+    border-radius:12px!important;
+  }
+
+  #section-tournaments .tournamentTeamHead{
+    gap:7px!important;
+    margin-bottom:8px!important;
+  }
+
+  #section-tournaments .tournamentState{
+    width:100%!important;
+    justify-content:center!important;
+    text-align:center!important;
+  }
+
+  #section-tournaments .tournamentPill{
+    font-size:.7rem!important;
+    padding:6px 8px!important;
+  }
+
+  /* Geçmiş turnuvalar */
+  .pastTournamentItem{
+    flex-direction:column!important;
+    align-items:stretch!important;
+    padding:12px!important;
+    gap:10px!important;
+  }
+
+  .pastTournamentDelete{
+    width:100%!important;
+  }
+
+  .pastTournamentName{
+    font-size:.92rem!important;
+  }
+
+  .pastTournamentMeta{
+    font-size:.74rem!important;
+    gap:5px 9px!important;
+  }
+
+  /* Kullanıcı özetleri */
+  .userSummaryGrid{
+    grid-template-columns:1fr!important;
+    gap:7px!important;
+  }
+
+  /* Durum mesajları */
+  .status{
+    padding:10px!important;
+    font-size:.8rem!important;
+    line-height:1.45!important;
+  }
+
+  /* Modallar */
+  .choiceOverlay,
+  .dmNewMessageModal{
+    padding:8px!important;
+    align-items:flex-end!important;
+  }
+
+  .choiceCard,
+  .dmNewMessageCard{
+    width:100%!important;
+    max-width:none!important;
+    max-height:90dvh!important;
+    overflow:auto!important;
+    padding:15px!important;
+    border-radius:18px 18px 8px 8px!important;
+  }
+
+  /* Son kart için alt nefes alanı */
+  .section.active > .card:last-child{
+    margin-bottom:24px!important;
+  }
+}
+
+@media (max-width: 430px){
+  .wrap{
+    padding-left:8px!important;
+    padding-right:8px!important;
+  }
+
+  #adminArea > .tabs{
+    width:calc(100% + 16px)!important;
+    margin-left:-8px!important;
+    margin-right:-8px!important;
+    padding-left:8px!important;
+    padding-right:8px!important;
+  }
+
+  .card{
+    padding:12px!important;
+  }
+
+  #adminArea > .topbar{
+    padding:10px 11px!important;
+  }
+
+  #adminArea > .tabs button{
+    min-height:40px!important;
+    padding:8px 11px!important;
+    font-size:.75rem!important;
+  }
+}
+</style>
+
 </head>
 
 <body>
