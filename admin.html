@@ -2078,6 +2078,54 @@ body.dmModalOpen{overflow:hidden}
           <div id="tcEntryModeHint" class="tournamentHint"></div>
         </div>
 
+
+        <h3 class="subTitle">Maç / Harita Ayarları</h3>
+
+        <div class="grid3">
+          <div class="field">
+            <label class="title">Maç Formatı</label>
+            <select id="tcBestOf">
+              <option value="BO1" selected>BO1</option>
+              <option value="BO3">BO3</option>
+              <option value="BO5">BO5</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label class="title">Harita</label>
+            <input id="tcMapName" type="text" maxlength="120" placeholder="Örn: Ascent / Çarpışma Haritası A">
+          </div>
+
+          <div class="field">
+            <label class="title">Harita Türü</label>
+            <select id="tcMapType">
+              <option value="standard">Standart</option>
+              <option value="collision_a">Çarpışma Haritası A</option>
+              <option value="custom">Özel</option>
+            </select>
+          </div>
+        </div>
+
+        <label class="checkline">
+          <input id="tcThirdPlaceEnabled" type="checkbox">
+          <span>Yarı final kaybedenleri için 3.'lük maçı oluştur</span>
+        </label>
+
+        <h3 class="subTitle">Kurallar</h3>
+        <div class="field">
+          <label class="title">Özel Turnuva Kuralları</label>
+          <textarea id="tcRulesText" maxlength="5000" placeholder="Boş bırakırsan site varsayılan kuralları gösterir. Buraya yazarsan kullanıcı tarafında bu kurallar gösterilir."></textarea>
+          <div class="muted" style="margin-top:6px;">Çarpışma Haritası A seçilirse varsayılan kurallarda Vandal / Phantom serbest ve son round yalnızca Sheriff kuralı otomatik gösterilir.</div>
+        </div>
+
+        <h3 class="subTitle">Ödüller</h3>
+        <div class="grid2">
+          <div class="field"><label class="title">🥇 1. Ödülü</label><input id="tcPrizeFirst" type="text" maxlength="180" placeholder="Örn: 1700 VP"></div>
+          <div class="field"><label class="title">🥈 2. Ödülü</label><input id="tcPrizeSecond" type="text" maxlength="180" placeholder="Örn: 825 VP"></div>
+          <div class="field"><label class="title">🥉 3. Ödülü</label><input id="tcPrizeThird" type="text" maxlength="180" placeholder="Örn: 375 VP"></div>
+          <div class="field"><label class="title">🎯 En İyi Tahmin Ödülü</label><input id="tcPredictionPrize" type="text" maxlength="180" placeholder="Örn: 375 VP"></div>
+        </div>
+
         <div class="grid2">
           <label class="checkline">
             <input id="tcActive" type="checkbox" checked>
@@ -2190,6 +2238,54 @@ body.dmModalOpen{overflow:hidden}
           </div>
 
           <div id="tEntryModeHint" class="tournamentHint"></div>
+        </div>
+
+
+        <h3 class="subTitle">Maç / Harita Ayarları</h3>
+
+        <div class="grid3">
+          <div class="field">
+            <label class="title">Maç Formatı</label>
+            <select id="tBestOf">
+              <option value="BO1" selected>BO1</option>
+              <option value="BO3">BO3</option>
+              <option value="BO5">BO5</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label class="title">Harita</label>
+            <input id="tMapName" type="text" maxlength="120" placeholder="Örn: Ascent / Çarpışma Haritası A">
+          </div>
+
+          <div class="field">
+            <label class="title">Harita Türü</label>
+            <select id="tMapType">
+              <option value="standard">Standart</option>
+              <option value="collision_a">Çarpışma Haritası A</option>
+              <option value="custom">Özel</option>
+            </select>
+          </div>
+        </div>
+
+        <label class="checkline">
+          <input id="tThirdPlaceEnabled" type="checkbox">
+          <span>Yarı final kaybedenleri için 3.'lük maçı oluştur</span>
+        </label>
+
+        <h3 class="subTitle">Kurallar</h3>
+        <div class="field">
+          <label class="title">Özel Turnuva Kuralları</label>
+          <textarea id="tRulesText" maxlength="5000" placeholder="Boş bırakırsan site varsayılan kuralları gösterir. Buraya yazarsan kullanıcı tarafında bu kurallar gösterilir."></textarea>
+          <div class="muted" style="margin-top:6px;">Çarpışma Haritası A seçilirse varsayılan kurallarda Vandal / Phantom serbest ve son round yalnızca Sheriff kuralı otomatik gösterilir.</div>
+        </div>
+
+        <h3 class="subTitle">Ödüller</h3>
+        <div class="grid2">
+          <div class="field"><label class="title">🥇 1. Ödülü</label><input id="tPrizeFirst" type="text" maxlength="180" placeholder="Örn: 1700 VP"></div>
+          <div class="field"><label class="title">🥈 2. Ödülü</label><input id="tPrizeSecond" type="text" maxlength="180" placeholder="Örn: 825 VP"></div>
+          <div class="field"><label class="title">🥉 3. Ödülü</label><input id="tPrizeThird" type="text" maxlength="180" placeholder="Örn: 375 VP"></div>
+          <div class="field"><label class="title">🎯 En İyi Tahmin Ödülü</label><input id="tPredictionPrize" type="text" maxlength="180" placeholder="Örn: 375 VP"></div>
         </div>
 
         <label class="checkline">
@@ -6690,6 +6786,15 @@ async function createTournament(){
   : tournamentDateToIso('tcRegistrationClosesAt');
   const gameName = document.getElementById('tcGameName')?.value.trim() || 'VALORANT';
   const gameIdLabel = document.getElementById('tcGameIdLabel')?.value.trim() || 'VALORANT ID';
+  const bestOf = document.getElementById('tcBestOf')?.value || 'BO1';
+  const mapName = document.getElementById('tcMapName')?.value.trim() || '';
+  const mapType = document.getElementById('tcMapType')?.value || 'standard';
+  const rulesText = document.getElementById('tcRulesText')?.value.trim() || '';
+  const firstPrize = document.getElementById('tcPrizeFirst')?.value.trim() || '';
+  const secondPrize = document.getElementById('tcPrizeSecond')?.value.trim() || '';
+  const thirdPrize = document.getElementById('tcPrizeThird')?.value.trim() || '';
+  const predictionPrize = document.getElementById('tcPredictionPrize')?.value.trim() || '';
+  const thirdPlaceEnabled = document.getElementById('tcThirdPlaceEnabled')?.checked === true;
   const active = document.getElementById('tcActive')?.checked !== false;
   const registrationOpen = document.getElementById('tcRegistrationOpen')?.checked === true;
 
@@ -6738,6 +6843,15 @@ async function createTournament(){
         registrationClosesAt,
         gameName,
         gameIdLabel,
+        bestOf,
+        mapName,
+        mapType,
+        rulesText,
+        firstPrize,
+        secondPrize,
+        thirdPrize,
+        predictionPrize,
+        thirdPlaceEnabled,
         active,
         registrationOpen
       })
@@ -6752,6 +6866,15 @@ async function createTournament(){
     document.getElementById('tcName').value = '';
     document.getElementById('tcRegistrationOpen').checked = false;
     document.getElementById('tcComingSoon').checked = false;
+    document.getElementById('tcBestOf').value = 'BO1';
+    document.getElementById('tcMapName').value = '';
+    document.getElementById('tcMapType').value = 'standard';
+    document.getElementById('tcRulesText').value = '';
+    document.getElementById('tcPrizeFirst').value = '';
+    document.getElementById('tcPrizeSecond').value = '';
+    document.getElementById('tcPrizeThird').value = '';
+    document.getElementById('tcPredictionPrize').value = '';
+    document.getElementById('tcThirdPlaceEnabled').checked = false;
     updateCreateTournamentDateField();
 
     tournamentCatalogCache = [];
@@ -6925,6 +7048,18 @@ async function loadTournamentConfig(){
       catalogItem.gameIdLabel ||
       'VALORANT ID';
 
+    document.getElementById('tBestOf').value =
+      String(rule.bestOf || catalogItem.bestOf || 'BO1').toUpperCase();
+    document.getElementById('tMapName').value = rule.mapName || catalogItem.mapName || '';
+    document.getElementById('tMapType').value = rule.mapType || catalogItem.mapType || 'standard';
+    document.getElementById('tRulesText').value = rule.rulesText || catalogItem.rulesText || '';
+    document.getElementById('tPrizeFirst').value = rule.firstPrize || catalogItem.firstPrize || '';
+    document.getElementById('tPrizeSecond').value = rule.secondPrize || catalogItem.secondPrize || '';
+    document.getElementById('tPrizeThird').value = rule.thirdPrize || catalogItem.thirdPrize || '';
+    document.getElementById('tPredictionPrize').value = rule.predictionPrize || catalogItem.predictionPrize || '';
+    document.getElementById('tThirdPlaceEnabled').checked =
+      rule.thirdPlaceEnabled === true || catalogItem.thirdPlaceEnabled === true;
+
     const lifecycle =
       catalogItem.lifecycleStatus ||
       'registration_closed';
@@ -6937,6 +7072,8 @@ async function loadTournamentConfig(){
         <span class="tournamentPill">${Number(t.teamSize||1) <= 1 ? '1v1 Solo' : `${Number(t.teamSize)}v${Number(t.teamSize)} Takımlı`}</span>
         <span class="tournamentPill">Kontenjan: ${Number(catalogItem.registeredCount||0)} / ${Number(t.capacity||0)}</span>
         <span class="tournamentPill">${esc(tournamentEntryModeText(rule.entryMode || catalogItem.entryMode))}</span>
+        <span class="tournamentPill">${esc(String(rule.bestOf || catalogItem.bestOf || 'BO1').toUpperCase())}</span>
+        <span class="tournamentPill">${esc(rule.mapName || catalogItem.mapName || 'Harita açıklanmadı')}</span>
         <span class="tournamentPill">${rule.comingSoon === true ? 'ÇOK YAKINDA' : esc(dateText(t.eventDate))}</span>
         <span class="tournamentPill">${esc(tournamentLifecycleText(lifecycle))}</span>
       `;
@@ -7048,6 +7185,15 @@ async function saveTournamentConfig(){
   : tournamentDateToIso('tRegistrationClosesAt');
   const gameName = document.getElementById('tGameName')?.value.trim() || 'VALORANT';
   const gameIdLabel = document.getElementById('tGameIdLabel')?.value.trim() || 'VALORANT ID';
+  const bestOf = document.getElementById('tBestOf')?.value || 'BO1';
+  const mapName = document.getElementById('tMapName')?.value.trim() || '';
+  const mapType = document.getElementById('tMapType')?.value || 'standard';
+  const rulesText = document.getElementById('tRulesText')?.value.trim() || '';
+  const firstPrize = document.getElementById('tPrizeFirst')?.value.trim() || '';
+  const secondPrize = document.getElementById('tPrizeSecond')?.value.trim() || '';
+  const thirdPrize = document.getElementById('tPrizeThird')?.value.trim() || '';
+  const predictionPrize = document.getElementById('tPredictionPrize')?.value.trim() || '';
+  const thirdPlaceEnabled = document.getElementById('tThirdPlaceEnabled')?.checked === true;
 
   if(!name){
     showStatus('tournamentStatus','❌ Turnuva adı gerekli.',false);
@@ -7094,7 +7240,16 @@ async function saveTournamentConfig(){
         feePerPlayerTl,
         registrationClosesAt,
         gameName,
-        gameIdLabel
+        gameIdLabel,
+        bestOf,
+        mapName,
+        mapType,
+        rulesText,
+        firstPrize,
+        secondPrize,
+        thirdPrize,
+        predictionPrize,
+        thirdPlaceEnabled
       })
     });
 
@@ -8039,6 +8194,7 @@ function renderAdminMatchCard(match){
   const status = String(match.status || 'pending');
   const a = match.participantAName || 'Bekleniyor';
   const b = match.participantBName || 'Bekleniyor';
+  const matchKind = String(match.matchKind || 'main');
   const score =
     typeof match.result === 'object' && match.result
       ? (match.result.score || '')
@@ -8046,32 +8202,32 @@ function renderAdminMatchCard(match){
 
   let controls = '';
 
-  if(status === 'ready'){
+  if(status === 'ready' || status === 'completed'){
+    const currentWinner = String(match.winnerId || '');
+
     controls = `
       <div class="grid2" style="margin-top:10px;">
         <div class="field" style="margin:0;">
           <label class="title">Kazanan</label>
           <select id="winner-${esc(match.id)}">
             <option value="">Kazananı seç</option>
-            <option value="${esc(match.participantAId)}">${esc(a)}</option>
-            <option value="${esc(match.participantBId)}">${esc(b)}</option>
+            <option value="${esc(match.participantAId)}" ${currentWinner===String(match.participantAId||'')?'selected':''}>${esc(a)}</option>
+            <option value="${esc(match.participantBId)}" ${currentWinner===String(match.participantBId||'')?'selected':''}>${esc(b)}</option>
           </select>
         </div>
         <div class="field" style="margin:0;">
           <label class="title">Skor</label>
-          <input id="score-${esc(match.id)}" type="text" maxlength="40" placeholder="Örn: 13-8">
+          <input id="score-${esc(match.id)}" type="text" maxlength="40"
+            value="${esc(score)}" placeholder="Örn: 13-8">
         </div>
       </div>
-      <button class="smallBtn success" style="margin-top:10px;" onclick="saveTournamentMatchResult('${encodeURIComponent(match.id)}')">
-        ✅ Sonucu Kaydet
+      <button class="smallBtn ${status==='completed'?'warn':'success'}" style="margin-top:10px;"
+        onclick="saveTournamentMatchResult('${encodeURIComponent(match.id)}')">
+        ${status==='completed'?'♻️ Sonucu Güncelle':'✅ Sonucu Kaydet'}
       </button>
-    `;
-  }else if(status === 'completed'){
-    controls = `
-      <div style="margin-top:10px;">
-        <span class="badge ok">Kazanan: ${esc(match.winnerName || '-')}</span>
-        ${score ? `<span class="badge" style="margin-left:6px;">Skor: ${esc(score)}</span>` : ''}
-      </div>
+      ${status==='completed'
+        ? `<div class="muted" style="margin-top:7px;">Mevcut kazanan: <b>${esc(match.winnerName || '-')}</b>. Sonraki tur tamamlandıysa kazanan değişikliği güvenlik için engellenir.</div>`
+        : ''}
     `;
   }else if(status === 'bye'){
     controls = `
@@ -8088,7 +8244,7 @@ function renderAdminMatchCard(match){
   return `
     <div class="tournamentTeamCard" style="margin-top:8px;">
       <div class="row">
-        <span>Maç ${Number(match.matchNumber||0)}</span>
+        <span>${matchKind==='third_place' ? "🥉 3.'lük Maçı" : `Maç ${Number(match.matchNumber||0)}`}</span>
         <strong>${esc(a)} <span class="muted">VS</span> ${esc(b)}</strong>
       </div>
       ${controls}
