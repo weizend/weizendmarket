@@ -1209,6 +1209,66 @@ body.wz-view-profile #wzMobileProfileView{display:block}
   width:36px;height:36px;border-radius:11px;display:grid;place-items:center;background:#1a1a1f;color:#fff;font-weight:900
 }
 .wz-profile-action.featured .wz-action-icon{background:#e31b1b}
+
+/* Profil > Mesaj Kutusu: mesaj yokken diğer işlemler gibi gri,
+   okunmamış mesaj geldiğinde kırmızı uyarı durumuna geçer. */
+.wz-profile-action.wz-message-action{
+  border-color:#2b2b31;
+  background:#111115;
+}
+.wz-profile-action.wz-message-action .wz-message-action-icon{
+  position:relative;
+  background:#1a1a1f;
+  color:#fff;
+  overflow:visible;
+  transition:background .18s ease,box-shadow .18s ease,transform .18s ease;
+}
+.wz-message-action-icon svg{
+  width:19px;
+  height:19px;
+  display:block;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.wz-message-alert-badge{
+  display:none!important;
+  position:absolute!important;
+  top:-7px!important;
+  right:-7px!important;
+  width:19px!important;
+  height:19px!important;
+  min-width:19px!important;
+  padding:0!important;
+  border-radius:50%!important;
+  align-items:center!important;
+  justify-content:center!important;
+  background:#fff!important;
+  color:#e31b1b!important;
+  border:2px solid #e31b1b!important;
+  box-shadow:0 2px 8px rgba(0,0,0,.45)!important;
+  font-size:.72rem!important;
+  font-weight:1000!important;
+  line-height:1!important;
+  z-index:3!important;
+}
+.wz-profile-action.wz-message-action.has-unread{
+  border-color:#6f2729;
+  background:#1a0e10;
+}
+.wz-profile-action.wz-message-action.has-unread .wz-message-action-icon{
+  background:#e31b1b;
+  box-shadow:0 0 0 1px rgba(255,70,70,.08),0 6px 18px rgba(227,27,27,.22);
+}
+.wz-profile-action.wz-message-action.has-unread .wz-message-alert-badge{
+  display:flex!important;
+}
+.wz-profile-action.wz-message-action.has-unread b{
+  color:#fff;
+}
+
 .wz-profile-action span:nth-child(2){display:flex;flex-direction:column;min-width:0}
 .wz-profile-action b{font-size:.84rem}
 .wz-profile-action small{margin-top:3px;color:#777781;font-size:.68rem;line-height:1.3}
@@ -1466,7 +1526,7 @@ body.wz-view-tournament #wzMobileTournamentHero{display:none!important}
 }
 .wz-turn-strip::-webkit-scrollbar{display:none}
 .wz-turn-chip{
-  flex:0 0 auto;border:1px solid #2a2d36;background:#101319;color:#b5b7c0;border-radius:999px;padding:9px 14px;font-size:.74rem;font-weight:900
+  flex:0 0 auto;border:1px solid #2a2d36;background:#101319;color:#b5b7c0;border-radius:999px;padding:9px 14px;font-size:.74rem;font-weight:900;cursor:pointer
 }
 .wz-turn-chip.active{background:#fff;color:#000;border-color:#fff}
 .wz-turn-cardlist{display:grid;gap:12px}
@@ -3012,8 +3072,14 @@ body.wz-page-modal-open{
     <div class="wz-profile-section">
       <div class="wz-profile-section-title">Hızlı İşlemler</div>
       <div class="wz-profile-actions">
-        <button class="wz-profile-action featured" type="button" onclick="wzOpenMessages()">
-          <span class="wz-action-icon">✉</span>
+        <button id="wzProfileMessagesAction" class="wz-profile-action wz-message-action" type="button" onclick="wzOpenMessages()">
+          <span class="wz-action-icon wz-message-action-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <rect x="3.5" y="5.5" width="17" height="13" rx="2.4"></rect>
+              <path d="M4.5 7l7.5 5.8L19.5 7"></path>
+            </svg>
+            <span class="wz-message-alert-badge">!</span>
+          </span>
           <span><b>Mesaj Kutusu</b><small>Yönetici ve sistem mesajlarını görüntüle</small></span>
           <i>›</i>
         </button>
@@ -4444,16 +4510,32 @@ body.wz-page-modal-open{
         }
 
         function updateInboxBadge(unreadOverride = null) {
-            const badge = document.getElementById('inboxBadge');
-            if (!badge) return;
-
             const unread = Number.isFinite(Number(unreadOverride))
                 ? Math.max(0, Number(unreadOverride) || 0)
                 : inboxUnreadCount();
 
             inboxBadgeUnreadCount = unread;
-            badge.textContent = unread > 99 ? '99+' : String(unread);
-            badge.style.display = unread > 0 ? 'inline-block' : 'none';
+
+            const badge = document.getElementById('inboxBadge');
+            if (badge) {
+                badge.textContent = unread > 99 ? '99+' : String(unread);
+                badge.style.display = unread > 0 ? 'inline-block' : 'none';
+            }
+
+            // Profildeki Mesaj Kutusu kartı:
+            // 0 okunmamış = diğer hızlı işlemler gibi gri
+            // 1+ okunmamış = kırmızı kart + zarf üzerinde "!" rozeti
+            const profileMessageAction = document.getElementById('wzProfileMessagesAction');
+            if (profileMessageAction) {
+                const hasUnread = unread > 0;
+                profileMessageAction.classList.toggle('has-unread', hasUnread);
+                profileMessageAction.setAttribute(
+                    'aria-label',
+                    hasUnread
+                        ? `Mesaj Kutusu, ${unread} okunmamış mesaj`
+                        : 'Mesaj Kutusu, okunmamış mesaj yok'
+                );
+            }
         }
 
         function inboxComposerIsActive() {
