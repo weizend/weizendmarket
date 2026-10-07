@@ -2787,11 +2787,6 @@ body.wz-page-modal-open{
             <div class="category-filters" id="filters"></div>
 
             <section id="tournamentMarketSection" class="tv2-market-section" style="display:none;">
-                <div class="wz-mobile-tournament-hero" id="wzMobileTournamentHero">
-  <div class="wz-mobile-kicker">WEIZEND</div>
-  <h2>Turnuvalar</h2>
-  <p>Aktif ve tamamlanan turnuvaları, katılımcıları, kayıt durumunu ve fikstürü tek yerden takip et.</p>
-</div>
                 <div class="tv2-section-heading">
                     <div>
                         <div class="tv2-section-kicker">🏆 WEIZEND TURNUVALARI</div>
@@ -10654,7 +10649,7 @@ return;
       ['all','Tümü'],
       ['live','Canlı'],
       ['active','Aktif'],
-      ['soon','Yaklaşan'],
+      ['soon','Yakında'],
       ['done','Tamamlanan']
     ];
     return `<div class="wz-turn-strip">${defs.map(([id,name])=>`<button type="button" class="wz-turn-chip ${state.filter===id?'active':''}" onclick="wzTurnSetFilter('${id}')">${name}</button>`).join('')}</div>`;
