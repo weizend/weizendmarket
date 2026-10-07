@@ -2048,35 +2048,56 @@ body.dmModalOpen{overflow:hidden}
           </div>
         </div>
 
+        <h3 class="subTitle">Takvim ve Canlı Yayın</h3>
         <div class="grid3">
           <div class="field">
-            <label class="title">Turnuva Tarihi</label>
-            <input id="tcEventDate" type="datetime-local">
-            <label class="checkline" style="margin-top:9px;">
-              <input id="tcComingSoon" type="checkbox" onchange="updateCreateTournamentDateField()">
-              <span>Tarih yerine sadece ÇOK YAKINDA göster</span>
-            </label>
+            <label class="title">Kayıt Açılış Tarihi</label>
+            <input id="tcRegistrationOpensAt" type="datetime-local">
           </div>
-
           <div class="field">
             <label class="title">Kayıt Kapanış Tarihi</label>
             <input id="tcRegistrationClosesAt" type="datetime-local">
           </div>
+          <div class="field">
+            <label class="title">Turnuva Başlangıç Tarihi</label>
+            <input id="tcEventDate" type="datetime-local">
+          </div>
+        </div>
+        <label class="checkline">
+          <input id="tcComingSoon" type="checkbox" onchange="updateCreateTournamentDateField()">
+          <span>Tarihler yerine YAKINDA göster</span>
+        </label>
 
+        <div class="grid2">
           <div class="field">
             <label class="title">Oyun</label>
             <input id="tcGameName" type="text" maxlength="60" value="VALORANT" placeholder="VALORANT">
           </div>
-        </div>
-
-        <div class="grid2">
           <div class="field">
             <label class="title">Oyuncudan İstenecek Oyun İçi Bilgi</label>
             <input id="tcGameIdLabel" type="text" maxlength="80" value="VALORANT ID" placeholder="VALORANT ID / Steam Adı / PUBG Adı">
           </div>
-
-          <div id="tcEntryModeHint" class="tournamentHint"></div>
         </div>
+
+        <div class="field">
+          <label class="title">Turnuva Hakkında</label>
+          <textarea id="tcAboutText" maxlength="3000" placeholder="Turnuvayı kullanıcıya açık ve ayrıntılı şekilde anlat. Katılım, maç düzeni, önemli notlar vb."></textarea>
+        </div>
+
+        <div class="grid2">
+          <div class="field">
+            <label class="title">Başlık / Kapak Görseli URL</label>
+            <input id="tcHeroImageUrl" type="url" maxlength="700" placeholder="https://.../valorant-kapak.jpg">
+            <div class="muted" style="margin-top:6px;">VALORANT turnuvasında başlığın arkasında görünmesini istediğin görselin bağlantısını buraya ekleyebilirsin.</div>
+          </div>
+          <div class="field">
+            <label class="title">Canlı Yayın URL</label>
+            <input id="tcStreamUrl" type="url" maxlength="700" value="https://kick.com/weizend">
+            <div class="muted" style="margin-top:6px;">Kullanıcı tarafında “Canlı yayın: Kick / weizend” olarak açıkça gösterilir.</div>
+          </div>
+        </div>
+
+        <div id="tcEntryModeHint" class="tournamentHint"></div>
 
 
         <h3 class="subTitle">Maç / Harita Ayarları</h3>
@@ -2093,14 +2114,14 @@ body.dmModalOpen{overflow:hidden}
 
           <div class="field">
             <label class="title">Harita</label>
-            <input id="tcMapName" type="text" maxlength="120" placeholder="Örn: Ascent / Çarpışma Haritası A">
+            <input id="tcMapName" type="text" maxlength="120" placeholder="Örn: Ascent / Bind / Benim Özel Haritam">
           </div>
 
           <div class="field">
             <label class="title">Harita Türü</label>
             <select id="tcMapType">
               <option value="standard">Standart</option>
-              <option value="collision_a">Çarpışma Haritası A</option>
+              <option value="collision">Çarpışma</option>
               <option value="custom">Özel</option>
             </select>
           </div>
@@ -2115,7 +2136,7 @@ body.dmModalOpen{overflow:hidden}
         <div class="field">
           <label class="title">Özel Turnuva Kuralları</label>
           <textarea id="tcRulesText" maxlength="5000" placeholder="Boş bırakırsan site varsayılan kuralları gösterir. Buraya yazarsan kullanıcı tarafında bu kurallar gösterilir."></textarea>
-          <div class="muted" style="margin-top:6px;">Çarpışma Haritası A seçilirse varsayılan kurallarda Vandal / Phantom serbest ve son round yalnızca Sheriff kuralı otomatik gösterilir.</div>
+          <div class="muted" style="margin-top:6px;">Harita türü Çarpışma seçilirse Vandal / Phantom serbest ve son round yalnızca Sheriff kuralı otomatik gösterilir. Harita adı ise yukarıdaki alana ne yazarsan kullanıcıya aynen o şekilde görünür.</div>
         </div>
 
         <h3 class="subTitle">Ödüller</h3>
@@ -2134,7 +2155,7 @@ body.dmModalOpen{overflow:hidden}
 
           <label class="checkline">
             <input id="tcRegistrationOpen" type="checkbox">
-            <span>Oluşturur oluşturmaz kayıtları aç</span>
+            <span>Kayıt sistemini etkinleştir (açılış / kapanış tarihleri uygulanır)</span>
           </label>
         </div>
 
@@ -2192,20 +2213,24 @@ body.dmModalOpen{overflow:hidden}
             <label class="title">Kontenjan</label>
             <input id="tCapacity" type="number" min="1" max="512" step="1">
           </div>
-
           <div class="field">
-            <label class="title">Turnuva Tarihi</label>
-            <input id="tEventDate" type="datetime-local">
-            <label class="checkline" style="margin-top:9px;">
-              <input id="tComingSoon" type="checkbox" onchange="updateTournamentDateField()">
-              <span>Tarih yerine sadece ÇOK YAKINDA göster</span>
-            </label>
+            <label class="title">Kayıt Açılış Tarihi</label>
+            <input id="tRegistrationOpensAt" type="datetime-local">
           </div>
-
           <div class="field">
             <label class="title">Kayıt Kapanış Tarihi</label>
             <input id="tRegistrationClosesAt" type="datetime-local">
           </div>
+        </div>
+        <div class="grid2">
+          <div class="field">
+            <label class="title">Turnuva Başlangıç Tarihi</label>
+            <input id="tEventDate" type="datetime-local">
+          </div>
+          <label class="checkline" style="align-self:center;">
+            <input id="tComingSoon" type="checkbox" onchange="updateTournamentDateField()">
+            <span>Tarihler yerine YAKINDA göster</span>
+          </label>
         </div>
 
         <h3 class="subTitle">Katılım Sistemi</h3>
@@ -2236,8 +2261,23 @@ body.dmModalOpen{overflow:hidden}
             <label class="title">Oyuncudan İstenecek Oyun İçi Bilgi</label>
             <input id="tGameIdLabel" type="text" maxlength="80" value="VALORANT ID" placeholder="VALORANT ID / Steam Adı / PUBG Adı">
           </div>
-
           <div id="tEntryModeHint" class="tournamentHint"></div>
+        </div>
+
+        <h3 class="subTitle">Kullanıcıya Gösterilecek Tanıtım</h3>
+        <div class="field">
+          <label class="title">Turnuva Hakkında</label>
+          <textarea id="tAboutText" maxlength="3000" placeholder="Turnuva açıklaması, katılım bilgileri ve önemli notlar..."></textarea>
+        </div>
+        <div class="grid2">
+          <div class="field">
+            <label class="title">Başlık / Kapak Görseli URL</label>
+            <input id="tHeroImageUrl" type="url" maxlength="700" placeholder="https://.../valorant-kapak.jpg">
+          </div>
+          <div class="field">
+            <label class="title">Canlı Yayın URL</label>
+            <input id="tStreamUrl" type="url" maxlength="700" value="https://kick.com/weizend">
+          </div>
         </div>
 
 
@@ -2255,14 +2295,14 @@ body.dmModalOpen{overflow:hidden}
 
           <div class="field">
             <label class="title">Harita</label>
-            <input id="tMapName" type="text" maxlength="120" placeholder="Örn: Ascent / Çarpışma Haritası A">
+            <input id="tMapName" type="text" maxlength="120" placeholder="Örn: Ascent / Bind / Benim Özel Haritam">
           </div>
 
           <div class="field">
             <label class="title">Harita Türü</label>
             <select id="tMapType">
               <option value="standard">Standart</option>
-              <option value="collision_a">Çarpışma Haritası A</option>
+              <option value="collision">Çarpışma</option>
               <option value="custom">Özel</option>
             </select>
           </div>
@@ -2277,7 +2317,7 @@ body.dmModalOpen{overflow:hidden}
         <div class="field">
           <label class="title">Özel Turnuva Kuralları</label>
           <textarea id="tRulesText" maxlength="5000" placeholder="Boş bırakırsan site varsayılan kuralları gösterir. Buraya yazarsan kullanıcı tarafında bu kurallar gösterilir."></textarea>
-          <div class="muted" style="margin-top:6px;">Çarpışma Haritası A seçilirse varsayılan kurallarda Vandal / Phantom serbest ve son round yalnızca Sheriff kuralı otomatik gösterilir.</div>
+          <div class="muted" style="margin-top:6px;">Harita türü Çarpışma seçilirse Vandal / Phantom serbest ve son round yalnızca Sheriff kuralı otomatik gösterilir. Harita adı ise yukarıdaki alana ne yazarsan kullanıcıya aynen o şekilde görünür.</div>
         </div>
 
         <h3 class="subTitle">Ödüller</h3>
@@ -2290,7 +2330,7 @@ body.dmModalOpen{overflow:hidden}
 
         <label class="checkline">
           <input id="tRegistrationOpen" type="checkbox">
-          <span>Kayıtlar açık</span>
+          <span>Kayıt sistemi aktif (açılış / kapanış tarihleri uygulanır)</span>
         </label>
 
         <div class="btnRow">
@@ -6740,11 +6780,17 @@ function updateCreateTournamentEntryFields(){
 function updateCreateTournamentDateField(){
   const comingSoon = document.getElementById('tcComingSoon')?.checked === true;
   const dateInput = document.getElementById('tcEventDate');
+  const openInput = document.getElementById('tcRegistrationOpensAt');
   const closeInput = document.getElementById('tcRegistrationClosesAt');
 
   if(dateInput){
     dateInput.disabled = comingSoon;
     if(comingSoon) dateInput.value = '';
+  }
+
+  if(openInput){
+    openInput.disabled = comingSoon;
+    if(comingSoon) openInput.value = '';
   }
 
   if(closeInput){
@@ -6756,6 +6802,7 @@ function updateCreateTournamentDateField(){
 function updateTournamentDateField(){
   const comingSoon = document.getElementById('tComingSoon')?.checked === true;
   const dateInput = document.getElementById('tEventDate');
+  const openInput = document.getElementById('tRegistrationOpensAt');
   const closeInput = document.getElementById('tRegistrationClosesAt');
 
   if(dateInput){
@@ -6763,10 +6810,29 @@ function updateTournamentDateField(){
     if(comingSoon) dateInput.value = '';
   }
 
+  if(openInput){
+    openInput.disabled = comingSoon;
+    if(comingSoon) openInput.value = '';
+  }
+
   if(closeInput){
     closeInput.disabled = comingSoon;
     if(comingSoon) closeInput.value = '';
   }
+}
+
+function validateTournamentTimelineAdmin(openIso, closeIso, eventIso){
+  const parse = value => value ? Date.parse(value) : NaN;
+  const openTs = parse(openIso);
+  const closeTs = parse(closeIso);
+  const eventTs = parse(eventIso);
+  if(openIso && !Number.isFinite(openTs)) return 'Kayıt açılış tarihi geçersiz.';
+  if(closeIso && !Number.isFinite(closeTs)) return 'Kayıt kapanış tarihi geçersiz.';
+  if(eventIso && !Number.isFinite(eventTs)) return 'Turnuva başlangıç tarihi geçersiz.';
+  if(Number.isFinite(openTs) && Number.isFinite(closeTs) && openTs >= closeTs) return 'Kayıt açılışı, kayıt kapanışından önce olmalı.';
+  if(Number.isFinite(closeTs) && Number.isFinite(eventTs) && closeTs > eventTs) return 'Kayıt kapanışı turnuva başlangıcından sonra olamaz.';
+  if(Number.isFinite(openTs) && Number.isFinite(eventTs) && openTs >= eventTs) return 'Kayıt açılışı turnuva başlangıcından önce olmalı.';
+  return '';
 }
 
 async function createTournament(){
@@ -6781,11 +6847,13 @@ async function createTournament(){
     : 0;
   const comingSoon = document.getElementById('tcComingSoon')?.checked === true;
   const eventDate = comingSoon ? null : tournamentDateToIso('tcEventDate');
-  const registrationClosesAt = comingSoon
-  ? null
-  : tournamentDateToIso('tcRegistrationClosesAt');
+  const registrationOpensAt = comingSoon ? null : tournamentDateToIso('tcRegistrationOpensAt');
+  const registrationClosesAt = comingSoon ? null : tournamentDateToIso('tcRegistrationClosesAt');
   const gameName = document.getElementById('tcGameName')?.value.trim() || 'VALORANT';
   const gameIdLabel = document.getElementById('tcGameIdLabel')?.value.trim() || 'VALORANT ID';
+  const aboutText = document.getElementById('tcAboutText')?.value.trim() || '';
+  const heroImageUrl = document.getElementById('tcHeroImageUrl')?.value.trim() || '';
+  const streamUrl = document.getElementById('tcStreamUrl')?.value.trim() || 'https://kick.com/weizend';
   const bestOf = document.getElementById('tcBestOf')?.value || 'BO1';
   const mapName = document.getElementById('tcMapName')?.value.trim() || '';
   const mapType = document.getElementById('tcMapType')?.value || 'standard';
@@ -6808,6 +6876,12 @@ async function createTournament(){
   }
   if(entryMode === 'tl' && !(feePerPlayerTl > 0)){
     showStatus('createTournamentStatus','❌ TL katılım türünde kişi başı ücret gerekli.',false);
+    return;
+  }
+
+  const timelineError = validateTournamentTimelineAdmin(registrationOpensAt,registrationClosesAt,eventDate);
+  if(!comingSoon && timelineError){
+    showStatus('createTournamentStatus','❌ ' + timelineError,false);
     return;
   }
   
@@ -6840,9 +6914,13 @@ async function createTournament(){
         feePerPlayerTl,
         eventDate,
         comingSoon,
+        registrationOpensAt,
         registrationClosesAt,
         gameName,
         gameIdLabel,
+        aboutText,
+        heroImageUrl,
+        streamUrl,
         bestOf,
         mapName,
         mapType,
@@ -6866,6 +6944,12 @@ async function createTournament(){
     document.getElementById('tcName').value = '';
     document.getElementById('tcRegistrationOpen').checked = false;
     document.getElementById('tcComingSoon').checked = false;
+    document.getElementById('tcRegistrationOpensAt').value = '';
+    document.getElementById('tcRegistrationClosesAt').value = '';
+    document.getElementById('tcEventDate').value = '';
+    document.getElementById('tcAboutText').value = '';
+    document.getElementById('tcHeroImageUrl').value = '';
+    document.getElementById('tcStreamUrl').value = 'https://kick.com/weizend';
     document.getElementById('tcBestOf').value = 'BO1';
     document.getElementById('tcMapName').value = '';
     document.getElementById('tcMapType').value = 'standard';
@@ -7032,6 +7116,12 @@ async function loadTournamentConfig(){
       catalogItem.entryMode ||
       (Number(t.feePerPlayerTl || 0) > 0 ? 'tl' : 'free');
 
+    document.getElementById('tRegistrationOpensAt').value =
+      toLocalInputValue(
+        rule.registrationOpensAt ||
+        catalogItem.registrationOpensAt
+      );
+
     document.getElementById('tRegistrationClosesAt').value =
       toLocalInputValue(
         rule.registrationClosesAt ||
@@ -7048,10 +7138,14 @@ async function loadTournamentConfig(){
       catalogItem.gameIdLabel ||
       'VALORANT ID';
 
+    document.getElementById('tAboutText').value = rule.aboutText || catalogItem.aboutText || '';
+    document.getElementById('tHeroImageUrl').value = rule.heroImageUrl || catalogItem.heroImageUrl || '';
+    document.getElementById('tStreamUrl').value = rule.streamUrl || catalogItem.streamUrl || 'https://kick.com/weizend';
+
     document.getElementById('tBestOf').value =
       String(rule.bestOf || catalogItem.bestOf || 'BO1').toUpperCase();
     document.getElementById('tMapName').value = rule.mapName || catalogItem.mapName || '';
-    document.getElementById('tMapType').value = rule.mapType || catalogItem.mapType || 'standard';
+    document.getElementById('tMapType').value = (rule.mapType === 'collision_a' ? 'collision' : (rule.mapType || catalogItem.mapType || 'standard'));
     document.getElementById('tRulesText').value = rule.rulesText || catalogItem.rulesText || '';
     document.getElementById('tPrizeFirst').value = rule.firstPrize || catalogItem.firstPrize || '';
     document.getElementById('tPrizeSecond').value = rule.secondPrize || catalogItem.secondPrize || '';
@@ -7074,7 +7168,8 @@ async function loadTournamentConfig(){
         <span class="tournamentPill">${esc(tournamentEntryModeText(rule.entryMode || catalogItem.entryMode))}</span>
         <span class="tournamentPill">${esc(String(rule.bestOf || catalogItem.bestOf || 'BO1').toUpperCase())}</span>
         <span class="tournamentPill">${esc(rule.mapName || catalogItem.mapName || 'Harita açıklanmadı')}</span>
-        <span class="tournamentPill">${rule.comingSoon === true ? 'ÇOK YAKINDA' : esc(dateText(t.eventDate))}</span>
+        <span class="tournamentPill">Kayıt Açılışı: ${rule.comingSoon === true ? 'YAKINDA' : esc(dateText(rule.registrationOpensAt || catalogItem.registrationOpensAt))}</span>
+        <span class="tournamentPill">Başlangıç: ${rule.comingSoon === true ? 'YAKINDA' : esc(dateText(t.eventDate))}</span>
         <span class="tournamentPill">${esc(tournamentLifecycleText(lifecycle))}</span>
       `;
     }
@@ -7176,6 +7271,7 @@ async function saveTournamentConfig(){
   const capacity = Number(document.getElementById('tCapacity')?.value || 0);
   const comingSoon = document.getElementById('tComingSoon')?.checked === true;
   const eventDate = comingSoon ? null : tournamentDateToIso('tEventDate');
+  const registrationOpensAt = comingSoon ? null : tournamentDateToIso('tRegistrationOpensAt');
   const entryMode = document.getElementById('tEntryMode')?.value || 'free';
   const feePerPlayerTl = entryMode === 'tl'
     ? Number(document.getElementById('tFee')?.value || 0)
@@ -7185,6 +7281,9 @@ async function saveTournamentConfig(){
   : tournamentDateToIso('tRegistrationClosesAt');
   const gameName = document.getElementById('tGameName')?.value.trim() || 'VALORANT';
   const gameIdLabel = document.getElementById('tGameIdLabel')?.value.trim() || 'VALORANT ID';
+  const aboutText = document.getElementById('tAboutText')?.value.trim() || '';
+  const heroImageUrl = document.getElementById('tHeroImageUrl')?.value.trim() || '';
+  const streamUrl = document.getElementById('tStreamUrl')?.value.trim() || 'https://kick.com/weizend';
   const bestOf = document.getElementById('tBestOf')?.value || 'BO1';
   const mapName = document.getElementById('tMapName')?.value.trim() || '';
   const mapType = document.getElementById('tMapType')?.value || 'standard';
@@ -7205,6 +7304,12 @@ async function saveTournamentConfig(){
   }
   if(entryMode === 'tl' && !(feePerPlayerTl > 0)){
     showStatus('tournamentStatus','❌ TL katılım türünde kişi başı ücret gerekli.',false);
+    return;
+  }
+
+  const timelineError = validateTournamentTimelineAdmin(registrationOpensAt,registrationClosesAt,eventDate);
+  if(!comingSoon && timelineError){
+    showStatus('tournamentStatus','❌ ' + timelineError,false);
     return;
   }
   
@@ -7238,9 +7343,13 @@ async function saveTournamentConfig(){
         comingSoon,
         entryMode,
         feePerPlayerTl,
+        registrationOpensAt,
         registrationClosesAt,
         gameName,
         gameIdLabel,
+        aboutText,
+        heroImageUrl,
+        streamUrl,
         bestOf,
         mapName,
         mapType,
