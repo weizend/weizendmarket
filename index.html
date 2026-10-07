@@ -1476,6 +1476,16 @@ body.wz-view-tournament #wzMobileTournamentHero{display:none!important}
 .wz-turn-game-logo img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;background:#000}
 .wz-turn-card-title{font-size:1.08rem;font-weight:1000;line-height:1.05;text-transform:uppercase;word-break:break-word}
 .wz-turn-card-sub{margin-top:4px;color:#d2d6dd;font-size:.73rem;font-weight:800;opacity:.88}
+.wz-turn-card-status{
+  flex:0 0 auto;align-self:flex-start;
+  min-width:78px;padding:8px 12px;border-radius:999px;
+  text-align:center;font-size:.68rem;font-weight:1000;letter-spacing:.02em;
+  border:1px solid transparent;box-shadow:0 5px 16px rgba(0,0,0,.18)
+}
+.wz-turn-card-status.active{background:#123c25;color:#59f59c;border-color:#23623e}
+.wz-turn-card-status.soon{background:#463a12;color:#ffd95a;border-color:#6d5a1b}
+.wz-turn-card-status.live{background:#571313;color:#ff5b5b;border-color:#8a2020}
+.wz-turn-card-status.done{background:#050506;color:#f1f1f1;border-color:#333640}
 .wz-turn-badge{
   flex:0 1 auto;max-width:54%;padding:8px 13px;border-radius:999px;font-size:.66rem;font-weight:1000;border:1px solid transparent;line-height:1.25;text-align:center;white-space:normal
 }
@@ -10331,7 +10341,9 @@ return;
     const info=tournamentStatusInfo(item);
     return `<span class="wz-status-label">${esc(info.label)}</span>${info.time?`<span class="wz-status-time">${esc(info.time)}</span>`:''}<span class="wz-status-count">${esc(info.count)}</span>`;
   }
-  function registrationIsOpen(item){ return registrationPhase(item)==='open'; }
+  function registrationIsOpen(item){
+    return !comingSoon(item) && registrationPhase(item)==='open';
+  }
   function modeText(t){
     const n=Math.max(1,Number(t?.teamSize||1));
     return n<=1?'1v1':'%sv%s'.replace('%s',n).replace('%s',n);
@@ -10397,7 +10409,31 @@ return;
     try{ if(typeof tv2EntryLabel==='function') return tv2EntryLabel(item?.rule||{},item?.tournament||{}); }catch(_){ }
     return 'Katılım bilgisi açıklanacak';
   }
-  function getItem(id){ return catalog().find(x=>String(x?.tournament?.id||'')===String(id)) || null; }
+  function isHiddenTournamentDraft(item){
+    const t=item?.tournament||{};
+    // "Yakında" olarak özellikle yayınlanan turnuva görünür kalır.
+    // Tarihsiz + kayıtları kapalı normal taslaklar kullanıcı tarafında hiç görünmez.
+    return !comingSoon(item) && !t.eventDate && !t.registrationOpen;
+  }
+  function visibleCatalog(){
+    return catalog().filter(item=>!isHiddenTournamentDraft(item));
+  }
+  function tournamentCategory(item){
+    const l=lifecycle(item);
+    const phase=registrationPhase(item);
+    if(l==='completed' || phase==='completed') return 'done';
+    if(l==='in_progress' || phase==='live') return 'live';
+    if(comingSoon(item) || phase==='scheduled' || phase==='soon') return 'soon';
+    return 'active';
+  }
+  function tournamentCategoryLabel(item){
+    const c=tournamentCategory(item);
+    if(c==='done') return 'TAMAMLANDI';
+    if(c==='live') return 'CANLI';
+    if(c==='soon') return 'YAKINDA';
+    return 'AKTİF';
+  }
+  function getItem(id){ return visibleCatalog().find(x=>String(x?.tournament?.id||'')===String(id)) || null; }
   function normalizeTournamentSearch(value){
     return String(value||'').toLocaleLowerCase('tr-TR').trim();
   }
@@ -10414,72 +10450,88 @@ return;
       entryText(item)
     ].filter(Boolean).join(' '));
   }
+  function tournamentDateTs(value){
+    const ts=value ? Date.parse(value) : NaN;
+    return Number.isFinite(ts) ? ts : null;
+  }
+  function tournamentSourceIndex(){
+    const map=new Map();
+    catalog().forEach((item,index)=>{
+      const id=String(item?.tournament?.id||'');
+      if(id) map.set(id,index);
+    });
+    return map;
+  }
+  function activeTournamentSortTime(item){
+    const now=Date.now();
+    const phase=registrationPhase(item);
+    const closeTs=tournamentDateTs(registrationCloseAt(item));
+    const startTs=tournamentDateTs(item?.tournament?.eventDate);
+
+    // Kayıtlar açıksa kapanış tarihi en yakın olan öne gelir.
+    if(phase==='open' && closeTs!==null && closeTs>=now) return closeTs;
+
+    // Kayıt bitmiş ama turnuva henüz başlamamışsa başlangıcı yakın olan öne gelir.
+    if(startTs!==null && startTs>=now) return startTs;
+
+    return Number.POSITIVE_INFINITY;
+  }
+  function compareTournamentItems(a,b,sourceIndex){
+    const ca=tournamentCategory(a);
+    const cb=tournamentCategory(b);
+
+    const priority={live:0,active:1,soon:2,done:3};
+    if(priority[ca]!==priority[cb]) return priority[ca]-priority[cb];
+
+    if(ca==='active'){
+      const ta=activeTournamentSortTime(a);
+      const tb=activeTournamentSortTime(b);
+      if(ta!==tb) return ta-tb;
+    }
+
+    if(ca==='soon'){
+      // /tournaments API'si oluşturulma tarihine göre yeniyi önce döndürüyor.
+      // Bu yüzden kaynak indeksini ters çevirerek ilk oluşturulanı öne alıyoruz.
+      const ia=sourceIndex.get(String(a?.tournament?.id||'')) ?? -1;
+      const ib=sourceIndex.get(String(b?.tournament?.id||'')) ?? -1;
+      if(ia!==ib) return ib-ia;
+    }
+
+    if(ca==='done'){
+      // Tamamlananlarda en son oynanan/tamamlanan turnuva üstte kalsın.
+      const ta=tournamentDateTs(a?.tournament?.eventDate) ?? 0;
+      const tb=tournamentDateTs(b?.tournament?.eventDate) ?? 0;
+      if(ta!==tb) return tb-ta;
+    }
+
+    // Canlılarda ve eşitliklerde API'nin mevcut sırasını koru.
+    const ia=sourceIndex.get(String(a?.tournament?.id||'')) ?? Number.MAX_SAFE_INTEGER;
+    const ib=sourceIndex.get(String(b?.tournament?.id||'')) ?? Number.MAX_SAFE_INTEGER;
+    return ia-ib;
+  }
   function filtered(){
     const q=normalizeTournamentSearch(state.search);
-    return catalog().filter(item=>{
-      const l=lifecycle(item);
-      const phase=registrationPhase(item);
-      let tabMatch=false;
+    const sourceIndex=tournamentSourceIndex();
 
-      if(state.filter==='done'){
-        tabMatch = l==='completed';
-      }else if(state.filter==='live'){
-        tabMatch = l==='in_progress';
-      }else if(state.filter==='soon'){
-        tabMatch = l!=='completed' && l!=='in_progress' && l!=='passive'
-          && (comingSoon(item) || phase==='scheduled');
-      }else{
-        tabMatch = l!=='completed' && l!=='in_progress' && l!=='passive'
-          && !comingSoon(item) && phase!=='scheduled';
-      }
-
-      if(!tabMatch) return false;
+    let list=visibleCatalog().filter(item=>{
+      if(state.filter!=='all' && tournamentCategory(item)!==state.filter) return false;
       if(!q) return true;
       return tournamentSearchText(item).includes(q);
     });
+
+    return list.sort((a,b)=>compareTournamentItems(a,b,sourceIndex));
   }
   function activeList(){
-    return catalog().filter(item=>{
-      const l=lifecycle(item);
-      const phase=registrationPhase(item);
-      return l!=='completed' && l!=='in_progress' && l!=='passive'
-        && !comingSoon(item) && phase!=='scheduled';
-    });
+    const sourceIndex=tournamentSourceIndex();
+    return visibleCatalog()
+      .filter(item=>tournamentCategory(item)==='active')
+      .sort((a,b)=>compareTournamentItems(a,b,sourceIndex));
   }
-  function completedList(){ return catalog().filter(item=>lifecycle(item)==='completed'); }
-
-  async function ensureDetail(id){
-    if(!id) return null;
-    if(state.details.has(id)) return state.details.get(id);
-    if(state.loading.has(id)){
-      for(let i=0;i<70;i++){
-        await new Promise(r=>setTimeout(r,100));
-        if(state.details.has(id)) return state.details.get(id);
-        if(!state.loading.has(id)) break;
-      }
-      return state.details.get(id) || null;
-    }
-    state.loading.add(id);
-    try{
-      let data=null;
-      if(typeof tv2FetchPublicDetail==='function'){
-        data=await tv2FetchPublicDetail(id);
-      }else{
-        const controller=new AbortController();
-        const timeout=setTimeout(()=>controller.abort(),10000);
-        let r;
-        try{
-          r=await fetch(`${MARKET_WORKER}/tournament/public?id=${encodeURIComponent(id)}&_=${Date.now()}`,{cache:'no-store',signal:controller.signal});
-        }finally{ clearTimeout(timeout); }
-        data=await r.json();
-        if(!r.ok || !data?.success) throw new Error(data?.error || `HTTP ${r.status}`);
-      }
-      state.details.set(id,data);
-      return data;
-    }catch(error){
-      state.details.set(id,{__error:String(error?.message||error)});
-      return state.details.get(id);
-    }finally{ state.loading.delete(id); }
+  function completedList(){
+    const sourceIndex=tournamentSourceIndex();
+    return visibleCatalog()
+      .filter(item=>tournamentCategory(item)==='done')
+      .sort((a,b)=>compareTournamentItems(a,b,sourceIndex));
   }
 
   function scoreParts(match){
@@ -10598,7 +10650,13 @@ return;
     </div>`;
   }
   function renderFilters(){
-    const defs=[['all','Aktif'],['soon','Yaklaşan'],['live','Canlı'],['done','Tamamlanan']];
+    const defs=[
+      ['all','Tümü'],
+      ['live','Canlı'],
+      ['active','Aktif'],
+      ['soon','Yaklaşan'],
+      ['done','Tamamlanan']
+    ];
     return `<div class="wz-turn-strip">${defs.map(([id,name])=>`<button type="button" class="wz-turn-chip ${state.filter===id?'active':''}" onclick="wzTurnSetFilter('${id}')">${name}</button>`).join('')}</div>`;
   }
   function tournamentLogoUrl(item){
@@ -10628,6 +10686,7 @@ return;
               <div class="wz-turn-card-sub">${esc(modeText(t))} • ${Number(t.capacity||0)||'-'} ${Number(t.teamSize||1)>1?'Takım':'Oyuncu'} • ${esc(mapDisplayName(t,rule))} • ${esc(matchFormat(t,rule))}</div>
             </div>
           </div>
+          <span class="wz-turn-card-status ${tournamentCategory(item)}">${esc(tournamentCategoryLabel(item))}</span>
         </div>
       </div>
       <div class="wz-turn-card-body">
@@ -10654,13 +10713,15 @@ return;
           ? 'Şu anda canlı turnuva yok.'
           : state.filter==='soon'
             ? 'Yaklaşan turnuva bulunmuyor.'
-            : 'Aktif turnuva bulunmuyor.';
+            : state.filter==='active'
+              ? 'Aktif turnuva bulunmuyor.'
+              : 'Henüz yayınlanmış turnuva yok.';
 
     return `<div class="wz-turn-list-page">
       ${renderSearch()}
       ${renderFilters()}
       ${list.length
-        ? `<div class="wz-turn-cardlist">${list.map(item=>renderListCard(item,state.filter==='done')).join('')}</div>`
+        ? `<div class="wz-turn-cardlist">${list.map(item=>renderListCard(item,tournamentCategory(item)==='done')).join('')}</div>`
         : `<div class="wz-turn-empty">${emptyText}</div>`}
     </div>`;
   }
@@ -10869,8 +10930,8 @@ return;
   function render(){
     const host=document.getElementById('wzEsportsHub');
     if(!host) return;
-    const all=catalog();
-    if(!all.length){ host.innerHTML = `<div class="wz-turn-root"><div class="wz-turn-loading">Turnuvalar yükleniyor...</div></div>`; return; }
+    const all=visibleCatalog();
+    if(!all.length){ host.innerHTML = `<div class="wz-turn-root">${renderSearch()}${renderFilters()}<div class="wz-turn-empty">Henüz yayınlanmış turnuva yok.</div></div>`; return; }
     if(!state.selectedId){
       const first=activeList()[0] || all[0];
       state.selectedId=String(first?.tournament?.id || '');
