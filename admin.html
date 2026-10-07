@@ -2126,6 +2126,11 @@ body.dmModalOpen{overflow:hidden}
             </select>
           </div>
         </div>
+        <div class="field">
+          <label class="title">Harita Görseli URL</label>
+          <input id="tcMapImageUrl" type="url" maxlength="700" placeholder="https://.../map-gorsel.jpg">
+          <div class="muted" style="margin-top:6px;">Fikstür bölümündeki “Harita Bilgisi” kartının arka planında görünecek görsel bağlantısı.</div>
+        </div>
 
         <label class="checkline">
           <input id="tcThirdPlaceEnabled" type="checkbox">
@@ -2306,6 +2311,11 @@ body.dmModalOpen{overflow:hidden}
               <option value="custom">Özel</option>
             </select>
           </div>
+        </div>
+        <div class="field">
+          <label class="title">Harita Görseli URL</label>
+          <input id="tMapImageUrl" type="url" maxlength="700" placeholder="https://.../map-gorsel.jpg">
+          <div class="muted" style="margin-top:6px;">Fikstür bölümündeki harita kartının arka planında görünmesini istediğin görsel bağlantısını buraya ekle.</div>
         </div>
 
         <label class="checkline">
@@ -6857,6 +6867,7 @@ async function createTournament(){
   const bestOf = document.getElementById('tcBestOf')?.value || 'BO1';
   const mapName = document.getElementById('tcMapName')?.value.trim() || '';
   const mapType = document.getElementById('tcMapType')?.value || 'standard';
+  const mapImageUrl = document.getElementById('tcMapImageUrl')?.value.trim() || '';
   const rulesText = document.getElementById('tcRulesText')?.value.trim() || '';
   const firstPrize = document.getElementById('tcPrizeFirst')?.value.trim() || '';
   const secondPrize = document.getElementById('tcPrizeSecond')?.value.trim() || '';
@@ -6924,6 +6935,7 @@ async function createTournament(){
         bestOf,
         mapName,
         mapType,
+        mapImageUrl,
         rulesText,
         firstPrize,
         secondPrize,
@@ -6953,6 +6965,7 @@ async function createTournament(){
     document.getElementById('tcBestOf').value = 'BO1';
     document.getElementById('tcMapName').value = '';
     document.getElementById('tcMapType').value = 'standard';
+    document.getElementById('tcMapImageUrl').value = '';
     document.getElementById('tcRulesText').value = '';
     document.getElementById('tcPrizeFirst').value = '';
     document.getElementById('tcPrizeSecond').value = '';
@@ -7146,6 +7159,7 @@ async function loadTournamentConfig(){
       String(rule.bestOf || catalogItem.bestOf || 'BO1').toUpperCase();
     document.getElementById('tMapName').value = rule.mapName || catalogItem.mapName || '';
     document.getElementById('tMapType').value = (rule.mapType === 'collision_a' ? 'collision' : (rule.mapType || catalogItem.mapType || 'standard'));
+    document.getElementById('tMapImageUrl').value = rule.mapImageUrl || catalogItem.mapImageUrl || '';
     document.getElementById('tRulesText').value = rule.rulesText || catalogItem.rulesText || '';
     document.getElementById('tPrizeFirst').value = rule.firstPrize || catalogItem.firstPrize || '';
     document.getElementById('tPrizeSecond').value = rule.secondPrize || catalogItem.secondPrize || '';
@@ -7287,6 +7301,7 @@ async function saveTournamentConfig(){
   const bestOf = document.getElementById('tBestOf')?.value || 'BO1';
   const mapName = document.getElementById('tMapName')?.value.trim() || '';
   const mapType = document.getElementById('tMapType')?.value || 'standard';
+  const mapImageUrl = document.getElementById('tMapImageUrl')?.value.trim() || '';
   const rulesText = document.getElementById('tRulesText')?.value.trim() || '';
   const firstPrize = document.getElementById('tPrizeFirst')?.value.trim() || '';
   const secondPrize = document.getElementById('tPrizeSecond')?.value.trim() || '';
@@ -7353,6 +7368,7 @@ async function saveTournamentConfig(){
         bestOf,
         mapName,
         mapType,
+        mapImageUrl,
         rulesText,
         firstPrize,
         secondPrize,
