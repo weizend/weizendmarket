@@ -58,6 +58,8 @@ body.wz-initializing *{
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://i.hizliresim.com" crossorigin>
+<link rel="dns-prefetch" href="//i.hizliresim.com">
     <title>Weizend Market</title>
     <style>
         /* WEIZEND RENK PALETİ VE TASARIM AYARLARI */
@@ -2886,6 +2888,34 @@ body.wz-inbox-open{
 }
 </style>
 
+
+<style id="wz-market-performance-v67">
+/* Market kartlarında offscreen boyama maliyetini azalt. */
+#urunGrid .card{
+  content-visibility:auto;
+  contain:layout paint style;
+  contain-intrinsic-size:520px;
+}
+
+/* Sekme/kategori geçişlerinde pahalı genel transition'ları azalt.
+   Hover hissi korunur ama layout/paint gecikmesi düşer. */
+#urunGrid .card,
+#filters .filter-btn,
+.wz-mobile-nav-btn,
+.wz-desktop-nav-btn{
+  transition:
+    background-color .12s ease,
+    border-color .12s ease,
+    color .12s ease,
+    transform .12s ease!important;
+}
+
+#urunGrid .main-card-img,
+#urunGrid .card-thumb{
+  backface-visibility:hidden;
+}
+</style>
+
 </head>
 <body>
 <script id="wz-v58-prepaint-view">
@@ -3463,6 +3493,9 @@ body.wz-inbox-open{
     if(filters && typeof cached.filtersHtml==='string') filters.innerHTML=cached.filtersHtml;
     if(info && typeof cached.searchInfoHtml==='string') info.innerHTML=cached.searchInfoHtml;
     if(search && typeof cached.searchValue==='string') search.value=cached.searchValue;
+
+    // DOMContentLoaded'da aynı grid bir daha kurulmasın.
+    window.__WZ_MARKET_SHELL_HYDRATED__ = !!(grid && grid.children.length);
   }catch(_){}
 })();
 </script>
@@ -4067,6 +4100,7 @@ body.wz-inbox-open{
         let authCheckInFlight = false;
         let marketInitialized = false;
         let marketAuthenticated = false;
+        let marketGridNeedsRender = false;
         let currentAccountStatus = 'active';
         let currentBlockedReason = '';
         let inboxBadgeWatchTimer = null;
@@ -4231,10 +4265,21 @@ body.wz-inbox-open{
                 currentBlockedReason = '';
             }
 
-            urunleriYukle(aktifKategori || 'Tümü');
+            const hydratedMarketShell =
+                window.__WZ_MARKET_SHELL_HYDRATED__ === true &&
+                (window.__WZ_INITIAL_VIEW__ || 'market') === 'market';
+
+            if (!hydratedMarketShell) {
+                urunleriYukle(aktifKategori || 'Tümü');
+            } else {
+                marketGridNeedsRender = false;
+                syncProductSearchClear();
+            }
+
             marketInitialized = true;
 
-            // Sunucudaki gerçek stokları tek sefer al. Sürekli polling yapılmaz.
+            // Sunucudaki gerçek stokları tek sefer al. Değişiklik yoksa grid
+            // tekrar çizilmez; böylece refresh'te görseller ikinci kez yüklenmez.
             syncCatalogStock().catch(error => console.warn('CATALOG SYNC ERROR:', error));
 
             setupMarketModalScrollLock();
@@ -6040,22 +6085,28 @@ body.wz-inbox-open{
         }
 
         async function logoutAccount() {
-            try{ sessionStorage.removeItem(MARKET_SHELL_CACHE_KEY); }catch(_){}
             const token = localStorage.getItem(SESSION_STORAGE_KEY) || '';
+            const activeView =
+                document.documentElement.dataset.wzCurrentView ||
+                (document.body.classList.contains('wz-view-profile') ? 'profile' : 'market');
 
-            // Sunucudaki oturumu da geçersiz kıl. Ağ hatası olsa bile cihazdaki oturum temizlenir.
+            // Sunucu logout isteğini arkada gönder. Kullanıcının arayüzünü
+            // ağ cevabına kadar bekletme.
             if (token) {
-                try {
-                    await fetch(`${MARKET_WORKER}/logout`, {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        cache: 'no-store'
-                    });
-                } catch (_) {}
+                fetch(`${MARKET_WORKER}/logout`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    cache: 'no-store',
+                    keepalive: true
+                }).catch(() => {});
             }
+
+            // Yerel oturumu ANINDA temizle.
+            try{ sessionStorage.removeItem(MARKET_SHELL_CACHE_KEY); }catch(_){}
+            try{ sessionStorage.removeItem(INBOX_CONVERSATION_CACHE_KEY); }catch(_){}
 
             localStorage.removeItem(USER_STORAGE_KEY);
             localStorage.removeItem(SESSION_STORAGE_KEY);
@@ -6064,16 +6115,38 @@ body.wz-inbox-open{
             localStorage.removeItem(VERIFY_WAIT_STATE_KEY);
             localStorage.removeItem(VERIFY_COMMAND_CLICKED_KEY);
 
-            disconnectRealtime();
+            marketAuthenticated = false;
+            marketGridNeedsRender = true;
             currentUsername = '';
+            currentMarketPoints = 0;
+            currentAccountStatus = 'active';
+            currentBlockedReason = '';
+
+            disconnectRealtime();
             currentInboxThreads = [];
+            currentInboxConversation = null;
             selectedInboxThreadIds.clear();
-            updateInboxBadge();
+            updateInboxBadge(0);
             closeInbox();
             sessionGraceUntil = 0;
 
-            showUsernameForm('✅ Güvenli çıkış yapıldı. Tekrar giriş yapmak için Kick kullanıcı adını yaz ve <b>!doğrula KOD</b> komutuyla hesabını doğrula.');
-            setTimeout(() => document.getElementById('kickUsernameInput').focus(), 50);
+            // Profildeyse aynı yerde misafir görünümüne geç.
+            // Marketteyse ürün butonlarını anında "Doğrulama Gerekiyor" yap.
+            try {
+                if (typeof window.wzSetView === 'function') {
+                    window.wzSetView(activeView);
+                } else if (activeView === 'market') {
+                    urunleriYukle(aktifKategori || 'Tümü');
+                }
+            } catch (_) {}
+
+            showUsernameForm(
+                '✅ Güvenli çıkış yapıldı. Tekrar giriş yapmak için Kick kullanıcı adını yaz ve <b>!doğrula KOD</b> komutuyla hesabını doğrula.'
+            );
+
+            try{
+                showStatusToast('✅ Güvenli çıkış yapıldı.', 2200);
+            }catch(_){}
         }
 
         function changeUsername() {
@@ -6510,10 +6583,16 @@ body.wz-inbox-open{
             }
         }
 
+        let productSearchRenderTimer = null;
+
         function setProductSearch(value) {
             productSearchQuery = normalizeProductSearch(value);
             syncProductSearchClear();
-            urunleriYukle(aktifKategori || 'Tümü');
+
+            clearTimeout(productSearchRenderTimer);
+            productSearchRenderTimer = setTimeout(() => {
+                urunleriYukle(aktifKategori || 'Tümü');
+            }, 90);
         }
 
         function clearProductSearch() {
@@ -6563,7 +6642,35 @@ body.wz-inbox-open{
             return '-';
         }
 
+        function marketCatalogSignature() {
+            try {
+                return JSON.stringify(
+                    URUNLER.map(item => ({
+                        id:String(item.productId || item.orijinalId || ''),
+                        durum:item.durum,
+                        stok:item.stok,
+                        kategori:item.kategori,
+                        ad:item.ad,
+                        puan:item.puan,
+                        komut:item.komut,
+                        webPurchase:item.webPurchase === true,
+                        deliveryType:item.deliveryType || '',
+                        paymentType:item.paymentType || '',
+                        pricePoints:item.pricePoints ?? null,
+                        priceTlCents:item.priceTlCents ?? null,
+                        streamCommand:item.streamCommand || '',
+                        gorseller:Array.isArray(item.gorseller) ? item.gorseller : [],
+                        ozellikler:item.ozellikler || ''
+                    }))
+                );
+            } catch (_) {
+                return '';
+            }
+        }
+
         async function syncCatalogStock() {
+            const beforeSignature = marketCatalogSignature();
+
             const response = await fetch(`${MARKET_WORKER}/catalog?_=${Date.now()}`, {
                 method: 'GET',
                 headers: { 'Accept': 'application/json' },
@@ -6662,7 +6769,13 @@ urun.paymentType = String(serverProduct.paymentType || '').toLowerCase();
                 }
             }
 
-            if (marketInitialized) {
+            const catalogChanged = beforeSignature !== marketCatalogSignature();
+
+            if (catalogChanged) {
+                marketGridNeedsRender = true;
+            }
+
+            if (marketInitialized && catalogChanged) {
                 urunleriYukle(aktifKategori || 'Tümü');
             }
 
@@ -6670,19 +6783,45 @@ urun.paymentType = String(serverProduct.paymentType || '').toLowerCase();
         }
 
         // --- MARKET GRID VE KATEGORİ İŞLEMLERİ ---
+        let marketFilterSignature = '';
+
         function kategorileriOlustur() {
             const filterContainer = document.getElementById('filters');
-            filterContainer.innerHTML = `<button class="filter-btn ${aktifKategori === 'Tümü' ? 'active' : ''}" onclick="filtrele('Tümü')">Tümü</button>`;
+            if (!filterContainer) return;
 
-            const benzersizKategoriler = [...new Set(URUNLER.filter(u => u.durum === "on").map(u => u.kategori))];
+            const benzersizKategoriler = [...new Set(
+                URUNLER
+                    .filter(u => u.durum === "on")
+                    .map(u => u.kategori)
+            )];
 
-            benzersizKategoriler.forEach(kat => {
-                const aktifClass = aktifKategori === kat ? 'active' : '';
-                filterContainer.innerHTML += `<button class="filter-btn ${aktifClass}" onclick="filtrele(${htmlJsString(kat)})">${escapeHtml(kat)}</button>`;
+            const signature = JSON.stringify(benzersizKategoriler);
+
+            if (marketFilterSignature !== signature || !filterContainer.children.length) {
+                const parts = [
+                    `<button class="filter-btn" data-market-category="Tümü" onclick="filtrele('Tümü')">Tümü</button>`
+                ];
+
+                benzersizKategoriler.forEach(kat => {
+                    parts.push(
+                        `<button class="filter-btn" data-market-category="${escapeHtml(kat)}" onclick="filtrele(${htmlJsString(kat)})">${escapeHtml(kat)}</button>`
+                    );
+                });
+
+                parts.push(
+                    `<button class="filter-btn tukenenler-btn" data-market-category="Tükendi" onclick="filtrele('Tükendi')">Tükendi</button>`
+                );
+
+                filterContainer.innerHTML = parts.join('');
+                marketFilterSignature = signature;
+            }
+
+            filterContainer.querySelectorAll('[data-market-category]').forEach(btn => {
+                btn.classList.toggle(
+                    'active',
+                    btn.dataset.marketCategory === aktifKategori
+                );
             });
-
-            const tukendiClass = aktifKategori === 'Tükendi' ? 'active' : '';
-            filterContainer.innerHTML += `<button class="filter-btn tukenenler-btn ${tukendiClass}" onclick="filtrele('Tükendi')">Tükendi</button>`;
         }
 
         function stokDurumu(stokDegeri) {
@@ -6726,8 +6865,6 @@ urun.paymentType = String(serverProduct.paymentType || '').toLowerCase();
 
             aktifKategori = filtreKategori;
             kategorileriOlustur();
-            grid.innerHTML = ''; 
-            
             let gosterilecekUrunler = URUNLER.filter(urun => urun.durum === "on");
 
             if (filtreKategori === 'Tükendi') {
@@ -6773,11 +6910,14 @@ urun.paymentType = String(serverProduct.paymentType || '').toLowerCase();
                         🔎 Aramana uygun ürün bulunamadı.
                     </div>
                 `;
+                marketGridNeedsRender = false;
                 cacheMarketShell();
                 return;
             }
 
-            gosterilecekUrunler.forEach(urun => {
+            const cardHtmlParts = [];
+
+            gosterilecekUrunler.forEach((urun, productIndex) => {
                 const ilkGorsel = urun.gorseller[0];
                 const tukendiMi = stokDurumu(urun.stok) <= 0;
                 const webPurchase = urun.webPurchase === true;
@@ -6787,7 +6927,7 @@ urun.paymentType = String(serverProduct.paymentType || '').toLowerCase();
                     thumbnailsHTML = '<div class="card-thumbnails">';
                     urun.gorseller.forEach((url, i) => {
                         const aktifClass = i === 0 ? 'active' : '';
-                        thumbnailsHTML += `<img src="${escapeHtml(safeImageUrl(url))}" class="card-thumb ${aktifClass}" onclick="kartIciResimDegistir(event, this, ${Number(urun.orijinalId)}, ${i}, this.src)">`;
+                        thumbnailsHTML += `<img src="${escapeHtml(safeImageUrl(url))}" class="card-thumb ${aktifClass}" loading="lazy" decoding="async" fetchpriority="low" onclick="kartIciResimDegistir(event, this, ${Number(urun.orijinalId)}, ${i}, this.src)">`;
                     });
                     thumbnailsHTML += '</div>';
                 }
@@ -6901,7 +7041,12 @@ else if (deliveryType === 'manual') {
                         <div class="img-container" data-current-index="0" onclick="modaliAc(${urun.orijinalId}, this.dataset.currentIndex)">
                             <span class="category-badge">${escapeHtml(urun.kategori)}</span>
                             ${tukendiOverlayHTML}
-                            <img class="main-card-img" src="${escapeHtml(safeImageUrl(ilkGorsel))}" alt="${escapeHtml(urun.ad)}">
+                            <img class="main-card-img"
+                                 src="${escapeHtml(safeImageUrl(ilkGorsel))}"
+                                 alt="${escapeHtml(urun.ad)}"
+                                 loading="${productIndex < 4 ? 'eager' : 'lazy'}"
+                                 decoding="async"
+                                 fetchpriority="${productIndex < 2 ? 'high' : 'auto'}">
                             <div class="zoom-hint">🔍 Büyüt</div>
                         </div>
                         
@@ -6926,8 +7071,14 @@ else if (deliveryType === 'manual') {
                         ${teslimatKutusuHTML}
                     </div>
                 `;
-                grid.innerHTML += kart;
+                cardHtmlParts.push(kart);
             });
+
+            // En pahalı nokta buydu: önceki sürüm her ürün için grid.innerHTML +=
+            // kullanıp bütün Market DOM'unu tekrar tekrar parse ediyordu.
+            // Artık tüm kartlar TEK DOM yazımıyla oluşturuluyor.
+            grid.innerHTML = cardHtmlParts.join('');
+            marketGridNeedsRender = false;
 
             // Yeniden çizim olduysa daha önce açık olan Detaylar / Teslimat kutularını geri aç.
             if (acikDetaylar.size > 0) {
@@ -10878,13 +11029,19 @@ return;
       }
     }catch(_){}
 
+    const hasExistingMarketSurface =
+      productGrid &&
+      (productGrid.querySelector('.card') || productGrid.querySelector('.market-empty-search'));
+
     try{
-      // Prefer the original product renderer captured before Tournament V2
-      // wrapped urunleriYukle(). This bypasses the old Turnuva-category branch.
-      if(typeof tv2BaseGridRender==='function'){
-        tv2BaseGridRender(category);
-      }else if(wzLegacyUrunleriYukle){
-        wzLegacyUrunleriYukle(category);
+      // Sekmeler arası geçişte Market DOM'u zaten hazırsa yeniden kurma.
+      // Görseller, kartlar ve scroll aynen yerinde kalır.
+      if(!hasExistingMarketSurface || marketGridNeedsRender){
+        if(typeof tv2BaseGridRender==='function'){
+          tv2BaseGridRender(category);
+        }else if(wzLegacyUrunleriYukle){
+          wzLegacyUrunleriYukle(category);
+        }
       }
     }catch(error){
       console.error('WZ MARKET RENDER ERROR:',error);
