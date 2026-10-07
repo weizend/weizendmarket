@@ -2812,7 +2812,8 @@ html[data-wz-current-view="market"] #wzMobileProfileView{
 
 /* Turnuva */
 html[data-wz-current-view="tournament"] #marketContent,
-html[data-wz-current-view="tournament"] #wzMobileProfileView{
+html[data-wz-current-view="tournament"] #wzMobileProfileView,
+html[data-wz-current-view="tournament"] body > .container:first-of-type > header{
   display:none!important;
 }
 html[data-wz-current-view="tournament"] #wzEsportsHub{
@@ -2935,6 +2936,19 @@ body.wz-inbox-open{
     </button>
   </div>
 </div>
+<script id="wz-final-v66-early-appbar">
+(function(){
+  try{
+    const view=window.__WZ_INITIAL_VIEW__ || 'market';
+    const names={market:'MARKET',tournament:'TURNUVA',profile:'PROFİL'};
+    const label=document.getElementById('wzViewName');
+    if(label) label.textContent=names[view] || 'WEIZEND';
+
+    document.getElementById('wzDesktopMarket')?.classList.toggle('active',view==='market');
+    document.getElementById('wzDesktopTournament')?.classList.toggle('active',view==='tournament');
+  }catch(_){}
+})();
+</script>
 
 <nav class="wz-mobile-bottom-nav" id="wzMobileBottomNav" aria-label="Mobil ana menü">
   <button class="wz-mobile-nav-btn" id="wzNavMarket" type="button" onclick="wzSetView('market')" aria-label="Market">
@@ -2981,11 +2995,10 @@ body.wz-inbox-open{
     }catch(_){}
   }
 
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',hydrate,{once:true});
-  }else{
-    hydrate();
-  }
+  // Appbar elemanları bu script'ten önce parse edildi.
+  // DOMContentLoaded beklemek profil ikonunun refresh sırasında kaybolup
+  // tekrar gelmesine neden oluyordu. Şimdi senkron hydrate edilir.
+  hydrate();
 })();
 </script>
 
@@ -3426,10 +3439,53 @@ body.wz-inbox-open{
             </section>
 
             <div class="grid" id="urunGrid"></div>
+<script id="wz-final-v66-market-shell-hydrate">
+(function(){
+  try{
+    if((window.__WZ_INITIAL_VIEW__||'market')!=='market') return;
+
+    const key='weizend_market_shell_final_v66';
+    const raw=sessionStorage.getItem(key);
+    if(!raw) return;
+
+    const cached=JSON.parse(raw);
+    const tokenNow=!!localStorage.getItem('weizend_market_session_secure_v2');
+
+    // Eski giriş/çıkış durumuna ait butonları bir an bile göstermeyelim.
+    if(!!cached.authenticated !== tokenNow) return;
+
+    const grid=document.getElementById('urunGrid');
+    const filters=document.getElementById('filters');
+    const info=document.getElementById('productSearchInfo');
+    const search=document.getElementById('productSearchInput');
+
+    if(grid && typeof cached.gridHtml==='string') grid.innerHTML=cached.gridHtml;
+    if(filters && typeof cached.filtersHtml==='string') filters.innerHTML=cached.filtersHtml;
+    if(info && typeof cached.searchInfoHtml==='string') info.innerHTML=cached.searchInfoHtml;
+    if(search && typeof cached.searchValue==='string') search.value=cached.searchValue;
+  }catch(_){}
+})();
+</script>
         </div>
-                <div id="wzEsportsHub" class="wz-esports-hub">
-                    <div class="wz-esports-loading">🏆 Turnuva merkezi hazırlanıyor...</div>
-                </div>
+                <div id="wzEsportsHub" class="wz-esports-hub"></div>
+<script id="wz-final-v66-tournament-shell-hydrate">
+(function(){
+  try{
+    if((window.__WZ_INITIAL_VIEW__||'market')!=='tournament') return;
+
+    const host=document.getElementById('wzEsportsHub');
+    if(!host) return;
+
+    const raw=sessionStorage.getItem('weizend_tournament_shell_final_v66');
+    if(!raw) return;
+
+    const cached=JSON.parse(raw);
+    if(typeof cached.html==='string' && cached.html.trim()){
+      host.innerHTML=cached.html;
+    }
+  }catch(_){}
+})();
+</script>
     </div>
 
     <div class="container">
@@ -4141,6 +4197,17 @@ body.wz-inbox-open{
             const bootSessionToken = localStorage.getItem(SESSION_STORAGE_KEY) || '';
             marketAuthenticated = !!bootSessionToken;
 
+            // Market refresh'te son kategori/search yüzeyi korunmuşsa aynı kategoriden devam et.
+            try{
+                const cachedShell = JSON.parse(sessionStorage.getItem(MARKET_SHELL_CACHE_KEY) || 'null');
+                if(cachedShell?.category && typeof cachedShell.category === 'string'){
+                    aktifKategori = cachedShell.category;
+                }
+                if(typeof cachedShell?.searchValue === 'string'){
+                    productSearchQuery = cachedShell.searchValue.trim().toLocaleLowerCase('tr-TR');
+                }
+            }catch(_){}
+
             if (bootSessionToken) {
                 try {
                     const cachedProfile = JSON.parse(
@@ -4164,7 +4231,7 @@ body.wz-inbox-open{
                 currentBlockedReason = '';
             }
 
-            urunleriYukle('Tümü');
+            urunleriYukle(aktifKategori || 'Tümü');
             marketInitialized = true;
 
             // Sunucudaki gerçek stokları tek sefer al. Sürekli polling yapılmaz.
@@ -4716,6 +4783,7 @@ body.wz-inbox-open{
             disconnectRealtime();
             localStorage.removeItem(SESSION_STORAGE_KEY);
             localStorage.removeItem(PROFILE_CACHE_KEY);
+            try{ sessionStorage.removeItem(MARKET_SHELL_CACHE_KEY); }catch(_){}
             localStorage.removeItem(AUTH_STATE_KEY);
             localStorage.removeItem(VERIFY_WAIT_STATE_KEY);
             localStorage.removeItem(VERIFY_COMMAND_CLICKED_KEY);
@@ -5972,6 +6040,7 @@ body.wz-inbox-open{
         }
 
         async function logoutAccount() {
+            try{ sessionStorage.removeItem(MARKET_SHELL_CACHE_KEY); }catch(_){}
             const token = localStorage.getItem(SESSION_STORAGE_KEY) || '';
 
             // Sunucudaki oturumu da geçersiz kıl. Ağ hatası olsa bile cihazdaki oturum temizlenir.
@@ -6621,6 +6690,32 @@ urun.paymentType = String(serverProduct.paymentType || '').toLowerCase();
             return parseInt(stokDegeri) || 0;
         }
 
+        const MARKET_SHELL_CACHE_KEY = 'weizend_market_shell_final_v66';
+
+        function cacheMarketShell() {
+            try {
+                const gridEl = document.getElementById('urunGrid');
+                const filtersEl = document.getElementById('filters');
+                const infoEl = document.getElementById('productSearchInfo');
+                const searchEl = document.getElementById('productSearchInput');
+
+                if (!gridEl) return;
+
+                sessionStorage.setItem(
+                    MARKET_SHELL_CACHE_KEY,
+                    JSON.stringify({
+                        authenticated: !!localStorage.getItem(SESSION_STORAGE_KEY),
+                        gridHtml: gridEl.innerHTML,
+                        filtersHtml: filtersEl?.innerHTML || '',
+                        searchInfoHtml: infoEl?.innerHTML || '',
+                        searchValue: searchEl?.value || '',
+                        category: String(aktifKategori || 'Tümü'),
+                        savedAt: Date.now()
+                    })
+                );
+            } catch (_) {}
+        }
+
         function urunleriYukle(filtreKategori) {
             // Herhangi bir nedenle grid yeniden çizilirse açık bilgi kutularını hatırla.
             const acikDetaylar = new Set(
@@ -6678,6 +6773,7 @@ urun.paymentType = String(serverProduct.paymentType || '').toLowerCase();
                         🔎 Aramana uygun ürün bulunamadı.
                     </div>
                 `;
+                cacheMarketShell();
                 return;
             }
 
@@ -6839,6 +6935,10 @@ else if (deliveryType === 'manual') {
                     if (acikDetaylar.has(el.dataset.detailKey)) el.open = true;
                 });
             }
+
+            // Refresh sırasında ürünlerin kaybolup tekrar gelmemesi için
+            // son çizilmiş Market yüzeyini sakla.
+            cacheMarketShell();
         }
 
         function goToVerification() {
@@ -10883,6 +10983,10 @@ return;
       wzRenderMarketNow();
       updateSearchMode('market');
     }else if(view==='tournament'){
+      // Turnuva görünümünde eski Market header'ı hiçbir karede görünmesin.
+      const headerEl=document.querySelector('body > .container:first-of-type header');
+      if(headerEl) headerEl.style.display='none';
+
       // The new Tournament page is independent from the Market product grid.
       // Keep the legacy category variable pinned to the user's last Market category.
       try{
@@ -10898,6 +11002,8 @@ return;
         }
       }catch(_){}
     }else{
+      const headerEl=document.querySelector('body > .container:first-of-type header');
+      if(headerEl) headerEl.style.display='none';
       syncProfile();
     }
 
@@ -12546,6 +12652,24 @@ return;
     </div>`;
   }
 
+  const WZ_T_SHELL_CACHE_KEY='weizend_tournament_shell_final_v66';
+
+  function cacheTournamentShell(host){
+    try{
+      if(!host) return;
+      // Yükleniyor ekranını cache'leme; son gerçek ekran korunmalı.
+      if(host.querySelector('.wz-turn-loading')) return;
+
+      sessionStorage.setItem(
+        WZ_T_SHELL_CACHE_KEY,
+        JSON.stringify({
+          html:host.innerHTML,
+          savedAt:Date.now()
+        })
+      );
+    }catch(_){}
+  }
+
   function render(){
     const host=document.getElementById('wzEsportsHub');
     if(!host) return;
@@ -12566,7 +12690,11 @@ return;
     }
 
     const all=visibleCatalog();
-    if(!all.length){ host.innerHTML = `<div class="wz-turn-root">${renderSearch()}${renderFilters()}<div class="wz-turn-empty">Henüz yayınlanmış turnuva yok.</div></div>`; return; }
+    if(!all.length){
+      host.innerHTML = `<div class="wz-turn-root">${renderSearch()}${renderFilters()}<div class="wz-turn-empty">Henüz yayınlanmış turnuva yok.</div></div>`;
+      cacheTournamentShell(host);
+      return;
+    }
     if(!state.selectedId){
       const first=activeList()[0] || all[0];
       state.selectedId=String(first?.tournament?.id || '');
@@ -12576,6 +12704,7 @@ return;
       : null;
 
     host.innerHTML = `<div class="wz-turn-root">${state.screen==='detail' ? renderDetailPage() : renderListPage()}</div>`;
+    cacheTournamentShell(host);
 
     if(state.screen==='list'){
       wzTurnListStatusSignature=wzTournamentListStatusSignature();
