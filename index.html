@@ -996,7 +996,11 @@ body.wz-modal-lock{overflow:hidden!important}
   padding:6px 9px;border:1px solid #29292f;border-radius:14px;background:#0e0e11;text-align:left
 }
 .wz-profile-top-btn.active{border-color:#783030;background:#1a0e10}
-.wz-profile-top-btn img{width:38px;height:38px;border-radius:50%;object-fit:cover;background:#111;border:1px solid #3a3a40}
+.wz-profile-top-avatar-icon{
+  width:38px;height:38px;border-radius:50%;display:grid;place-items:center;
+  background:#111;border:1px solid #3a3a40;font-size:1.35rem;line-height:1;
+  user-select:none;-webkit-user-select:none
+}
 .wz-profile-top-copy{display:flex;flex-direction:column;min-width:0}
 .wz-profile-top-copy strong{font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wz-profile-top-copy small{margin-top:2px;color:#777780;font-size:.65rem}
@@ -1164,7 +1168,11 @@ body.wz-view-profile #wzMobileProfileView{display:block}
   box-shadow:var(--wz-shadow)
 }
 .wz-profile-head{display:flex;align-items:center;gap:15px}
-.wz-profile-avatar{width:74px;height:74px;border-radius:50%;object-fit:cover;border:2px solid #8c2628;background:#090909}
+.wz-profile-avatar{
+  width:74px;height:74px;border-radius:50%;border:2px solid #8c2628;background:#090909;
+  display:grid;place-items:center;flex:0 0 74px
+}
+.wz-profile-avatar-emoji{font-size:2.45rem;line-height:1;user-select:none;-webkit-user-select:none}
 .wz-profile-name{font-size:1.45rem;font-weight:1000}
 .wz-profile-state{display:flex;align-items:center;gap:7px;color:#9999a3;font-size:.78rem;margin-top:5px}
 .wz-profile-state i{width:7px;height:7px;border-radius:50%;background:#35d979;box-shadow:0 0 10px rgba(53,217,121,.5)}
@@ -1280,7 +1288,7 @@ body.wz-view-tournament #wzDesktopMarket,body.wz-view-market #wzDesktopTournamen
     min-width:44px;max-width:44px;width:44px;height:44px;padding:3px;
     display:grid;grid-template-columns:1fr;border-radius:14px
   }
-  .wz-profile-top-btn img{width:36px;height:36px}
+  .wz-profile-top-avatar-icon{width:36px;height:36px;font-size:1.28rem}
   .wz-profile-top-copy,.wz-profile-chevron{display:none}
 
   header{padding:12px 0 0!important}
@@ -1338,7 +1346,8 @@ body.wz-view-tournament #wzDesktopMarket,body.wz-view-market #wzDesktopTournamen
 
   #wzMobileProfileView{width:100%;margin:12px 0 20px}
   .wz-profile-hero{border-radius:19px;padding:17px}
-  .wz-profile-avatar{width:62px;height:62px}
+  .wz-profile-avatar{width:62px;height:62px;flex-basis:62px}
+  .wz-profile-avatar-emoji{font-size:2.05rem}
   .wz-profile-name{font-size:1.2rem}
   .wz-profile-section{border-radius:17px;padding:14px;margin-top:10px}
   .wz-profile-actions{grid-template-columns:1fr}
@@ -2396,7 +2405,7 @@ body.wz-page-modal-open{
     </nav>
 
     <button class="wz-profile-top-btn" id="wzProfileTopBtn" type="button" style="display:none" onclick="wzSetView('profile')" aria-label="Profil">
-      <img id="wzTopProfileAvatar" src="https://i.hizliresim.com/fo5evkh4.png" alt="">
+      <span id="wzTopProfileAvatar" class="wz-profile-top-avatar-icon" aria-hidden="true">👤</span>
       <span class="wz-profile-top-copy">
         <strong id="wzTopProfileName">Profil</strong>
         <small>Hesabım</small>
@@ -2444,16 +2453,9 @@ body.wz-page-modal-open{
       if(!cache) return;
 
       const name=String(cache.username || 'Profil').trim();
-      const avatar=String(
-        cache.avatarUrl ||
-        cache.avatar ||
-        cache.profileImage ||
-        (window.wzAvatarData ? window.wzAvatarData(name) : '')
-      );
-
-      const img=document.getElementById('wzTopProfileAvatar');
+      const icon=document.getElementById('wzTopProfileAvatar');
       const label=document.getElementById('wzTopProfileName');
-      if(img) img.src=avatar;
+      if(icon) icon.textContent='👤';
       if(label) label.textContent=name;
     }catch(_){}
   }
@@ -2914,7 +2916,7 @@ body.wz-page-modal-open{
   <div id="wzProfileAuthenticated">
     <div class="wz-profile-hero">
       <div class="wz-profile-head">
-        <img id="wzProfileAvatar" class="wz-profile-avatar" src="https://ui-avatars.com/api/?name=W&background=e31b1b&color=fff&bold=true&size=128" alt="Profil">
+        <div id="wzProfileAvatar" class="wz-profile-avatar wz-profile-avatar-emoji" role="img" aria-label="Profil">👤</div>
         <div style="min-width:0;">
           <div id="wzProfileName" class="wz-profile-name">Kullanıcı</div>
           <div class="wz-profile-state"><i></i><span id="wzProfileState">Doğrulanmış Kick hesabı</span></div>
@@ -10164,7 +10166,7 @@ return;
     if(!authed){
       setText('wzTopProfileName','Profil');
       const topAv=document.getElementById('wzTopProfileAvatar');
-      if(topAv) topAv.removeAttribute('src');
+      if(topAv) topAv.textContent='👤';
       document.body.classList.add('wz-profile-ready');
       return;
     }
@@ -10193,8 +10195,6 @@ return;
     const points=(walletPointsValid ? walletPointsRaw : (cachedPoints || walletPointsRaw || '-')).trim();
     const level=(walletLevelValid ? walletLevelRaw : (cachedLevel || walletLevelRaw || '-')).trim();
 
-    const cachedAvatar=String(cache.avatarUrl || cache.avatar || cache.profileImage || '');
-    const avatar=cachedAvatar || (window.wzAvatarData ? window.wzAvatarData(name) : '');
     const status=String(cache.accountStatus || (typeof currentAccountStatus!=='undefined'?currentAccountStatus:'active') || 'active').toLowerCase();
     const statusText=status==='blocked'?'Kısıtlı':status==='archived'?'Arşivlenmiş':'Aktif';
 
@@ -10205,8 +10205,8 @@ return;
     setText('wzProfileAccountStatus',statusText);
     setText('wzTopProfileName',name);
 
-    const av=document.getElementById('wzProfileAvatar'); if(av) av.src=avatar;
-    const topAv=document.getElementById('wzTopProfileAvatar'); if(topAv) topAv.src=avatar;
+    const av=document.getElementById('wzProfileAvatar'); if(av) av.textContent='👤';
+    const topAv=document.getElementById('wzTopProfileAvatar'); if(topAv) topAv.textContent='👤';
     const state=document.getElementById('wzProfileState');
     if(state) state.textContent=status==='active'?'Doğrulanmış Kick hesabı':`Hesap durumu: ${statusText}`;
     document.body.classList.add('wz-profile-ready');
