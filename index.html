@@ -6,8 +6,13 @@
 (function(){
   document.documentElement.classList.add('wz-boot');
   try{
-    let view=sessionStorage.getItem('wz_current_view') || 'market';
-    if(!['market','tournament','profile'].includes(view)) view='market';
+    const allowed=['market','tournament','profile'];
+    const historyView=history.state && allowed.includes(history.state.wzView)
+      ? history.state.wzView
+      : '';
+
+    let view=historyView || sessionStorage.getItem('wz_current_view') || 'market';
+    if(!allowed.includes(view)) view='market';
 
     const token=localStorage.getItem('weizend_market_session_secure_v2') || '';
     if(view==='profile' && !token){
@@ -15,14 +20,24 @@
       sessionStorage.setItem('wz_current_view','market');
     }
 
+    try{
+      history.replaceState(
+        Object.assign({},history.state||{},{wzView:view}),
+        '',
+        location.href
+      );
+    }catch(_){}
+
     window.__WZ_INITIAL_VIEW__=view;
     document.documentElement.dataset.wzInitialView=view;
+    document.documentElement.dataset.wzCurrentView=view;
   }catch(_){
     window.__WZ_INITIAL_VIEW__='market';
     document.documentElement.dataset.wzInitialView='market';
+    document.documentElement.dataset.wzCurrentView='market';
   }
 
-  // Failsafe only: never leave the site invisible if another script errors.
+  // Failsafe only.
   setTimeout(()=>document.documentElement.classList.remove('wz-boot'),2500);
 })();
 </script>
@@ -2793,14 +2808,133 @@ body.wz-inbox-open{
 }
 </style>
 
+
+<style id="wz-v63-zero-flash-prepaint">
+/* =========================================================
+   V63 · ZERO FLASH VIEW STATE
+   <html> görünüm durumu CSS çizilmeden önce belirlendiği için
+   Market / Turnuva / Profil birbiri üzerinden asla parlamaz.
+   ========================================================= */
+
+/* MARKET */
+html[data-wz-current-view="market"] #marketContent{
+  display:block!important;
+}
+html[data-wz-current-view="market"] #wzEsportsHub,
+html[data-wz-current-view="market"] #wzMobileProfileView{
+  display:none!important;
+}
+
+/* TURNUVA */
+html[data-wz-current-view="tournament"] #marketContent,
+html[data-wz-current-view="tournament"] #wzMobileProfileView{
+  display:none!important;
+}
+html[data-wz-current-view="tournament"] #wzEsportsHub{
+  display:block!important;
+}
+
+/* PROFİL */
+html[data-wz-current-view="profile"] #marketContent,
+html[data-wz-current-view="profile"] #wzEsportsHub{
+  display:none!important;
+}
+html[data-wz-current-view="profile"] #wzMobileProfileView{
+  display:block!important;
+  visibility:visible!important;
+}
+
+/* İlk yüklemede eski .active sınıfı Market'i kırmızı göstermesin. */
+html[data-wz-current-view="market"] #wzDesktopMarket{
+  color:#fff!important;
+  background:linear-gradient(180deg,#ed2727,#b30e0e)!important;
+}
+html[data-wz-current-view="market"] #wzDesktopTournament{
+  color:#9898a2!important;
+  background:transparent!important;
+}
+html[data-wz-current-view="tournament"] #wzDesktopTournament{
+  color:#fff!important;
+  background:linear-gradient(180deg,#ed2727,#b30e0e)!important;
+}
+html[data-wz-current-view="tournament"] #wzDesktopMarket,
+html[data-wz-current-view="profile"] #wzDesktopMarket,
+html[data-wz-current-view="profile"] #wzDesktopTournament{
+  color:#9898a2!important;
+  background:transparent!important;
+}
+
+/* Mobil alt menü ilk kareden doğru sekmeyi göstersin. */
+@media(max-width:768px){
+  html[data-wz-current-view="market"] #wzNavMarket{
+    background:#211011!important;
+    color:#fff!important;
+  }
+  html[data-wz-current-view="tournament"] #wzNavTournament{
+    background:#211011!important;
+    color:#fff!important;
+  }
+  html[data-wz-current-view="profile"] #wzNavMarket,
+  html[data-wz-current-view="profile"] #wzNavTournament{
+    background:transparent!important;
+    color:#81818b!important;
+  }
+}
+
+/* Android/Chrome'un dokunma sırasında bıraktığı mavi dikdörtgeni kaldır.
+   Klavye kullanıcılarında :focus-visible erişilebilirliği korunur. */
+@media (pointer:coarse){
+  button,
+  a,
+  summary,
+  [role="button"],
+  .wz-profile-action,
+  .wz-mobile-nav-btn,
+  .wz-desktop-nav-btn,
+  .filter-btn,
+  .wz-turn-chip,
+  .wz-turn-tab,
+  .inbox-appeal-btn,
+  .inbox-appeal-send,
+  .inbox-send-btn,
+  .gift-redeem-btn,
+  .close-icon{
+    -webkit-tap-highlight-color:transparent!important;
+  }
+
+  button:focus:not(:focus-visible),
+  a:focus:not(:focus-visible),
+  summary:focus:not(:focus-visible),
+  [role="button"]:focus:not(:focus-visible){
+    outline:none!important;
+  }
+}
+</style>
+
+
+<style id="wz-v63-profile-stability-override">
+html[data-wz-current-view="profile"] body.wz-view-profile #wzMobileProfileView{
+  visibility:visible!important;
+}
+</style>
+
 </head>
 <body>
 <script id="wz-v58-prepaint-view">
 (function(){
   try{
     const view=(window.__WZ_INITIAL_VIEW__ || 'market');
+    document.documentElement.dataset.wzCurrentView=view;
     document.body.classList.add('wz-initializing','wz-view-'+view);
+
+    // Profil cache'i varsa shell'i gizlemeye gerek yok.
+    if(view==='profile'){
+      const token=localStorage.getItem('weizend_market_session_secure_v2') || '';
+      const cache=localStorage.getItem('weizend_market_profile_secure_v2') || '';
+      if(token && cache) document.body.classList.add('wz-profile-ready');
+    }
   }catch(_){
+    document.documentElement.dataset.wzCurrentView='market';
     document.body.classList.add('wz-initializing','wz-view-market');
   }
 })();
@@ -3403,6 +3537,48 @@ body.wz-inbox-open{
     <button type="button" onclick="wzGoToLogin()">Kick Hesabını Doğrula</button>
   </div>
 </section>
+<script id="wz-v63-profile-cache-hydrate">
+(function(){
+  try{
+    if((window.__WZ_INITIAL_VIEW__||'')!=='profile') return;
+
+    const token=localStorage.getItem('weizend_market_session_secure_v2') || '';
+    if(!token) return;
+
+    const raw=localStorage.getItem('weizend_market_profile_secure_v2');
+    if(!raw) return;
+
+    const c=JSON.parse(raw);
+    const set=(id,value)=>{
+      const el=document.getElementById(id);
+      if(el && value!==undefined && value!==null && String(value)!==''){
+        el.textContent=String(value);
+      }
+    };
+
+    const name=String(c.username || localStorage.getItem('weizend_market_username') || 'Kullanıcı').trim();
+    const points=Number.isFinite(Number(c.points))
+      ? Number(c.points).toLocaleString('tr-TR')+' Puan'
+      : '-';
+    const level=Number.isFinite(Number(c.level))
+      ? Number(c.level).toLocaleString('tr-TR')
+      : '-';
+
+    const status=String(c.accountStatus || 'active').toLowerCase();
+    const statusText=status==='blocked'?'Kısıtlı':status==='archived'?'Arşivlenmiş':'Aktif';
+
+    set('wzProfileName',name);
+    set('wzProfileKick',name);
+    set('wzProfilePoints',points);
+    set('wzProfileLevel',level);
+    set('wzProfileAccountStatus',statusText);
+    set('wzTopProfileName',name);
+    set('wzProfileState',status==='active'?'Doğrulanmış Kick hesabı':`Hesap durumu: ${statusText}`);
+
+    document.body.classList.add('wz-profile-ready');
+  }catch(_){}
+})();
+</script>
     </div>
 
     <div id="copyToast" class="copy-toast" style="display:none!important" aria-hidden="true"></div>
@@ -7712,9 +7888,19 @@ return;
     // =========================================================
     const TV2_KICK_CHANNEL_URL = 'https://kick.com/weizend/subscribe';
     const TV2_PENDING_TL_KEY = 'weizend_tv2_pending_tl_v1';
-    let tv2Catalog = [];
+    const TV2_CATALOG_CACHE_KEY = 'weizend_tv2_catalog_cache_v63';
+
+    let tv2Catalog = (() => {
+        try {
+            const cached = JSON.parse(sessionStorage.getItem(TV2_CATALOG_CACHE_KEY) || '[]');
+            return Array.isArray(cached) ? cached : [];
+        } catch (_) {
+            return [];
+        }
+    })();
+
     let tv2CatalogLoadPromise = null;
-    let tv2CatalogLoadedOnce = false;
+    let tv2CatalogLoadedOnce = tv2Catalog.length > 0;
     let tv2State = {
         tournamentId: '',
         publicData: null,
@@ -7912,6 +8098,12 @@ return;
                     legacySolo:String(tournament.mode || '') === 'solo'
                 }));
                 tv2CatalogLoadedOnce = true;
+                try {
+                    sessionStorage.setItem(
+                        TV2_CATALOG_CACHE_KEY,
+                        JSON.stringify(tv2Catalog)
+                    );
+                } catch (_) {}
                 urunleriYukle(aktifKategori || 'Tümü');
             } catch (error) {
                 console.error('TV2 CATALOG ERROR:', error);
@@ -10683,6 +10875,15 @@ return;
 
     currentView=view;
     try{ sessionStorage.setItem('wz_current_view',view); }catch(_){}
+    try{
+      history.replaceState(
+        Object.assign({},history.state||{},{wzView:view}),
+        '',
+        location.href
+      );
+    }catch(_){}
+
+    document.documentElement.dataset.wzCurrentView=view;
     document.body.classList.remove('wz-view-market','wz-view-tournament','wz-view-profile');
     document.body.classList.add('wz-view-'+view);
     updateTopbar(view);
@@ -10943,6 +11144,7 @@ return;
         document.body.classList.add('wz-ready');
         document.documentElement.classList.remove('wz-boot');
         document.documentElement.removeAttribute('data-wz-initial-view');
+        document.documentElement.dataset.wzCurrentView=currentView;
 
         requestAnimationFrame(()=>{
           document.body.classList.remove('wz-initializing');
@@ -10960,6 +11162,17 @@ return;
 </script>
 <script id="wz-esports-v6-js">
 (function(){
+  const WZ_T_DETAIL_CACHE_KEY='weizend_tournament_detail_cache_v63';
+
+  const cachedDetailEntries=(()=>{
+    try{
+      const parsed=JSON.parse(sessionStorage.getItem(WZ_T_DETAIL_CACHE_KEY)||'{}');
+      return parsed && typeof parsed==='object' ? Object.entries(parsed) : [];
+    }catch(_){
+      return [];
+    }
+  })();
+
   const state={
     filter:(()=>{try{return sessionStorage.getItem('wz_t_filter')||'all'}catch(_){return 'all'}})(),
     screen:(()=>{try{return sessionStorage.getItem('wz_t_screen')||'list'}catch(_){return 'list'}})(),
@@ -10967,12 +11180,26 @@ return;
     tab:(()=>{try{return sessionStorage.getItem('wz_t_tab')||'overview'}catch(_){return 'overview'}})(),
     bracketMode:(()=>{try{return sessionStorage.getItem('wz_t_bracket')||'tree'}catch(_){return 'tree'}})(),
     search:(()=>{try{return sessionStorage.getItem('wz_t_search')||''}catch(_){return ''}})(),
-    details:new Map(),
+    details:new Map(cachedDetailEntries),
     loading:new Set(),
     openRules:new Set([0,1]),
     predictionCache:new Map(),
     predictionLoading:new Set()
   };
+
+  function persistDetailCache(){
+    try{
+      const obj={};
+      let count=0;
+      for(const [id,data] of state.details.entries()){
+        if(!id || !data || data.__error) continue;
+        obj[id]=data;
+        count++;
+        if(count>=8) break;
+      }
+      sessionStorage.setItem(WZ_T_DETAIL_CACHE_KEY,JSON.stringify(obj));
+    }catch(_){}
+  }
 
   function persistTournamentState(){
     try{
@@ -11585,6 +11812,7 @@ return;
       }
 
       state.details.set(id,data);
+      persistDetailCache();
       return data;
     }catch(error){
       state.details.set(id,{__error:String(error?.message||error)});
@@ -12530,8 +12758,23 @@ return;
 
   function init(){
     const grid=document.getElementById('tournamentMarketGrid');
-    if(grid){ new MutationObserver(()=>{ if(document.body.classList.contains('wz-view-tournament')) render(); }).observe(grid,{childList:true,subtree:true}); }
-    if(document.body.classList.contains('wz-view-tournament')) render();
+    if(grid){
+      new MutationObserver(()=>{
+        if(document.body.classList.contains('wz-view-tournament')) render();
+      }).observe(grid,{childList:true,subtree:true});
+    }
+
+    if(document.body.classList.contains('wz-view-tournament')){
+      // Session cache varsa ilk karede mevcut turnuva ekranını çiz.
+      render();
+
+      // Sonra sessizce güncel veriyi al. Eski ekran kaybolmaz.
+      try{
+        if(typeof tv2LoadCatalog==='function'){
+          tv2LoadCatalog(false).catch(()=>{});
+        }
+      }catch(_){}
+    }
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init,{once:true});
   else init();
