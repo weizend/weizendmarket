@@ -1458,7 +1458,7 @@ body.wz-view-tournament .market-search-wrap{display:none!important}
 .wz-turn-card-title{font-size:1.08rem;font-weight:1000;line-height:1.05;text-transform:uppercase;word-break:break-word}
 .wz-turn-card-sub{margin-top:4px;color:#d2d6dd;font-size:.73rem;font-weight:800;opacity:.88}
 .wz-turn-badge{
-  flex:0 1 auto;max-width:48%;padding:8px 14px;border-radius:999px;font-size:.7rem;font-weight:1000;border:1px solid transparent;line-height:1.2;text-align:center;white-space:normal
+  flex:0 1 auto;max-width:54%;padding:8px 13px;border-radius:999px;font-size:.66rem;font-weight:1000;border:1px solid transparent;line-height:1.25;text-align:center;white-space:normal
 }
 .wz-turn-badge.live{background:#ff2b2b;color:#fff}
 .wz-turn-badge.soon{background:#ffffff;color:#111}
@@ -1517,8 +1517,8 @@ body.wz-view-tournament .market-search-wrap{display:none!important}
 .wz-turn-date{
   border:1px solid #232730;background:#10141b;border-radius:14px;padding:12px
 }
-.wz-turn-date b{display:block;font-size:.9rem}
-.wz-turn-date span{display:block;margin-top:4px;color:#9ea2ab;font-size:.7rem}
+.wz-turn-date span{display:block;margin:0;color:#9ea2ab;font-size:.7rem;font-weight:800}
+.wz-turn-date b{display:block;margin-top:6px;font-size:.9rem;line-height:1.35}
 .wz-turn-livebox{margin:0 12px 12px;border:1px solid #35252a;background:linear-gradient(135deg,#1c1013,#10141b);border-radius:15px;padding:12px 13px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .wz-turn-livebox div{min-width:0}
 .wz-turn-livebox b{display:block;font-size:.86rem}
@@ -10267,6 +10267,59 @@ return;
     if(raw==='custom') return 'Özel';
     return 'Standart';
   }
+  function mapDisplayName(t,rule){
+    const name=String(mapName(t,rule)||'').trim();
+    const raw=String(rule?.mapType || t?.mapType || 'standard').toLowerCase();
+    if(raw==='collision' || raw==='collision_a') return `Çarpışma${name && name!=='Harita açıklanacak' ? ' ' + name : ''}`;
+    if(raw==='custom') return `Özel${name && name!=='Harita açıklanacak' ? ' ' + name : ''}`;
+    return name || 'Harita açıklanacak';
+  }
+  function countdownTextUntil(value){
+    if(!value) return '';
+    const target=Date.parse(value);
+    if(!Number.isFinite(target)) return '';
+    const diff=target-Date.now();
+    if(diff<=0) return '';
+    const totalMinutes=Math.max(1,Math.ceil(diff/60000));
+    const days=Math.floor(totalMinutes/1440);
+    const hours=Math.floor((totalMinutes%1440)/60);
+    const minutes=totalMinutes%60;
+    if(days>0) return `${days} GÜN${hours>0 ? ' ' + hours + ' SAAT' : ''}`;
+    if(hours>0) return `${hours} SAAT${minutes>0 ? ' ' + minutes + ' DK' : ''}`;
+    return `${minutes} DK`;
+  }
+  function heroStatusLabel(item){
+    const p=registrationPhase(item);
+    if(p==='soon') return 'YAKINDA';
+    if(p==='completed') return 'TAMAMLANDI';
+    if(p==='live') return 'CANLI';
+    if(p==='full') return 'KAYITLAR DOLU';
+    if(p==='passive') return 'PASİF';
+
+    const t=item?.tournament||{};
+    const openAt=registrationOpenAt(item);
+    const closeAt=registrationCloseAt(item);
+    const startAt=t.eventDate || null;
+    const now=Date.now();
+    const openTs=openAt?Date.parse(openAt):NaN;
+    const closeTs=closeAt?Date.parse(closeAt):NaN;
+    const startTs=startAt?Date.parse(startAt):NaN;
+
+    if(Number.isFinite(openTs) && now<openTs){
+      const left=countdownTextUntil(openAt);
+      return left ? `KAYITLARIN AÇILMASINA ${left} KALDI` : 'KAYIT AÇILIŞI YAKLAŞIYOR';
+    }
+    if(Number.isFinite(closeTs) && now<closeTs && item?.tournament?.registrationOpen){
+      const left=countdownTextUntil(closeAt);
+      return left ? `KAYITLARIN KAPANMASINA ${left} KALDI` : 'KAYITLAR KAPANIYOR';
+    }
+    if(Number.isFinite(startTs) && now<startTs){
+      const left=countdownTextUntil(startAt);
+      return left ? `TURNUVANIN BAŞLAMASINA ${left} KALDI` : 'TURNUVA BAŞLIYOR';
+    }
+    if(Number.isFinite(startTs) && now>=startTs) return 'TURNUVA BAŞLADI';
+    return statusLabel(item);
+  }
   function gameName(t,rule){ return rule?.gameName || t?.gameName || 'VALORANT'; }
   function safeHttpUrl(value){
     try{
@@ -10478,7 +10531,7 @@ return;
             <div class="wz-turn-game-logo"><img src="${esc(logo)}" alt="Weizend Logo"></div>
             <div>
               <div class="wz-turn-card-title">${esc(t.name||'Turnuva')}</div>
-              <div class="wz-turn-card-sub">${esc(modeText(t))} • ${Number(t.capacity||0)||'-'} ${Number(t.teamSize||1)>1?'Takım':'Oyuncu'} • ${esc(mapName(t,rule))} • ${esc(matchFormat(t,rule))}</div>
+              <div class="wz-turn-card-sub">${esc(modeText(t))} • ${Number(t.capacity||0)||'-'} ${Number(t.teamSize||1)>1?'Takım':'Oyuncu'} • ${esc(mapDisplayName(t,rule))} • ${esc(matchFormat(t,rule))}</div>
             </div>
           </div>
           <span class="wz-turn-badge ${statusClass(item)}">${esc(statusLabel(item))}</span>
@@ -10578,7 +10631,7 @@ return;
       <div class="wz-turn-detailrows">
         <div class="wz-turn-detailrow"><span>Oyun</span><b>${esc(gameName(t,rule))}</b></div>
         <div class="wz-turn-detailrow"><span>Format</span><b>${esc(modeText(t))} ${Number(t.teamSize||1)>1?'(Takımlı)':'(Solo)'}</b></div>
-        <div class="wz-turn-detailrow"><span>Harita</span><b>${esc(mapName(t,rule))}</b></div>
+        <div class="wz-turn-detailrow"><span>Harita</span><b>${esc(mapDisplayName(t,rule))}</b></div>
         <div class="wz-turn-detailrow"><span>Harita Türü</span><b>${esc(mapTypeText(t,rule))}</b></div>
         <div class="wz-turn-detailrow"><span>Maç Formatı</span><b>${esc(matchFormat(t,rule))}</b></div>
         <div class="wz-turn-detailrow"><span>Kontenjan</span><b>${Number(t.capacity||0)||'-'} ${Number(t.teamSize||1)>1?'Takım':'Oyuncu'}</b></div>
@@ -10596,7 +10649,7 @@ return;
         <button type="button" class="wz-turn-subbtn ${state.bracketMode==='list'?'active':''}" onclick="wzTurnSetBracket('list')">Maç Listesi</button>
       </div>
       ${state.bracketMode==='tree' ? bracketTree(detail) : bracketList(detail)}
-      <div class="wz-turn-mapbox"><div class="wz-turn-mapcover"${mapStyle}></div><div class="wz-turn-mapcontent"><b>${esc(mapName(t,rule))}</b><span>${esc(gameName(t,rule))} Harita Bilgisi</span></div></div>
+      <div class="wz-turn-mapbox"><div class="wz-turn-mapcover"${mapStyle}></div><div class="wz-turn-mapcontent"><b>${esc(mapDisplayName(t,rule))}</b><span>${esc(gameName(t,rule))} Harita Bilgisi</span></div></div>
     </div>`;
   }
 
@@ -10698,20 +10751,19 @@ return;
       <div class="wz-turn-detail-top"><button type="button" class="wz-turn-back" onclick="wzTurnBack()">←</button><div class="wz-turn-brand">WEIZEND</div></div>
       <section class="wz-turn-hero">
         <div class="wz-turn-hero-cover"${heroStyle}><div class="wz-turn-hero-body">
-          <div class="wz-turn-hero-title"><div class="wz-turn-h1">${esc(String(t.name||'Turnuva').replace(/cup/i,'').trim() || 'CUP')}</div><span class="wz-turn-badge ${status}">${esc(statusLabel(item))}</span></div>
+          <div class="wz-turn-hero-title"><div class="wz-turn-h1">${esc(String(t.name||'Turnuva').replace(/cup/i,'').trim() || 'CUP')}</div><span id="wzTurnHeroStatus" class="wz-turn-badge ${status}">${esc(heroStatusLabel(item))}</span></div>
         </div></div>
         <div class="wz-turn-info-grid">
           <div class="wz-turn-info"><b>${esc(modeText(t))}</b><span>${Number(t.teamSize||1)>1?'Takımlı':'Solo'}</span></div>
           <div class="wz-turn-info"><b>${Number(t.capacity||0)||'-'}</b><span>${Number(t.teamSize||1)>1?'Takım':'Oyuncu'}</span></div>
-          <div class="wz-turn-info"><b>${esc(mapName(t,rule))}</b><span>${esc(mapTypeText(t,rule))} Harita</span></div>
+          <div class="wz-turn-info"><b>${esc(mapDisplayName(t,rule))}</b><span>Harita</span></div>
           <div class="wz-turn-info"><b>${esc(matchFormat(t,rule))}</b><span>Maç Formatı</span></div>
         </div>
         <div class="wz-turn-date-grid">
-          <div class="wz-turn-date"><b>${esc(comingSoon(item)?'YAKINDA':formatDate(openAt))}</b><span>Kayıt Açılışı</span></div>
-          <div class="wz-turn-date"><b>${esc(comingSoon(item)?'YAKINDA':formatDate(closeAt))}</b><span>Kayıt Kapanışı</span></div>
-          <div class="wz-turn-date"><b>${esc(comingSoon(item)?'YAKINDA':formatDate(t.eventDate))}</b><span>Turnuva Başlangıcı</span></div>
+          <div class="wz-turn-date"><span>Kayıt Açılışı</span><b>${esc(comingSoon(item)?'YAKINDA':formatDate(openAt))}</b></div>
+          <div class="wz-turn-date"><span>Kayıt Kapanışı</span><b>${esc(comingSoon(item)?'YAKINDA':formatDate(closeAt))}</b></div>
+          <div class="wz-turn-date"><span>Turnuva Başlangıcı</span><b>${esc(comingSoon(item)?'YAKINDA':formatDate(t.eventDate))}</b></div>
         </div>
-        <div class="wz-turn-livebox"><div><b>🔴 CANLI YAYIN · KICK / WEIZEND</b><span>Turnuva maçları kick.com/weizend kanalında canlı yayınlanır.</span></div>${stream?`<a href="${esc(stream)}" target="_blank" rel="noopener noreferrer">YAYINI AÇ</a>`:''}</div>
         ${registrationIsOpen(item) ? `<button type="button" class="wz-turn-register" onclick="wzTournamentRegistration('${esc(id)}')">KAYIT OL</button>` : ''}
         <nav class="wz-turn-tabs">${tabButtons.map(([id2,name])=>`<button type="button" class="wz-turn-tab ${state.tab===id2?'active':''}" onclick="wzTurnSetTab('${id2}')">${name}</button>`).join('')}</nav>
         <div class="wz-turn-panel">${panel}</div>
@@ -10748,6 +10800,15 @@ return;
     await ensureDetail(id);
     if(state.selectedId===id && state.screen==='detail') render();
   }
+
+  const wzTurnHeroStatusTimer=setInterval(()=>{
+    try{
+      const badge=document.getElementById('wzTurnHeroStatus');
+      if(!badge || state.screen!=='detail' || !state.selectedId) return;
+      const item=getItem(state.selectedId);
+      if(item) badge.textContent=heroStatusLabel(item);
+    }catch(_){ }
+  },60000);
 
   window.wzTurnSetFilter=function(filter){ state.filter=filter; persistTournamentState(); render(); };
   window.wzTurnOpen=function(id){ state.selectedId=String(id||''); state.screen='detail'; state.tab='overview'; state.bracketMode='tree'; persistTournamentState(); render(); };
