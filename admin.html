@@ -1360,6 +1360,45 @@ body.dmModalOpen{overflow:hidden}
 }
 </style>
 
+
+<style id="wz-admin-pickem-v31-css">
+.tPredictionBox{
+  border:1px solid #2b3037;background:#0b0f14;border-radius:14px;padding:12px;margin-top:8px
+}
+.tPredictionSummary{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px
+}
+.tPredictionStat{
+  border:1px solid #272d35;background:#11161d;border-radius:11px;padding:9px
+}
+.tPredictionStat span{display:block;color:#808895;font-size:.7rem;margin-bottom:4px}
+.tPredictionStat b{display:block;color:#fff;font-size:.88rem}
+.tPredictionStat .open{color:#6ee895}
+.tPredictionStat .closed{color:#ff8383}
+.tPredictionLeaderboard{margin-top:12px}
+.tPredictionLeaderHead,.tPredictionLeaderRow{
+  display:grid;grid-template-columns:56px minmax(0,1fr) 72px 84px;gap:8px;align-items:center;
+  padding:8px 10px
+}
+.tPredictionLeaderHead{
+  color:#747c88;font-size:.68rem;text-transform:uppercase;border-bottom:1px solid #262c33
+}
+.tPredictionLeaderRow{border-bottom:1px solid #1d2228;font-size:.8rem}
+.tPredictionLeaderRow:first-of-type{background:rgba(227,27,27,.06)}
+.tPredictionLeaderRow b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tPredictionEmpty{
+  padding:16px;text-align:center;color:#777;border:1px dashed #30353c;border-radius:10px
+}
+@media(max-width:760px){
+  .tPredictionSummary{grid-template-columns:1fr 1fr}
+  .tPredictionLeaderHead,.tPredictionLeaderRow{
+    grid-template-columns:44px minmax(0,1fr) 52px
+  }
+  .tPredictionLeaderHead span:nth-child(4),
+  .tPredictionLeaderRow span:nth-child(4){display:none}
+}
+</style>
+
 </head>
 
 <body>
@@ -2752,6 +2791,22 @@ body.dmModalOpen{overflow:hidden}
           <button id="tSubscriptionSyncButton" class="secondary" onclick="syncTournamentSubscriptions()">⭐ Abonelikleri Kontrol Et</button>
           <button id="tSubscriptionEventsButton" class="secondary" onclick="loadTournamentSubscriptionEvents()">📡 Katılım Takibi</button>
           <button id="tDrawButton" class="warn" onclick="drawTournament()">🎲 Karıştır ve Fikstürü Oluştur</button>
+        </div>
+
+        <h3 class="subTitle">🎯 Tahmin / Pick'em Sistemi</h3>
+        <div class="tPredictionBox">
+          <div id="tPredictionSummary" class="tPredictionSummary">
+            Fikstür oluşturulduktan sonra tahmin sistemini buradan açabilirsin.
+          </div>
+
+          <div class="btnRow" style="margin-top:9px;">
+            <button id="tPredictionOpenButton" class="success" onclick="setTournamentPredictions(true)">🔓 Tahminleri Aç</button>
+            <button id="tPredictionCloseButton" class="danger" onclick="setTournamentPredictions(false)">🔒 Tahminleri Kapat</button>
+            <button class="secondary" onclick="loadTournamentPredictions()">🔄 Tahminleri Yenile</button>
+          </div>
+
+          <div id="tPredictionLeaderboard" class="tPredictionLeaderboard"></div>
+          <div id="tPredictionStatus" class="status"></div>
         </div>
 
         <div id="tournamentStatus" class="status"></div>
@@ -7100,6 +7155,7 @@ async function completeOrder(){
 ========================================================= */
 
 let tournamentCatalogCache = [];
+let tournamentPredictionAdminCache = null;
 let currentTournamentAdmin = null;
 let currentTournamentRule = null;
 let currentTournamentEntries = null;
@@ -7743,7 +7799,8 @@ async function loadTournamentConfig(){
 
     await Promise.all([
       loadTournamentEntries(true),
-      loadTournamentBracket(true)
+      loadTournamentBracket(true),
+      loadTournamentPredictions(true)
     ]);
 
     showStatus(
@@ -7928,6 +7985,165 @@ async function saveTournamentConfig(){
     }
   }
 }
+
+
+function adminPredictionLockText(reason){
+  const code=String(reason||'');
+  if(code==='NO_BRACKET') return 'Önce fikstürü oluştur.';
+  if(code==='TOURNAMENT_STARTED') return 'Turnuva başladığı için tahminler otomatik kilitlendi.';
+  if(code==='MATCHES_STARTED') return 'Maç sonuçları girilmeye başladığı için tahminler otomatik kilitlendi.';
+  if(code==='TOURNAMENT_INACTIVE') return 'Turnuva aktif değil.';
+  if(code==='TOURNAMENT_COMPLETED') return 'Turnuva tamamlandı; tahminler kilitli.';
+  return 'Tahminler yönetici tarafından kapalı.';
+}
+
+function renderTournamentPredictions(data){
+  tournamentPredictionAdminCache=data||null;
+
+  const summary=document.getElementById('tPredictionSummary');
+  const leaderboard=document.getElementById('tPredictionLeaderboard');
+  const openButton=document.getElementById('tPredictionOpenButton');
+  const closeButton=document.getElementById('tPredictionCloseButton');
+
+  if(!summary || !leaderboard) return;
+
+  const prediction=data?.prediction||{};
+  const stats=data?.stats||{};
+  const rows=Array.isArray(data?.leaderboard)?data.leaderboard:[];
+  const effectiveOpen=prediction.open===true;
+  const configuredOpen=prediction.configuredOpen===true;
+  const statusText=effectiveOpen
+    ? 'AÇIK'
+    : (configuredOpen ? 'OTOMATİK KİLİTLİ' : 'KAPALI');
+
+  summary.innerHTML=`
+    <div class="tPredictionStat">
+      <span>Durum</span>
+      <b class="${effectiveOpen?'open':'closed'}">${esc(statusText)}</b>
+    </div>
+    <div class="tPredictionStat">
+      <span>Katılımcı</span>
+      <b>${Number(stats.participantCount||0)}</b>
+    </div>
+    <div class="tPredictionStat">
+      <span>Kaydedilen Tahmin</span>
+      <b>${Number(stats.totalPicks||0)}</b>
+    </div>
+    <div class="tPredictionStat">
+      <span>Maç / Maks. Puan</span>
+      <b>${Number(stats.completedMatches||0)} / ${Number(stats.totalMatches||0)} · ${Number(stats.maxScore||0)} P</b>
+    </div>
+    <div class="muted" style="grid-column:1/-1;">
+      ${effectiveOpen
+        ? '✅ Kullanıcıların her seçimi anında Worker/D1 üzerine kaydediliyor.'
+        : '🔒 '+esc(adminPredictionLockText(prediction.lockReason))}
+      <br>💡 Puanlama: İlk turlar +1 · Yarı final +2 · Final +3 · 3.'lük +1.
+    </div>
+  `;
+
+  if(openButton){
+    openButton.disabled=effectiveOpen;
+    openButton.title=effectiveOpen?'Tahminler zaten açık.':'Fikstür hazırsa tahminleri aç.';
+  }
+  if(closeButton){
+    closeButton.disabled=!configuredOpen;
+  }
+
+  if(!rows.length){
+    leaderboard.innerHTML='<div class="tPredictionEmpty">Henüz tahmin yapan kullanıcı yok.</div>';
+    return;
+  }
+
+  leaderboard.innerHTML=`
+    <div class="tPredictionLeaderHead">
+      <span>Sıra</span><span>Kullanıcı</span><span>Puan</span><span>Doğru</span>
+    </div>
+    ${rows.slice(0,50).map(row=>`
+      <div class="tPredictionLeaderRow">
+        <span>${Number(row.rank)===1?'🏆':Number(row.rank)+'.'}</span>
+        <b>${esc(row.username||'-')}</b>
+        <strong>${Number(row.score||0)}</strong>
+        <span>${Number(row.correctCount||0)} / ${Number(row.scoredPicks||0)}</span>
+      </div>
+    `).join('')}
+  `;
+}
+
+async function loadTournamentPredictions(silent=false){
+  const tournamentId=document.getElementById('tournamentSelect')?.value||'';
+  const summary=document.getElementById('tPredictionSummary');
+  const leaderboard=document.getElementById('tPredictionLeaderboard');
+
+  if(!tournamentId){
+    tournamentPredictionAdminCache=null;
+    if(summary) summary.innerHTML='Bir turnuva seç.';
+    if(leaderboard) leaderboard.innerHTML='';
+    return;
+  }
+
+  try{
+    if(!silent) showStatus('tPredictionStatus','⏳ Tahmin bilgileri yükleniyor...',true);
+
+    const {r,d}=await api(
+      `/admin/tournament/predictions?id=${encodeURIComponent(tournamentId)}&_=${Date.now()}`
+    );
+
+    if(!r.ok || !d?.success){
+      throw new Error(d?.error||`HTTP ${r.status}`);
+    }
+
+    renderTournamentPredictions(d);
+    if(!silent) showStatus('tPredictionStatus','✅ Tahmin bilgileri güncellendi.',true);
+
+  }catch(error){
+    if(summary) summary.innerHTML=`❌ ${esc(error.message||error)}`;
+    if(!silent) showStatus('tPredictionStatus','❌ '+esc(error.message||error),false);
+  }
+}
+
+async function setTournamentPredictions(open){
+  const tournamentId=document.getElementById('tournamentSelect')?.value||'';
+  if(!tournamentId) return;
+
+  const stats=tournamentPredictionAdminCache?.stats||{};
+  const message=open
+    ? 'Tahmin sistemi açılsın mı? Kullanıcıların her seçimi anında hesaplarına kaydedilecek.'
+    : `Tahminler kapatılsın mı?\n\nŞu ana kadar ${Number(stats.participantCount||0)} kullanıcı ve ${Number(stats.totalPicks||0)} kayıtlı tahmin korunacak. Kapatma anından sonra yeni seçim kabul edilmeyecek.`;
+
+  if(!confirm(message)) return;
+
+  try{
+    showStatus(
+      'tPredictionStatus',
+      open?'⏳ Tahminler açılıyor...':'⏳ Tahminler kapatılıyor...',
+      true
+    );
+
+    const {r,d}=await api('/admin/tournament/predictions/state',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({tournamentId,open:open===true})
+    });
+
+    if(!r.ok || !d?.success){
+      throw new Error(d?.error||`HTTP ${r.status}`);
+    }
+
+    renderTournamentPredictions(d);
+    showStatus(
+      'tPredictionStatus',
+      open
+        ? '✅ Tahminler açıldı. Kullanıcı seçimleri artık anında sunucuya kaydediliyor.'
+        : '✅ Tahminler kapatıldı. Önceden kaydedilen tahminler korunuyor.',
+      true
+    );
+
+  }catch(error){
+    showStatus('tPredictionStatus','❌ '+esc(error.message||error),false);
+    await loadTournamentPredictions(true);
+  }
+}
+
 
 async function setTournamentLifecycle(state){
   const tournamentId = document.getElementById('tournamentSelect')?.value || '';
@@ -8705,9 +8921,14 @@ async function drawTournament(){
       select.value = tournamentId;
     }
 
+    await Promise.all([
+      loadTournamentBracket(true),
+      loadTournamentPredictions(true)
+    ]);
+
     showStatus(
       'tournamentStatus',
-      `✅ Fikstür oluşturuldu. ${Number(d.participantCount||0)} katılımcı · ${Number(d.rounds||0)} tur.`,
+      `✅ Fikstür oluşturuldu. ${Number(d.participantCount||0)} katılımcı · ${Number(d.rounds||0)} tur. Tahmin sistemini artık açabilirsin.`,
       true
     );
 
@@ -8934,11 +9155,14 @@ async function saveTournamentMatchResult(encodedMatchId){
       throw new Error(d?.error || `HTTP ${r.status}`);
     }
 
-    await loadTournamentBracket(true);
+    await Promise.all([
+      loadTournamentBracket(true),
+      loadTournamentPredictions(true)
+    ]);
 
     showStatus(
       'tournamentStatus',
-      '✅ Maç sonucu kaydedildi ve kazanan bir sonraki tura aktarıldı.',
+      '✅ Maç sonucu kaydedildi, kazanan bir sonraki tura aktarıldı ve tahmin puanları güncellendi.',
       true
     );
 
