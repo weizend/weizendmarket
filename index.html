@@ -1452,9 +1452,11 @@ body.wz-view-tournament .market-search-wrap{display:none!important}
   display:flex;align-items:center;gap:10px;min-width:0
 }
 .wz-turn-game-logo{
-  width:44px;height:44px;border-radius:999px;background:transparent;display:grid;place-items:center;font-weight:1000;font-size:1.05rem;color:#fff;border:0;overflow:hidden;flex:0 0 44px
+  width:46px;height:46px;border-radius:50%;background:#000;display:grid;place-items:center;color:#fff;
+  border:1px solid rgba(227,27,27,.65);overflow:hidden;flex:0 0 46px;
+  box-shadow:0 0 22px rgba(227,27,27,.18)
 }
-.wz-turn-game-logo img{width:100%;height:100%;object-fit:contain;border-radius:50%;display:block;background:transparent}
+.wz-turn-game-logo img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;background:#000}
 .wz-turn-card-title{font-size:1.08rem;font-weight:1000;line-height:1.05;text-transform:uppercase;word-break:break-word}
 .wz-turn-card-sub{margin-top:4px;color:#d2d6dd;font-size:.73rem;font-weight:800;opacity:.88}
 .wz-turn-badge{
@@ -1464,6 +1466,9 @@ body.wz-view-tournament .market-search-wrap{display:none!important}
 .wz-turn-badge.soon{background:#ffffff;color:#111}
 .wz-turn-badge.done{background:#1f232b;color:#fff;border-color:#333843}
 .wz-turn-badge.open{background:#fff;color:#111}
+.wz-turn-badge .wz-status-label{display:block;font-weight:1000}
+.wz-turn-badge .wz-status-time{display:block;margin-top:3px;font-size:.60rem;font-weight:900;opacity:.88}
+.wz-turn-badge .wz-status-count{display:block;margin-top:4px;font-size:.66rem;font-weight:1000;opacity:.92}
 .wz-turn-card-body{padding:12px 14px 14px}
 .wz-turn-datehint{color:#8f96a3;font-size:.72rem;font-weight:900;letter-spacing:.02em;text-transform:uppercase;margin-bottom:6px}
 .wz-turn-minirow{display:flex;gap:12px;align-items:flex-start;color:#d8dbe2;font-size:.79rem;margin-bottom:10px;flex-wrap:wrap}
@@ -1639,7 +1644,7 @@ body.wz-view-tournament .market-search-wrap{display:none!important}
 }
 @media(max-width:390px){
   .wz-turn-card-actions{flex-direction:column;align-items:stretch}
-  .wz-turn-game-logo{width:36px;height:36px}
+  .wz-turn-game-logo{width:44px;height:44px;flex-basis:44px}
 }
 </style>
 
@@ -10254,7 +10259,13 @@ return;
     if(p==='closed') return 'KAYITLAR KAPALI';
     return 'KAYITLAR AÇIK';
   }
-  function listCardPhase(item){
+  function registrationCapacityText(item){
+    const t=item?.tournament||{};
+    const used=Math.max(0,Number(t.registeredCount ?? item?.registeredCount ?? 0) || 0);
+    const capacity=Math.max(0,Number(t.capacity||0) || 0);
+    return `${used}/${capacity || '-'}`;
+  }
+  function tournamentStatusInfo(item){
     const p=registrationPhase(item);
     const t=item?.tournament||{};
     const openAt=registrationOpenAt(item);
@@ -10264,18 +10275,36 @@ return;
     const openTs=openAt?Date.parse(openAt):NaN;
     const closeTs=closeAt?Date.parse(closeAt):NaN;
     const startTs=startAt?Date.parse(startAt):NaN;
+    const count=registrationCapacityText(item);
 
-    if(p==='completed') return { label:'TAMAMLANDI', when:startAt || closeAt || openAt || null };
-    if(p==='live') return { label:'CANLI', when:startAt || null };
-    if(p==='soon') return { label:'YAKINDA', when:openAt || startAt || null };
-    if(p==='full') return { label:'KAYIT DOLU', when:closeAt || startAt || null };
-    if(p==='passive') return { label:'PASİF', when:startAt || null };
+    if(p==='completed') return {label:'TURNUVA TAMAMLANDI',time:'',count};
+    if(p==='live') return {label:'TURNUVA BAŞLADI',time:'',count};
+    if(p==='soon') return {label:'YAKINDA',time:'',count};
+    if(p==='passive') return {label:'KAYIT KAPALI',time:'',count};
+    if(p==='full') return {label:'KAYITLAR TAMAMLANDI',time:'',count};
 
-    if(Number.isFinite(openTs) && now<openTs) return { label:'KAYIT AÇILIŞI', when:openAt };
-    if(Number.isFinite(closeTs) && now<closeTs && item?.tournament?.registrationOpen) return { label:'KAYIT KAPANIŞI', when:closeAt };
-    if(Number.isFinite(startTs) && now<startTs) return { label:'TURNUVA BAŞLANGICI', when:startAt };
-    if(Number.isFinite(startTs)) return { label:'TURNUVA BAŞLANGICI', when:startAt };
-    return { label:'KAYIT KAPALI', when:closeAt || openAt || startAt || null };
+    if(Number.isFinite(openTs) && now<openTs){
+      const left=countdownTextUntil(openAt);
+      return {label:'KAYIT BAŞLANGIÇ',time:left ? `${left} KALDI` : '',count};
+    }
+    if(Number.isFinite(closeTs) && now<closeTs && item?.tournament?.registrationOpen){
+      const left=countdownTextUntil(closeAt);
+      return {label:'KAYIT BİTİŞ',time:left ? `${left} KALDI` : '',count};
+    }
+    if(Number.isFinite(closeTs) && now>=closeTs && (!Number.isFinite(startTs) || now<startTs)){
+      return {label:'KAYITLAR TAMAMLANDI',time:'',count};
+    }
+    if(Number.isFinite(startTs) && now<startTs){
+      return {label:'KAYITLAR TAMAMLANDI',time:'',count};
+    }
+    if(Number.isFinite(startTs) && now>=startTs){
+      return {label:'TURNUVA BAŞLADI',time:'',count};
+    }
+    return {label:'KAYIT KAPALI',time:'',count};
+  }
+  function tournamentStatusMarkup(item){
+    const info=tournamentStatusInfo(item);
+    return `<span class="wz-status-label">${esc(info.label)}</span>${info.time?`<span class="wz-status-time">${esc(info.time)}</span>`:''}<span class="wz-status-count">${esc(info.count)}</span>`;
   }
   function registrationIsOpen(item){ return registrationPhase(item)==='open'; }
   function modeText(t){
@@ -10313,36 +10342,8 @@ return;
     return `${minutes} DK`;
   }
   function heroStatusLabel(item){
-    const p=registrationPhase(item);
-    if(p==='soon') return 'YAKINDA';
-    if(p==='completed') return 'TAMAMLANDI';
-    if(p==='live') return 'CANLI';
-    if(p==='full') return 'KAYITLAR DOLU';
-    if(p==='passive') return 'PASİF';
-
-    const t=item?.tournament||{};
-    const openAt=registrationOpenAt(item);
-    const closeAt=registrationCloseAt(item);
-    const startAt=t.eventDate || null;
-    const now=Date.now();
-    const openTs=openAt?Date.parse(openAt):NaN;
-    const closeTs=closeAt?Date.parse(closeAt):NaN;
-    const startTs=startAt?Date.parse(startAt):NaN;
-
-    if(Number.isFinite(openTs) && now<openTs){
-      const left=countdownTextUntil(openAt);
-      return left ? `KAYITLARIN AÇILMASINA ${left} KALDI` : 'KAYIT AÇILIŞI YAKLAŞIYOR';
-    }
-    if(Number.isFinite(closeTs) && now<closeTs && item?.tournament?.registrationOpen){
-      const left=countdownTextUntil(closeAt);
-      return left ? `KAYITLARIN KAPANMASINA ${left} KALDI` : 'KAYITLAR KAPANIYOR';
-    }
-    if(Number.isFinite(startTs) && now<startTs){
-      const left=countdownTextUntil(startAt);
-      return left ? `TURNUVANIN BAŞLAMASINA ${left} KALDI` : 'TURNUVA BAŞLIYOR';
-    }
-    if(Number.isFinite(startTs) && now>=startTs) return 'TURNUVA BAŞLADI';
-    return statusLabel(item);
+    const info=tournamentStatusInfo(item);
+    return info.time ? `${info.label} · ${info.time}` : info.label;
   }
   function gameName(t,rule){ return rule?.gameName || t?.gameName || 'VALORANT'; }
   function safeHttpUrl(value){
@@ -10548,7 +10549,6 @@ return;
     const heroImage=cssUrl(tournamentHeroUrl(item));
     const cardHeadStyle=heroImage ? ` style="--wz-turn-cover-image:url(${heroImage})"` : '';
     const logo=tournamentLogoUrl(item);
-    const phaseInfo=listCardPhase(item);
     return `<article class="wz-turn-card">
       <div class="wz-turn-card-head"${cardHeadStyle}>
         <div class="wz-turn-card-row">
@@ -10559,14 +10559,14 @@ return;
               <div class="wz-turn-card-sub">${esc(modeText(t))} • ${Number(t.capacity||0)||'-'} ${Number(t.teamSize||1)>1?'Takım':'Oyuncu'} • ${esc(mapDisplayName(t,rule))} • ${esc(matchFormat(t,rule))}</div>
             </div>
           </div>
-          <span class="wz-turn-badge ${statusClass(item)}">${esc(phaseInfo.label)}</span>
+          <span class="wz-turn-badge ${statusClass(item)}" data-wz-list-status="${esc(id)}">${tournamentStatusMarkup(item)}</span>
         </div>
       </div>
       <div class="wz-turn-card-body">
-        <div class="wz-turn-datehint">${esc(phaseInfo.label)}</div>
+        <div class="wz-turn-datehint">Turnuva Başlangıç Tarihi</div>
         <div class="wz-turn-minirow">
-          <span>🗓 ${esc(formatShortDate(phaseInfo.when))}</span>
-          <span>🕒 ${esc(formatShortTime(phaseInfo.when))}</span>
+          <span>🗓 ${esc(formatShortDate(t.eventDate))}</span>
+          <span>🕒 ${esc(formatShortTime(t.eventDate))}</span>
         </div>
         ${completed && fin.champion ? `<div class="wz-turn-completed-note">Şampiyon: <b>${esc(fin.champion)}</b></div>` : ''}
         <div class="wz-turn-card-actions">
@@ -10777,7 +10777,7 @@ return;
       <div class="wz-turn-detail-top"><button type="button" class="wz-turn-back" onclick="wzTurnBack()">←</button><div class="wz-turn-brand">WEIZEND</div></div>
       <section class="wz-turn-hero">
         <div class="wz-turn-hero-cover"${heroStyle}><div class="wz-turn-hero-body">
-          <div class="wz-turn-hero-title"><div class="wz-turn-h1">${esc(String(t.name||'Turnuva').replace(/cup/i,'').trim() || 'CUP')}</div><span id="wzTurnHeroStatus" class="wz-turn-badge ${status}">${esc(heroStatusLabel(item))}</span></div>
+          <div class="wz-turn-hero-title"><div class="wz-turn-h1">${esc(String(t.name||'Turnuva').replace(/cup/i,'').trim() || 'CUP')}</div><span id="wzTurnHeroStatus" class="wz-turn-badge ${status}">${tournamentStatusMarkup(item)}</span></div>
         </div></div>
         <div class="wz-turn-info-grid">
           <div class="wz-turn-info"><b>${esc(modeText(t))}</b><span>${Number(t.teamSize||1)>1?'Takımlı':'Solo'}</span></div>
@@ -10830,9 +10830,14 @@ return;
   const wzTurnHeroStatusTimer=setInterval(()=>{
     try{
       const badge=document.getElementById('wzTurnHeroStatus');
-      if(!badge || state.screen!=='detail' || !state.selectedId) return;
-      const item=getItem(state.selectedId);
-      if(item) badge.textContent=heroStatusLabel(item);
+      if(badge && state.screen==='detail' && state.selectedId){
+        const item=getItem(state.selectedId);
+        if(item) badge.innerHTML=tournamentStatusMarkup(item);
+      }
+      document.querySelectorAll('[data-wz-list-status]').forEach(node=>{
+        const item=getItem(node.getAttribute('data-wz-list-status'));
+        if(item) node.innerHTML=tournamentStatusMarkup(item);
+      });
     }catch(_){ }
   },60000);
 
