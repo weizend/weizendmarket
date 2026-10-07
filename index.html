@@ -497,8 +497,13 @@ html.wz-boot body{
         .market-search-icon { font-size:1.05rem; opacity:.85; }
         .market-search-input { flex:1; min-width:0; background:transparent; border:0; outline:0; color:#fff; font-size:1rem; padding:7px 0; }
         .market-search-input::placeholder { color:#777; }
-        .market-search-clear { width:auto; border:1px solid #333; background:#171717; color:#bbb; border-radius:9px; padding:7px 10px; cursor:pointer; font-weight:800; }
-        .market-search-clear:hover { color:#fff; border-color:var(--weizend-red); }
+        .market-search-clear {
+            width:34px; height:34px; flex:0 0 34px;
+            border:0; background:#1a1e26; color:#aeb3bc;
+            border-radius:10px; padding:0; cursor:pointer;
+            font-size:.78rem; font-weight:900;
+        }
+        .market-search-clear:hover { color:#fff; background:#20252e; }
         .market-search-info { margin-top:7px; color:#777; font-size:.78rem; text-align:center; min-height:18px; }
         .market-empty-search { grid-column:1/-1; padding:34px 16px; border:1px dashed #333; border-radius:14px; text-align:center; color:var(--text-muted); background:#090909; }
 
@@ -2871,11 +2876,13 @@ body.wz-page-modal-open{
                     <input
                         id="productSearchInput"
                         class="market-search-input"
-                        type="search"
+                        type="text"
+                        inputmode="search"
+                        enterkeyhint="search"
                         autocomplete="off"
                         placeholder="Ürün adı, kategori veya komut ara..."
                         oninput="setProductSearch(this.value)">
-                    <button class="market-search-clear" onclick="clearProductSearch()" title="Aramayı temizle">✖</button>
+                    <button id="productSearchClear" class="market-search-clear" onclick="clearProductSearch()" title="Aramayı temizle" style="display:none;">✕</button>
                 </div>
                 <div id="productSearchInfo" class="market-search-info"></div>
             </div>
@@ -5686,8 +5693,16 @@ body.wz-page-modal-open{
                 .trim();
         }
 
+        function syncProductSearchClear() {
+            const clear = document.getElementById('productSearchClear');
+            if (clear) {
+                clear.style.display = productSearchQuery ? '' : 'none';
+            }
+        }
+
         function setProductSearch(value) {
             productSearchQuery = normalizeProductSearch(value);
+            syncProductSearchClear();
             urunleriYukle(aktifKategori || 'Tümü');
         }
 
@@ -5697,9 +5712,10 @@ body.wz-page-modal-open{
             const input = document.getElementById('productSearchInput');
             if (input) {
                 input.value = '';
-                input.focus();
+                input.focus({ preventScroll:true });
             }
 
+            syncProductSearchClear();
             urunleriYukle(aktifKategori || 'Tümü');
         }
 
@@ -10118,6 +10134,9 @@ return;
     const input=document.getElementById('productSearchInput');
     if(!input) return;
     input.placeholder=view==='tournament'?'Turnuva adı, format veya oyun ara...':'Ürün adı, kategori veya komut ara...';
+    try{
+      if(typeof syncProductSearchClear==='function') syncProductSearchClear();
+    }catch(_){}
   }
 
   function cleanFilters(){
@@ -11071,7 +11090,8 @@ return;
     return `<div class="wz-turn-search-wrap">
       <div class="wz-turn-search-box">
         <span class="wz-turn-search-icon">🔎</span>
-        <input id="wzTournamentSearchInput" class="wz-turn-search-input" type="search"
+        <input id="wzTournamentSearchInput" class="wz-turn-search-input" type="text"
+          inputmode="search" enterkeyhint="search"
           autocomplete="off" value="${value}"
           placeholder="Turnuva, oyun, format veya harita ara..."
           oninput="wzTurnSetSearch(this.value)">
