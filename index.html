@@ -1438,8 +1438,10 @@ body.wz-view-tournament .market-search-wrap{display:none!important}
   min-height:112px;padding:14px;display:flex;flex-direction:column;justify-content:space-between;position:relative;
   background:
     linear-gradient(180deg,rgba(0,0,0,.18),rgba(0,0,0,.56)),
-    radial-gradient(circle at 82% 24%,rgba(226,18,18,.42),transparent 22%),
-    linear-gradient(135deg,#2c1212 0%,#141821 48%,#0b0d12 100%)
+    var(--wz-turn-cover-image, radial-gradient(circle at 82% 24%,rgba(226,18,18,.42),transparent 22%)),
+    linear-gradient(135deg,#2c1212 0%,#141821 48%,#0b0d12 100%);
+  background-size:cover;
+  background-position:center
 }
 .wz-turn-card-head:before{
   content:'';position:absolute;inset:0;background:repeating-linear-gradient(125deg,transparent 0 24px,rgba(255,255,255,.025) 25px 26px);pointer-events:none
@@ -1450,8 +1452,9 @@ body.wz-view-tournament .market-search-wrap{display:none!important}
   display:flex;align-items:center;gap:10px;min-width:0
 }
 .wz-turn-game-logo{
-  width:40px;height:40px;border-radius:13px;background:linear-gradient(180deg,#3d0f0f,#150606);display:grid;place-items:center;font-weight:1000;font-size:1.05rem;color:#fff;border:1px solid rgba(255,255,255,.08)
+  width:40px;height:40px;border-radius:13px;background:linear-gradient(180deg,#3d0f0f,#150606);display:grid;place-items:center;font-weight:1000;font-size:1.05rem;color:#fff;border:1px solid rgba(255,255,255,.08);overflow:hidden
 }
+.wz-turn-game-logo img{width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block}
 .wz-turn-card-title{font-size:1.08rem;font-weight:1000;line-height:1.05;text-transform:uppercase;word-break:break-word}
 .wz-turn-card-sub{margin-top:4px;color:#d2d6dd;font-size:.73rem;font-weight:800;opacity:.88}
 .wz-turn-badge{
@@ -1571,7 +1574,14 @@ body.wz-view-tournament .market-search-wrap{display:none!important}
 .wz-turn-mapbox{
   margin-top:14px;border:1px solid #232730;background:#11151c;border-radius:16px;overflow:hidden
 }
-.wz-turn-mapcover{height:110px;background:linear-gradient(135deg,#331515 0%,#18212f 58%,#0d1014 100%)}
+.wz-turn-mapcover{
+  height:110px;
+  background-image:
+    linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.28)),
+    var(--wz-turn-map-image, linear-gradient(135deg,#331515 0%,#18212f 58%,#0d1014 100%));
+  background-size:cover;
+  background-position:center;
+}
 .wz-turn-mapcontent{padding:12px}
 .wz-turn-mapcontent b{display:block;font-size:1rem}
 .wz-turn-mapcontent span{display:block;color:#a6abb3;font-size:.75rem;margin-top:4px}
@@ -10444,14 +10454,28 @@ return;
     const defs=[['all','Aktif'],['soon','Yaklaşan'],['live','Canlı'],['done','Tamamlanan']];
     return `<div class="wz-turn-strip">${defs.map(([id,name])=>`<button type="button" class="wz-turn-chip ${state.filter===id?'active':''}" onclick="wzTurnSetFilter('${id}')">${name}</button>`).join('')}</div>`;
   }
+  function tournamentLogoUrl(item){
+    return 'https://i.hizliresim.com/fo5evkh4.png';
+  }
+  function tournamentHeroUrl(item){
+    const t=item?.tournament||{}; const rule=item?.rule||{};
+    return String(rule?.heroImageUrl || t?.heroImageUrl || '').trim();
+  }
+  function tournamentMapImageUrl(item, detail=null){
+    const t=detail?.tournament||item?.tournament||{}; const rule=item?.rule||{};
+    return String(rule?.mapImageUrl || t?.mapImageUrl || '').trim();
+  }
   function renderListCard(item,completed=false){
     const t=item?.tournament||{}; const rule=item?.rule||{}; const id=String(t.id||'');
     const d=state.details.get(id); const fin=d && !d.__error ? finalInfo(d):{champion:''};
+    const heroImage=cssUrl(tournamentHeroUrl(item));
+    const cardHeadStyle=heroImage ? ` style="--wz-turn-cover-image:url(${heroImage})"` : '';
+    const logo=tournamentLogoUrl(item);
     return `<article class="wz-turn-card">
-      <div class="wz-turn-card-head">
+      <div class="wz-turn-card-head"${cardHeadStyle}>
         <div class="wz-turn-card-row">
           <div class="wz-turn-game">
-            <div class="wz-turn-game-logo">${esc(cardGameIcon(gameName(t,rule)))}</div>
+            <div class="wz-turn-game-logo"><img src="${esc(logo)}" alt="Weizend Logo"></div>
             <div>
               <div class="wz-turn-card-title">${esc(t.name||'Turnuva')}</div>
               <div class="wz-turn-card-sub">${esc(modeText(t))} • ${Number(t.capacity||0)||'-'} ${Number(t.teamSize||1)>1?'Takım':'Oyuncu'} • ${esc(mapName(t,rule))} • ${esc(matchFormat(t,rule))}</div>
@@ -10564,13 +10588,15 @@ return;
   }
   function renderBracket(detail,item){
     const t=detail?.tournament||item?.tournament||{}; const rule=item?.rule||{};
+    const mapImage=cssUrl(tournamentMapImageUrl(item,detail));
+    const mapStyle=mapImage ? ` style="--wz-turn-map-image:url(${mapImage})"` : '';
     return `<div class="wz-turn-box"><h3>Fikstür & Maçlar</h3>
       <div class="wz-turn-subtoggle">
         <button type="button" class="wz-turn-subbtn ${state.bracketMode==='tree'?'active':''}" onclick="wzTurnSetBracket('tree')">Tur Ağacı</button>
         <button type="button" class="wz-turn-subbtn ${state.bracketMode==='list'?'active':''}" onclick="wzTurnSetBracket('list')">Maç Listesi</button>
       </div>
       ${state.bracketMode==='tree' ? bracketTree(detail) : bracketList(detail)}
-      <div class="wz-turn-mapbox"><div class="wz-turn-mapcover"></div><div class="wz-turn-mapcontent"><b>${esc(mapName(t,rule))}</b><span>${esc(gameName(t,rule))} Harita Bilgisi</span></div></div>
+      <div class="wz-turn-mapbox"><div class="wz-turn-mapcover"${mapStyle}></div><div class="wz-turn-mapcontent"><b>${esc(mapName(t,rule))}</b><span>${esc(gameName(t,rule))} Harita Bilgisi</span></div></div>
     </div>`;
   }
 
