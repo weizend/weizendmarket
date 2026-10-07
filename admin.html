@@ -2086,15 +2086,20 @@ body.dmModalOpen{overflow:hidden}
 
         <div class="grid2">
           <div class="field">
-            <label class="title">Başlık / Kapak Görseli URL</label>
-            <input id="tcHeroImageUrl" type="url" maxlength="700" placeholder="https://.../valorant-kapak.jpg">
-            <div class="muted" style="margin-top:6px;">VALORANT turnuvasında başlığın arkasında görünmesini istediğin görselin bağlantısını buraya ekleyebilirsin.</div>
+            <label class="title">Kapak Görseli URL</label>
+            <input id="tcHeroImageUrl" type="url" maxlength="700" placeholder="https://.../turnuva-kapak.jpg">
+            <div class="muted" style="margin-top:6px;">Turnuva listesindeki ve detay sayfasındaki kapak görseli.</div>
           </div>
           <div class="field">
-            <label class="title">Canlı Yayın URL</label>
-            <input id="tcStreamUrl" type="url" maxlength="700" value="https://kick.com/weizend">
-            <div class="muted" style="margin-top:6px;">Kullanıcı tarafında “Canlı yayın: Kick / weizend” olarak açıkça gösterilir.</div>
+            <label class="title">Turnuva Logo URL</label>
+            <input id="tcLogoImageUrl" type="url" maxlength="700" placeholder="https://.../turnuva-logo.png">
+            <div class="muted" style="margin-top:6px;">Turnuva kartında başlığın solunda gösterilecek logo. PNG kullanabilirsin.</div>
           </div>
+        </div>
+        <div class="field">
+          <label class="title">Canlı Yayın URL</label>
+          <input id="tcStreamUrl" type="url" maxlength="700" value="https://kick.com/weizend">
+          <div class="muted" style="margin-top:6px;">Canlı izle butonunun açacağı yayın bağlantısı.</div>
         </div>
 
         <div id="tcEntryModeHint" class="tournamentHint"></div>
@@ -2102,7 +2107,7 @@ body.dmModalOpen{overflow:hidden}
 
         <h3 class="subTitle">Maç / Harita Ayarları</h3>
 
-        <div class="grid3">
+        <div class="grid2">
           <div class="field">
             <label class="title">Maç Formatı</label>
             <select id="tcBestOf">
@@ -2117,14 +2122,6 @@ body.dmModalOpen{overflow:hidden}
             <input id="tcMapName" type="text" maxlength="120" placeholder="Örn: Ascent / Bind / Benim Özel Haritam">
           </div>
 
-          <div class="field">
-            <label class="title">Harita Türü</label>
-            <select id="tcMapType">
-              <option value="standard">Standart</option>
-              <option value="collision">Çarpışma</option>
-              <option value="custom">Özel</option>
-            </select>
-          </div>
         </div>
         <div class="field">
           <label class="title">Harita Görseli URL</label>
@@ -2276,19 +2273,23 @@ body.dmModalOpen{overflow:hidden}
         </div>
         <div class="grid2">
           <div class="field">
-            <label class="title">Başlık / Kapak Görseli URL</label>
-            <input id="tHeroImageUrl" type="url" maxlength="700" placeholder="https://.../valorant-kapak.jpg">
+            <label class="title">Kapak Görseli URL</label>
+            <input id="tHeroImageUrl" type="url" maxlength="700" placeholder="https://.../turnuva-kapak.jpg">
           </div>
           <div class="field">
-            <label class="title">Canlı Yayın URL</label>
-            <input id="tStreamUrl" type="url" maxlength="700" value="https://kick.com/weizend">
+            <label class="title">Turnuva Logo URL</label>
+            <input id="tLogoImageUrl" type="url" maxlength="700" placeholder="https://.../turnuva-logo.png">
           </div>
+        </div>
+        <div class="field">
+          <label class="title">Canlı Yayın URL</label>
+          <input id="tStreamUrl" type="url" maxlength="700" value="https://kick.com/weizend">
         </div>
 
 
         <h3 class="subTitle">Maç / Harita Ayarları</h3>
 
-        <div class="grid3">
+        <div class="grid2">
           <div class="field">
             <label class="title">Maç Formatı</label>
             <select id="tBestOf">
@@ -2303,14 +2304,6 @@ body.dmModalOpen{overflow:hidden}
             <input id="tMapName" type="text" maxlength="120" placeholder="Örn: Ascent / Bind / Benim Özel Haritam">
           </div>
 
-          <div class="field">
-            <label class="title">Harita Türü</label>
-            <select id="tMapType">
-              <option value="standard">Standart</option>
-              <option value="collision">Çarpışma</option>
-              <option value="custom">Özel</option>
-            </select>
-          </div>
         </div>
         <div class="field">
           <label class="title">Harita Görseli URL</label>
@@ -6863,10 +6856,11 @@ async function createTournament(){
   const gameIdLabel = document.getElementById('tcGameIdLabel')?.value.trim() || 'VALORANT ID';
   const aboutText = document.getElementById('tcAboutText')?.value.trim() || '';
   const heroImageUrl = document.getElementById('tcHeroImageUrl')?.value.trim() || '';
+  const logoImageUrl = document.getElementById('tcLogoImageUrl')?.value.trim() || '';
   const streamUrl = document.getElementById('tcStreamUrl')?.value.trim() || 'https://kick.com/weizend';
   const bestOf = document.getElementById('tcBestOf')?.value || 'BO1';
   const mapName = document.getElementById('tcMapName')?.value.trim() || '';
-  const mapType = document.getElementById('tcMapType')?.value || 'standard';
+  const mapType = 'standard';
   const mapImageUrl = document.getElementById('tcMapImageUrl')?.value.trim() || '';
   const rulesText = document.getElementById('tcRulesText')?.value.trim() || '';
   const firstPrize = document.getElementById('tcPrizeFirst')?.value.trim() || '';
@@ -6931,6 +6925,7 @@ async function createTournament(){
         gameIdLabel,
         aboutText,
         heroImageUrl,
+        logoImageUrl,
         streamUrl,
         bestOf,
         mapName,
@@ -6961,10 +6956,10 @@ async function createTournament(){
     document.getElementById('tcEventDate').value = '';
     document.getElementById('tcAboutText').value = '';
     document.getElementById('tcHeroImageUrl').value = '';
+    document.getElementById('tcLogoImageUrl').value = '';
     document.getElementById('tcStreamUrl').value = 'https://kick.com/weizend';
     document.getElementById('tcBestOf').value = 'BO1';
     document.getElementById('tcMapName').value = '';
-    document.getElementById('tcMapType').value = 'standard';
     document.getElementById('tcMapImageUrl').value = '';
     document.getElementById('tcRulesText').value = '';
     document.getElementById('tcPrizeFirst').value = '';
@@ -7153,12 +7148,12 @@ async function loadTournamentConfig(){
 
     document.getElementById('tAboutText').value = rule.aboutText || catalogItem.aboutText || '';
     document.getElementById('tHeroImageUrl').value = rule.heroImageUrl || catalogItem.heroImageUrl || '';
+    document.getElementById('tLogoImageUrl').value = rule.logoImageUrl || catalogItem.logoImageUrl || '';
     document.getElementById('tStreamUrl').value = rule.streamUrl || catalogItem.streamUrl || 'https://kick.com/weizend';
 
     document.getElementById('tBestOf').value =
       String(rule.bestOf || catalogItem.bestOf || 'BO1').toUpperCase();
     document.getElementById('tMapName').value = rule.mapName || catalogItem.mapName || '';
-    document.getElementById('tMapType').value = (rule.mapType === 'collision_a' ? 'collision' : (rule.mapType || catalogItem.mapType || 'standard'));
     document.getElementById('tMapImageUrl').value = rule.mapImageUrl || catalogItem.mapImageUrl || '';
     document.getElementById('tRulesText').value = rule.rulesText || catalogItem.rulesText || '';
     document.getElementById('tPrizeFirst').value = rule.firstPrize || catalogItem.firstPrize || '';
@@ -7297,10 +7292,11 @@ async function saveTournamentConfig(){
   const gameIdLabel = document.getElementById('tGameIdLabel')?.value.trim() || 'VALORANT ID';
   const aboutText = document.getElementById('tAboutText')?.value.trim() || '';
   const heroImageUrl = document.getElementById('tHeroImageUrl')?.value.trim() || '';
+  const logoImageUrl = document.getElementById('tLogoImageUrl')?.value.trim() || '';
   const streamUrl = document.getElementById('tStreamUrl')?.value.trim() || 'https://kick.com/weizend';
   const bestOf = document.getElementById('tBestOf')?.value || 'BO1';
   const mapName = document.getElementById('tMapName')?.value.trim() || '';
-  const mapType = document.getElementById('tMapType')?.value || 'standard';
+  const mapType = 'standard';
   const mapImageUrl = document.getElementById('tMapImageUrl')?.value.trim() || '';
   const rulesText = document.getElementById('tRulesText')?.value.trim() || '';
   const firstPrize = document.getElementById('tPrizeFirst')?.value.trim() || '';
@@ -7364,6 +7360,7 @@ async function saveTournamentConfig(){
         gameIdLabel,
         aboutText,
         heroImageUrl,
+        logoImageUrl,
         streamUrl,
         bestOf,
         mapName,
