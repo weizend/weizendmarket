@@ -10511,12 +10511,6 @@ return;
   function mapName(t,rule){
     return rule?.mapName || rule?.map || t?.mapName || t?.map || 'Harita açıklanacak';
   }
-  function mapTypeText(t,rule){
-    const raw=String(rule?.mapType || t?.mapType || 'standard').toLowerCase();
-    if(raw==='collision' || raw==='collision_a') return 'Çarpışma';
-    if(raw==='custom') return 'Özel';
-    return 'Standart';
-  }
   function mapDisplayName(t,rule){
     const name=String(mapName(t,rule)||'').trim();
     return name || 'Harita açıklanacak';
@@ -10841,7 +10835,6 @@ return;
       modeText(t),
       Number(t.teamSize||1)>1 ? `${Number(t.teamSize||1)}v${Number(t.teamSize||1)}` : '1v1',
       mapDisplayName(t,rule),
-      mapTypeText(t,rule),
       matchFormat(t,rule),
       entryText(item)
     ].filter(Boolean).join(' '));
@@ -11064,7 +11057,6 @@ return;
     const team=Number(t.teamSize||1)>1;
     const map=mapName(t,rule);
     const mf=matchFormat(t,rule);
-    const mapType=String(rule?.mapType||t?.mapType||'standard').toLowerCase();
     const custom=String(rule?.rulesText||t?.rulesText||'').trim();
     const list=[];
 
@@ -11079,9 +11071,7 @@ return;
       );
     }
 
-    if(mapType==='collision' || mapType==='collision_a'){
-      list.push(['Çarpışma · Silah Kuralı','Vandal / Phantom serbesttir. Son round yalnızca Sheriff kullanılabilir.']);
-    }else if(!custom){
+    if(!custom){
       list.splice(2,0,['Silah Kuralları','Vandal / Phantom serbesttir. Özel round kuralları varsa turnuva detayında ayrıca belirtilir.']);
     }
 
@@ -11122,7 +11112,8 @@ return;
     return `<div class="wz-turn-strip">${defs.map(([id,name])=>`<button type="button" class="wz-turn-chip ${state.filter===id?'active':''}" onclick="wzTurnSetFilter('${id}')">${name}</button>`).join('')}</div>`;
   }
   function tournamentLogoUrl(item){
-    return 'https://i.hizliresim.com/fo5evkh4.png';
+    const t=item?.tournament||{}; const rule=item?.rule||{};
+    return String(rule?.logoImageUrl || t?.logoImageUrl || 'https://i.hizliresim.com/fo5evkh4.png').trim();
   }
   function tournamentHeroUrl(item){
     const t=item?.tournament||{}; const rule=item?.rule||{};
@@ -11264,7 +11255,6 @@ return;
         <div class="wz-turn-detailrow"><span>Oyun</span><b>${esc(gameName(t,rule))}</b></div>
         <div class="wz-turn-detailrow"><span>Format</span><b>${esc(modeText(t))} ${Number(t.teamSize||1)>1?'(Takımlı)':'(Solo)'}</b></div>
         <div class="wz-turn-detailrow"><span>Harita</span><b>${esc(mapDisplayName(t,rule))}</b></div>
-        <div class="wz-turn-detailrow"><span>Harita Türü</span><b>${esc(mapTypeText(t,rule))}</b></div>
         <div class="wz-turn-detailrow"><span>Maç Formatı</span><b>${esc(matchFormat(t,rule))}</b></div>
         <div class="wz-turn-detailrow"><span>Kontenjan</span><b>${Number(t.capacity||0)||'-'} ${Number(t.teamSize||1)>1?'Takım':'Oyuncu'}</b></div>
         <div class="wz-turn-detailrow"><span>Katılım</span><b>${esc(entryText(item))}</b></div>
@@ -11281,7 +11271,7 @@ return;
         <button type="button" class="wz-turn-subbtn ${state.bracketMode==='list'?'active':''}" onclick="wzTurnSetBracket('list')">Maç Listesi</button>
       </div>
       ${state.bracketMode==='tree' ? bracketTree(detail) : bracketList(detail)}
-      <div class="wz-turn-mapbox"><div class="wz-turn-mapcover"${mapStyle}></div><div class="wz-turn-mapcontent"><b>${esc(`${mapTypeText(t,rule)} ${mapDisplayName(t,rule)}`.trim())}</b><span>${esc(gameName(t,rule))} Harita Bilgisi</span></div></div>
+      <div class="wz-turn-mapbox"><div class="wz-turn-mapcover"${mapStyle}></div><div class="wz-turn-mapcontent"><b>${esc(mapDisplayName(t,rule))}</b><span>${esc(gameName(t,rule))} Harita Bilgisi</span></div></div>
     </div>`;
   }
 
@@ -11386,12 +11376,6 @@ return;
           <div class="wz-turn-hero-body">
           <div class="wz-turn-hero-title"><div class="wz-turn-h1">${esc(String(t.name||'Turnuva').replace(/cup/i,'').trim() || 'CUP')}</div></div>
         </div></div>
-        <div class="wz-turn-info-grid">
-          <div class="wz-turn-info"><b>${esc(modeText(t))}</b><span>${Number(t.teamSize||1)>1?'Takımlı':'Solo'}</span></div>
-          <div class="wz-turn-info"><b>${Number(t.capacity||0)||'-'}</b><span>${Number(t.teamSize||1)>1?'Takım':'Oyuncu'}</span></div>
-          <div class="wz-turn-info"><b>${esc(mapDisplayName(t,rule))}</b><span>Harita</span></div>
-          <div class="wz-turn-info"><b>${esc(matchFormat(t,rule))}</b><span>Maç Formatı</span></div>
-        </div>
         ${renderTournamentTimeline(item)}
         <button id="wzTurnRegisterBtn" type="button" class="wz-turn-register ${registrationIsOpen(item)?'':'is-disabled'}"
           onclick="wzTournamentRegistration('${esc(id)}')" ${registrationIsOpen(item) ? '' : 'disabled'}>KAYIT OL</button>
