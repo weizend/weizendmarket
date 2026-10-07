@@ -957,6 +957,36 @@ body.dmModalOpen{overflow:hidden}
 }
 
 </style>
+
+<style id="wz-admin-past-tournaments-v29">
+  .pastTournamentList{display:grid;gap:10px;margin-top:12px}
+  .pastTournamentItem{
+    display:flex;align-items:center;justify-content:space-between;gap:14px;
+    border:1px solid rgba(255,255,255,.09);background:#0d0d0d;
+    border-radius:14px;padding:14px 15px
+  }
+  .pastTournamentMain{min-width:0;flex:1}
+  .pastTournamentName{font-weight:950;color:#fff;font-size:1rem;line-height:1.3}
+  .pastTournamentMeta{
+    margin-top:6px;color:#9b9b9b;font-size:.82rem;line-height:1.5;
+    display:flex;gap:8px 12px;flex-wrap:wrap
+  }
+  .pastTournamentDelete{
+    flex:0 0 auto;width:auto!important;min-width:92px;
+    background:#351010!important;border:1px solid #752626!important;
+    color:#ff9c9c!important
+  }
+  .pastTournamentDelete:hover{background:#7b1c1c!important;color:#fff!important}
+  .pastTournamentEmpty{
+    border:1px dashed rgba(255,255,255,.12);border-radius:14px;
+    padding:24px 14px;text-align:center;color:#8d8d8d;background:#090909
+  }
+  @media(max-width:640px){
+    .pastTournamentItem{align-items:stretch;flex-direction:column}
+    .pastTournamentDelete{width:100%!important}
+  }
+</style>
+
 </head>
 
 <body>
@@ -2352,6 +2382,23 @@ body.dmModalOpen{overflow:hidden}
         </div>
 
         <div id="tournamentStatus" class="status"></div>
+      </div>
+
+      <div class="card" id="pastTournamentsCard">
+        <div class="sectionHeaderRow">
+          <div>
+            <h2>🗃️ Geçmiş Turnuvalar</h2>
+            <p class="muted">
+              Tamamlandı yaptığın turnuvalar otomatik olarak buraya taşınır. Burada yönetim paneli bulunmaz.
+              Turnuva kullanıcı tarafında Tamamlanan sekmesinde görünmeye devam eder; silersen kullanıcı tarafında da kaldırılır.
+            </p>
+          </div>
+          <button class="secondary smallButton" onclick="loadTournamentList(true)">🔄 Yenile</button>
+        </div>
+        <div id="pastTournamentList" class="pastTournamentList">
+          <div class="pastTournamentEmpty">Geçmiş turnuvalar yükleniyor...</div>
+        </div>
+        <div id="pastTournamentStatus" class="status"></div>
       </div>
 
 
@@ -7013,11 +7060,15 @@ async function loadTournamentList(force=false){
       currentTournamentEntries = null;
       currentTournamentBracket = null;
       document.getElementById('tournamentQuickInfo').innerHTML = '';
-      document.getElementById('tournamentEntrySummary').innerHTML = 'Henüz turnuva bulunmuyor.';
+      document.getElementById('tournamentEntrySummary').innerHTML = 'Yönetilecek aktif / pasif turnuva bulunmuyor.';
       document.getElementById('tournamentEntriesView').innerHTML = '';
-      document.getElementById('tournamentBracketSummary').innerHTML = 'Henüz turnuva bulunmuyor.';
+      document.getElementById('tournamentBracketSummary').innerHTML = 'Yönetilecek aktif / pasif turnuva bulunmuyor.';
       document.getElementById('tournamentBracketView').innerHTML = '';
-      showStatus('tournamentStatus','ℹ️ Henüz turnuva bulunmuyor.',true);
+      showStatus(
+        'tournamentStatus',
+        'ℹ️ Yönetilecek aktif / pasif turnuva bulunmuyor. Tamamlanan turnuvalar Geçmiş Turnuvalar bölümünde.',
+        true
+      );
     }
 
   }catch(error){
@@ -7034,7 +7085,12 @@ function renderTournamentOptions(){
   if(!select) return;
 
   const previous = select.value;
-  const list = [...tournamentCatalogCache];
+
+  // Tamamlanan turnuvalar artık yönetim seçiminde görünmez.
+  // Onlar aşağıdaki "Geçmiş Turnuvalar" bölümünde sade şekilde listelenir.
+  const list = tournamentCatalogCache.filter(
+    t => String(t?.lifecycleStatus || '').toLowerCase() !== 'completed'
+  );
 
   select.innerHTML = list.length
     ? list.map(t => {
@@ -7043,13 +7099,110 @@ function renderTournamentOptions(){
           : `${Number(t.teamSize)}v${Number(t.teamSize)}`;
         return `<option value="${esc(t.id)}">${esc(t.name)} · ${format} · ${esc(tournamentLifecycleText(t.lifecycleStatus))}</option>`;
       }).join('')
-    : '<option value="">Turnuva bulunamadı</option>';
+    : '<option value="">Yönetilecek aktif / pasif turnuva bulunamadı</option>';
 
   if(previous && list.some(t => String(t.id) === String(previous))){
     select.value = previous;
   }
 
   filterTournamentOptions();
+  renderPastTournaments();
+}
+
+function pastTournamentSortValue(item){
+  const candidates = [
+    item?.eventDate,
+    item?.updatedAt,
+    item?.updated_at,
+    item?.createdAt,
+    item?.created_at
+  ];
+  for(const value of candidates){
+    const ts = value ? Date.parse(value) : NaN;
+    if(Number.isFinite(ts)) return ts;
+  }
+  return 0;
+}
+
+function renderPastTournaments(){
+  const host = document.getElementById('pastTournamentList');
+  if(!host) return;
+
+  const list = tournamentCatalogCache
+    .filter(t => String(t?.lifecycleStatus || '').toLowerCase() === 'completed')
+    .sort((a,b) => pastTournamentSortValue(b) - pastTournamentSortValue(a));
+
+  if(!list.length){
+    host.innerHTML = '<div class="pastTournamentEmpty">Henüz tamamlanan turnuva yok.</div>';
+    return;
+  }
+
+  host.innerHTML = list.map(t => {
+    const teamSize = Math.max(1,Number(t?.teamSize || 1));
+    const format = teamSize <= 1 ? '1v1 Solo' : `${teamSize}v${teamSize} Takımlı`;
+    const date = t?.eventDate ? dateText(t.eventDate) : 'Tarih açıklanmadı';
+    const map = String(t?.mapName || '').trim();
+    const id = encodeURIComponent(String(t?.id || ''));
+
+    return `
+      <div class="pastTournamentItem">
+        <div class="pastTournamentMain">
+          <div class="pastTournamentName">🏁 ${esc(t?.name || 'Turnuva')}</div>
+          <div class="pastTournamentMeta">
+            <span>${esc(format)}</span>
+            <span>📅 ${esc(date)}</span>
+            ${map ? `<span>🗺️ ${esc(map)}</span>` : ''}
+            <span>✅ Tamamlandı</span>
+          </div>
+        </div>
+        <button class="danger pastTournamentDelete"
+          onclick="deletePastTournament('${id}')">🗑️ Sil</button>
+      </div>
+    `;
+  }).join('');
+}
+
+async function deletePastTournament(encodedId){
+  const tournamentId = decodeURIComponent(String(encodedId || ''));
+  if(!tournamentId) return;
+
+  const item = tournamentCatalogCache.find(
+    x => String(x?.id || '') === String(tournamentId)
+  );
+
+  if(!confirm(
+    `"${item?.name || tournamentId}" geçmiş turnuvalardan silinsin mi?\n\n` +
+    `Bu işlem turnuvayı kullanıcı tarafındaki Tamamlanan listesinden de kaldırır. Audit kayıtları korunur.`
+  )) return;
+
+  try{
+    showStatus('pastTournamentStatus','⏳ Turnuva siliniyor...',true);
+
+    const {r,d} = await api('/admin/tournament/delete',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({tournamentId})
+    });
+
+    if(!r.ok || !d?.success){
+      throw new Error(d?.error || `HTTP ${r.status}`);
+    }
+
+    tournamentCatalogCache = [];
+    await loadTournamentList(true);
+
+    showStatus(
+      'pastTournamentStatus',
+      '✅ Turnuva geçmişten ve kullanıcı tarafındaki Tamamlanan listesinden kaldırıldı.',
+      true
+    );
+  }catch(error){
+    showStatus(
+      'pastTournamentStatus',
+      '❌ ' + esc(error.message || error),
+      false
+    );
+  }
 }
 
 function filterTournamentOptions(){
@@ -7441,7 +7594,7 @@ async function setTournamentLifecycle(state){
         ? '✅ Turnuva aktif. Market Turnuva sekmesinde görünür.'
         : state === 'passive'
           ? '✅ Turnuva pasife alındı. Kullanıcı marketinde görünmez.'
-          : '✅ Turnuva tamamlandı. Market Turnuva sekmesinde TAMAMLANDI olarak görünür.';
+          : '✅ Turnuva tamamlandı. Yönetim listesinden Geçmiş Turnuvalar bölümüne taşındı ve kullanıcı tarafında TAMAMLANDI olarak görünür.';
 
     showStatus('tournamentStatus',successText,true);
 
