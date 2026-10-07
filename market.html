@@ -1455,7 +1455,7 @@ body.wz-view-tournament .market-search-wrap{display:none!important}
 .wz-turn-card-title{font-size:1.08rem;font-weight:1000;line-height:1.05;text-transform:uppercase;word-break:break-word}
 .wz-turn-card-sub{margin-top:4px;color:#d2d6dd;font-size:.73rem;font-weight:800;opacity:.88}
 .wz-turn-badge{
-  flex:0 0 auto;padding:8px 14px;border-radius:999px;font-size:.7rem;font-weight:1000;border:1px solid transparent
+  flex:0 1 auto;max-width:48%;padding:8px 14px;border-radius:999px;font-size:.7rem;font-weight:1000;border:1px solid transparent;line-height:1.2;text-align:center;white-space:normal
 }
 .wz-turn-badge.live{background:#ff2b2b;color:#fff}
 .wz-turn-badge.soon{background:#ffffff;color:#111}
@@ -1486,10 +1486,12 @@ body.wz-view-tournament .market-search-wrap{display:none!important}
 }
 .wz-turn-hero-cover{
   min-height:185px;padding:18px;display:flex;align-items:flex-end;position:relative;
-  background:
-    linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.68)),
-    radial-gradient(circle at 82% 22%,rgba(226,18,18,.40),transparent 24%),
-    linear-gradient(135deg,#311414 0%,#18212f 52%,#0d0f14 100%)
+  background-image:
+    linear-gradient(180deg,rgba(0,0,0,.06),rgba(0,0,0,.78)),
+    var(--wz-turn-cover-image, radial-gradient(circle at 82% 22%,rgba(226,18,18,.40),transparent 24%)),
+    linear-gradient(135deg,#311414 0%,#18212f 52%,#0d0f14 100%);
+  background-size:cover;
+  background-position:center
 }
 .wz-turn-hero-cover:before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(125deg,transparent 0 22px,rgba(255,255,255,.02) 23px 24px)}
 .wz-turn-hero-cover>*{position:relative;z-index:1}
@@ -1507,13 +1509,26 @@ body.wz-view-tournament .market-search-wrap{display:none!important}
 .wz-turn-info b{display:block;font-size:.95rem;margin-bottom:3px}
 .wz-turn-info span{display:block;color:#9ea2ab;font-size:.67rem;font-weight:700}
 .wz-turn-date-grid{
-  display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:12px
 }
 .wz-turn-date{
   border:1px solid #232730;background:#10141b;border-radius:14px;padding:12px
 }
 .wz-turn-date b{display:block;font-size:.9rem}
 .wz-turn-date span{display:block;margin-top:4px;color:#9ea2ab;font-size:.7rem}
+.wz-turn-livebox{margin:0 12px 12px;border:1px solid #35252a;background:linear-gradient(135deg,#1c1013,#10141b);border-radius:15px;padding:12px 13px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.wz-turn-livebox div{min-width:0}
+.wz-turn-livebox b{display:block;font-size:.86rem}
+.wz-turn-livebox span{display:block;color:#aeb2ba;font-size:.71rem;margin-top:3px}
+.wz-turn-livebox a{flex:0 0 auto;text-decoration:none;color:#fff;background:#e31b1b;border-radius:11px;padding:9px 11px;font-size:.72rem;font-weight:1000}
+.wz-turn-schedule{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 14px}
+.wz-turn-schedule-item{border:1px solid #242a34;background:#10141b;border-radius:14px;padding:11px}
+.wz-turn-schedule-item small{display:block;color:#8f949d;font-size:.66rem;font-weight:900;text-transform:uppercase;margin-bottom:6px}
+.wz-turn-schedule-item b{display:block;font-size:.78rem;line-height:1.4}
+.wz-turn-stream-note{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid #39262b;background:#180e11;border-radius:14px;padding:11px 12px;margin:12px 0}
+.wz-turn-stream-note strong{font-size:.78rem}
+.wz-turn-stream-note span{display:block;color:#a9adb5;font-size:.69rem;margin-top:3px}
+.wz-turn-stream-note a{color:#fff;text-decoration:none;font-size:.72rem;font-weight:1000;background:#d71920;padding:8px 10px;border-radius:10px}
 .wz-turn-register{
   width:calc(100% - 24px);margin:0 12px 14px;min-height:50px;border:0;border-radius:16px;background:linear-gradient(180deg,#ff4242,#c10f0f);color:#fff;font-size:.96rem;font-weight:1000;box-shadow:0 10px 24px rgba(226,18,18,.25);cursor:pointer
 }
@@ -1598,6 +1613,9 @@ body.wz-view-tournament .market-search-wrap{display:none!important}
   .wz-turn-info-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
 }
 @media(max-width:520px){
+  .wz-turn-date-grid,.wz-turn-schedule{grid-template-columns:1fr}
+  .wz-turn-livebox,.wz-turn-stream-note{align-items:flex-start;flex-direction:column}
+  .wz-turn-livebox a,.wz-turn-stream-note a{width:100%;text-align:center}
   .wz-turn-info-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
   .wz-turn-info{padding:10px 6px}
   .wz-turn-info b{font-size:.82rem}
@@ -7051,7 +7069,9 @@ return;
         const lifecycle = String(item?.tournament?.lifecycleStatus || '').toLowerCase();
         if (['completed','in_progress','registration_complete','registration_closed'].includes(lifecycle)) return true;
         if (!item?.tournament?.registrationOpen) return true;
-        const close = item?.rule?.registrationClosesAt;
+        const open = item?.rule?.registrationOpensAt || item?.tournament?.registrationOpensAt;
+        if (open && Number.isFinite(Date.parse(open)) && Date.now() < Date.parse(open)) return true;
+        const close = item?.rule?.registrationClosesAt || item?.tournament?.registrationClosesAt;
         return Boolean(close && Number.isFinite(Date.parse(close)) && Date.now() >= Date.parse(close));
     }
 
@@ -7080,10 +7100,24 @@ return;
                     tournament,
                     rule:{
                         entryMode:tournament.entryMode || (Number(tournament.feePerPlayerCents || 0) > 0 ? 'tl' : 'free'),
+                        registrationOpensAt:tournament.registrationOpensAt || null,
                         registrationClosesAt:tournament.registrationClosesAt || null,
                         comingSoon:tournament.comingSoon === true,
                         gameName:tournament.gameName || 'VALORANT',
-                        gameIdLabel:tournament.gameIdLabel || 'VALORANT ID'
+                        gameIdLabel:tournament.gameIdLabel || 'VALORANT ID',
+                        aboutText:tournament.aboutText || '',
+                        heroImageUrl:tournament.heroImageUrl || '',
+                        streamUrl:tournament.streamUrl || 'https://kick.com/weizend',
+                        bestOf:tournament.bestOf || 'BO1',
+                        matchFormat:tournament.matchFormat || tournament.bestOf || 'BO1',
+                        mapName:tournament.mapName || null,
+                        mapType:tournament.mapType || 'standard',
+                        rulesText:tournament.rulesText || '',
+                        firstPrize:tournament.firstPrize || '',
+                        secondPrize:tournament.secondPrize || '',
+                        thirdPrize:tournament.thirdPrize || '',
+                        predictionPrize:tournament.predictionPrize || '',
+                        thirdPlaceEnabled:tournament.thirdPlaceEnabled === true
                     },
                     teams:[],
                     legacySolo:String(tournament.mode || '') === 'solo'
@@ -10164,20 +10198,49 @@ return;
     return String(t.lifecycleStatus || (t.registrationOpen?'registration_open':'registration_closed'));
   }
   function comingSoon(item){ return item?.rule?.comingSoon===true || item?.tournament?.comingSoon===true; }
-  function statusClass(item){
+  function registrationOpenAt(item){ return item?.rule?.registrationOpensAt || item?.tournament?.registrationOpensAt || null; }
+  function registrationCloseAt(item){ return item?.rule?.registrationClosesAt || item?.tournament?.registrationClosesAt || null; }
+  function registrationPhase(item){
     const l=lifecycle(item);
-    if(l==='completed') return 'done';
+    if(comingSoon(item) && !['completed','in_progress'].includes(l)) return 'soon';
+    if(l==='completed') return 'completed';
     if(l==='in_progress') return 'live';
-    if(comingSoon(item) && l!=='completed') return 'soon';
-    if(l==='registration_open') return 'open';
+    if(l==='registration_complete') return 'full';
+    if(l==='passive') return 'passive';
+    if(!item?.tournament?.registrationOpen) return 'closed';
+    const now=Date.now();
+    const open=registrationOpenAt(item); const close=registrationCloseAt(item);
+    const openTs=open?Date.parse(open):NaN; const closeTs=close?Date.parse(close):NaN;
+    if(Number.isFinite(openTs) && now<openTs) return 'scheduled';
+    if(Number.isFinite(closeTs) && now>=closeTs) return 'closed';
     return 'open';
   }
-  function statusLabel(item){
-    const l=lifecycle(item);
-    if(comingSoon(item) && l!=='completed' && l!=='in_progress') return 'YAKLAŞAN';
-    const map={completed:'TAMAMLANDI',in_progress:'CANLI',registration_open:'AKTİF',registration_closed:'KAPALI',registration_complete:'KAYIT DOLU',passive:'PASİF'};
-    return map[l] || 'AKTİF';
+  function statusClass(item){
+    const p=registrationPhase(item);
+    if(p==='completed') return 'done';
+    if(p==='live') return 'live';
+    if(['soon','scheduled'].includes(p)) return 'soon';
+    return 'open';
   }
+  function formatBadgeDate(value){
+    if(!value) return '';
+    try{
+      const d=new Date(value); if(Number.isNaN(d.getTime())) return '';
+      return d.toLocaleString('tr-TR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).toLocaleUpperCase('tr-TR');
+    }catch(_){ return ''; }
+  }
+  function statusLabel(item){
+    const p=registrationPhase(item);
+    if(p==='soon') return 'YAKINDA';
+    if(p==='completed') return 'TAMAMLANDI';
+    if(p==='live') return 'CANLI';
+    if(p==='full') return 'KAYITLAR DOLU';
+    if(p==='passive') return 'PASİF';
+    if(p==='scheduled') return `KAYIT AÇILIŞI ${formatBadgeDate(registrationOpenAt(item))}`;
+    if(p==='closed') return 'KAYITLAR KAPALI';
+    return 'KAYITLAR AÇIK';
+  }
+  function registrationIsOpen(item){ return registrationPhase(item)==='open'; }
   function modeText(t){
     const n=Math.max(1,Number(t?.teamSize||1));
     return n<=1?'1v1':'%sv%s'.replace('%s',n).replace('%s',n);
@@ -10188,7 +10251,23 @@ return;
   function mapName(t,rule){
     return rule?.mapName || rule?.map || t?.mapName || t?.map || 'Harita açıklanacak';
   }
+  function mapTypeText(t,rule){
+    const raw=String(rule?.mapType || t?.mapType || 'standard').toLowerCase();
+    if(raw==='collision' || raw==='collision_a') return 'Çarpışma';
+    if(raw==='custom') return 'Özel';
+    return 'Standart';
+  }
   function gameName(t,rule){ return rule?.gameName || t?.gameName || 'VALORANT'; }
+  function safeHttpUrl(value){
+    try{
+      const u=new URL(String(value||'').trim());
+      return ['https:','http:'].includes(u.protocol) ? u.href : '';
+    }catch(_){ return ''; }
+  }
+  function cssUrl(value){
+    const u=safeHttpUrl(value); if(!u) return '';
+    return encodeURI(u).replace(/[()'\"]/g,ch=>'%' + ch.charCodeAt(0).toString(16).toUpperCase());
+  }
   function formatDate(value){
     if(!value) return 'Tarih açıklanmadı';
     try{ const d=new Date(value); return Number.isNaN(d.getTime())?String(value):d.toLocaleString('tr-TR',{dateStyle:'medium',timeStyle:'short'}); }catch(_){ return String(value); }
@@ -10211,7 +10290,7 @@ return;
     return list.filter(item=>{
       const l=lifecycle(item);
       if(state.filter==='all') return l!=='completed' && l!=='passive';
-      if(state.filter==='soon') return comingSoon(item) && l!=='completed';
+      if(state.filter==='soon') return (comingSoon(item) || registrationPhase(item)==='scheduled') && l!=='completed';
       if(state.filter==='live') return l==='in_progress';
       if(state.filter==='done') return l==='completed';
       return true;
@@ -10346,8 +10425,8 @@ return;
       );
     }
 
-    if(mapType==='collision_a'){
-      list.push(['Çarpışma Haritası A · Silah Kuralı','Vandal / Phantom serbesttir. Son round yalnızca Sheriff kullanılabilir.']);
+    if(mapType==='collision' || mapType==='collision_a'){
+      list.push(['Çarpışma · Silah Kuralı','Vandal / Phantom serbesttir. Son round yalnızca Sheriff kullanılabilir.']);
     }else if(!custom){
       list.splice(2,0,['Silah Kuralları','Vandal / Phantom serbesttir. Özel round kuralları varsa turnuva detayında ayrıca belirtilir.']);
     }
@@ -10458,17 +10537,28 @@ return;
   }
   function renderOverview(detail,item){
     const t=detail?.tournament||item?.tournament||{}; const rule=item?.rule||{};
-    const about=`${t.name || 'Bu turnuva'}, ${modeText(t)} formatında düzenlenen, rekabet dolu bir ${gameName(t,rule)} turnuvasıdır. Turnuva detayları ve fikstür bilgileri aşağıda görüntülenir.`;
+    const fallbackAbout=`${t.name || 'Bu turnuva'}, ${modeText(t)} formatında düzenlenen bir ${gameName(t,rule)} turnuvasıdır. Kayıt takvimi, maç formatı, harita ve canlı yayın bilgileri aşağıda açıkça gösterilir.`;
+    const about=String(rule?.aboutText || t?.aboutText || fallbackAbout).trim() || fallbackAbout;
+    const stream=safeHttpUrl(rule?.streamUrl || t?.streamUrl || 'https://kick.com/weizend');
+    const openAt=registrationOpenAt(item); const closeAt=registrationCloseAt(item);
+    const startAt=t.eventDate || null;
     return `<div class="wz-turn-box">
       <h3>Turnuva Hakkında</h3>
       <div class="wz-turn-about">${esc(about)}</div>
+      <div class="wz-turn-schedule">
+        <div class="wz-turn-schedule-item"><small>Kayıt Açılışı</small><b>${esc(comingSoon(item)?'YAKINDA':formatDate(openAt))}</b></div>
+        <div class="wz-turn-schedule-item"><small>Kayıt Kapanışı</small><b>${esc(comingSoon(item)?'YAKINDA':formatDate(closeAt))}</b></div>
+        <div class="wz-turn-schedule-item"><small>Turnuva Başlangıcı</small><b>${esc(comingSoon(item)?'YAKINDA':formatDate(startAt))}</b></div>
+      </div>
+      <div class="wz-turn-stream-note"><div><strong>🔴 CANLI YAYIN · KICK / WEIZEND</strong><span>Tüm turnuva maçları kick.com/weizend kanalında canlı yayınlanır.</span></div>${stream?`<a href="${esc(stream)}" target="_blank" rel="noopener noreferrer">YAYINI AÇ</a>`:''}</div>
       <div class="wz-turn-detailrows">
         <div class="wz-turn-detailrow"><span>Oyun</span><b>${esc(gameName(t,rule))}</b></div>
         <div class="wz-turn-detailrow"><span>Format</span><b>${esc(modeText(t))} ${Number(t.teamSize||1)>1?'(Takımlı)':'(Solo)'}</b></div>
         <div class="wz-turn-detailrow"><span>Harita</span><b>${esc(mapName(t,rule))}</b></div>
+        <div class="wz-turn-detailrow"><span>Harita Türü</span><b>${esc(mapTypeText(t,rule))}</b></div>
         <div class="wz-turn-detailrow"><span>Maç Formatı</span><b>${esc(matchFormat(t,rule))}</b></div>
         <div class="wz-turn-detailrow"><span>Kontenjan</span><b>${Number(t.capacity||0)||'-'} ${Number(t.teamSize||1)>1?'Takım':'Oyuncu'}</b></div>
-        <div class="wz-turn-detailrow"><span>Kayıt Kapanışı</span><b>${esc(formatShortTime(t.registrationCloseAt || t.registrationClosesAt || t.eventDate))}</b></div>
+        <div class="wz-turn-detailrow"><span>Katılım</span><b>${esc(entryText(item))}</b></div>
       </div>
     </div>`;
   }
@@ -10564,7 +10654,6 @@ return;
     const t=item?.tournament||{}; const rule=item?.rule||{}; const id=String(t.id||'');
     const detail=state.details.get(id) || null;
     const status=statusClass(item);
-    const loading = !detail;
     const tabButtons=[['overview','Genel Bakış'],['rules','Kurallar'],['prizes','Ödüller'],['bracket','Fikstür'],['predictions','Tahminler']];
     let panel = `<div class="wz-turn-loading">Turnuva detayları yükleniyor...</div>`;
     if(detail?.__error) panel = `<div class="wz-turn-empty">${esc(detail.__error)}</div>`;
@@ -10575,23 +10664,29 @@ return;
       if(state.tab==='bracket') panel = renderBracket(detail,item);
       if(state.tab==='predictions') panel = renderPredictions(detail,item);
     }
+    const heroImage=cssUrl(rule?.heroImageUrl || t?.heroImageUrl || '');
+    const heroStyle=heroImage ? ` style="--wz-turn-cover-image:url(${heroImage})"` : '';
+    const stream=safeHttpUrl(rule?.streamUrl || t?.streamUrl || 'https://kick.com/weizend');
+    const openAt=registrationOpenAt(item); const closeAt=registrationCloseAt(item);
     return `<div class="wz-turn-detail-page">
       <div class="wz-turn-detail-top"><button type="button" class="wz-turn-back" onclick="wzTurnBack()">←</button><div class="wz-turn-brand">WEIZEND</div></div>
       <section class="wz-turn-hero">
-        <div class="wz-turn-hero-cover"><div class="wz-turn-hero-body">
+        <div class="wz-turn-hero-cover"${heroStyle}><div class="wz-turn-hero-body">
           <div class="wz-turn-hero-title"><div class="wz-turn-h1">${esc(String(t.name||'Turnuva').replace(/cup/i,'').trim() || 'CUP')}</div><span class="wz-turn-badge ${status}">${esc(statusLabel(item))}</span></div>
         </div></div>
         <div class="wz-turn-info-grid">
           <div class="wz-turn-info"><b>${esc(modeText(t))}</b><span>${Number(t.teamSize||1)>1?'Takımlı':'Solo'}</span></div>
           <div class="wz-turn-info"><b>${Number(t.capacity||0)||'-'}</b><span>${Number(t.teamSize||1)>1?'Takım':'Oyuncu'}</span></div>
-          <div class="wz-turn-info"><b>${esc(mapName(t,rule))}</b><span>Harita</span></div>
+          <div class="wz-turn-info"><b>${esc(mapName(t,rule))}</b><span>${esc(mapTypeText(t,rule))} Harita</span></div>
           <div class="wz-turn-info"><b>${esc(matchFormat(t,rule))}</b><span>Maç Formatı</span></div>
         </div>
         <div class="wz-turn-date-grid">
-          <div class="wz-turn-date"><b>${esc(formatDate(t.eventDate))}</b><span>Turnuva Tarihi</span></div>
-          <div class="wz-turn-date"><b>${esc(formatShortTime(t.registrationCloseAt || t.registrationClosesAt || t.eventDate))}</b><span>Kayıt Kapanışı</span></div>
+          <div class="wz-turn-date"><b>${esc(comingSoon(item)?'YAKINDA':formatDate(openAt))}</b><span>Kayıt Açılışı</span></div>
+          <div class="wz-turn-date"><b>${esc(comingSoon(item)?'YAKINDA':formatDate(closeAt))}</b><span>Kayıt Kapanışı</span></div>
+          <div class="wz-turn-date"><b>${esc(comingSoon(item)?'YAKINDA':formatDate(t.eventDate))}</b><span>Turnuva Başlangıcı</span></div>
         </div>
-        ${(lifecycle(item)==='registration_open') ? `<button type="button" class="wz-turn-register" onclick="wzTournamentRegistration('${esc(id)}')">KAYIT OL</button>` : ''}
+        <div class="wz-turn-livebox"><div><b>🔴 CANLI YAYIN · KICK / WEIZEND</b><span>Turnuva maçları kick.com/weizend kanalında canlı yayınlanır.</span></div>${stream?`<a href="${esc(stream)}" target="_blank" rel="noopener noreferrer">YAYINI AÇ</a>`:''}</div>
+        ${registrationIsOpen(item) ? `<button type="button" class="wz-turn-register" onclick="wzTournamentRegistration('${esc(id)}')">KAYIT OL</button>` : ''}
         <nav class="wz-turn-tabs">${tabButtons.map(([id2,name])=>`<button type="button" class="wz-turn-tab ${state.tab===id2?'active':''}" onclick="wzTurnSetTab('${id2}')">${name}</button>`).join('')}</nav>
         <div class="wz-turn-panel">${panel}</div>
       </section>
