@@ -30,6 +30,14 @@
 html.wz-boot body{
   visibility:hidden!important;
 }
+
+/* İlk görünüm hazırlanırken eski Market aktif rengi / buton durumları
+   bir kare bile animasyonla görünmesin. */
+html.wz-boot *,
+body.wz-initializing *{
+  transition:none!important;
+  animation:none!important;
+}
 </style>
 
     <meta charset="UTF-8">
@@ -2562,6 +2570,16 @@ body.wz-page-modal-open{
 
 </head>
 <body>
+<script id="wz-v58-prepaint-view">
+(function(){
+  try{
+    const view=(window.__WZ_INITIAL_VIEW__ || 'market');
+    document.body.classList.add('wz-initializing','wz-view-'+view);
+  }catch(_){
+    document.body.classList.add('wz-initializing','wz-view-market');
+  }
+})();
+</script>
 
 <div class="wz-appbar" id="wzAppbar">
   <div class="wz-appbar-inner">
@@ -3734,9 +3752,35 @@ body.wz-page-modal-open{
             localStorage.removeItem('weizend_market_auth_state');
             localStorage.removeItem('weizend_market_profile');
 
-            // Market her zaman görünür. Doğrulanmamış kullanıcı ürünleri inceleyebilir
-            // ancak işlem yapamaz; işlem butonu doğrulama alanına yönlendirir.
-            marketAuthenticated = false;
+            // İlk ürün render'ında tarayıcıda geçerli bir güvenli session tokenı
+            // bulunuyorsa kullanıcıyı "geçici misafir" gibi çizme.
+            // Worker arka planda tokenı yine doğrular; güvenlik kararı sunucudadır.
+            const bootSessionToken = localStorage.getItem(SESSION_STORAGE_KEY) || '';
+            marketAuthenticated = !!bootSessionToken;
+
+            if (bootSessionToken) {
+                try {
+                    const cachedProfile = JSON.parse(
+                        localStorage.getItem(PROFILE_CACHE_KEY) || 'null'
+                    );
+                    if (cachedProfile) {
+                        currentAccountStatus = String(
+                            cachedProfile.accountStatus || 'active'
+                        ).toLowerCase();
+                        currentBlockedReason = String(
+                            cachedProfile.blockedReason || ''
+                        ).trim();
+                        currentUsername = normalizeUsername(
+                            cachedProfile.username || localStorage.getItem(USER_STORAGE_KEY) || ''
+                        );
+                        currentMarketPoints = readNumber(cachedProfile.points) ?? 0;
+                    }
+                } catch (_) {}
+            } else {
+                currentAccountStatus = 'active';
+                currentBlockedReason = '';
+            }
+
             urunleriYukle('Tümü');
             marketInitialized = true;
 
@@ -10550,12 +10594,17 @@ return;
     // Restore exactly the section that was open before refresh.
     window.wzSetView(currentView);
 
-    // Tournament view renders from a zero-delay task. Queue our reveal after it.
+    // Tournament/Profile/Market doğru görünüm sınıfları uygulanmadan hiçbir ara tema gösterme.
+    // İlk boyamada transition kapalı kalır; sonraki frame'de normal animasyonlar açılır.
     setTimeout(()=>{
       requestAnimationFrame(()=>{
         document.body.classList.add('wz-ready');
         document.documentElement.classList.remove('wz-boot');
         document.documentElement.removeAttribute('data-wz-initial-view');
+
+        requestAnimationFrame(()=>{
+          document.body.classList.remove('wz-initializing');
+        });
       });
     },0);
 
