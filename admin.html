@@ -5463,11 +5463,13 @@ function connectAdminRealtime(){
 
     if(!message || message.type === 'connected') return;
 
-    if(
-      message.type === 'profile_changed' &&
-      adminRealtimeReason(message) === 'admin_inbox_changed'
-    ){
-      scheduleAdminInboxRealtimeRefresh();
+    if(message.type === 'profile_changed'){
+      // Admin realtime kanalı esas olarak inbox değişikliklerini taşır.
+      // reason alanı edge/realtime sürümünde kaybolsa bile konuşmaları yenile.
+      const reason = adminRealtimeReason(message);
+      if(!reason || reason === 'admin_inbox_changed'){
+        scheduleAdminInboxRealtimeRefresh();
+      }
     }
   };
 
@@ -5533,7 +5535,9 @@ async function refreshAdminInboxAfterRealtime(){
 let adminLastFallbackAt=0;
 async function pollAdminMessagesOnly(){
   if(!token() || document.hidden) return;
-  const fallbackMs=adminRealtimeSocket?.readyState===WebSocket.OPEN ? 60000 : 10000;
+  // Realtime açık olsa bile mesaj sayacı için 10 saniyelik hafif güvence kontrolü.
+  // Böylece payload eksik/kaçmış olsa dahi kullanıcı mesajı kaybolmuş gibi görünmez.
+  const fallbackMs=10000;
   if(Date.now()-adminLastFallbackAt<fallbackMs) return;
   adminLastFallbackAt=Date.now();
 
@@ -5551,20 +5555,28 @@ async function pollAdminMessagesOnly(){
 }
 
 function startAdminMessagesPolling(){
-  // WebSocket ana yöntemdir. Mobil tarayıcı WebSocket'i uykuya alır veya
-  // bağlantıyı keserse mesajlaşma 10 saniyede; bağlantı açıkken güvence amacıyla 60 saniyede kontrol edilir.
+  // V33: sürekli polling YOK.
+  // İlk açılışta bir kez rozeti eşitle, sonrasında yalnız Realtime olayıyla yenile.
   if(adminMessagesPollTimer){
     clearInterval(adminMessagesPollTimer);
     adminMessagesPollTimer = null;
   }
 
-  refreshAdminMessagesBadge().catch(() => {});
+  refreshAdminMessagesBadge().catch(()=>{});
   connectAdminRealtime();
-
-  adminMessagesPollTimer = setInterval(() => {
-    pollAdminMessagesOnly().catch(() => {});
-  },10000);
 }
+
+function wakeAdminMessagesWatcher(){
+  if(!token()) return;
+  // Yalnız sekmeye/uygulamaya geri dönüldüğünde tek senkron kontrol.
+  refreshAdminInboxAfterRealtime().catch(()=>{});
+  connectAdminRealtime();
+}
+
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden) wakeAdminMessagesWatcher();
+});
+window.addEventListener('focus',wakeAdminMessagesWatcher);
 
 async function refreshAdminMessagesBadge(){
   if(adminMessagesPollInFlight || !token()) return;
