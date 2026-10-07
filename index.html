@@ -10269,27 +10269,43 @@ return;
   function finalInfo(detail){
     const matches=Array.isArray(detail?.matches)?detail.matches:[];
     if(!matches.length) return {champion:'',runner:'',third:''};
-    const maxRound=Math.max(...matches.map(m=>Number(m.roundNumber||0)));
-    const finals=matches.filter(m=>Number(m.roundNumber||0)===maxRound);
-    const final=finals.find(m=>m.winnerName) || finals[0] || null;
-    let champion='', runner='';
+
+    const main=matches.filter(m=>String(m.matchKind||'main')!=='third_place');
+    const base=main.length?main:matches;
+    const maxRound=Math.max(...base.map(m=>Number(m.roundNumber||0)));
+    const final=
+      base.find(m=>Number(m.roundNumber||0)===maxRound && Number(m.matchNumber||0)===1) ||
+      base.find(m=>Number(m.roundNumber||0)===maxRound) ||
+      null;
+
+    let champion='',runner='';
     if(final){
       champion=String(final.winnerName||'');
       const a=String(final.participantAName||'');
       const b=String(final.participantBName||'');
-      if(champion){ runner=(a && a!==champion)?a:((b && b!==champion)?b:''); }
+      if(champion) runner=(a&&a!==champion)?a:((b&&b!==champion)?b:'');
     }
+
+    const thirdMatch=matches.find(m=>String(m.matchKind||'')==='third_place');
     let third='';
-    const semis=matches.filter(m=>Number(m.roundNumber||0)===maxRound-1);
-    if(semis.length===2){
-      const losers=[];
-      semis.forEach(m=>{
-        const a=String(m.participantAName||''); const b=String(m.participantBName||''); const w=String(m.winnerName||'');
-        if(a && a!==w) losers.push(a);
-        if(b && b!==w) losers.push(b);
-      });
-      third=losers[0]||'';
+
+    if(thirdMatch){
+      third=String(thirdMatch.winnerName||'');
+    }else{
+      const semis=base.filter(m=>Number(m.roundNumber||0)===maxRound-1);
+      if(semis.length===2){
+        const losers=[];
+        semis.forEach(m=>{
+          const a=String(m.participantAName||'');
+          const b=String(m.participantBName||'');
+          const w=String(m.winnerName||'');
+          if(a&&a!==w) losers.push(a);
+          if(b&&b!==w) losers.push(b);
+        });
+        third=losers[0]||'';
+      }
     }
+
     return {champion,runner,third};
   }
   function cardGameIcon(name){
@@ -10310,15 +10326,32 @@ return;
     ];
   }
   function defaultRules(item){
-    const t=item?.tournament||{}; const rule=item?.rule||{}; const team=Number(t.teamSize||1)>1;
-    const map=mapName(t,rule); const mf=matchFormat(t,rule);
-    const list=[
-      ['Genel Kurallar','Organizasyon duyuruları bağlayıcıdır. Maç saatinde hazır bulunmak ve belirtilen kurallara uymak zorunludur.'],
-      ['Harita Kuralları',`${map} haritası kullanılır. Harita veya özel format organizasyon duyurusuna göre güncellenebilir.`],
-      ['Silah Kuralları','Vandal / Phantom serbesttir. Özel round kuralları varsa turnuva detayında ayrıca belirtilir.'],
-      ['İletişim Kuralları', team ? 'Oyuncular yalnızca kendi takım arkadaşlarıyla konuşabilir. Grup konuşması ve rakiple iletişim yasaktır.' : 'Oyuncu, maç süresince rekabet bütünlüğünü bozacak harici iletişim araçları kullanamaz.' ],
-      ['Maç Kuralları',`Maç formatı ${mf}. İtiraz ve sonuç değerlendirmelerinde organizasyon kararı esastır.`]
-    ];
+    const t=item?.tournament||{};
+    const rule=item?.rule||{};
+    const team=Number(t.teamSize||1)>1;
+    const map=mapName(t,rule);
+    const mf=matchFormat(t,rule);
+    const mapType=String(rule?.mapType||t?.mapType||'standard').toLowerCase();
+    const custom=String(rule?.rulesText||t?.rulesText||'').trim();
+    const list=[];
+
+    if(custom){
+      list.push(['Özel Turnuva Kuralları',custom]);
+    }else{
+      list.push(
+        ['Genel Kurallar','Organizasyon duyuruları bağlayıcıdır. Maç saatinde hazır bulunmak ve belirtilen kurallara uymak zorunludur.'],
+        ['Harita Kuralları',`${map} haritası kullanılır. Harita veya özel format organizasyon duyurusuna göre güncellenebilir.`],
+        ['İletişim Kuralları',team?'Oyuncular yalnızca kendi takım arkadaşlarıyla konuşabilir. Grup konuşması ve rakiple iletişim yasaktır.':'Oyuncu, maç süresince rekabet bütünlüğünü bozacak harici iletişim araçları kullanamaz.'],
+        ['Maç Kuralları',`Maç formatı ${mf}. İtiraz ve sonuç değerlendirmelerinde organizasyon kararı esastır.`]
+      );
+    }
+
+    if(mapType==='collision_a'){
+      list.push(['Çarpışma Haritası A · Silah Kuralı','Vandal / Phantom serbesttir. Son round yalnızca Sheriff kullanılabilir.']);
+    }else if(!custom){
+      list.splice(2,0,['Silah Kuralları','Vandal / Phantom serbesttir. Özel round kuralları varsa turnuva detayında ayrıca belirtilir.']);
+    }
+
     return list;
   }
 
@@ -10392,6 +10425,7 @@ return;
           const wa=String(match.winnerName||'')===String(match.participantAName||'');
           const wb=String(match.winnerName||'')===String(match.participantBName||'');
           return `<div class="wz-turn-match">
+            ${String(match.matchKind||'main')==='third_place'?`<div style="font-size:.66rem;font-weight:900;color:#ffcf66;margin:0 0 6px;">🥉 3.'LÜK MAÇI</div>`:''}
             <div class="wz-turn-team ${wa?'win':''}"><span>${esc(match.participantAName||'Bekleniyor')}</span><span class="wz-turn-score">${esc(sa||'')}</span></div>
             <div class="wz-turn-team ${wb?'win':''}"><span>${esc(match.participantBName||'Bekleniyor')}</span><span class="wz-turn-score">${esc(sb||'')}</span></div>
           </div>`;
@@ -10403,12 +10437,13 @@ return;
     if(!matches.length) return `<div class="wz-turn-empty">Henüz maç listesi oluşturulmadı.</div>`;
     return `<div class="wz-turn-matchlist">${matches.slice().sort((a,b)=>Number(a.roundNumber||0)-Number(b.roundNumber||0)||Number(a.matchNumber||0)-Number(b.matchNumber||0)).map(m=>{
       const raw=typeof m.result==='object' && m.result ? String(m.result.score||'-') : '-';
-      return `<div class="wz-turn-matchrow"><small>M${Number(m.matchNumber||0)}</small><b>${esc((m.participantAName||'Bekleniyor')+' vs '+(m.participantBName||'Bekleniyor'))}</b><span>${esc(m.winnerName?raw:'Bekleniyor')}</span></div>`;
+      const label=String(m.matchKind||'main')==='third_place' ? "🥉 3.'lük" : `M${Number(m.matchNumber||0)}`;
+      return `<div class="wz-turn-matchrow"><small>${esc(label)}</small><b>${esc((m.participantAName||'Bekleniyor')+' vs '+(m.participantBName||'Bekleniyor'))}</b><span>${esc(m.winnerName?raw:'Bekleniyor')}</span></div>`;
     }).join('')}</div>`;
   }
   function renderRules(item){
     const rules=defaultRules(item);
-    return `<div class="wz-turn-box"><h3>Turnuva Kuralları</h3><div class="wz-turn-acc">${rules.map((r,i)=>`<div class="wz-turn-accitem ${state.openRules.has(i)?'open':''}"><button type="button" class="wz-turn-accbtn" onclick="wzTurnToggleRule(${i})"><span>${esc(r[0])}</span><span>${state.openRules.has(i)?'−':'+'}</span></button><div class="wz-turn-acccontent">${esc(r[1])}</div></div>`).join('')}</div></div>`;
+    return `<div class="wz-turn-box"><h3>Turnuva Kuralları</h3><div class="wz-turn-acc">${rules.map((r,i)=>`<div class="wz-turn-accitem ${state.openRules.has(i)?'open':''}"><button type="button" class="wz-turn-accbtn" onclick="wzTurnToggleRule(${i})"><span>${esc(r[0])}</span><span>${state.openRules.has(i)?'−':'+'}</span></button><div class="wz-turn-acccontent" style="white-space:pre-line">${esc(r[1])}</div></div>`).join('')}</div></div>`;
   }
   function renderPrizes(detail,item){
     const prizes=extractPrizes(detail,item); const fin=finalInfo(detail);
@@ -10519,7 +10554,7 @@ return;
         }).join('')}
       </div>
       ${unlocked?`<button type="button" class="wz-predict-save" onclick="wzTurnSavePredictions('${esc(t.id)}')">TAHMİNLERİMİ KAYDET</button>`:''}
-      <div class="wz-predict-note">Bu V9 arayüzünde seçimler test amacıyla cihazda saklanır. Gerçek kullanıcılar arası tahmin sıralaması ve admin ödül tanımlaması için Worker/Admin bağlantısını ayrıca ekleyeceğiz.</div>
+      <div class="wz-predict-note">Tahmin ödülü admin panelinden gelir. Seçimler ise şimdilik test amacıyla yalnızca bu cihazda saklanır; gerçek kullanıcılar arası tahmin sıralaması ikinci aşamada Worker'a bağlanacaktır.</div>
     </div>`;
   }
 
