@@ -1417,6 +1417,115 @@ body.dmModalOpen{overflow:hidden}
 }
 </style>
 
+
+<style id="wz-admin-template-library-v36">
+.templateLibrary{
+  margin:0 0 18px;
+  padding:14px;
+  border:1px solid #303030;
+  border-radius:14px;
+  background:#090909;
+}
+.templateLibraryHead{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:10px;
+}
+.templateLibraryHead b{font-size:.96rem}
+.templateLibraryHead span{
+  display:block;
+  margin-top:3px;
+  color:#8c8c8c;
+  font-size:.78rem;
+  line-height:1.4;
+}
+.templateList{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+.templateItem{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:8px;
+  align-items:stretch;
+}
+.templatePick{
+  width:100%!important;
+  min-width:0!important;
+  padding:10px 12px!important;
+  text-align:left!important;
+  background:#121212!important;
+  border:1px solid #303030!important;
+  color:#fff!important;
+  border-radius:11px!important;
+  font-weight:700!important;
+}
+.templatePick:hover{
+  background:#191919!important;
+  border-color:#555!important;
+  filter:none!important;
+}
+.templateItem.selected .templatePick{
+  background:#241708!important;
+  border-color:#8b6518!important;
+  box-shadow:inset 3px 0 0 #f0b429;
+}
+.templateName{
+  display:block;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.templateMeta{
+  display:block;
+  margin-top:3px;
+  color:#8e8e8e;
+  font-size:.72rem;
+  font-weight:500;
+}
+.templateDelete{
+  width:44px!important;
+  min-width:44px!important;
+  padding:0!important;
+  border-radius:11px!important;
+  background:#2b0e0e!important;
+  border:1px solid #6f2424!important;
+  color:#ff9a9a!important;
+  font-size:1rem!important;
+}
+.templateDelete:hover{
+  background:#7a1d1d!important;
+  color:#fff!important;
+  filter:none!important;
+}
+.templateEmpty{
+  padding:13px;
+  border:1px dashed #303030;
+  border-radius:10px;
+  text-align:center;
+  color:#777;
+  font-size:.82rem;
+}
+.templateSelectedNote{
+  display:none;
+  margin-top:10px;
+  padding:9px 11px;
+  border-radius:10px;
+  border:1px solid #6e5417;
+  background:#181204;
+  color:#f0d276;
+  font-size:.78rem;
+  line-height:1.45;
+}
+@media(max-width:560px){
+  .templateLibrary{padding:11px}
+  .templatePick{padding:10px!important}
+}
+</style>
+
 </head>
 
 <body>
@@ -2464,6 +2573,19 @@ body.dmModalOpen{overflow:hidden}
           Turnuvalar davet kodu / koltuk / ödeme sistemiyle yönetilir. Takım turnuvalarında kaptan yalnızca kendisini kaydeder; kalan oyuncular tek kullanımlık davet kodlarıyla katılır.
         </p>
 
+        <div class="templateLibrary">
+          <div class="templateLibraryHead">
+            <div>
+              <b>📋 Geçmiş Turnuva Şablonları</b>
+              <span>Bir şablona dokun; kayıtlı turnuva ayarları aşağıdaki oluşturma formuna otomatik dolsun. İstediğin alanı değiştirip turnuvayı başlatabilirsin.</span>
+            </div>
+          </div>
+          <div id="createTemplateList" class="templateList">
+            <div class="templateEmpty">Şablonlar yükleniyor...</div>
+          </div>
+          <div id="createTemplateSelectedNote" class="templateSelectedNote"></div>
+        </div>
+
         <div class="grid2">
           <div class="field">
             <label class="title">Turnuva Adı</label>
@@ -2621,7 +2743,7 @@ body.dmModalOpen{overflow:hidden}
           </label>
         </div>
 
-        <button id="createTournamentButton" onclick="createTournament()">🏆 Turnuvayı Oluştur</button>
+        <button id="createTournamentButton" onclick="createTournament()">🚀 Turnuvayı Başlat</button>
         <div id="createTournamentStatus" class="status"></div>
       </div>
 
@@ -2629,7 +2751,7 @@ body.dmModalOpen{overflow:hidden}
       <div class="card" id="tournamentManagerCard">
         <h2>🏆 Turnuva Yönetim Merkezi</h2>
         <p class="muted">
-          Aktif / pasif turnuvaları buradan yönetebilirsin. Kullanıcı tarafında sildiğin eski turnuvalar burada <b>ŞABLON</b> olarak kalır; yeni turnuva oluştururken ayarlarını kopyalayabilirsin.
+          Yalnızca mevcut aktif / pasif / devam eden turnuvalar burada görünür. Geçmiş turnuva şablonlarını yukarıdaki <b>Yeni Turnuva Oluştur</b> bölümünden seçebilirsin.
         </p>
 
         <div class="searchBox">
@@ -2796,18 +2918,12 @@ body.dmModalOpen{overflow:hidden}
           <span>Kayıt sistemi aktif (açılış / kapanış tarihleri uygulanır)</span>
         </label>
 
-        <div id="tournamentTemplateNotice" class="tournamentTemplateNotice" style="display:none;">
-          📋 <b>Şablon modu:</b> Bu kayıt kullanıcı tarafında görünmez. Eski turnuva verilerini canlı sisteme geri döndürmeden,
-          ayarlarını yeni turnuva formuna kopyalayabilirsin.
-        </div>
-
         <div class="btnRow">
           <button id="saveTournamentButton" onclick="saveTournamentConfig()">💾 Ayarları Kaydet</button>
           <button id="tActivateButton" class="success" onclick="setTournamentLifecycle('active')">🟢 Aktif Yap</button>
           <button id="tPassiveButton" class="secondary" onclick="setTournamentLifecycle('passive')">⚫ Pasife Al</button>
           <button id="tCompleteButton" class="warn" onclick="setTournamentLifecycle('completed')">🏁 Tamamlandı Yap</button>
           <button id="tDeleteButton" class="danger" onclick="deleteTournamentFromPanel()">🗑 Turnuvayı Sil</button>
-          <button id="tTemplateCopyButton" class="warn" style="display:none;" onclick="copyTournamentTemplateToCreate()">📋 ŞABLONU YENİ TURNUVAYA KOPYALA</button>
         </div>
 
         <div id="tournamentLiveOpsRow" class="btnRow" style="margin-top:8px;">
@@ -7352,6 +7468,238 @@ function validateTournamentTimelineAdmin(openIso, closeIso, eventIso){
   return '';
 }
 
+
+let selectedCreateTemplateId = '';
+
+function getTournamentTemplates(){
+  return tournamentCatalogCache
+    .filter(t =>
+      t?.adminTemplate === true ||
+      String(t?.lifecycleStatus || '').toLowerCase() === 'template'
+    )
+    .sort((a,b) => {
+      const aTs = Date.parse(a?.updatedAt || a?.createdAt || '') || 0;
+      const bTs = Date.parse(b?.updatedAt || b?.createdAt || '') || 0;
+      return bTs - aTs;
+    });
+}
+
+function renderCreateTournamentTemplates(){
+  const host = document.getElementById('createTemplateList');
+  const note = document.getElementById('createTemplateSelectedNote');
+  if(!host) return;
+
+  const templates = getTournamentTemplates();
+
+  if(!templates.length){
+    selectedCreateTemplateId = '';
+    host.innerHTML = '<div class="templateEmpty">Henüz kayıtlı turnuva şablonu yok.</div>';
+    if(note){
+      note.style.display = 'none';
+      note.innerHTML = '';
+    }
+    return;
+  }
+
+  if(selectedCreateTemplateId && !templates.some(t => String(t.id) === String(selectedCreateTemplateId))){
+    selectedCreateTemplateId = '';
+  }
+
+  host.innerHTML = templates.map(t => {
+    const id = encodeURIComponent(String(t?.id || ''));
+    const teamSize = Math.max(1,Number(t?.teamSize || 1));
+    const format = teamSize <= 1 ? '1v1 Solo' : `${teamSize}v${teamSize}`;
+    const map = String(t?.mapName || '').trim();
+    const selected = String(t?.id || '') === String(selectedCreateTemplateId);
+
+    return `
+      <div class="templateItem ${selected ? 'selected' : ''}">
+        <button type="button" class="templatePick"
+          onclick="loadCreateTournamentTemplate('${id}')">
+          <span class="templateName">📋 ${esc(t?.name || 'Turnuva Şablonu')}</span>
+          <span class="templateMeta">${esc(format)}${map ? ` · ${esc(map)}` : ''}</span>
+        </button>
+        <button type="button" class="templateDelete"
+          title="Şablonu kalıcı sil"
+          aria-label="${esc(t?.name || 'Şablon')} şablonunu sil"
+          onclick="deleteCreateTournamentTemplate('${id}',event)">🗑️</button>
+      </div>
+    `;
+  }).join('');
+
+  if(note){
+    const selected = templates.find(t => String(t?.id || '') === String(selectedCreateTemplateId));
+    if(selected){
+      note.style.display = 'block';
+      note.innerHTML = `✅ <b>${esc(selected.name || 'Şablon')}</b> forma yüklendi. İstediğin bilgileri değiştirip <b>Turnuvayı Başlat</b> butonuna basabilirsin.`;
+    }else{
+      note.style.display = 'none';
+      note.innerHTML = '';
+    }
+  }
+}
+
+async function loadCreateTournamentTemplate(encodedId){
+  const tournamentId = decodeURIComponent(String(encodedId || ''));
+  if(!tournamentId) return;
+
+  const item = tournamentCatalogCache.find(
+    x => String(x?.id || '') === String(tournamentId)
+  );
+
+  if(!(item?.adminTemplate === true || String(item?.lifecycleStatus || '').toLowerCase() === 'template')){
+    showStatus('createTournamentStatus','❌ Seçilen kayıt artık şablon değil.',false);
+    return;
+  }
+
+  try{
+    showStatus('createTournamentStatus','⏳ Şablon bilgileri yükleniyor...',true);
+
+    const [baseRes,v2Res] = await Promise.all([
+      api(`/admin/tournament/config?id=${encodeURIComponent(tournamentId)}&_=${Date.now()}`),
+      api(`/admin/tournament/v2/config?id=${encodeURIComponent(tournamentId)}&_=${Date.now()}`)
+    ]);
+
+    if(!baseRes.r.ok || !baseRes.d?.success || !baseRes.d?.tournament){
+      throw new Error(baseRes.d?.error || `HTTP ${baseRes.r.status}`);
+    }
+    if(!v2Res.r.ok || !v2Res.d?.success){
+      throw new Error(v2Res.d?.error || `HTTP ${v2Res.r.status}`);
+    }
+
+    const t = baseRes.d.tournament;
+    const rule = v2Res.d.rule || {};
+
+    selectedCreateTemplateId = tournamentId;
+
+    document.getElementById('tcName').value = t.name || '';
+    document.getElementById('tcTeamSize').value = String(Number(t.teamSize || 1));
+    document.getElementById('tcCapacity').value = t.capacity ?? 1;
+    document.getElementById('tcEntryMode').value =
+      rule.entryMode ||
+      item.entryMode ||
+      (Number(t.feePerPlayerTl || 0) > 0 ? 'tl' : 'free');
+    document.getElementById('tcFee').value = t.feePerPlayerTl ?? 0;
+
+    document.getElementById('tcComingSoon').checked = rule.comingSoon === true;
+    document.getElementById('tcRegistrationOpensAt').value =
+      toLocalInputValue(rule.registrationOpensAt || item.registrationOpensAt);
+    document.getElementById('tcRegistrationClosesAt').value =
+      toLocalInputValue(rule.registrationClosesAt || item.registrationClosesAt);
+    document.getElementById('tcEventDate').value =
+      toLocalInputValue(t.eventDate);
+
+    document.getElementById('tcGameName').value =
+      rule.gameName || item.gameName || 'VALORANT';
+    document.getElementById('tcGameIdLabel').value =
+      rule.gameIdLabel || item.gameIdLabel || 'VALORANT ID';
+
+    document.getElementById('tcAboutText').value =
+      rule.aboutText || item.aboutText || '';
+    document.getElementById('tcHeroImageUrl').value =
+      rule.heroImageUrl || item.heroImageUrl || '';
+    document.getElementById('tcLogoImageUrl').value =
+      rule.logoImageUrl || item.logoImageUrl || '';
+    document.getElementById('tcStreamUrl').value =
+      rule.streamUrl || item.streamUrl || 'https://kick.com/weizend';
+
+    document.getElementById('tcBestOf').value =
+      String(rule.bestOf || item.bestOf || 'BO1').toUpperCase();
+    document.getElementById('tcMapName').value =
+      rule.mapName || item.mapName || '';
+    document.getElementById('tcMapImageUrl').value =
+      rule.mapImageUrl || item.mapImageUrl || '';
+    document.getElementById('tcRulesText').value =
+      rule.rulesText || item.rulesText || '';
+
+    document.getElementById('tcPrizeFirst').value =
+      rule.firstPrize || item.firstPrize || '';
+    document.getElementById('tcPrizeSecond').value =
+      rule.secondPrize || item.secondPrize || '';
+    document.getElementById('tcPrizeThird').value =
+      rule.thirdPrize || item.thirdPrize || '';
+    document.getElementById('tcPredictionPrize').value =
+      rule.predictionPrize || item.predictionPrize || '';
+
+    document.getElementById('tcThirdPlaceEnabled').checked =
+      rule.thirdPlaceEnabled === true || item.thirdPlaceEnabled === true;
+
+    // Şablondan başlatılan yeni turnuva varsayılan olarak canlı bir kayıt olsun.
+    // Kayıt açık durumu ise şablondaki ayardan gelir.
+    document.getElementById('tcActive').checked = true;
+    document.getElementById('tcRegistrationOpen').checked = !!t.registrationOpen;
+
+    updateCreateTournamentEntryFields();
+    updateCreateTournamentDateField();
+    renderCreateTournamentTemplates();
+
+    showStatus(
+      'createTournamentStatus',
+      `✅ ${esc(t.name || 'Şablon')} tüm kayıtlı bilgileriyle forma yüklendi.`,
+      true
+    );
+
+  }catch(error){
+    showStatus(
+      'createTournamentStatus',
+      '❌ Şablon yüklenemedi: ' + esc(error.message || error),
+      false
+    );
+  }
+}
+
+async function deleteCreateTournamentTemplate(encodedId,event){
+  try{ event?.stopPropagation?.(); }catch(_){}
+
+  const tournamentId = decodeURIComponent(String(encodedId || ''));
+  if(!tournamentId) return;
+
+  const item = tournamentCatalogCache.find(
+    x => String(x?.id || '') === String(tournamentId)
+  );
+  if(!item) return;
+
+  if(!confirm(
+    `"${item?.name || tournamentId}" şablonu KALICI olarak silinsin mi?\n\n` +
+    `Bu işlem geri alınamaz. Şablon listeden tamamen kaybolur.`
+  )) return;
+
+  try{
+    showStatus('createTournamentStatus','⏳ Şablon siliniyor...',true);
+
+    const {r,d} = await api('/admin/tournament/template/delete',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({tournamentId})
+    });
+
+    if(!r.ok || !d?.success){
+      throw new Error(d?.error || `HTTP ${r.status}`);
+    }
+
+    if(String(selectedCreateTemplateId) === String(tournamentId)){
+      selectedCreateTemplateId = '';
+    }
+
+    tournamentCatalogCache = [];
+    await loadTournamentList(true);
+    renderCreateTournamentTemplates();
+
+    showStatus(
+      'createTournamentStatus',
+      `✅ "${esc(item?.name || 'Şablon')}" kalıcı olarak silindi.`,
+      true
+    );
+
+  }catch(error){
+    showStatus(
+      'createTournamentStatus',
+      '❌ Şablon silinemedi: ' + esc(error.message || error),
+      false
+    );
+  }
+}
+
 async function createTournament(){
   const button = document.getElementById('createTournamentButton');
 
@@ -7413,7 +7761,11 @@ async function createTournament(){
   return;
 }
 
-  const id = createProductId(name);
+  const templateSourceId = selectedCreateTemplateId || '';
+  const baseId = createProductId(name);
+  const id = templateSourceId
+    ? `${baseId}-${Date.now().toString(36)}`
+    : baseId;
 
   try{
     if(button){
@@ -7426,6 +7778,7 @@ async function createTournament(){
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         id,
+        templateSourceId,
         name,
         teamSize,
         capacity,
@@ -7460,7 +7813,7 @@ async function createTournament(){
       throw new Error(d?.error || `HTTP ${r.status}`);
     }
 
-    showStatus('createTournamentStatus','✅ Turnuva başarıyla oluşturuldu.',true);
+    showStatus('createTournamentStatus','✅ Turnuva başarıyla başlatıldı.',true);
 
     document.getElementById('tcName').value = '';
     document.getElementById('tcRegistrationOpen').checked = false;
@@ -7483,8 +7836,10 @@ async function createTournament(){
     document.getElementById('tcThirdPlaceEnabled').checked = false;
     updateCreateTournamentDateField();
 
+    selectedCreateTemplateId = '';
     tournamentCatalogCache = [];
     await loadTournamentList(true);
+    renderCreateTournamentTemplates();
 
     const select = document.getElementById('tournamentSelect');
     if(select && d?.tournament?.id){
@@ -7497,7 +7852,7 @@ async function createTournament(){
   }finally{
     if(button){
       button.disabled = false;
-      button.innerText = '🏆 Turnuvayı Oluştur';
+      button.innerText = '🚀 Turnuvayı Başlat';
     }
   }
 }
@@ -7527,13 +7882,13 @@ async function loadTournamentList(force=false){
       currentTournamentEntries = null;
       currentTournamentBracket = null;
       document.getElementById('tournamentQuickInfo').innerHTML = '';
-      document.getElementById('tournamentEntrySummary').innerHTML = 'Yönetilecek turnuva / şablon bulunmuyor.';
+      document.getElementById('tournamentEntrySummary').innerHTML = 'Yönetilecek mevcut turnuva bulunmuyor.';
       document.getElementById('tournamentEntriesView').innerHTML = '';
-      document.getElementById('tournamentBracketSummary').innerHTML = 'Yönetilecek turnuva / şablon bulunmuyor.';
+      document.getElementById('tournamentBracketSummary').innerHTML = 'Yönetilecek mevcut turnuva bulunmuyor.';
       document.getElementById('tournamentBracketView').innerHTML = '';
       showStatus(
         'tournamentStatus',
-        'ℹ️ Yönetilecek turnuva / şablon bulunmuyor. Tamamlanan turnuvalar Geçmiş Turnuvalar bölümünde.',
+        'ℹ️ Yönetilecek mevcut turnuva bulunmuyor. Tamamlanan turnuvalar Geçmiş Turnuvalar bölümünde.',
         true
       );
     }
@@ -7553,13 +7908,12 @@ function renderTournamentOptions(){
 
   const previous = select.value;
 
-  // Tamamlanan turnuvalar Geçmiş Turnuvalar'da kalır.
-  // Kullanıcı tarafında silinmiş olan kayıtlar ise product aynası olmadığı için
-  // adminTemplate=true gelir ve burada "ŞABLON" olarak görünür.
+  // Yönetim Merkezi yalnızca mevcut canlı/pasif turnuvaları gösterir.
+  // Şablonlar üstteki Yeni Turnuva Oluştur bölümünde ayrı kütüphane olarak görünür.
   const list = tournamentCatalogCache.filter(t => {
     const lifecycle = String(t?.lifecycleStatus || '').toLowerCase();
     const isTemplate = t?.adminTemplate === true || lifecycle === 'template';
-    return isTemplate || lifecycle !== 'completed';
+    return !isTemplate && lifecycle !== 'completed';
   });
 
   select.innerHTML = list.length
@@ -7567,11 +7921,9 @@ function renderTournamentOptions(){
         const format = Number(t.teamSize || 1) <= 1
           ? '1v1'
           : `${Number(t.teamSize)}v${Number(t.teamSize)}`;
-        const isTemplate = t?.adminTemplate === true || String(t?.lifecycleStatus || '').toLowerCase() === 'template';
-        const status = isTemplate ? '📋 ŞABLON' : tournamentLifecycleText(t.lifecycleStatus);
-        return `<option value="${esc(t.id)}">${esc(t.name)} · ${format} · ${esc(status)}</option>`;
+        return `<option value="${esc(t.id)}">${esc(t.name)} · ${format} · ${esc(tournamentLifecycleText(t.lifecycleStatus))}</option>`;
       }).join('')
-    : '<option value="">Yönetilecek turnuva / şablon bulunamadı</option>';
+    : '<option value="">Yönetilecek mevcut turnuva bulunamadı</option>';
 
   if(previous && list.some(t => String(t.id) === String(previous))){
     select.value = previous;
@@ -7579,6 +7931,7 @@ function renderTournamentOptions(){
 
   filterTournamentOptions();
   renderPastTournaments();
+  renderCreateTournamentTemplates();
 }
 
 function pastTournamentSortValue(item){
@@ -7743,6 +8096,9 @@ function setTournamentTemplateMode(isTemplate){
   const templateCopy = document.getElementById('tTemplateCopyButton');
   if(templateCopy) templateCopy.style.display = isTemplate ? '' : 'none';
 
+  const templateDelete = document.getElementById('tTemplateDeleteButton');
+  if(templateDelete) templateDelete.style.display = isTemplate ? '' : 'none';
+
   const notice = document.getElementById('tournamentTemplateNotice');
   if(notice) notice.style.display = isTemplate ? 'block' : 'none';
 
@@ -7824,6 +8180,69 @@ function copyTournamentTemplateToCreate(){
 
   document.getElementById('newTournamentCard')?.scrollIntoView({behavior:'smooth',block:'start'});
   setTimeout(()=>document.getElementById('tcName')?.focus({preventScroll:true}),350);
+}
+
+
+async function deleteCurrentTournamentTemplate(){
+  const tournamentId = document.getElementById('tournamentSelect')?.value || '';
+  if(!tournamentId || !isCurrentTournamentTemplate()) return;
+
+  const item = tournamentCatalogCache.find(
+    x => String(x?.id || '') === String(tournamentId)
+  );
+
+  const name = String(item?.name || currentTournamentAdmin?.name || tournamentId);
+
+  if(!confirm(
+    `"${name}" şablonu KALICI olarak silinsin mi?\n\n` +
+    `Bu işlem geri alınamaz. Şablon Turnuva Yönetim Merkezi'nden tamamen kaybolur ve aynı isim daha sonra tekrar kullanılabilir.`
+  )) return;
+
+  const button = document.getElementById('tTemplateDeleteButton');
+
+  try{
+    if(button){
+      button.disabled = true;
+      button.innerText = '⏳ ŞABLON SİLİNİYOR...';
+    }
+
+    showStatus('tournamentStatus','⏳ Şablon kalıcı olarak siliniyor...',true);
+
+    const {r,d} = await api('/admin/tournament/template/delete',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({tournamentId})
+    });
+
+    if(!r.ok || !d?.success){
+      throw new Error(d?.error || `HTTP ${r.status}`);
+    }
+
+    tournamentCatalogCache = [];
+
+    const search = document.getElementById('tournamentSearch');
+    if(search) search.value = '';
+
+    await loadTournamentList(true);
+
+    showStatus(
+      'tournamentStatus',
+      `✅ "${esc(name)}" şablonu kalıcı olarak silindi. Aynı turnuva adını artık yeniden kullanabilirsin.`,
+      true
+    );
+
+  }catch(error){
+    showStatus(
+      'tournamentStatus',
+      '❌ Şablon silinemedi: ' + esc(error.message || error),
+      false
+    );
+  }finally{
+    if(button){
+      button.disabled = false;
+      button.innerText = '🗑️ ŞABLONU SİL';
+    }
+  }
 }
 
 async function loadTournamentConfig(){
@@ -7912,14 +8331,8 @@ async function loadTournamentConfig(){
     document.getElementById('tThirdPlaceEnabled').checked =
       rule.thirdPlaceEnabled === true || catalogItem.thirdPlaceEnabled === true;
 
-    const isTemplate =
-      catalogItem.adminTemplate === true ||
-      String(catalogItem.lifecycleStatus || '').toLowerCase() === 'template';
-
-    const lifecycle =
-      isTemplate
-        ? 'template'
-        : (catalogItem.lifecycleStatus || 'registration_closed');
+    const isTemplate = false;
+    const lifecycle = catalogItem.lifecycleStatus || 'registration_closed';
 
     const quick = document.getElementById('tournamentQuickInfo');
 
@@ -7968,24 +8381,7 @@ async function loadTournamentConfig(){
     }
 
     updateTournamentEntryFields();
-    setTournamentTemplateMode(isTemplate);
-
-    if(isTemplate){
-      currentTournamentEntries = null;
-      currentTournamentBracket = null;
-
-      document.getElementById('tournamentEntrySummary').innerHTML = '📋 Bu kayıt bir şablondur; eski katılımcı verileri canlı yönetim ekranında gösterilmez.';
-      document.getElementById('tournamentEntriesView').innerHTML = '';
-      document.getElementById('tournamentBracketSummary').innerHTML = '📋 Bu kayıt bir şablondur; eski fikstür canlı yönetim ekranında gösterilmez.';
-      document.getElementById('tournamentBracketView').innerHTML = '';
-
-      showStatus(
-        'tournamentStatus',
-        `📋 ${esc(t.name)} şablonu yüklendi. "ŞABLONU YENİ TURNUVAYA KOPYALA" butonuyla ayarları yeni turnuva formuna aktarabilirsin.`,
-        true
-      );
-      return;
-    }
+    setTournamentTemplateMode(false);
 
     await Promise.all([
       loadTournamentEntries(true),
@@ -8045,10 +8441,6 @@ async function saveTournamentConfig(){
   const tournamentId = document.getElementById('tournamentSelect')?.value || '';
   if(!tournamentId) return;
 
-  if(isCurrentTournamentTemplate()){
-    showStatus('tournamentStatus','📋 Şablon doğrudan kaydedilemez. Önce "ŞABLONU YENİ TURNUVAYA KOPYALA" butonunu kullan.',false);
-    return;
-  }
 
   const button = document.getElementById('saveTournamentButton');
 
@@ -8344,10 +8736,6 @@ async function setTournamentLifecycle(state){
   const tournamentId = document.getElementById('tournamentSelect')?.value || '';
   if(!tournamentId) return;
 
-  if(isCurrentTournamentTemplate()){
-    showStatus('tournamentStatus','📋 Şablon canlı turnuva değildir. Yeni turnuva oluşturmak için şablonu kopyala.',false);
-    return;
-  }
 
   const labels = {
     active:'aktif yapılsın',
@@ -8396,10 +8784,6 @@ async function deleteTournamentFromPanel(){
   const tournamentId = document.getElementById('tournamentSelect')?.value || '';
   if(!tournamentId) return;
 
-  if(isCurrentTournamentTemplate()){
-    showStatus('tournamentStatus','📋 Bu kayıt zaten şablon olarak saklanıyor.',true);
-    return;
-  }
 
   const item =
     tournamentCatalogCache.find(x => String(x.id) === String(tournamentId));
