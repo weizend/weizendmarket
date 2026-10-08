@@ -1526,6 +1526,180 @@ body.dmModalOpen{overflow:hidden}
 }
 </style>
 
+
+<style id="wz-admin-template-picker-v43">
+.templateLibraryCompact{
+  padding:13px;
+}
+.templateLibraryCompact .templateLibraryHead{
+  margin-bottom:9px;
+}
+
+.templatePickerOpen{
+  width:100%!important;
+  display:grid!important;
+  grid-template-columns:auto minmax(0,1fr) auto!important;
+  align-items:center!important;
+  gap:11px!important;
+  padding:12px 13px!important;
+  background:#111!important;
+  border:1px solid #303030!important;
+  border-radius:12px!important;
+  color:#fff!important;
+  text-align:left!important;
+  box-shadow:none!important;
+}
+.templatePickerOpen:hover{
+  background:#171717!important;
+  border-color:#555!important;
+  filter:none!important;
+}
+.templatePickerOpenIcon{
+  width:38px;
+  height:38px;
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#1b1b1b;
+  border:1px solid #333;
+  font-size:1.05rem;
+}
+.templatePickerOpenText{
+  min-width:0;
+}
+.templatePickerOpenText b{
+  display:block;
+  font-size:.91rem;
+  line-height:1.2;
+}
+.templatePickerOpenText small{
+  display:block;
+  margin-top:4px;
+  color:#888;
+  font-size:.72rem;
+  font-weight:500;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.templatePickerOpenArrow{
+  color:#888;
+  font-size:1.55rem;
+  line-height:1;
+}
+
+.templatePickerOverlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:12000;
+  background:rgba(0,0,0,.82);
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+}
+.templatePickerOverlay.open{
+  display:flex;
+}
+.templatePickerSheet{
+  width:min(560px,100%);
+  max-height:min(76dvh,720px);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  background:linear-gradient(145deg,#121212,#080808);
+  border:1px solid #363636;
+  border-radius:18px;
+  box-shadow:0 28px 90px rgba(0,0,0,.82);
+}
+.templatePickerSheetHead{
+  flex:0 0 auto;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  padding:15px 16px;
+  border-bottom:1px solid #292929;
+  background:#0f0f0f;
+}
+.templatePickerSheetHead b{
+  display:block;
+  font-size:1rem;
+}
+.templatePickerSheetHead span{
+  display:block;
+  margin-top:3px;
+  color:#888;
+  font-size:.75rem;
+  line-height:1.4;
+}
+.templatePickerClose{
+  width:38px!important;
+  height:38px!important;
+  min-width:38px!important;
+  padding:0!important;
+  border-radius:10px!important;
+  background:#202020!important;
+  border:1px solid #3b3b3b!important;
+  color:#fff!important;
+  font-size:1.35rem!important;
+  line-height:1!important;
+}
+.templatePickerClose:hover{
+  background:#353535!important;
+  filter:none!important;
+}
+.templatePickerList{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  padding:12px;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+}
+.templatePickerList .templateItem{
+  margin:0;
+}
+body.templatePickerOpenBody{
+  overflow:hidden!important;
+}
+
+@media(max-width:560px){
+  .templateLibraryCompact{
+    padding:10px!important;
+  }
+  .templatePickerOpen{
+    min-height:58px!important;
+    padding:10px 11px!important;
+  }
+  .templatePickerOverlay{
+    align-items:flex-end;
+    padding:8px 8px max(8px,env(safe-area-inset-bottom));
+  }
+  .templatePickerSheet{
+    width:100%;
+    max-height:82dvh;
+    border-radius:18px 18px 10px 10px;
+  }
+  .templatePickerSheetHead{
+    padding:13px 13px 11px;
+  }
+  .templatePickerList{
+    padding:10px;
+  }
+  .templatePickerList .templatePick{
+    min-height:58px!important;
+  }
+  .templatePickerList .templateDelete{
+    width:48px!important;
+    min-width:48px!important;
+  }
+}
+</style>
+
 </head>
 
 <body>
@@ -2573,17 +2747,54 @@ body.dmModalOpen{overflow:hidden}
           Turnuvalar davet kodu / koltuk / ödeme sistemiyle yönetilir. Takım turnuvalarında kaptan yalnızca kendisini kaydeder; kalan oyuncular tek kullanımlık davet kodlarıyla katılır.
         </p>
 
-        <div class="templateLibrary">
+        <div class="templateLibrary templateLibraryCompact">
           <div class="templateLibraryHead">
             <div>
-              <b>📋 Geçmiş Turnuva Şablonları</b>
-              <span>Bir şablona dokun; kayıtlı turnuva ayarları aşağıdaki oluşturma formuna otomatik dolsun. İstediğin alanı değiştirip turnuvayı başlatabilirsin.</span>
+              <b>📋 Turnuva Şablonları</b>
+              <span>Kayıtlı bir şablonu seçerek formu tek dokunuşla doldurabilirsin.</span>
             </div>
           </div>
-          <div id="createTemplateList" class="templateList">
-            <div class="templateEmpty">Şablonlar yükleniyor...</div>
-          </div>
+
+          <button type="button"
+            id="openCreateTemplatePickerButton"
+            class="templatePickerOpen"
+            onclick="openCreateTemplatePicker()">
+            <span class="templatePickerOpenIcon">📋</span>
+            <span class="templatePickerOpenText">
+              <b>Şablon Seç</b>
+              <small id="createTemplatePickerSummary">Kayıtlı şablonları görüntüle</small>
+            </span>
+            <span class="templatePickerOpenArrow">›</span>
+          </button>
+
           <div id="createTemplateSelectedNote" class="templateSelectedNote"></div>
+        </div>
+
+        <div id="createTemplatePickerOverlay"
+          class="templatePickerOverlay"
+          onclick="if(event.target===this) closeCreateTemplatePicker()"
+          aria-hidden="true">
+
+          <div class="templatePickerSheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="createTemplatePickerTitle">
+
+            <div class="templatePickerSheetHead">
+              <div>
+                <b id="createTemplatePickerTitle">📋 Turnuva Şablonları</b>
+                <span>Bir şablona dokun; form otomatik dolsun.</span>
+              </div>
+              <button type="button"
+                class="templatePickerClose"
+                onclick="closeCreateTemplatePicker()"
+                aria-label="Şablon penceresini kapat">×</button>
+            </div>
+
+            <div id="createTemplateList" class="templateList templatePickerList">
+              <div class="templateEmpty">Şablonlar yükleniyor...</div>
+            </div>
+          </div>
         </div>
 
         <div class="grid2">
@@ -7499,6 +7710,39 @@ function validateTournamentTimelineAdmin(openIso, closeIso, eventIso){
 
 let selectedCreateTemplateId = '';
 
+function openCreateTemplatePicker(){
+  const overlay = document.getElementById('createTemplatePickerOverlay');
+  if(!overlay) return;
+
+  renderCreateTournamentTemplates();
+
+  overlay.classList.add('open');
+  overlay.setAttribute('aria-hidden','false');
+  document.body.classList.add('templatePickerOpenBody');
+
+  const closeButton = overlay.querySelector('.templatePickerClose');
+  try{ closeButton?.focus?.({preventScroll:true}); }catch(_){}
+}
+
+function closeCreateTemplatePicker(){
+  const overlay = document.getElementById('createTemplatePickerOverlay');
+  if(!overlay) return;
+
+  overlay.classList.remove('open');
+  overlay.setAttribute('aria-hidden','true');
+  document.body.classList.remove('templatePickerOpenBody');
+}
+
+document.addEventListener('keydown',event=>{
+  if(event.key === 'Escape'){
+    const overlay = document.getElementById('createTemplatePickerOverlay');
+    if(overlay?.classList.contains('open')){
+      event.preventDefault();
+      closeCreateTemplatePicker();
+    }
+  }
+});
+
 function getTournamentTemplates(){
   return tournamentCatalogCache
     .filter(t =>
@@ -7515,13 +7759,26 @@ function getTournamentTemplates(){
 function renderCreateTournamentTemplates(){
   const host = document.getElementById('createTemplateList');
   const note = document.getElementById('createTemplateSelectedNote');
+  const summary = document.getElementById('createTemplatePickerSummary');
+  const openButton = document.getElementById('openCreateTemplatePickerButton');
   if(!host) return;
 
   const templates = getTournamentTemplates();
 
+  if(summary && !selectedCreateTemplateId){
+    summary.textContent = templates.length
+      ? `${templates.length} kayıtlı şablon · Seçmek için dokun`
+      : 'Henüz kayıtlı şablon yok';
+  }
+  if(openButton){
+    openButton.disabled = templates.length === 0;
+  }
+
   if(!templates.length){
     selectedCreateTemplateId = '';
     host.innerHTML = '<div class="templateEmpty">Henüz kayıtlı turnuva şablonu yok.</div>';
+    if(summary) summary.textContent = 'Henüz kayıtlı şablon yok';
+    if(openButton) openButton.disabled = true;
     if(note){
       note.style.display = 'none';
       note.innerHTML = '';
@@ -7560,9 +7817,18 @@ function renderCreateTournamentTemplates(){
     if(selected){
       note.style.display = 'block';
       note.innerHTML = `✅ <b>${esc(selected.name || 'Şablon')}</b> forma yüklendi. İstediğin bilgileri değiştirip <b>Turnuvayı Başlat</b> butonuna basabilirsin.`;
+      if(summary){
+        const teamSize = Math.max(1,Number(selected?.teamSize || 1));
+        const format = teamSize <= 1 ? '1v1 Solo' : `${teamSize}v${teamSize}`;
+        const map = String(selected?.mapName || '').trim();
+        summary.textContent = `${selected.name || 'Şablon'} · ${format}${map ? ` · ${map}` : ''}`;
+      }
     }else{
       note.style.display = 'none';
       note.innerHTML = '';
+      if(summary){
+        summary.textContent = `${templates.length} kayıtlı şablon · Seçmek için dokun`;
+      }
     }
   }
 }
@@ -7668,6 +7934,16 @@ async function loadCreateTournamentTemplate(encodedId){
       `✅ ${esc(t.name || 'Şablon')} tüm kayıtlı bilgileriyle forma yüklendi.`,
       true
     );
+
+    closeCreateTemplatePicker();
+
+    // Formun başlangıcını görünür tut; kullanıcı doğrudan düzenlemeye devam edebilsin.
+    try{
+      document.getElementById('tcName')?.scrollIntoView({
+        behavior:'smooth',
+        block:'center'
+      });
+    }catch(_){}
 
   }catch(error){
     showStatus(
