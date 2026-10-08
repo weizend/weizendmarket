@@ -2752,6 +2752,13 @@ body.dmModalOpen{overflow:hidden}
         </div>
 
         <button id="createTournamentButton" onclick="createTournament()">🚀 Turnuvayı Başlat</button>
+        <button id="saveTournamentTemplateButton"
+          class="secondary"
+          style="margin-top:8px;"
+          onclick="saveCreateTournamentTemplate()">📋 Şablona Ekle</button>
+        <div class="muted" style="margin-top:7px;">
+          Bu buton turnuvayı başlatmaz; formdaki mevcut ayarları doğrudan şablon kütüphanesine kaydeder.
+        </div>
         <div id="createTournamentStatus" class="status"></div>
       </div>
 
@@ -7720,6 +7727,148 @@ async function deleteCreateTournamentTemplate(encodedId,event){
       '❌ Şablon silinemedi: ' + esc(error.message || error),
       false
     );
+  }
+}
+
+
+async function saveCreateTournamentTemplate(){
+  const button = document.getElementById('saveTournamentTemplateButton');
+
+  const name = document.getElementById('tcName')?.value.trim() || '';
+  const teamSize = Number(document.getElementById('tcTeamSize')?.value || 1);
+  const capacity = Number(document.getElementById('tcCapacity')?.value || 0);
+  const entryMode = document.getElementById('tcEntryMode')?.value || 'free';
+  const feePerPlayerTl = entryMode === 'tl'
+    ? Number(document.getElementById('tcFee')?.value || 0)
+    : 0;
+
+  const comingSoon = document.getElementById('tcComingSoon')?.checked === true;
+  const eventDate = comingSoon ? null : tournamentDateToIso('tcEventDate');
+  const registrationOpensAt = comingSoon ? null : tournamentDateToIso('tcRegistrationOpensAt');
+  const registrationClosesAt = comingSoon ? null : tournamentDateToIso('tcRegistrationClosesAt');
+
+  const gameName = document.getElementById('tcGameName')?.value.trim() || 'VALORANT';
+  const gameIdLabel = document.getElementById('tcGameIdLabel')?.value.trim() || 'VALORANT ID';
+  const aboutText = document.getElementById('tcAboutText')?.value.trim() || '';
+
+  const cardImageUrl = document.getElementById('tcCardImageUrl')?.value.trim() || '';
+  const heroImageUrl = document.getElementById('tcHeroImageUrl')?.value.trim() || '';
+  const logoImageUrl = document.getElementById('tcLogoImageUrl')?.value.trim() || '';
+  const streamUrl = document.getElementById('tcStreamUrl')?.value.trim() || 'https://kick.com/weizend';
+
+  const bestOf = document.getElementById('tcBestOf')?.value || 'BO1';
+  const mapName = document.getElementById('tcMapName')?.value.trim() || '';
+  const mapType = 'standard';
+  const mapImageUrl = document.getElementById('tcMapImageUrl')?.value.trim() || '';
+  const rulesText = document.getElementById('tcRulesText')?.value.trim() || '';
+
+  const firstPrize = document.getElementById('tcPrizeFirst')?.value.trim() || '';
+  const secondPrize = document.getElementById('tcPrizeSecond')?.value.trim() || '';
+  const thirdPrize = document.getElementById('tcPrizeThird')?.value.trim() || '';
+  const predictionPrize = document.getElementById('tcPredictionPrize')?.value.trim() || '';
+  const thirdPlaceEnabled = document.getElementById('tcThirdPlaceEnabled')?.checked === true;
+
+  // Şablonda bu tercih saklanır; şablonun kendisi kullanıcı tarafında aktif olmaz.
+  const registrationOpen = document.getElementById('tcRegistrationOpen')?.checked === true;
+
+  if(!name){
+    showStatus('createTournamentStatus','❌ Şablon için turnuva adı gerekli.',false);
+    return;
+  }
+
+  if(!capacity || capacity < 1){
+    showStatus('createTournamentStatus','❌ Kontenjan en az 1 olmalı.',false);
+    return;
+  }
+
+  if(entryMode === 'tl' && !(feePerPlayerTl > 0)){
+    showStatus('createTournamentStatus','❌ TL katılım türünde kişi başı ücret gerekli.',false);
+    return;
+  }
+
+  const timelineError = validateTournamentTimelineAdmin(
+    registrationOpensAt,
+    registrationClosesAt,
+    eventDate
+  );
+
+  if(!comingSoon && timelineError){
+    showStatus('createTournamentStatus','❌ ' + timelineError,false);
+    return;
+  }
+
+  try{
+    if(button){
+      button.disabled = true;
+      button.innerText = '⏳ Şablona ekleniyor...';
+    }
+
+    showStatus(
+      'createTournamentStatus',
+      '⏳ Formdaki ayarlar turnuva şablonu olarak kaydediliyor...',
+      true
+    );
+
+    const {r,d} = await api('/admin/tournament/template/create',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        name,
+        teamSize,
+        capacity,
+        entryMode,
+        feePerPlayerTl,
+        comingSoon,
+        eventDate,
+        registrationOpensAt,
+        registrationClosesAt,
+        gameName,
+        gameIdLabel,
+        aboutText,
+        cardImageUrl,
+        heroImageUrl,
+        logoImageUrl,
+        streamUrl,
+        bestOf,
+        mapName,
+        mapType,
+        mapImageUrl,
+        rulesText,
+        firstPrize,
+        secondPrize,
+        thirdPrize,
+        predictionPrize,
+        thirdPlaceEnabled,
+        registrationOpen
+      })
+    });
+
+    if(!r.ok || !d?.success){
+      throw new Error(d?.error || `HTTP ${r.status}`);
+    }
+
+    selectedCreateTemplateId = '';
+    tournamentCatalogCache = [];
+    await loadTournamentList(true);
+    renderCreateTournamentTemplates();
+
+    showStatus(
+      'createTournamentStatus',
+      `✅ "${esc(name)}" şablonlara eklendi. Turnuva başlatılmadı; formdaki bilgilerin aynısı şablon olarak saklandı.`,
+      true
+    );
+
+  }catch(error){
+    showStatus(
+      'createTournamentStatus',
+      '❌ Şablon kaydedilemedi: ' + esc(error.message || error),
+      false
+    );
+  }finally{
+    if(button){
+      button.disabled = false;
+      button.innerText = '📋 Şablona Ekle';
+    }
   }
 }
 
