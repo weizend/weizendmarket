@@ -1870,6 +1870,13 @@ html,body{max-width:100%;overflow-x:hidden}
 }
 @media(max-width:380px){.tournamentDangerGrid{grid-template-columns:minmax(0,1fr)!important}}
 </style>
+
+<style id="wz-v48-mobile-subs">
+#tournamentPendingSubscriptions .tableWrap{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+#tournamentPendingSubscriptions table{min-width:700px}
+#tournamentPendingSubscriptions .smallBtn{white-space:nowrap;min-width:80px}
+@media(max-width:650px){#tournamentPendingSubscriptions:before{content:'Tabloyu sağa kaydırarak silme sütununa ulaşabilirsin →';display:block;color:#aaa;font-size:.77rem;padding:8px 0}}
+</style>
 </head>
 
 <body>
@@ -3432,7 +3439,13 @@ html,body{max-width:100%;overflow-x:hidden}
         </div>
 
         <div id="tournamentParticipationStatus" class="status tournamentInlineStatus"></div>
-        <div id="tournamentSubscriptionSummary" class="tournamentEntrySummary">Henüz turnuva katılım işlemi yüklenmedi.</div>
+        <h3>⏳ Abonelik / Gift Katılım Talepleri</h3>
+        <p class="muted">Ödeme bekleyen, süresi dolan ve iptal edilen eski talepleri buradan iptal edip listeden kalıcı olarak kaldırabilirsin. Gerçek katkı gelmiş işlemler korunur.</p>
+        <div id="tournamentPendingSubscriptionsSummary" class="tournamentEntrySummary">Bekleyen talepler yükleniyor...</div>
+        <div id="tournamentPendingSubscriptions" class="tournamentEntriesView"></div>
+        <hr style="border:0;border-top:1px solid #292929;margin:22px 0">
+        <h3>✅ Kullanılmış Katılım Hakları / Bağışlar</h3>
+        <div id="tournamentSubscriptionSummary" class="tournamentEntrySummary">Henüz ödeme hareketleri yüklenmedi.</div>
         <div id="tournamentSubscriptionEvents" class="tournamentEntriesView"></div>
       </div>
 
@@ -9967,7 +9980,7 @@ async function deleteSoloTournamentPlayer(encodedMembershipId){
 }
 
 function renderTournamentSubscriptionPayments(subs){
-  const box = document.getElementById('tournamentSubscriptionSummary');
+  const box = document.getElementById('tournamentPendingSubscriptionsSummary');
   if(!box) return;
 
   const pending = subs.filter(s=>s.status==='pending').length;
@@ -9980,9 +9993,10 @@ function renderTournamentSubscriptionPayments(subs){
     <span class="tournamentPill">Süresi Dolan: ${expired}</span>
   `;
 
-  const host = document.getElementById('tournamentSubscriptionEvents');
+  const host = document.getElementById('tournamentPendingSubscriptions');
 
-  if(host && subs.length){
+  if(host){
+    if(!subs.length){ host.innerHTML='<div class="tournamentEmpty">Bu turnuvada görüntülenecek abonelik/gift işlemi yok.</div>';return; }
     host.innerHTML = `
       <div class="tableWrap">
         <table>
@@ -9993,6 +10007,7 @@ function renderTournamentSubscriptionPayments(subs){
               <th>Tamamlanan</th>
               <th>Durum</th>
               <th>Son Tarih</th>
+              <th>Sil / İptal</th>
             </tr>
           </thead>
           <tbody>
@@ -10009,6 +10024,7 @@ function renderTournamentSubscriptionPayments(subs){
                 </td>
                 <td>${esc(s.status||'-')}</td>
                 <td>${esc(formatTournamentDate(s.expiresAt))}</td>
+                <td>${s.status!=='paid' && Number(s.receivedDirectSubs||0)===0 && Number(s.receivedGifts||0)===0 ? `<button type="button" class="smallBtn danger" onclick="adminCancelV3Subscription('${encodeURIComponent(s.id||'')}')" title="İptal et ve listeden kaldır">🗑️ Sil</button>` : '<span class="muted">Katkı var</span>'}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -10018,6 +10034,20 @@ function renderTournamentSubscriptionPayments(subs){
   }
 }
 
+
+async function adminCancelV3Subscription(encodedId){
+  const paymentId=decodeURIComponent(encodedId||'');
+  if(!paymentId||!confirm('Bu abonelik/gift talebi SUNUCUDA iptal edilsin ve listeden kaldırılsın mı? Daha sonra gelecek abonelik bu turnuva koltuğunu aktifleştirmeyecek. Gerçek katkı alınmış işlemler silinmez.')) return;
+  try{
+    showStatus('tournamentParticipationStatus','⏳ Bekleyen işlem güvenli şekilde iptal ediliyor...',true);
+    const {r,d}=await api('/admin/tournament/v3/subscription/remove',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({paymentId})
+    });
+    if(!r.ok||!d?.success) throw new Error(d?.error||`HTTP ${r.status}`);
+    await loadTournamentEntries(true);
+    showStatus('tournamentParticipationStatus','✅ '+esc(d.message||'Kayıt iptal edildi ve kaldırıldı.'),true);
+  }catch(e){showStatus('tournamentParticipationStatus','❌ '+esc(e.message||e),false);}
+}
 
 async function refreshTournamentParticipationTransactions(){
   const button = document.getElementById('tParticipationRefreshButton');
