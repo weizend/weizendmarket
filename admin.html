@@ -3214,6 +3214,7 @@ html,body{max-width:100%;overflow-x:hidden}
               <option value="free">🎁 Ücretsiz</option>
             </select>
             <div id="tEntryModeLockNote" class="muted" role="status" aria-live="polite" style="display:none;margin-top:8px;padding:10px 12px;border:1px solid #735120;border-radius:9px;background:#211909;color:#ffda8a;line-height:1.5"></div>
+            <button type="button" id="tEntryModeLockRepairButton" class="secondary" style="display:none;margin-top:9px;white-space:normal;line-height:1.4" onclick="repairTournamentEntryLock()">🧹 Sahipsiz Bekleyen İşlemleri Onar</button>
           </div>
 
           <div class="field" id="tFeeBox">
@@ -9067,15 +9068,22 @@ function updateTournamentEntryFields(){
   const selector = document.getElementById('tEntryMode');
   const lockNote = document.getElementById('tEntryModeLockNote');
   const modeLocked = currentTournamentEntryModeLock?.locked === true;
+  const repairBtn=document.getElementById('tEntryModeLockRepairButton');
+  if(repairBtn){
+    repairBtn.style.display=modeLocked && currentTournamentEntryModeLock?.canRepairOrphans===true ? 'block' : 'none';
+  }
   if(selector){
     selector.disabled = modeLocked;
     selector.title = modeLocked ? 'Katılım türünü değiştirmeden önce kayıtları ve bekleyen işlemleri kaldır.' : '';
   }
   if(lockNote){
     lockNote.style.display = modeLocked ? 'block' : 'none';
+    const breakdown=Array.isArray(currentTournamentEntryModeLock?.breakdown)
+      ? currentTournamentEntryModeLock.breakdown.map(x=>`${x.name}: ${Number(x.count||0)}`).join(' • ') : '';
     lockNote.textContent = modeLocked
-      ? `🔒 Katılım türü kilitli. ${currentTournamentEntryModeLock.reason || 'Önce mevcut kayıtları ve bekleyen işlemleri iptal et.'}`
+      ? `🔒 Katılım türü kilitli. ${currentTournamentEntryModeLock.reason || 'Önce mevcut kayıtları ve bekleyen işlemleri iptal et.'}${breakdown ? '\nD1 kayıtları: '+breakdown : ''}`
       : '';
+    lockNote.style.whiteSpace='pre-line';
   }
   const mode = selector?.value || 'free';
   const feeBox = document.getElementById('tFeeBox');
@@ -9106,6 +9114,29 @@ function updateTournamentEntryFields(){
       hint.innerHTML =
         '<b>🎁 Ücretsiz:</b> ödeme gerekmez. Takımlı turnuvada oyuncular yine kendi doğrulanmış Kick hesabıyla kadroya katılır.';
     }
+  }
+}
+
+async function repairTournamentEntryLock(){
+  const tournamentId=document.getElementById('tournamentSelect')?.value||'';
+  const btn=document.getElementById('tEntryModeLockRepairButton');
+  if(!tournamentId || !currentTournamentEntryModeLock?.canRepairOrphans) return;
+  if(!confirm('Yalnızca silinmiş/iptal edilmiş takımlardan kalan, hiç para veya abonelik katkısı almamış bekleyen kayıtları iptal edilsin mi? Gerçek ödemeler ve aktif kayıtlar korunacak.')) return;
+  if(btn){btn.disabled=true;btn.textContent='⏳ Sahipsiz kayıtlar kontrol ediliyor...';}
+  try{
+    const {r,d}=await api('/admin/tournament/entry-lock/repair',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({tournamentId})
+    });
+    if(!r.ok || !d?.success) throw new Error(d?.error||`HTTP ${r.status}`);
+    currentTournamentEntryModeLock=d.entryModeLock||null;
+    updateTournamentEntryFields();
+    const total=(d.changes||[]).reduce((n,x)=>n+Number(x.count||0),0);
+    showStatus('tournamentStatus',`✅ ${d.message||'Kayıtlar kontrol edildi.'} (Güncellenen satır: ${total})`,true);
+  }catch(error){
+    showStatus('tournamentStatus','❌ '+esc(error.message||error),false);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='🧹 Sahipsiz Bekleyen İşlemleri Onar';}
   }
 }
 
