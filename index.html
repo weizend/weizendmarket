@@ -1561,7 +1561,7 @@ body.wz-view-tournament #wzMobileTournamentHero{display:none!important}
   border:1px solid #262931;border-radius:20px;background:linear-gradient(180deg,#11141a,#0a0c10);overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.18)
 }
 .wz-turn-card-head{
-  min-height:112px;padding:14px;display:flex;flex-direction:column;justify-content:space-between;position:relative;
+  min-height:154px;padding:14px;display:flex;flex-direction:column;justify-content:space-between;position:relative;
   background:
     linear-gradient(180deg,rgba(0,0,0,.18),rgba(0,0,0,.56)),
     var(--wz-turn-cover-image, radial-gradient(circle at 82% 24%,rgba(226,18,18,.42),transparent 22%)),
@@ -1617,6 +1617,102 @@ body.wz-view-tournament #wzMobileTournamentHero{display:none!important}
 .wz-turn-mainbtn{background:linear-gradient(180deg,#ff3a3a,#c40f0f);color:#fff;box-shadow:0 10px 24px rgba(226,18,18,.22)}
 .wz-turn-ghostbtn{background:#181c24;color:#d0d3db;border:1px solid #2a2f39}
 .wz-turn-completed-note{margin-top:6px;color:#b5b8c1;font-size:.76rem}
+
+/* V70: Ödüller + kayıt şartı DIŞ KAPAK görselinin üzerinde */
+.wz-turn-card-promo{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:8px;
+  margin-top:auto;
+  padding-top:22px;
+  min-width:0;
+}
+.wz-turn-card-prizes{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+  min-width:0;
+  flex:1 1 auto;
+}
+.wz-turn-card-prize{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  min-height:27px;
+  padding:5px 8px;
+  border-radius:9px;
+  border:1px solid rgba(236,190,75,.46);
+  background:rgba(10,8,4,.78);
+  backdrop-filter:blur(7px);
+  -webkit-backdrop-filter:blur(7px);
+  color:#f7dc8a;
+  font-size:.64rem;
+  font-weight:950;
+  line-height:1.15;
+  box-shadow:0 5px 14px rgba(0,0,0,.22);
+}
+.wz-turn-card-prize strong{
+  color:#fff4c8;
+  font-weight:1000;
+}
+.wz-turn-entry-pill{
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  min-height:30px;
+  max-width:46%;
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:.63rem;
+  font-weight:1000;
+  line-height:1.15;
+  text-align:center;
+  border:1px solid;
+  white-space:normal;
+  backdrop-filter:blur(7px);
+  -webkit-backdrop-filter:blur(7px);
+  box-shadow:0 5px 14px rgba(0,0,0,.22);
+}
+.wz-turn-entry-pill.free{
+  color:#8effb3;
+  background:rgba(7,47,24,.82);
+  border-color:#2c8550;
+}
+.wz-turn-entry-pill.subscription{
+  color:#ebcaff;
+  background:rgba(47,20,62,.84);
+  border-color:#8b51aa;
+}
+.wz-turn-entry-pill.donation{
+  color:#ffc69c;
+  background:rgba(62,25,10,.84);
+  border-color:#a85b34;
+}
+.wz-turn-entry-pill.other{
+  color:#eef0f5;
+  background:rgba(22,25,32,.84);
+  border-color:#565e6c;
+}
+
+@media(max-width:560px){
+  .wz-turn-card-head{min-height:160px}
+  .wz-turn-card-promo{
+    gap:6px;
+    padding-top:18px;
+  }
+  .wz-turn-card-prize{
+    padding:4px 7px;
+    font-size:.59rem;
+  }
+  .wz-turn-entry-pill{
+    max-width:42%;
+    font-size:.58rem;
+    padding:5px 8px;
+  }
+}
 
 .wz-turn-detail-top{
   display:flex;align-items:center;gap:10px;padding:0 0 14px
@@ -12229,20 +12325,83 @@ return;
     const t=item?.tournament||{}; const rule=item?.rule||{};
     return String(rule?.logoImageUrl || t?.logoImageUrl || 'https://i.hizliresim.com/fo5evkh4.png').trim();
   }
-  function tournamentHeroUrl(item){
+  function tournamentCardCoverUrl(item){
     const t=item?.tournament||{}; const rule=item?.rule||{};
+
+    const explicit =
+      rule?.cardImageUrl !== undefined
+        ? rule.cardImageUrl
+        : t?.cardImageUrl;
+
+    // Yeni Worker'da boş string bilinçli "dış kapak yok" anlamına gelir.
+    if(explicit !== undefined && explicit !== null){
+      return String(explicit).trim();
+    }
+
+    // Eski Worker ile kısa süreli geriye uyumluluk.
     return String(rule?.heroImageUrl || t?.heroImageUrl || '').trim();
   }
   function tournamentMapImageUrl(item, detail=null){
     const t=detail?.tournament||item?.tournament||{}; const rule=item?.rule||{};
     return String(rule?.mapImageUrl || t?.mapImageUrl || '').trim();
   }
+  function tournamentCardPrizes(item){
+    const t=item?.tournament||{};
+    const rule=item?.rule||{};
+
+    const values=[
+      ['🥇','1.', String(rule?.firstPrize || t?.firstPrize || '').trim()],
+      ['🥈','2.', String(rule?.secondPrize || t?.secondPrize || '').trim()],
+      ['🥉','3.', String(rule?.thirdPrize || t?.thirdPrize || '').trim()]
+    ].filter(row=>row[2]);
+
+    return values;
+  }
+
+  function tournamentEntryBadge(item){
+    const t=item?.tournament||{};
+    const rule=item?.rule||{};
+    const mode=String(rule?.entryMode || t?.entryMode || '').trim().toLowerCase();
+    const feeCents=Number(t?.feePerPlayerCents || 0);
+
+    if(mode==='subscription'){
+      return {className:'subscription',icon:'⭐',text:'ABONELİK / GIFT'};
+    }
+
+    if(mode==='tl'){
+      let amount='';
+      if(feeCents>0){
+        amount=(feeCents/100).toLocaleString('tr-TR',{
+          minimumFractionDigits:0,
+          maximumFractionDigits:2
+        })+' TL';
+      }
+      return {
+        className:'donation',
+        icon:'💸',
+        text:amount ? `BAĞIŞ · ${amount}` : 'BAĞIŞ'
+      };
+    }
+
+    if(mode==='free' || (!mode && feeCents<=0)){
+      return {className:'free',icon:'🎁',text:'ÜCRETSİZ'};
+    }
+
+    return {
+      className:'other',
+      icon:'🎟️',
+      text:entryText(item)
+    };
+  }
+
   function renderListCard(item,completed=false){
     const t=item?.tournament||{}; const rule=item?.rule||{}; const id=String(t.id||'');
     const d=state.details.get(id); const fin=d && !d.__error ? finalInfo(d):{champion:''};
-    const heroImage=cssUrl(tournamentHeroUrl(item));
+    const heroImage=cssUrl(tournamentCardCoverUrl(item));
     const cardHeadStyle=heroImage ? ` style="--wz-turn-cover-image:url(${heroImage})"` : '';
     const logo=tournamentLogoUrl(item);
+    const cardPrizes=tournamentCardPrizes(item);
+    const entryBadge=tournamentEntryBadge(item);
     return `<article class="wz-turn-card">
       <div class="wz-turn-card-head"${cardHeadStyle}>
         <div class="wz-turn-card-row">
@@ -12262,6 +12421,20 @@ return;
           <span>🗓 ${esc(formatShortDate(t.eventDate))}</span>
           <span>🕒 ${esc(formatShortTime(t.eventDate))}</span>
         </div>
+
+        <div class="wz-turn-card-promo">
+          <div class="wz-turn-card-prizes">
+            ${cardPrizes.map(([icon,place,value])=>`
+              <span class="wz-turn-card-prize">
+                <span>${icon}</span><span>${esc(place)}</span><strong>${esc(value)}</strong>
+              </span>
+            `).join('')}
+          </div>
+          <span class="wz-turn-entry-pill ${esc(entryBadge.className)}">
+            <span>${entryBadge.icon}</span><span>${esc(entryBadge.text)}</span>
+          </span>
+        </div>
+
         ${completed && fin.champion ? `<div class="wz-turn-completed-note">Şampiyon: <b>${esc(fin.champion)}</b></div>` : ''}
         <div class="wz-turn-card-actions">
           <button type="button" class="wz-turn-mainbtn" onclick="wzTurnOpen('${esc(id)}')">Detayları Gör</button>
