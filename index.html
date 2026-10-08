@@ -12083,10 +12083,15 @@ return;
             </div>
         ` : '';
 
-        const tlPayment = me.activePayment && String(me.activePayment.kind || me.activePayment.type || 'tl').toLowerCase().includes('tl')
+        // V89: Sunucudaki GUNCEL katilim turu tek otoritedir. Eski turden
+        // kalan pending kayitlari ayni takim ekraninda tekrar gosterme.
+        const currentEntryMode = String(me?.rule?.entryMode || rule?.entryMode || t?.entryMode || 'free').toLowerCase();
+        const tlPayment = currentEntryMode === 'tl' && me.activePayment
             ? tv3PaymentCard(me.activePayment)
             : '';
-        const subPayment = payments.map(tv3SubscriptionCard).join('') || (me.subscriptionPayment ? tv3SubscriptionCard(me.subscriptionPayment) : '');
+        const subPayment = currentEntryMode === 'subscription'
+            ? (payments.map(tv3SubscriptionCard).join('') || (me.subscriptionPayment ? tv3SubscriptionCard(me.subscriptionPayment) : ''))
+            : '';
 
         return `
             <div class="tv2-panel tv3-team-card">
@@ -12171,28 +12176,25 @@ return;
     function tv3RestorePendingTl() {
         const host = document.getElementById('tv2PendingTlHost');
         if (!host) return;
+        // V89: localStorage gecmis bir kodun aktif oldugunun kaniti degildir.
+        // D1'den gelen me.activePayment yetkili kaynak; zaten tv3TeamHtml'de
+        // basiliyor. Eski yedek kodu ikinci bir kart olarak GOSTERME.
+        host.innerHTML = '';
         let pending = null;
         try { pending = JSON.parse(localStorage.getItem(TV3_PENDING_TL_KEY) || 'null'); } catch (_) {}
-        if (!pending || String(pending.tournamentId) !== String(tv2State.tournamentId) || !pending.paymentId) {
-            host.innerHTML = '';
-            return;
+        if (!pending || String(pending.tournamentId) !== String(tv2State.tournamentId)) return;
+        const current = tv2State.me?.activePayment;
+        if (tv3EntryMode() !== 'tl' || !current || String(current.id) !== String(pending.paymentId)) {
+            // Sadece yerel eski kisa yolu kaldir; D1 verisi veya odeme gecmisi silinmez.
+            localStorage.removeItem(TV3_PENDING_TL_KEY);
         }
-        const alreadyRendered = tv2State.me?.activePayment?.id && String(tv2State.me.activePayment.id) === String(pending.paymentId);
-        if (alreadyRendered) {
-            host.innerHTML = '';
-            return;
-        }
-        host.innerHTML = tv3PaymentCard({
-            id:pending.paymentId,
-            reference:pending.reference,
-            expectedAmountCents:pending.expectedAmountCents,
-            receivedAmountCents:0,
-            remainingAmountCents:pending.expectedAmountCents,
-            status:'pending'
-        });
     }
 
     function tv3ContinueTlPayment(paymentId, reference) {
+        if (tv3EntryMode() !== 'tl') {
+            showStatusToast('⚠️ Katılım türü değişti. Eski BynoGame kodunu kullanma; turnuvayı yenile.', 4600);
+            return;
+        }
         if(reference) copyTextReliable(reference).catch(()=>{});
         const p=tv2State.me?.activePayment;
         const a=p && String(p.id)===String(paymentId) ? tv3PaymentAmounts(p) : null;
@@ -12201,6 +12203,11 @@ return;
 
     async function tv3CheckTlPayment(paymentId, notify = false) {
         if (!paymentId) return;
+        if (tv3EntryMode() !== 'tl') {
+            showStatusToast('⚠️ Güncel katılım şartı BynoGame değil. Eski ödeme talebini kontrol etme.', 4600);
+            await tv2ReloadMe();
+            return;
+        }
         const btn=document.activeElement;
         const oldLabel=btn?.tagName==='BUTTON'?btn.textContent:'';
         if(oldLabel){btn.disabled=true;btn.textContent='⏳ Ödeme kontrol ediliyor...';}
