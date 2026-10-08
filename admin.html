@@ -1704,9 +1704,175 @@ body.dmModalOpen{overflow:hidden}
 }
 </style>
 
+
+<style id="wz-admin-tournament-clean-v45">
+/* =========================================================
+   V45 · Derli toplu Turnuva Yönetimi
+   ========================================================= */
+
+.tournamentActionPanel{
+  margin-top:8px;
+  padding:11px;
+  border:1px solid #2d2d2d;
+  border-radius:14px;
+  background:linear-gradient(145deg,#101010,#090909);
+}
+
+.tournamentSaveButton{
+  width:100%!important;
+  margin:0!important;
+}
+
+.tournamentLifecycleGrid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+  margin-top:8px;
+}
+.tournamentLifecycleGrid button{
+  min-width:0!important;
+  padding:10px 8px!important;
+  min-height:46px!important;
+  font-size:.78rem!important;
+}
+
+.sectionHeaderActions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  gap:7px;
+}
+.sectionHeaderActions button{
+  margin:0!important;
+}
+
+/* Ekranın neresinde olursan ol işlem sonucu görünür. */
+.tournamentActionToast{
+  position:fixed;
+  z-index:50000;
+  top:max(12px,env(safe-area-inset-top));
+  left:50%;
+  transform:translate(-50%,-18px);
+  width:min(92vw,560px);
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  padding:12px 12px 12px 14px;
+  border:1px solid #3a3a3a;
+  border-radius:14px;
+  background:rgba(15,15,15,.97);
+  color:#fff;
+  box-shadow:0 18px 55px rgba(0,0,0,.72);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  transition:
+    opacity .16s ease,
+    transform .16s ease,
+    visibility .16s ease;
+}
+.tournamentActionToast.show{
+  opacity:1;
+  visibility:visible;
+  transform:translate(-50%,0);
+  pointer-events:auto;
+}
+.tournamentActionToast.ok{
+  border-color:#236b3d;
+  box-shadow:
+    0 18px 55px rgba(0,0,0,.72),
+    0 0 0 1px rgba(46,204,113,.08) inset;
+}
+.tournamentActionToast.error{
+  border-color:#7a2828;
+  box-shadow:
+    0 18px 55px rgba(0,0,0,.72),
+    0 0 0 1px rgba(231,76,60,.08) inset;
+}
+.tournamentActionToast.loading{
+  border-color:#8a6720;
+}
+.tournamentActionToastText{
+  flex:1 1 auto;
+  min-width:0;
+  font-size:.84rem;
+  line-height:1.45;
+  font-weight:650;
+  overflow-wrap:anywhere;
+}
+.tournamentActionToastClose{
+  flex:0 0 auto;
+  width:31px!important;
+  height:31px!important;
+  min-width:31px!important;
+  padding:0!important;
+  margin:0!important;
+  border-radius:9px!important;
+  background:#252525!important;
+  border:1px solid #3b3b3b!important;
+  color:#fff!important;
+  font-size:1.08rem!important;
+  line-height:1!important;
+}
+.tournamentActionToastClose:hover{
+  background:#333!important;
+  filter:none!important;
+}
+
+@media(max-width:760px){
+  .tournamentLifecycleGrid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .tournamentLifecycleGrid button{
+    min-height:44px!important;
+    font-size:.76rem!important;
+  }
+
+  .sectionHeaderRow{
+    align-items:flex-start!important;
+  }
+  .sectionHeaderActions{
+    width:100%;
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .sectionHeaderActions button{
+    width:100%!important;
+    min-width:0!important;
+    min-height:42px!important;
+    padding:9px 7px!important;
+    font-size:.72rem!important;
+  }
+
+  .tournamentActionToast{
+    top:max(8px,env(safe-area-inset-top));
+    width:calc(100vw - 18px);
+    padding:11px 10px 11px 12px;
+    border-radius:12px;
+  }
+  .tournamentActionToastText{
+    font-size:.78rem;
+  }
+}
+</style>
+
 </head>
 
 <body>
+  <div id="tournamentActionToast"
+    class="tournamentActionToast"
+    role="status"
+    aria-live="polite"
+    aria-atomic="true">
+    <div id="tournamentActionToastText" class="tournamentActionToastText"></div>
+    <button type="button"
+      class="tournamentActionToastClose"
+      onclick="hideTournamentActionToast()"
+      aria-label="Bildirimi kapat">×</button>
+  </div>
 
 <div class="wrap">
 
@@ -3144,19 +3310,19 @@ body.dmModalOpen{overflow:hidden}
           <span>Kayıt sistemi aktif (açılış / kapanış tarihleri uygulanır)</span>
         </label>
 
-        <div class="btnRow">
-          <button id="saveTournamentButton" onclick="saveTournamentConfig()">💾 Ayarları Kaydet</button>
-          <button id="tActivateButton" class="success" onclick="setTournamentLifecycle('active')">🟢 Aktif Yap</button>
-          <button id="tPassiveButton" class="secondary" onclick="setTournamentLifecycle('passive')">⚫ Pasife Al</button>
-          <button id="tCompleteButton" class="warn" onclick="setTournamentLifecycle('completed')">🏁 Tamamlandı Yap</button>
-          <button id="tDeleteButton" class="danger" onclick="deleteTournamentFromPanel()">🗑 Turnuvayı Sil</button>
-        </div>
+        <h3 class="subTitle">⚙️ Yönetim İşlemleri</h3>
 
-        <div id="tournamentLiveOpsRow" class="btnRow" style="margin-top:8px;">
-          <button class="secondary" onclick="loadTournamentEntries()">👥 Kayıtları Yenile</button>
-          <button id="tSubscriptionSyncButton" class="secondary" onclick="syncTournamentSubscriptions()">⭐ Abonelikleri Kontrol Et</button>
-          <button id="tSubscriptionEventsButton" class="secondary" onclick="loadTournamentSubscriptionEvents()">📡 Katılım Takibi</button>
-          <button id="tDrawButton" class="warn" onclick="drawTournament()">🎲 Karıştır ve Fikstürü Oluştur</button>
+        <div class="tournamentActionPanel">
+          <button id="saveTournamentButton"
+            class="tournamentSaveButton"
+            onclick="saveTournamentConfig()">💾 Ayarları Kaydet</button>
+
+          <div class="tournamentLifecycleGrid">
+            <button id="tActivateButton" class="success" onclick="setTournamentLifecycle('active')">🟢 Aktif Yap</button>
+            <button id="tPassiveButton" class="secondary" onclick="setTournamentLifecycle('passive')">⚫ Pasife Al</button>
+            <button id="tCompleteButton" class="warn" onclick="setTournamentLifecycle('completed')">🏁 Tamamlandı Yap</button>
+            <button id="tDeleteButton" class="danger" onclick="deleteTournamentFromPanel()">🗑 Turnuvayı Sil</button>
+          </div>
         </div>
 
         <h3 class="subTitle">🎯 Tahmin / Pick'em Sistemi</h3>
@@ -3219,10 +3385,17 @@ body.dmModalOpen{overflow:hidden}
           <div>
             <h2>🎮 Fikstür ve Skor Yönetimi</h2>
             <p class="muted">
-              Kontenjan ve katılım şartları tamamlandıktan sonra karıştırıp fikstürü oluştur. Maç sonuçlarını buradan gir.
+              Kontenjan ve katılım şartları tamamlandıktan sonra fikstürü buradan oluştur; maç sonuçlarını yine bu bölümden yönet.
             </p>
           </div>
-          <button class="secondary smallButton" onclick="loadTournamentBracket()">🔄 Fikstürü Yenile</button>
+
+          <div class="sectionHeaderActions">
+            <button id="tDrawButton"
+              class="warn smallButton"
+              onclick="drawTournament()">🎲 Fikstürü Oluştur</button>
+            <button class="secondary smallButton"
+              onclick="loadTournamentBracket()">🔄 Yenile</button>
+          </div>
         </div>
 
         <div id="tournamentBracketSummary" class="tournamentEntrySummary">Henüz fikstür yüklenmedi.</div>
@@ -3236,7 +3409,14 @@ body.dmModalOpen{overflow:hidden}
             <h2>🎟️ Turnuva Katılım Takibi</h2>
             <p class="muted">Burada yalnızca turnuvaya katılım için gerçekten kullanılan Abonelik / Gift ve BynoGame ödeme hareketleri görünür. Karşılıksız destekler bu listeye gelmez; onlar Destek Ödülleri bölümünde kalır. Çöp kutusuyla kaldırdığın eski işlem tekrar bu listede görünmez.</p>
           </div>
-          <button class="secondary smallButton" onclick="loadTournamentSubscriptionEvents()">🔄 Katılım İşlemlerini Yenile</button>
+
+          <div class="sectionHeaderActions">
+            <button id="tSubscriptionSyncButton"
+              class="secondary smallButton"
+              onclick="syncTournamentSubscriptions()">⭐ Abonelikleri Kontrol Et</button>
+            <button class="secondary smallButton"
+              onclick="loadTournamentSubscriptionEvents()">🔄 İşlemleri Yenile</button>
+          </div>
         </div>
 
         <div id="tournamentSubscriptionSummary" class="tournamentEntrySummary">Henüz turnuva katılım işlemi yüklenmedi.</div>
@@ -3711,17 +3891,71 @@ function tlFromCents(value){
   )} TL`;
 }
 
+let tournamentActionToastTimer = null;
+
+function hideTournamentActionToast(){
+  clearTimeout(tournamentActionToastTimer);
+  tournamentActionToastTimer = null;
+
+  const toast = document.getElementById('tournamentActionToast');
+  if(!toast) return;
+
+  toast.classList.remove('show','ok','error','loading');
+}
+
+function showTournamentActionToast(message,ok=false){
+  const toast = document.getElementById('tournamentActionToast');
+  const text = document.getElementById('tournamentActionToastText');
+  if(!toast || !text) return;
+
+  clearTimeout(tournamentActionToastTimer);
+  tournamentActionToastTimer = null;
+
+  const raw = String(message || '');
+  const isLoading = raw.includes('⏳');
+
+  text.innerHTML = raw;
+
+  toast.classList.remove('ok','error','loading');
+  toast.classList.add(
+    isLoading
+      ? 'loading'
+      : (ok ? 'ok' : 'error')
+  );
+  toast.classList.add('show');
+
+  // "İşleniyor..." bildirimi işlem bitene kadar ekranda kalır.
+  // Sonuç geldikten sonra başarı/hata kendiliğinden kapanır.
+  if(!isLoading){
+    tournamentActionToastTimer = setTimeout(
+      hideTournamentActionToast,
+      ok ? 5000 : 8000
+    );
+  }
+}
+
 function showStatus(id,message,ok=false){
   const el = document.getElementById(id);
 
-  if(!el) return;
+  if(el){
+    el.style.display = 'block';
 
-  el.style.display = 'block';
+    el.style.borderColor =
+      ok ? '#236b3d' : '#6b2323';
 
-  el.style.borderColor =
-    ok ? '#236b3d' : '#6b2323';
+    el.innerHTML = message;
+  }
 
-  el.innerHTML = message;
+  const tournamentStatusIds = new Set([
+    'createTournamentStatus',
+    'tournamentStatus',
+    'tPredictionStatus',
+    'pastTournamentStatus'
+  ]);
+
+  if(tournamentStatusIds.has(String(id || ''))){
+    showTournamentActionToast(message,ok);
+  }
 }
 
 function hideStatus(id){
@@ -8537,9 +8771,6 @@ function setTournamentTemplateMode(isTemplate){
   const notice = document.getElementById('tournamentTemplateNotice');
   if(notice) notice.style.display = isTemplate ? 'block' : 'none';
 
-  const ops = document.getElementById('tournamentLiveOpsRow');
-  if(ops) ops.style.display = isTemplate ? 'none' : 'grid';
-
   const predictionBox = document.getElementById('tPredictionBox');
   if(predictionBox) predictionBox.style.display = isTemplate ? 'none' : '';
 
@@ -8548,6 +8779,9 @@ function setTournamentTemplateMode(isTemplate){
 
   const bracketCard = document.getElementById('tournamentBracketCard');
   if(bracketCard) bracketCard.style.display = isTemplate ? 'none' : '';
+
+  const subscriptionCard = document.getElementById('tournamentSubscriptionCard');
+  if(subscriptionCard) subscriptionCard.style.display = isTemplate ? 'none' : '';
 }
 
 function copyTournamentTemplateToCreate(){
@@ -8845,7 +9079,6 @@ function updateTournamentEntryFields(){
   const close = document.getElementById('tRegistrationClosesAt');
   const hint = document.getElementById('tEntryModeHint');
   const syncBtn = document.getElementById('tSubscriptionSyncButton');
-  const eventsBtn = document.getElementById('tSubscriptionEventsButton');
 
   if(feeBox) feeBox.style.display = mode === 'tl' ? '' : 'none';
 
@@ -8859,7 +9092,6 @@ function updateTournamentEntryFields(){
   }
 
   if(syncBtn) syncBtn.style.display = mode === 'subscription' ? '' : 'none';
-  if(eventsBtn) eventsBtn.style.display = mode === 'subscription' ? '' : 'none';
 
   if(hint){
     if(mode === 'tl'){
