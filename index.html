@@ -3314,6 +3314,252 @@ body.wz-inbox-open{
 }
 </style>
 
+
+<style id="wz-v80-native-modal-gesture-fix">
+/* =========================================================
+   V80 · MODAL KİLİT SORUNU KESİN DÜZELTME
+   Eski JS touchmove preventDefault kilidi kaldırıldı.
+   ========================================================= */
+
+html.wz-page-modal-open,
+body.wz-page-modal-open,
+html.wz-inbox-open,
+body.wz-inbox-open,
+body.wz-turn-modal-open{
+  touch-action:auto!important;
+}
+
+/* Normal pencerelerde tarayıcının doğal:
+   - tek parmak scroll
+   - iki parmak pinch zoom
+   - zoom sonrası yatay/dikey pan
+   hareketlerine dokunma. */
+.modal-overlay:not(#imageModal),
+.modal-overlay:not(#imageModal) *,
+.verify-wait-overlay,
+.verify-wait-overlay *,
+.wz-product-info-overlay,
+.wz-product-info-overlay *,
+.wz-turn-detail-page,
+.wz-turn-detail-page *{
+  touch-action:auto!important;
+}
+
+/* Scroll alanlarını açıkça kaydırılabilir bırak. */
+.redirect-modal-body,
+.purchase-body,
+.gift-modal-content,
+.notifications-modal-content,
+#inboxModal .inbox-body,
+#inboxModal #inboxMessages,
+#tv2ModalBody,
+.wz-product-info-body,
+.wz-turn-detail-window{
+  overflow-y:auto!important;
+  -webkit-overflow-scrolling:touch!important;
+  touch-action:auto!important;
+}
+
+/* Inbox liste ekranının orta gövdesi mutlaka gerçek scroll container. */
+#inboxModal #inboxListView{
+  min-height:0!important;
+}
+#inboxModal .inbox-body{
+  flex:1 1 0!important;
+  min-height:0!important;
+  overflow-y:auto!important;
+}
+#inboxModal #inboxMessages{
+  flex:1 1 0!important;
+  min-height:0!important;
+  overflow-y:auto!important;
+}
+
+/* Hediye kodu / küçük modallar: klavye açıldığında da içerik aşağı-yukarı kayabilsin. */
+#giftRedeemModal,
+#actionResultModal,
+#redirectModal,
+#purchaseModal,
+#tv2Modal{
+  overflow-y:auto!important;
+  -webkit-overflow-scrolling:touch!important;
+}
+
+@media(max-width:640px){
+  /* Tam ekran inbox'ta dış kabuk sabit, orta içerik scroll eder. */
+  #inboxModal{
+    overflow:hidden!important;
+  }
+
+  #inboxModal .inbox-modal-content{
+    height:100dvh!important;
+    min-height:0!important;
+    max-height:100dvh!important;
+  }
+
+  #inboxModal .inbox-shell,
+  #inboxModal #inboxListView,
+  #inboxModal #inboxThreadView{
+    min-height:0!important;
+  }
+
+  /* Küçük pencereler telefonda viewport'tan taşarsa overlay üzerinden de kayabilsin. */
+  #giftRedeemModal,
+  #actionResultModal,
+  #redirectModal,
+  #purchaseModal,
+  #tv2Modal{
+    align-items:flex-start!important;
+    padding-top:max(10px,env(safe-area-inset-top))!important;
+    padding-bottom:max(18px,env(safe-area-inset-bottom))!important;
+  }
+
+  #giftRedeemModal .modal-content,
+  #actionResultModal .modal-content,
+  #redirectModal .modal-content,
+  #purchaseModal .modal-content,
+  #tv2Modal .modal-content{
+    margin:auto!important;
+    flex:0 0 auto!important;
+    max-height:none!important;
+  }
+}
+
+/* Görsel modalının kendi özel zoom/pan kodu korunur. */
+#imageModal,
+#imageModal *,
+#imageModal .main-slider,
+#imageModal #modalMainImg{
+  touch-action:none!important;
+}
+</style>
+
+
+<style id="wz-v81-prominent-tournament-tabs">
+/* =========================================================
+   V81 · Turnuva detay sekmeleri daha görünür / keşfedilebilir
+   ========================================================= */
+.wz-turn-tabs-label{
+  padding:14px 18px 8px;
+  color:#8d929c;
+  font-size:.72rem;
+  font-weight:900;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  background:#090b0f;
+}
+
+.wz-turn-detail-page .wz-turn-tabs{
+  display:grid!important;
+  grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  gap:8px!important;
+  padding:8px 12px 12px!important;
+  border-top:1px solid #242832!important;
+  border-bottom:1px solid #242832!important;
+  background:rgba(9,11,15,.97)!important;
+  overflow:visible!important;
+}
+
+.wz-turn-detail-page .wz-turn-tab{
+  position:relative;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:4px!important;
+  min-width:0!important;
+  min-height:58px!important;
+  padding:7px 5px!important;
+  border:1px solid #303540!important;
+  border-radius:12px!important;
+  background:#11151c!important;
+  color:#aeb3bd!important;
+  font-size:.72rem!important;
+  line-height:1.15!important;
+  font-weight:800!important;
+  white-space:normal!important;
+  text-align:center!important;
+  transition:
+    background .16s ease,
+    border-color .16s ease,
+    color .16s ease,
+    transform .16s ease,
+    box-shadow .16s ease!important;
+}
+
+.wz-turn-detail-page .wz-turn-tab:hover{
+  color:#fff!important;
+  border-color:#5a606d!important;
+  background:#171c24!important;
+}
+
+.wz-turn-detail-page .wz-turn-tab.active{
+  color:#fff!important;
+  background:linear-gradient(180deg,#e51e27,#b90f17)!important;
+  border-color:#ff4b53!important;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.06) inset,
+    0 6px 18px rgba(229,30,39,.22)!important;
+  transform:translateY(-1px);
+}
+
+.wz-turn-detail-page .wz-turn-tab.active::after{
+  content:'';
+  position:absolute;
+  left:22%;
+  right:22%;
+  bottom:-7px;
+  height:3px;
+  border-radius:999px;
+  background:#ff4a52;
+  box-shadow:0 0 10px rgba(255,74,82,.65);
+}
+
+.wz-turn-tab-icon{
+  display:block;
+  min-height:18px;
+  font-size:1rem;
+  line-height:1;
+  filter:saturate(.9);
+}
+
+.wz-turn-tab.active .wz-turn-tab-icon{
+  transform:scale(1.05);
+}
+
+@media(max-width:560px){
+  .wz-turn-tabs-label{
+    padding:12px 12px 6px;
+    font-size:.66rem;
+  }
+
+  .wz-turn-detail-page .wz-turn-tabs{
+    gap:5px!important;
+    padding:7px 7px 11px!important;
+  }
+
+  .wz-turn-detail-page .wz-turn-tab{
+    min-height:56px!important;
+    padding:6px 3px!important;
+    border-radius:10px!important;
+    font-size:clamp(.60rem,2.6vw,.69rem)!important;
+  }
+
+  .wz-turn-tab-icon{
+    font-size:.92rem;
+  }
+}
+
+@media(max-width:370px){
+  .wz-turn-detail-page .wz-turn-tabs{
+    grid-template-columns:repeat(5,minmax(56px,1fr))!important;
+    overflow-x:auto!important;
+    scrollbar-width:none;
+  }
+  .wz-turn-detail-page .wz-turn-tabs::-webkit-scrollbar{display:none}
+}
+</style>
+
 </head>
 <body>
 <script id="wz-v58-prepaint-view">
@@ -4552,16 +4798,18 @@ body.wz-inbox-open{
             );
             marketScrollLocked = true;
 
-            // Classic fixed-body lock:
-            // The background keeps the exact same visual position and cannot move.
             document.documentElement.classList.add('wz-page-modal-open');
             document.body.classList.add('wz-page-modal-open');
 
-            document.body.style.position = 'fixed';
-            document.body.style.top = `-${marketLockedScrollY}px`;
-            document.body.style.left = '0';
-            document.body.style.right = '0';
-            document.body.style.width = '100%';
+            // V80:
+            // Body'yi position:fixed yapmak Android Chrome'da modal açıkken
+            // pinch zoom / pan hareketini kilitleyebiliyordu.
+            // Arka sayfayı yalnızca overflow ile donduruyoruz.
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.left = '';
+            document.body.style.right = '';
+            document.body.style.width = '';
 
             document.documentElement.style.overflow = 'hidden';
             document.body.style.overflow = 'hidden';
@@ -13448,7 +13696,13 @@ return;
     const t=item?.tournament||{}; const rule=item?.rule||{}; const id=String(t.id||'');
     const detail=state.details.get(id) || null;
     const status=statusClass(item);
-    const tabButtons=[['overview','Genel Bakış'],['rules','Kurallar'],['prizes','Ödüller'],['bracket','Fikstür'],['predictions','Tahminler']];
+    const tabButtons=[
+      ['overview','⌂','Genel Bakış'],
+      ['rules','☷','Kurallar'],
+      ['prizes','🏆','Ödüller'],
+      ['bracket','▦','Fikstür'],
+      ['predictions','🎯','Tahminler']
+    ];
     let panel = `<div class="wz-turn-loading">Turnuva detayları yükleniyor...</div>`;
     if(detail?.__error) panel = `<div class="wz-turn-empty">${esc(detail.__error)}</div>`;
     else if(detail){
@@ -13475,7 +13729,8 @@ return;
           ${renderTournamentTimeline(item)}
           <button id="wzTurnRegisterBtn" type="button" class="wz-turn-register ${registrationIsOpen(item)?'':'is-disabled'}"
             onclick="wzTournamentRegistration('${esc(id)}')" ${registrationIsOpen(item) ? '' : 'disabled'}>KAYIT OL</button>
-          <nav class="wz-turn-tabs">${tabButtons.map(([id2,name])=>`<button type="button" class="wz-turn-tab ${state.tab===id2?'active':''}" onclick="wzTurnSetTab('${id2}')">${name}</button>`).join('')}</nav>
+          <div class="wz-turn-tabs-label">Turnuva Detayları</div>
+          <nav class="wz-turn-tabs" aria-label="Turnuva detay bölümleri">${tabButtons.map(([id2,icon,name])=>`<button type="button" class="wz-turn-tab ${state.tab===id2?'active':''}" onclick="wzTurnSetTab('${id2}')" aria-pressed="${state.tab===id2?'true':'false'}"><span class="wz-turn-tab-icon" aria-hidden="true">${icon}</span><span>${name}</span></button>`).join('')}</nav>
           <div class="wz-turn-panel">${panel}</div>
         </section>
       </div>
@@ -13878,7 +14133,7 @@ return;
 </script>
 
 
-<script id="wz-v24-modal-touch-guard">
+<script id="wz-v80-modal-touch-guard">
 (function(){
   function visible(el){
     if(!el) return false;
@@ -13907,21 +14162,17 @@ return;
     return null;
   }
 
-  function allowedScroller(target,overlay){
-    if(!target || !overlay || !overlay.contains(target)) return null;
+  function isInsideWindow(target,overlay){
+    if(!target || !overlay || !overlay.contains(target)) return false;
 
-    return target.closest(
-      '.modal-body,'+
-      '.redirect-modal-body,'+
-      '.purchase-body,'+
-      '.gift-modal-content,'+
-      '.notifications-modal-content,'+
-      '.inbox-body,'+
-      '.inbox-list,'+
-      '.inbox-conversation,'+
-      '#tv2ModalBody,'+
-      '.wz-product-info-body,'+
-      '#imageModal .main-slider'
+    if(overlay.id==='wzProductInfoModal'){
+      return !!target.closest('.wz-product-info-card');
+    }
+
+    return !!target.closest(
+      '.modal-content,'+
+      '.verify-wait-card,'+
+      '.wz-product-info-card'
     );
   }
 
@@ -13929,20 +14180,28 @@ return;
     const overlay=activeOverlay();
     if(!overlay) return;
 
-    const scroller=allowedScroller(event.target,overlay);
-
-    // Touch outside the active window: background is never allowed to move.
-    if(!scroller){
-      event.preventDefault();
+    // EN ÖNEMLİ DÜZELTME:
+    // İki veya daha fazla parmak = tarayıcının doğal pinch zoom hareketi.
+    // Hiçbir modal bu hareketi preventDefault ile kesmeyecek.
+    if(event.touches && event.touches.length >= 2){
       return;
     }
 
-    // Image modal owns its own pinch/drag logic.
-    if(scroller.matches('#imageModal .main-slider')) return;
+    // Görsel görüntüleyici kendi pan/zoom sistemini yönetiyor.
+    if(overlay.id==='imageModal'){
+      return;
+    }
 
-    // Stop iOS/Android scroll chaining at the top/bottom of modal content.
-    const canScroll=scroller.scrollHeight > scroller.clientHeight + 1;
-    if(!canScroll){
+    // Pencerenin içindeki tek parmak hareketleri tamamen tarayıcıya bırakılır.
+    // Böylece inboxMessages, inboxBody, hediye kodu gövdesi, satın alma
+    // penceresi vb. doğal olarak aşağı/yukarı kayabilir.
+    if(isInsideWindow(event.target,overlay)){
+      return;
+    }
+
+    // Yalnızca karartılmış arka yüzeyde tek parmakla sayfanın sürüklenmesini engelle.
+    // İçerik alanına ve pinch zoom'a dokunulmaz.
+    if(event.target===overlay){
       event.preventDefault();
     }
   },{passive:false,capture:true});
