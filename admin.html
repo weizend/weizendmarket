@@ -2269,10 +2269,6 @@ html,body{max-width:100%;overflow-x:hidden}
             <h2>💚 Destek Ödülleri</h2>
             <div class="muted">Abonelik, yenileme, Gift, KICKs ve BynoGame bağışlarından otomatik tek kullanımlık puan kodları üret.</div>
           </div>
-          <div class="btnRow" style="width:auto;justify-content:flex-end;">
-            <button class="secondary smallBtn" style="width:auto;min-width:0" onclick="loadSupportRewardAdmin(true)">🔄 Yenile</button>
-            <button class="smallBtn" style="width:auto;min-width:0" onclick="syncSupportRewardSourcesAdmin()">🔍 Destekleri Tara</button>
-          </div>
         </div>
 
         <div class="supportRewardInfo">
@@ -2364,7 +2360,7 @@ html,body{max-width:100%;overflow-x:hidden}
             <h2>📋 Destek Hakları / Oluşturulan Kodlar</h2>
             <div id="supportRewardEventsCount" class="muted">Destek kayıtları yüklenmedi.</div>
           </div>
-          <button class="secondary" style="width:auto" onclick="loadSupportRewardEvents()">🔄 Listeyi Yenile</button>
+          <button class="smallBtn" style="width:auto;min-width:0" onclick="syncSupportRewardSourcesAdmin()">🔍 Destekleri Tara</button>
         </div>
 
         <div class="supportRewardToolbar">
@@ -3217,6 +3213,7 @@ html,body{max-width:100%;overflow-x:hidden}
               <option value="subscription">⭐ Abonelik / Hediye Abonelik</option>
               <option value="free">🎁 Ücretsiz</option>
             </select>
+            <div id="tEntryModeLockNote" class="muted" role="status" aria-live="polite" style="display:none;margin-top:8px;padding:10px 12px;border:1px solid #735120;border-radius:9px;background:#211909;color:#ffda8a;line-height:1.5"></div>
           </div>
 
           <div class="field" id="tFeeBox">
@@ -7751,11 +7748,13 @@ let tournamentCatalogCache = [];
 let tournamentPredictionAdminCache = null;
 let currentTournamentAdmin = null;
 let currentTournamentRule = null;
+let currentTournamentEntryModeLock = null;
 let currentTournamentEntries = null;
 let currentTournamentBracket = null;
 
 function tournamentStatusText(status){
   const map = {
+    captain_payment_pending:'Kaptanın Katılım Şartı Bekleniyor',
     forming:'Kadro Oluşturuluyor',
     waiting_players:'Oyuncular Bekleniyor',
     waiting_payment:'Katılım Şartı Bekleniyor',
@@ -8532,6 +8531,7 @@ async function loadTournamentList(force=false){
       if(stateEl) stateEl.textContent = 'Yönetilecek turnuva yok';
       currentTournamentAdmin = null;
       currentTournamentRule = null;
+      currentTournamentEntryModeLock = null;
       currentTournamentEntries = null;
       currentTournamentBracket = null;
       document.getElementById('tournamentQuickInfo').innerHTML = '';
@@ -8937,6 +8937,7 @@ async function loadTournamentConfig(){
       adminTemplate:catalogItem.adminTemplate === true || String(catalogItem.lifecycleStatus || '').toLowerCase() === 'template'
     };
     currentTournamentRule = rule;
+    currentTournamentEntryModeLock = v2Res.d.entryModeLock || null;
 
     document.getElementById('tName').value = t.name || '';
     document.getElementById('tTeamSize').value = String(Number(t.teamSize || 1));
@@ -9044,8 +9045,8 @@ async function loadTournamentConfig(){
         : `Fikstür için kontenjanın dolması ve tüm kayıtların hazır olması gerekir. Kayıt: ${registered}/${capacity}, Hazır: ${ready}/${registered}`;
     }
 
-    updateTournamentEntryFields();
     setTournamentTemplateMode(false);
+    updateTournamentEntryFields();
 
     await Promise.all([
       loadTournamentEntries(true),
@@ -9063,7 +9064,20 @@ async function loadTournamentConfig(){
 }
 
 function updateTournamentEntryFields(){
-  const mode = document.getElementById('tEntryMode')?.value || 'free';
+  const selector = document.getElementById('tEntryMode');
+  const lockNote = document.getElementById('tEntryModeLockNote');
+  const modeLocked = currentTournamentEntryModeLock?.locked === true;
+  if(selector){
+    selector.disabled = modeLocked;
+    selector.title = modeLocked ? 'Katılım türünü değiştirmeden önce kayıtları ve bekleyen işlemleri kaldır.' : '';
+  }
+  if(lockNote){
+    lockNote.style.display = modeLocked ? 'block' : 'none';
+    lockNote.textContent = modeLocked
+      ? `🔒 Katılım türü kilitli. ${currentTournamentEntryModeLock.reason || 'Önce mevcut kayıtları ve bekleyen işlemleri iptal et.'}`
+      : '';
+  }
+  const mode = selector?.value || 'free';
   const feeBox = document.getElementById('tFeeBox');
   const fee = document.getElementById('tFee');
   const close = document.getElementById('tRegistrationClosesAt');
@@ -9072,7 +9086,7 @@ function updateTournamentEntryFields(){
   if(feeBox) feeBox.style.display = mode === 'tl' ? '' : 'none';
 
   if(fee){
-    fee.disabled = mode !== 'tl';
+    fee.disabled = mode !== 'tl' || modeLocked;
     if(mode !== 'tl') fee.value = 0;
   }
 
@@ -9217,6 +9231,8 @@ async function saveTournamentConfig(){
       select.value = tournamentId;
     }
 
+    // Kayıtlı turnuvalarda katılım türü kilidini tazele.
+    await loadTournamentConfig();
     showStatus(
       'tournamentStatus',
       '✅ Ayarlar kaydedildi.',
@@ -9225,6 +9241,15 @@ async function saveTournamentConfig(){
 
   }catch(error){
     showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
+    // Başka kullanıcı o sırada kayıt yaptıysa kilit durumunu sunucudan yeniden al.
+    try{
+      const info=await api(`/admin/tournament/v2/config?id=${encodeURIComponent(tournamentId)}&_=${Date.now()}`);
+      if(info.r.ok && info.d?.success){
+        currentTournamentEntryModeLock=info.d.entryModeLock||null;
+        if(info.d.rule?.entryMode) document.getElementById('tEntryMode').value=info.d.rule.entryMode;
+        updateTournamentEntryFields();
+      }
+    }catch(_){}
   }finally{
     if(button){
       button.disabled = false;
