@@ -1561,7 +1561,7 @@ body.wz-view-tournament #wzMobileTournamentHero{display:none!important}
   border:1px solid #262931;border-radius:20px;background:linear-gradient(180deg,#11141a,#0a0c10);overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.18)
 }
 .wz-turn-card-head{
-  min-height:154px;padding:14px;display:flex;flex-direction:column;justify-content:space-between;position:relative;
+  min-height:205px;padding:14px;display:flex;flex-direction:column;justify-content:space-between;position:relative;
   background:
     linear-gradient(180deg,rgba(0,0,0,.18),rgba(0,0,0,.56)),
     var(--wz-turn-cover-image, radial-gradient(circle at 82% 24%,rgba(226,18,18,.42),transparent 22%)),
@@ -1620,13 +1620,18 @@ body.wz-view-tournament #wzMobileTournamentHero{display:none!important}
 
 /* V70: Ödüller + kayıt şartı DIŞ KAPAK görselinin üzerinde */
 .wz-turn-card-promo{
+  position:absolute!important;
+  left:14px;
+  right:14px;
+  bottom:12px;
+  z-index:3!important;
   display:flex;
   align-items:flex-end;
   justify-content:space-between;
   gap:8px;
-  margin-top:auto;
-  padding-top:22px;
   min-width:0;
+  margin:0!important;
+  padding:0!important;
 }
 .wz-turn-card-prizes{
   display:flex;
@@ -1698,7 +1703,7 @@ body.wz-view-tournament #wzMobileTournamentHero{display:none!important}
 }
 
 @media(max-width:560px){
-  .wz-turn-card-head{min-height:160px}
+  .wz-turn-card-head{min-height:210px}
   .wz-turn-card-promo{
     gap:6px;
     padding-top:18px;
@@ -3016,6 +3021,34 @@ body.wz-inbox-open{
 #urunGrid .main-card-img,
 #urunGrid .card-thumb{
   backface-visibility:hidden;
+}
+</style>
+
+
+<style id="wz-v71-cover-overlay-fix">
+.wz-turn-card-head:after{
+  content:'';
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  height:46%;
+  background:linear-gradient(180deg,transparent,rgba(0,0,0,.72));
+  pointer-events:none;
+  z-index:1;
+}
+.wz-turn-card-head > .wz-turn-card-row,
+.wz-turn-card-head > .wz-turn-card-promo{
+  position:relative;
+  z-index:3;
+}
+@media(max-width:560px){
+  .wz-turn-card-prizes{
+    max-width:68%;
+  }
+  .wz-turn-entry-pill{
+    max-width:40%;
+  }
 }
 </style>
 
@@ -12414,13 +12447,6 @@ return;
           </div>
           <span class="wz-turn-card-status ${tournamentCategory(item)}">${esc(tournamentCategoryLabel(item))}</span>
         </div>
-      </div>
-      <div class="wz-turn-card-body">
-        <div class="wz-turn-datehint">Turnuva Başlangıç Tarihi</div>
-        <div class="wz-turn-minirow">
-          <span>🗓 ${esc(formatShortDate(t.eventDate))}</span>
-          <span>🕒 ${esc(formatShortTime(t.eventDate))}</span>
-        </div>
 
         <div class="wz-turn-card-promo">
           <div class="wz-turn-card-prizes">
@@ -12433,6 +12459,13 @@ return;
           <span class="wz-turn-entry-pill ${esc(entryBadge.className)}">
             <span>${entryBadge.icon}</span><span>${esc(entryBadge.text)}</span>
           </span>
+        </div>
+      </div>
+      <div class="wz-turn-card-body">
+        <div class="wz-turn-datehint">Turnuva Başlangıç Tarihi</div>
+        <div class="wz-turn-minirow">
+          <span>🗓 ${esc(formatShortDate(t.eventDate))}</span>
+          <span>🕒 ${esc(formatShortTime(t.eventDate))}</span>
         </div>
 
         ${completed && fin.champion ? `<div class="wz-turn-completed-note">Şampiyon: <b>${esc(fin.champion)}</b></div>` : ''}
