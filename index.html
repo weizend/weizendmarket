@@ -4848,6 +4848,76 @@ body.wz-initializing{
     </div>
 
 
+
+<style id="wz-v85-tournament-modal-stability">
+/* Turnuva V3: içerik kendi içinde kayar; arka sayfa kapalı kalır. */
+#tv2Modal {
+  position:fixed!important;
+  inset:0!important;
+  width:100%!important;
+  height:100dvh!important;
+  max-height:100dvh!important;
+  padding:clamp(8px,2vw,20px)!important;
+  padding-top:max(8px,env(safe-area-inset-top))!important;
+  padding-bottom:max(8px,env(safe-area-inset-bottom))!important;
+  overflow:hidden!important;
+  align-items:center!important;
+  justify-content:center!important;
+  touch-action:pan-y pinch-zoom!important;
+}
+#tv2Modal > .tv2-modal-content {
+  display:flex!important;
+  flex-direction:column!important;
+  flex:0 1 auto!important;
+  width:min(980px,100%)!important;
+  max-width:100%!important;
+  min-width:0!important;
+  height:auto!important;
+  max-height:100%!important;
+  min-height:0!important;
+  margin:0 auto!important;
+  overflow:hidden!important;
+  touch-action:pan-y pinch-zoom!important;
+}
+#tv2Modal .modal-header {
+  flex:0 0 auto!important;
+  min-height:0!important;
+  padding:14px 16px!important;
+}
+#tv2ModalBody {
+  flex:1 1 auto!important;
+  min-height:0!important;
+  max-height:calc(100dvh - 110px)!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior-y:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+  touch-action:pan-y pinch-zoom!important;
+  scroll-behavior:auto!important;
+  overflow-wrap:anywhere;
+}
+#tv2ModalBody .tv2-panel,
+#tv2ModalBody .tv3-flow-card,
+#tv2ModalBody .tv2-field,
+#tv2ModalBody .tv2-hero {min-width:0;max-width:100%;}
+#tv2ModalBody .tv2-actions {display:flex!important;flex-wrap:wrap!important;gap:8px!important;}
+#tv2ModalBody .tv2-actions > button {
+  flex:1 1 170px;min-width:0;white-space:normal;overflow-wrap:anywhere;
+  min-height:42px;line-height:1.3;
+}
+#tv2ModalBody button,
+#tv2ModalBody input,
+#tv2ModalBody select {touch-action:manipulation!important;}
+@media(max-width:640px){
+  #tv2Modal {padding:8px!important;padding-top:max(8px,env(safe-area-inset-top))!important;padding-bottom:max(8px,env(safe-area-inset-bottom))!important;}
+  #tv2Modal > .tv2-modal-content {width:100%!important;max-height:100%!important;border-radius:14px!important;}
+  #tv2ModalBody {max-height:calc(100dvh - 95px)!important;padding:12px!important;}
+  #tv2ModalBody .tv2-hero {grid-template-columns:minmax(0,1fr)!important;}
+  #tv2ModalBody .tv2-actions > button {flex-basis:100%;}
+  #tv2ModalBody .tv2-panel {padding:12px!important;}
+}
+</style>
+
     <!-- MODAL: TURNUVA V2 -->
     <div id="tv2Modal" class="modal-overlay" onclick="tv2CloseFromOutside(event)">
         <div class="modal-content tv2-modal-content" onclick="event.stopPropagation()">
@@ -9537,7 +9607,7 @@ return;
         tv2CatalogLoadPromise = (async () => {
             try {
                 const r = await fetch(`${MARKET_WORKER}/tournaments?_=${Date.now()}`, {
-                    headers:{'Accept':'application/json'}, cache:'no-store'
+                    headers:{'Accept':'application/json'}, cache:'no-store', signal:AbortSignal.timeout(18000)
                 });
                 const d = await r.json();
                 if (!r.ok || !d?.success || !Array.isArray(d.tournaments)) {
@@ -9596,7 +9666,7 @@ return;
                 const list = document.getElementById('tournamentMarketGrid');
                 if (section && list) {
                     section.style.display = 'block';
-                    list.innerHTML = `<div class="tv2-empty">⚠️ Turnuva bilgileri alınamadı.<br>${tv2Esc(error.message || error)}</div>`;
+                    list.innerHTML = `<div class="tv2-empty">⚠️ Turnuva bilgileri alınamadı.<br>${tv2Esc(error.name === 'TimeoutError' ? 'Sunucu 18 saniyede yanıt vermedi. Tekrar dene.' : (error.message || error))}<div style="margin-top:12px"><button class="tv2-btn secondary" onclick="tv2LoadCatalog(true)">🔄 TEKRAR DENE</button></div></div>`;
                 }
 
                 try {
@@ -10148,7 +10218,14 @@ return;
             ...(options.headers || {}),
             'Authorization':`Bearer ${token}`
         };
-        const response = await fetch(`${MARKET_WORKER}${path}`, {...options, headers, cache:'no-store'});
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 18000);
+        let response;
+        try {
+            response = await fetch(`${MARKET_WORKER}${path}`, {...options, headers, signal:options.signal || controller.signal, cache:'no-store'});
+        } catch (error) {
+            throw new Error(error?.name === 'AbortError' ? 'Sunucu 18 saniyede yanıt vermedi. İşlem durumunu kontrol edip Yenileye bas.' : `Sunucuya ulaşılamadı: ${error?.message || error}`);
+        } finally { clearTimeout(timer); }
         let data = null;
         try { data = await response.json(); } catch (_) {}
         if (!response.ok || !data?.success) {
@@ -11413,13 +11490,17 @@ return;
         await tv2ReloadMe();
     }
 
+    let tv3ReloadSequence = 0;
     async function tv2ReloadMe(showToast = false) {
         const id = tv2State.tournamentId;
         if (!id) return;
+        const sequence = ++tv3ReloadSequence;
+        const body = document.getElementById('tv2ModalBody');
+        if (body && !tv2State.me) body.innerHTML = '<div class="tv2-empty">⏳ Turnuva hesabın kontrol ediliyor...</div>';
         try {
             const [pub, me, detail] = await Promise.all([
                 fetch(`${MARKET_WORKER}/tournament/v3/public?id=${encodeURIComponent(id)}&_=${Date.now()}`, {
-                    headers:{'Accept':'application/json'}, cache:'no-store'
+                    headers:{'Accept':'application/json'}, cache:'no-store', signal:AbortSignal.timeout(18000)
                 }).then(async r => {
                     const d = await r.json().catch(()=>({}));
                     if (!r.ok || !d?.success) {
@@ -11428,11 +11509,16 @@ return;
                         throw e;
                     }
                     return d;
+                }).catch(error => {
+                    // Public liste geçici arızalıysa kullanıcının ödeme panelini kilitleme.
+                    console.warn('V3 public liste alınamadı:',error);
+                    return tv2State.publicData || {};
                 }),
                 tv2AuthFetch(`/tournament/v3/me?id=${encodeURIComponent(id)}&_=${Date.now()}`),
                 tv2FetchPublicDetail(id).catch(()=>null)
             ]);
 
+            if (sequence !== tv3ReloadSequence || String(tv2State.tournamentId) !== String(id)) return;
             tv2State.publicData = {
                 tournament:pub.tournament || tv2State.publicData?.tournament || {},
                 rule:pub.rule || tv2State.publicData?.rule || {},
@@ -11446,8 +11532,9 @@ return;
             tv3RestorePendingTl();
             if (showToast) showStatusToast('✅ Turnuva durumu güncellendi.', 2200);
         } catch (error) {
+            if (sequence !== tv3ReloadSequence || String(tv2State.tournamentId) !== String(id)) return;
             if (Number(error?.status || 0) === 404) {
-                error = new Error('Turnuva V3 Worker güncellemesi henüz aktif değil. Worker dosyasını güncelledikten sonra tekrar dene.');
+                error = new Error('Turnuva hesabı alınamadı (404). Worker sürümünü veya turnuva kaydını kontrol et.');
             }
             tv2ModalError(error);
         }
@@ -11493,7 +11580,7 @@ return;
                     <div class="tv2-muted">
                         ${teamSize <= 1
                             ? 'Oyun içi adını gir ve katılım şartını tamamla. Doğrulama bitmeden kayıt kesinleşmez.'
-                            : 'Kaptan yalnızca kendi bilgileriyle takımı başlatır. Kaptanın katılım şartı tamamlanınca kalan koltuklar için tek kullanımlık takım davet kodları üretilir.'}
+                            : 'Kaptan takımı kendi hesabıyla başlatır. Abonelik / Gift turnuvasında her oyuncu kendi koltuğunun abonelik veya gift şartını kendisi tamamlar. Yalnızca TL / BynoGame bağışıyla başka oyuncuların koltuk ücretleri önceden ödenebilir. Kaptanın kendi şartı doğrulanınca davet kodları oluşur.'}
                     </div>
                     <div class="tv2-actions">
                         <button class="tv2-btn" ${closed?'disabled':''} onclick="tv2ShowCreateForm()">${teamSize <= 1 ? '🎮 KAYIT OL' : '👑 TAKIM OLUŞTUR'}</button>
@@ -11517,9 +11604,12 @@ return;
             content += tv2PublicBracketHtml(tv2State.publicDetail);
         }
 
-        document.getElementById('tv2ModalBody').innerHTML = content;
+        const modalBody = document.getElementById('tv2ModalBody');
+        const previousScroll = modalBody.scrollTop;
+        modalBody.innerHTML = content;
         if (tv2State.form === 'create') tv2ShowCreateForm(true);
         if (tv2State.form === 'join') tv2ShowJoinForm(true);
+        modalBody.scrollTop = previousScroll;
     }
 
     function tv2ShowCreateForm(keep = false) {
@@ -11555,7 +11645,7 @@ return;
                 <div class="tv2-message" style="margin-bottom:12px;">
                     ${solo
                         ? 'Oyun içi adını doğru gir. Katılım şartı sunucuda doğrulanmadan kaydın aktif olmaz.'
-                        : 'Sadece kaptanın bilgileri alınır. Diğer oyuncular daha sonra tek kullanımlık davet kodlarıyla kendi hesaplarından katılır.'}
+                        : 'Kaptan kendi hesabını kaydeder. Abonelik / Gift ile katılımda her oyuncu kendi şartını kendi hesabıyla tamamlar. Başka koltuğun ücreti yalnızca BynoGame bağışıyla önceden ödenebilir. Diğer oyuncular tek kullanımlık davet koduyla katılır.'}
                 </div>
                 ${!solo ? `
                     <div class="tv2-field">
@@ -11880,7 +11970,7 @@ return;
                             <div class="tv2-muted">Koltuk ${Number(inv.slotIndex || 0) || '-'}</div>
                             ${(inv.code || inv.displayCode) && !['used','revoked','expired'].includes(String(inv.status||'')) ? `<button class="tv2-btn secondary" onclick="copyTextReliable('${tv2Esc(inv.code || inv.displayCode)}');showStatusToast('📋 Davet kodu kopyalandı',2200)">📋 KODU KOPYALA</button>` : ''}
                         </div>
-                    `).join('') : '<div class="tv2-message">Kaptanın katılım şartı doğrulandıktan sonra davet kodları burada oluşur.</div>'}
+                    `).join('') : '<div class="tv2-message">Kaptanın kendi katılım şartı doğrulandıktan sonra davet kodları burada oluşur. Abonelik / Gift ile herkes kendi koltuğunun şartını tamamlar; yalnız BynoGame ile başkasının ücreti ödenebilir.</div>'}
                 </div>
             </div>
         ` : '';
