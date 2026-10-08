@@ -4658,6 +4658,7 @@ body.wz-initializing{
             <div class="redirect-modal-body">
                 <p id="redirectStatusText" style="color: #fff; margin: 0; font-size: 1.05rem; white-space:pre-line; line-height:1.6;">Komut kopyalandı, Kick sohbete yönlendiriliyorsunuz:</p>
                 <div class="redirect-command-box" id="modalCommandText">!komut</div>
+                <p id="redirectPolicyText" class="wz-payment-policy" hidden></p>
                 <div class="redirect-timer" id="timerText">Ödeme sayfası hazırlanıyor...</div>
                 <button id="redirectExternalOpenButton"
                         class="purchase-confirm-btn"
@@ -8620,6 +8621,19 @@ return;
             const targetUrl = String(url || '').trim();
             if (!/^https:\/\//i.test(targetUrl)) return false;
 
+            // Mobile Chrome: use a normal new tab (no popup-only features).
+            // Called synchronously from the user's confirmation button.
+            if (wzExternalPaymentIsMobileLike()) {
+                try {
+                    const tab = window.open(targetUrl, '_blank');
+                    if (tab) {
+                        pendingKickWindow = tab;
+                        return true;
+                    }
+                } catch (_) {}
+                return false;
+            }
+
             try {
                 if (pendingKickWindow && !pendingKickWindow.closed) {
                     pendingKickWindow.location.href = targetUrl;
@@ -8659,13 +8673,18 @@ return;
             }
         }
 
+        let pendingExternalPaymentCode = '';
+
         function wzShowExternalPaymentModal({
             url,
             title,
             message,
             codeText='',
+            policyText='',
+            paymentKind='',
             buttonText='ÖDEME SAYFASINI AÇ'
         }) {
+            pendingExternalPaymentCode = String(codeText || '').trim();
             pendingExternalPaymentUrl = String(url || '').trim();
             pendingExternalPaymentLabel = String(title || 'Ödeme');
 
@@ -8676,6 +8695,7 @@ return;
             const timerEl = document.getElementById('timerText');
             const openButton = document.getElementById('redirectExternalOpenButton');
             const cancelButton = document.getElementById('redirectCancelButton');
+            const policyEl = document.getElementById('redirectPolicyText');
 
             if (!modal || !titleEl || !statusEl || !commandEl || !timerEl || !openButton) {
                 // UI bulunamazsa mevcut sayfayı bozma; yeni sekme/popup dene.
@@ -8692,7 +8712,13 @@ return;
 
             titleEl.innerText = title;
             statusEl.innerText = message;
-            commandEl.innerText = codeText || 'İşlemi resmi ödeme sayfasında tamamla.';
+            commandEl.innerText = codeText || '';
+            if (policyEl) {
+                policyEl.textContent = policyText;
+                policyEl.hidden = !policyText;
+            }
+            modal.classList.add('wz-payment-guide');
+            modal.dataset.wzPaymentKind = String(paymentKind || (/bynogame/i.test(String(url)) ? 'tl' : 'direct'));
             openButton.innerText = buttonText;
             openButton.style.display = 'block';
             openButton.disabled = false;
@@ -8704,9 +8730,11 @@ return;
 
             modal.style.display = 'flex';
 
-            // V86: Otomatik popup KALDIRILDI. Kullanıcının açık 'Okudum/Devam Et'
-            // dokunuşu ile açılır; ödeme hazırlama tamamlanmadan pencere açılmaz.
-            timerEl.innerText = 'Açıklamayı oku; hazır olduğunda aşağıdaki DEVAM ET düğmesine dokun.';
+            // Onay her zaman en üstte; alttaki turnuva kaydı kapatılmaz.
+            modal.scrollTop = 0;
+            const inner = modal.querySelector('.redirect-modal-body');
+            if (inner) inner.scrollTop = 0;
+            timerEl.innerText = '';
         }
 
         function wzOpenPendingExternalPayment() {
@@ -8719,6 +8747,14 @@ return;
                 return;
             }
 
+            // Kopyalama doğrudan kullanıcı tıklamasında BAŞLAR; popup açılması
+            // clipboard promise'inin bitmesini beklemez (mobil popup engeli).
+            const code = pendingExternalPaymentCode;
+            if (code) {
+                copyTextReliable(code)
+                    .then(() => showStatusToast('✅ Bağış kodu kopyalandı', 3600))
+                    .catch(() => {});
+            }
             const opened = wzOpenExternalPaymentWindow(url);
 
             if (opened) {
@@ -8752,14 +8788,17 @@ return;
                 }catch(_){}
             }
             const hasAmount=pending && Number(pending.expected||0)>0;
-            const detail=hasAmount ?
-              `Toplam gerekli: ${formatTlFromCents(pending.expected)}\nGelen: ${formatTlFromCents(pending.received||0)}\nKalan: ${formatTlFromCents(pending.remaining)}\n\n` : '';
+            const detail = hasAmount
+                ? `Toplam: ${formatTlFromCents(pending.expected)}\nÖdenen: ${formatTlFromCents(pending.received||0)}\nKalan: ${formatTlFromCents(pending.remaining)}\n\n`
+                : '';
             wzShowExternalPaymentModal({
                 url: BYNOGAME_DONATION_URL,
                 title: '💳 Turnuva Katılım Bağışı',
-                message: detail+'BynoGame bağış mesajına YALNIZCA aşağıdaki tek kodu yaz.\n\nEksik ödeme yaparsan kalan tutarı AYNI KOD ile tamamlayabilirsin.\n\nGerekli tutarın üzerinde bağış gönderirsen fazlası için iade yapılmaz.\n\nBilgileri okuduktan sonra DEVAM ET butonuna dokun.',
+                message: detail + 'BynoGame bağış mesajına aşağıdaki kodu yaz:',
                 codeText: reference,
-                buttonText: 'OKUDUM · DEVAM ET · BYNOGAME'
+                policyText: 'Eksik ödersen kalan tutarı aynı kodla tamamlayabilirsin.\nFazla bağışın iadesi yapılmaz.',
+                paymentKind: 'tl',
+                buttonText: '📋 KODU KOPYALA · DEVAM ET'
             });
         }
 
@@ -9110,6 +9149,7 @@ return;
 }
 
         function islemYapBaslat(komut) {
+            document.getElementById('redirectModal')?.classList.remove('wz-payment-guide');
             if (currentAccountStatus === 'blocked') {
                 showStatusToast(`⛔ HESABIN KISITLANDI${currentBlockedReason ? ': ' + currentBlockedReason : ''}`, 5000);
                 return;
@@ -9151,12 +9191,21 @@ return;
                 clearInterval(redirectTimer);
                 redirectTimer = null;
             }
-            if (pendingKickWindow && !pendingKickWindow.closed) {
+            // Ödeme sayfası açıldıysa kullanıcı kılavuzu kapatırken gerçek Kick /
+            // BynoGame sekmesini ASLA kapatma. Eski ürün-komut akışı korunur.
+            const wasPaymentGuide = document.getElementById('redirectModal')?.classList.contains('wz-payment-guide');
+            if (!wasPaymentGuide && pendingKickWindow && !pendingKickWindow.closed) {
                 try { pendingKickWindow.close(); } catch (_) {}
             }
             pendingKickWindow = null;
             pendingExternalPaymentUrl = '';
             pendingExternalPaymentLabel = '';
+            pendingExternalPaymentCode = '';
+            const modal = document.getElementById('redirectModal');
+            if (modal) {
+                modal.classList.remove('wz-payment-guide');
+                delete modal.dataset.wzPaymentKind;
+            }
 
             const openButton = document.getElementById('redirectExternalOpenButton');
             if (openButton) {
@@ -10938,22 +10987,48 @@ return;
             url,
             title,
             message,
-            codeText,
-            buttonText: /kick\.com/i.test(String(url || ''))
-                ? 'OKUDUM · DEVAM ET · KICK'
-                : 'OKUDUM · DEVAM ET'
+            codeText: '',
+            paymentKind: 'direct',
+            buttonText: '⭐ KICK SAYFASINA GİT'
         });
     }
 
     function tv2OpenKickChannel(p = null) {
-        const direct=Number(p?.requiredDirectSubs||0), gift=Number(p?.requiredGifts||0);
-        const requirement = direct ? `${direct} normal Kick aboneliği` : gift ? `${gift} Kick hediye aboneliği (Gift)` : 'kendi abonelik veya hediye abonelik şartın';
-        tv2RedirectCountdown(
-            TV2_KICK_CHANNEL_URL,
-            '⭐ Kick Abonelik / Gift Onayı',
-            `Turnuva katılımın için gerekli: ${requirement}.\n\nHerkes KENDİ koltuğunun abonelik/gift şartını kendi doğrulanmış Kick hesabıyla tamamlamalıdır. Başka koltuğun ücretini yalnızca BynoGame bağışıyla ödeyebilirsin.\n\nİşlemi tamamlayıp markete geri döndüğünde KONTROL ET düğmesine dokun.`,
-            'Bilgileri okudum, abonelik sayfasına geçeceğim.'
-        );
+        // V3'te bir hesap için yalnızca normal ABONELİK veya yalnızca HEDİYE
+        // istenir. Bu ödeme türleri sunucuda da ayrı doğrulanır.
+        if (!p?.id) {
+            p = (tv2State.me?.subscriptionPayments || []).find(x =>
+                String(x.status || '').toLowerCase() === 'pending' &&
+                (Number(x.remainingDirectSubs || 0) > 0 || Number(x.remainingGifts || 0) > 0)
+            ) || p;
+        }
+        const direct = Number(p?.remainingDirectSubs ?? p?.requiredDirectSubs ?? 0);
+        const gift = Number(p?.remainingGifts ?? p?.requiredGifts ?? 0);
+        const currentChoice = document.querySelector('#tv3CreateSubscriptionState, #tv3JoinSubscriptionState, #tv2SoloSubscriptionState')?.value || '';
+        const isDirect = direct > 0 || (!gift && currentChoice === 'not_subscribed');
+        const isGift = gift > 0 || (!direct && currentChoice === 'already_subscribed');
+
+        let title, message, buttonText, kind;
+        if (isDirect && !isGift) {
+            kind='direct';
+            title='⭐ Normal Kick Aboneliği';
+            message='Katılım için kendi Kick hesabınla 1 normal abonelik yapmalısın.\nHediye gönderimleri bu işlem yerine geçmez.\nDöndüğünde KONTROL ET butonuna bas.';
+            buttonText='⭐ ABONE OL · KICK’E GİT';
+        } else if (isGift && !isDirect) {
+            kind='gift';
+            title='🎁 Hediye Abonelik Bekleniyor';
+            message='Zaten abone olduğun için 1 hediye abonelik (Gift) göndermelisin.\nNormal abonelik bu şartı karşılamaz.\nDöndüğünde KONTROL ET butonuna bas.';
+            buttonText='🎁 HEDİYE GÖNDER · KICK’E GİT';
+        } else {
+            kind='direct';
+            title='⭐ Kick Katılım Şartı';
+            message='Seçtiğin abonelik şartını kendi Kick hesabınla tamamla.\nDöndüğünde KONTROL ET butonuna bas.';
+            buttonText='⭐ KICK SAYFASINA GİT';
+        }
+        wzShowExternalPaymentModal({
+            url: TV2_KICK_CHANNEL_URL,
+            title, message, codeText:'', paymentKind:kind, buttonText
+        });
     }
 
     function tv2RestorePendingTl() {
@@ -11380,16 +11455,26 @@ return;
         return `
             <div class="tv2-field">
                 <label>Kick Abonelik Durumun</label>
-                <select id="${tv2Esc(selectId)}" class="tv2-input">
+                <select id="${tv2Esc(selectId)}" class="tv2-input" onchange="tv3SubscriptionChoiceChanged(this)">
                     <option value="">Seçiniz</option>
-                    <option value="not_subscribed">Abone değilim — kendim için 1 abonelik yapacağım</option>
-                    <option value="already_subscribed">Zaten aboneyim — 1 abonelik hediyesi göndereceğim</option>
+                    <option value="not_subscribed">Abone değilim — normal abonelik yapacağım</option>
+                    <option value="already_subscribed">Aboneyim — 1 hediye abonelik göndereceğim</option>
                 </select>
-                <div class="tv2-muted" style="margin-top:6px;">
-                    Sistem işlemi gönderen doğrulanmış Kick hesabını kontrol eder. Zaten aboneysen kayıt için 1 gift gerekir.
+                <div class="tv2-muted tv3-subscription-choice-note" style="margin-top:6px;">
+                    Seçimine göre kendi Kick hesabındaki ilgili işlem doğrulanır.
                 </div>
             </div>
         `;
+    }
+
+    function tv3SubscriptionChoiceChanged(select) {
+        const note = select?.parentElement?.querySelector('.tv3-subscription-choice-note');
+        if (!note) return;
+        note.textContent = select.value === 'not_subscribed'
+            ? 'Kendi hesabından normal abone olmalısın. Hediye gönderimi bu şart için sayılmaz.'
+            : select.value === 'already_subscribed'
+                ? 'Zaten abonesin: kendi hesabından 1 hediye abonelik göndermelisin.'
+                : 'Seçimine göre kendi Kick hesabındaki ilgili işlem doğrulanır.';
     }
 
     function tv3PaymentAmounts(payment = {}) {
@@ -11448,10 +11533,12 @@ return;
         const giftsRequired = Number(p.requiredGifts || 0);
         const giftsReceived = Number(p.receivedGifts || 0);
         const paid = String(p.status || '').toLowerCase() === 'paid';
+        const awaitingGift = giftsRequired > 0 && directRequired === 0;
+        const awaitingLabel = awaitingGift ? '🎁 Hediye Abonelik Bekleniyor' : '⭐ Abonelik Bekleniyor';
         return `
             <div class="tv3-payment-card ${paid ? 'paid' : ''}">
                 <div class="tv3-payment-head">
-                    <b>${paid ? '✅ Abonelik Şartı Tamamlandı' : '⭐ Abonelik / Gift Bekleniyor'}</b>
+                    <b>${paid ? '✅ Abonelik Şartı Tamamlandı' : awaitingLabel}</b>
                     <span class="tv3-chip ${paid ? 'ok' : 'warn'}">${tv2Esc(paid ? 'TAMAMLANDI' : 'BEKLİYOR')}</span>
                 </div>
                 <div class="tv3-money-grid">
@@ -11460,7 +11547,7 @@ return;
                 </div>
                 ${!paid ? `
                     <div class="tv2-actions">
-                        <button class="tv2-btn" onclick="tv2OpenKickChannel(tv2State.me?.subscriptionPayments?.find(x=>String(x.id)==='${tv2Esc(p.id)}')||null)">⭐ KICK ABONELİK SAYFASINI AÇ</button>
+                        <button class="tv2-btn" onclick="tv2OpenKickChannel(tv2State.me?.subscriptionPayments?.find(x=>String(x.id)==='${tv2Esc(p.id)}')||null)">${awaitingGift ? '🎁 HEDİYE ABONELİK SAYFASINI AÇ' : '⭐ KICK ABONELİK SAYFASINI AÇ'}</button>
                         <button class="tv2-btn secondary" onclick="tv3RefreshSubscription('${tv2Esc(p.id)}',true)">🔄 KONTROL ET</button>
                         ${directReceived === 0 && giftsReceived === 0 ? `<button class="tv2-btn danger" onclick="tv3CancelPendingPayment('${tv2Esc(p.id)}','subscription')">İŞLEMİ İPTAL ET</button>` : ''}
                     </div>
@@ -11601,7 +11688,7 @@ return;
                     <div class="tv2-muted">
                         ${teamSize <= 1
                             ? 'Oyun içi adını gir ve katılım şartını tamamla. Doğrulama bitmeden kayıt kesinleşmez.'
-                            : 'Kaptan takımı kendi hesabıyla başlatır. Abonelik / Gift turnuvasında her oyuncu kendi koltuğunun abonelik veya gift şartını kendisi tamamlar. Yalnızca TL / BynoGame bağışıyla başka oyuncuların koltuk ücretleri önceden ödenebilir. Kaptanın kendi şartı doğrulanınca davet kodları oluşur.'}
+                            : 'Kaptan takımı kendi hesabıyla başlatır. Her oyuncu kendi katılım şartını tamamlar. Takım arkadaşları davet koduyla katılır. Kaptanın şartı doğrulanınca davet kodları oluşur.'}
                     </div>
                     <div class="tv2-actions">
                         <button class="tv2-btn" ${closed?'disabled':''} onclick="tv2ShowCreateForm()">${teamSize <= 1 ? '🎮 KAYIT OL' : '👑 TAKIM OLUŞTUR'}</button>
@@ -11666,7 +11753,7 @@ return;
                 <div class="tv2-message" style="margin-bottom:12px;">
                     ${solo
                         ? 'Oyun içi adını doğru gir. Katılım şartı sunucuda doğrulanmadan kaydın aktif olmaz.'
-                        : 'Kaptan kendi hesabını kaydeder. Abonelik / Gift ile katılımda her oyuncu kendi şartını kendi hesabıyla tamamlar. Başka koltuğun ücreti yalnızca BynoGame bağışıyla önceden ödenebilir. Diğer oyuncular tek kullanımlık davet koduyla katılır.'}
+                        : 'Kaptan kendi hesabını kaydeder. Abonelik şartını her oyuncu kendi hesabıyla tamamlar. Diğer oyuncular tek kullanımlık davet koduyla katılır.'}
                 </div>
                 ${!solo ? `
                     <div class="tv2-field">
@@ -11917,7 +12004,7 @@ return;
                 source:context.source || ''
             };
             localStorage.setItem(TV3_PENDING_TL_KEY, JSON.stringify(pending));
-            copyTextReliable(reference).catch(()=>{});
+            // Kod, kullanıcı KODU KOPYALA · DEVAM ET butonuna bastığında kopyalanır.
             showBynoGameRedirect(reference,tv3PaymentAmounts(p));
             tv2ReloadMe().catch(()=>{});
             showStatusToast(`💳 Bağış kodun hazır · ${formatTlFromCents(p.expectedAmountCents || 0)}`, 3300);
@@ -11991,7 +12078,7 @@ return;
                             <div class="tv2-muted">Koltuk ${Number(inv.slotIndex || 0) || '-'}</div>
                             ${(inv.code || inv.displayCode) && !['used','revoked','expired'].includes(String(inv.status||'')) ? `<button class="tv2-btn secondary" onclick="copyTextReliable('${tv2Esc(inv.code || inv.displayCode)}').then(()=>{this.textContent='✅ KOPYALANDI';setTimeout(()=>{if(this.isConnected)this.textContent='📋 KODU KOPYALA'},2000)}).catch(()=>{})">📋 KODU KOPYALA</button>` : ''}
                         </div>
-                    `).join('') : '<div class="tv2-message">Kaptanın kendi katılım şartı doğrulandıktan sonra davet kodları burada oluşur. Abonelik / Gift ile herkes kendi koltuğunun şartını tamamlar; yalnız BynoGame ile başkasının ücreti ödenebilir.</div>'}
+                    `).join('') : '<div class="tv2-message">Kaptanın kendi katılım şartı doğrulandıktan sonra davet kodları burada oluşur. Herkes kendi abonelik şartını kendi hesabıyla tamamlar.</div>'}
                 </div>
             </div>
         ` : '';
@@ -12170,14 +12257,20 @@ return;
             const d = await tv2AuthFetch(`/tournament/v3/subscription/status?id=${encodeURIComponent(paymentId)}&_=${Date.now()}`);
             const p = d.subscriptionPayment || d.payment || {};
             if (String(p.status || '').toLowerCase() === 'paid') {
-                showStatusToast('✅ Abonelik / gift şartı doğrulandı.', 4200);
+                showStatusToast('✅ Katılım için gerekli abonelik şartın doğrulandı.', 4200);
                 await tv2ReloadMe();
                 await tv2LoadCatalog(false);
                 refreshInboxBadge().catch(()=>{});
                 return;
             }
             if (notify) {
-                showStatusToast(`⭐ Kalan: ${Number(p.remainingDirectSubs || 0)} normal abonelik + ${Number(p.remainingGifts || 0)} gift`, 4200);
+                const directLeft = Number(p.remainingDirectSubs || 0);
+                const giftLeft = Number(p.remainingGifts || 0);
+                showStatusToast(directLeft > 0 && giftLeft === 0
+                    ? `⭐ Normal aboneliğin bekleniyor (${directLeft}). Hediye bu işlem için sayılmaz.`
+                    : giftLeft > 0 && directLeft === 0
+                        ? `🎁 Hediye aboneliğin bekleniyor (${giftLeft}).`
+                        : `⭐ Abonelik kontrol edildi; şart henüz tamamlanmadı.`, 4200);
             }
             await tv2ReloadMe();
         } catch (error) {
@@ -15054,6 +15147,92 @@ return;
   },{passive:false,capture:true});
 })();
 </script>
+
+
+<style id="wz-v87-tournament-payment-guide">
+/* V87: payment confirmation MUST appear above the already open tournament form. */
+#redirectModal.wz-payment-guide {
+  z-index:95000!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding: max(10px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom))!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+  touch-action:pan-y pinch-zoom!important;
+}
+#redirectModal.wz-payment-guide .modal-content {
+  width:min(460px,100%)!important;
+  max-width:460px!important;
+  max-height:calc(100dvh - 28px)!important;
+  min-height:0!important;
+  margin:auto!important;
+  display:flex!important;
+  flex-direction:column!important;
+  overflow:hidden!important;
+  flex:0 1 auto!important;
+  touch-action:pan-y pinch-zoom!important;
+}
+#redirectModal.wz-payment-guide .modal-header {
+  flex:0 0 auto!important;
+  padding:16px!important;
+}
+#redirectModal.wz-payment-guide .redirect-modal-body {
+  flex:1 1 auto!important;
+  min-height:0!important;
+  padding:20px!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  -webkit-overflow-scrolling:touch!important;
+  overscroll-behavior:contain!important;
+  touch-action:pan-y pinch-zoom!important;
+  text-align:left!important;
+}
+#redirectModal.wz-payment-guide #redirectStatusText {
+  font-size:.97rem!important;
+  line-height:1.55!important;
+  color:#e8e8e8!important;
+  text-align:left!important;
+}
+#redirectModal.wz-payment-guide #modalCommandText {
+  display:block;
+  margin:12px 0 10px;
+  padding:13px 10px;
+  font-size:clamp(1rem,4.9vw,1.35rem);
+  text-align:center;
+  overflow-wrap:anywhere;
+  touch-action:pan-y pinch-zoom!important;
+}
+#redirectModal.wz-payment-guide:not([data-wz-payment-kind="tl"]) #modalCommandText {display:none!important}
+#redirectModal.wz-payment-guide #timerText {display:none!important}
+#redirectModal.wz-payment-guide #redirectExternalOpenButton {
+  display:block!important;
+  width:100%!important;
+  min-height:48px!important;
+  margin-top:17px!important;
+  padding:11px!important;
+  font-size:.94rem!important;
+  white-space:normal!important;
+}
+#redirectModal.wz-payment-guide #redirectCancelButton {margin-top:10px!important}
+#redirectModal.wz-payment-guide .wz-payment-policy {
+  display:block;
+  margin:0;
+  font-size:.87rem;
+  line-height:1.55;
+  color:#aaa;
+  white-space:pre-line;
+}
+#redirectModal.wz-payment-guide .wz-payment-policy[hidden] {display:none!important}
+@media(max-width:640px) {
+  #redirectModal.wz-payment-guide {align-items:center!important;}
+  #redirectModal.wz-payment-guide .modal-content {
+    max-height:calc(100dvh - max(24px, env(safe-area-inset-top) + env(safe-area-inset-bottom) + 12px))!important;
+    margin:auto!important;
+    flex:0 1 auto!important;
+  }
+  #redirectModal.wz-payment-guide .redirect-modal-body {padding:16px!important;}
+}
+</style>
 
 </body>
 </html>
