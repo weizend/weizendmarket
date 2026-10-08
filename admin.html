@@ -3215,6 +3215,7 @@ html,body{max-width:100%;overflow-x:hidden}
             </select>
             <div id="tEntryModeLockNote" class="muted" role="status" aria-live="polite" style="display:none;margin-top:8px;padding:10px 12px;border:1px solid #735120;border-radius:9px;background:#211909;color:#ffda8a;line-height:1.5"></div>
             <button type="button" id="tEntryModeLockRepairButton" class="secondary" style="display:none;margin-top:9px;white-space:normal;line-height:1.4" onclick="repairTournamentEntryLock()">🧹 Sahipsiz Bekleyen İşlemleri Onar</button>
+            <div id="tEntryModeRepairResult" role="status" aria-live="polite" style="display:none;margin-top:9px;padding:12px;border:1px solid #3b3b3b;border-radius:10px;background:#121212;line-height:1.5;overflow-wrap:anywhere"></div>
           </div>
 
           <div class="field" id="tFeeBox">
@@ -9080,8 +9081,12 @@ function updateTournamentEntryFields(){
     lockNote.style.display = modeLocked ? 'block' : 'none';
     const breakdown=Array.isArray(currentTournamentEntryModeLock?.breakdown)
       ? currentTournamentEntryModeLock.breakdown.map(x=>`${x.name}: ${Number(x.count||0)}`).join(' • ') : '';
+    const diagnoses=Array.isArray(currentTournamentEntryModeLock?.v3BatchDiagnostics)
+      ? currentTournamentEntryModeLock.v3BatchDiagnostics.map(x=>
+          `BynoGame: ${x.why}${x.receivedAmountTl>0?' (alınan '+Number(x.receivedAmountTl).toLocaleString('tr-TR')+' TL)':''}`
+        ).join(' • ') : '';
     lockNote.textContent = modeLocked
-      ? `🔒 Katılım türü kilitli. ${currentTournamentEntryModeLock.reason || 'Önce mevcut kayıtları ve bekleyen işlemleri iptal et.'}${breakdown ? '\nD1 kayıtları: '+breakdown : ''}`
+      ? `🔒 Katılım türü kilitli. ${currentTournamentEntryModeLock.reason || 'Önce mevcut kayıtları ve bekleyen işlemleri iptal et.'}${breakdown ? '\nD1 kayıtları: '+breakdown : ''}${diagnoses?'\nİnceleme: '+diagnoses:''}`
       : '';
     lockNote.style.whiteSpace='pre-line';
   }
@@ -9117,24 +9122,46 @@ function updateTournamentEntryFields(){
   }
 }
 
+function showTournamentRepairResult(message,ok){
+  const e=document.getElementById('tEntryModeRepairResult');
+  if(!e) return;
+  e.style.display='block';
+  e.style.borderColor=ok?'#205c35':'#8e3c31';
+  e.style.color=ok?'#95e8b0':'#ffb2a8';
+  e.textContent=message;
+}
 async function repairTournamentEntryLock(){
   const tournamentId=document.getElementById('tournamentSelect')?.value||'';
   const btn=document.getElementById('tEntryModeLockRepairButton');
   if(!tournamentId || !currentTournamentEntryModeLock?.canRepairOrphans) return;
-  if(!confirm('Yalnızca silinmiş/iptal edilmiş takımlardan kalan, hiç para veya abonelik katkısı almamış bekleyen kayıtları iptal edilsin mi? Gerçek ödemeler ve aktif kayıtlar korunacak.')) return;
-  if(btn){btn.disabled=true;btn.textContent='⏳ Sahipsiz kayıtlar kontrol ediliyor...';}
+  if(!confirm('Yalnızca silinmiş/iptal edilmiş takımlardan kalan, hiç para veya abonelik katkısı almamış bekleyen kayıtlar iptal edilsin mi? Gerçek ödemeler ve aktif kayıtlar korunacak.')) return;
+  if(btn){btn.disabled=true;btn.textContent='⏳ Kayıtlar kontrol ediliyor...';}
+  showTournamentRepairResult('⏳ Veritabanındaki bekleyen kayıtlar denetleniyor...',true);
   try{
     const {r,d}=await api('/admin/tournament/entry-lock/repair',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({tournamentId})
     });
     if(!r.ok || !d?.success) throw new Error(d?.error||`HTTP ${r.status}`);
-    currentTournamentEntryModeLock=d.entryModeLock||null;
+    // Backend is authoritative. Refresh the latest lock read without discarding
+    // unsaved tournament input values.
+    const verify=await api(`/admin/tournament/v2/config?id=${encodeURIComponent(tournamentId)}&_=${Date.now()}`);
+    if(!verify.r.ok || !verify.d?.success) throw new Error('Onarım gerçekleştirildi fakat kilit güncellenemedi. Sayfayı yenileyip tekrar kontrol et.');
+    currentTournamentEntryModeLock=verify.d.entryModeLock||d.entryModeLock||null;
     updateTournamentEntryFields();
     const total=(d.changes||[]).reduce((n,x)=>n+Number(x.count||0),0);
-    showStatus('tournamentStatus',`✅ ${d.message||'Kayıtlar kontrol edildi.'} (Güncellenen satır: ${total})`,true);
+    const isLocked=currentTournamentEntryModeLock?.locked===true;
+    const remaining=(currentTournamentEntryModeLock?.breakdown||[]).map(x=>`${x.name}: ${x.count}`).join(', ');
+    const reasons=(currentTournamentEntryModeLock?.v3BatchDiagnostics||[]).map(x=>x.why).join('; ');
+    const msg=isLocked
+      ? `⚠️ ${total} kayıt güncellendi ancak kilit devam ediyor. ${remaining}. ${reasons||'İşlemler ödeme almış veya manuel inceleme gerektiren durumdaysa otomatik iptal edilmez.'}`
+      : `✅ Kilit kalktı. ${total} kayıt güvenli biçimde güncellendi. Artık katılım türünü değiştirebilirsin.`;
+    showTournamentRepairResult(msg,!isLocked);
+    showStatus('tournamentStatus',msg,!isLocked);
   }catch(error){
-    showStatus('tournamentStatus','❌ '+esc(error.message||error),false);
+    const message='❌ Onarım tamamlanamadı: '+String(error?.message||error);
+    showTournamentRepairResult(message,false);
+    showStatus('tournamentStatus',esc(message),false);
   }finally{
     if(btn){btn.disabled=false;btn.textContent='🧹 Sahipsiz Bekleyen İşlemleri Onar';}
   }
