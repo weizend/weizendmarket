@@ -1527,7 +1527,7 @@ body.dmModalOpen{overflow:hidden}
 </style>
 
 
-<style id="wz-admin-template-picker-v43">
+<style id="wz-admin-template-picker-v44">
 .templateLibraryCompact{
   padding:13px;
 }
@@ -1553,6 +1553,11 @@ body.dmModalOpen{overflow:hidden}
   background:#171717!important;
   border-color:#555!important;
   filter:none!important;
+}
+.templatePickerOpen[aria-expanded="true"]{
+  border-color:#8b2a2a!important;
+  border-bottom-left-radius:8px!important;
+  border-bottom-right-radius:8px!important;
 }
 .templatePickerOpenIcon{
   width:38px;
@@ -1584,87 +1589,89 @@ body.dmModalOpen{overflow:hidden}
   text-overflow:ellipsis;
 }
 .templatePickerOpenArrow{
-  color:#888;
-  font-size:1.55rem;
+  color:#999;
+  font-size:1.2rem;
   line-height:1;
+  transition:transform .16s ease;
+}
+.templatePickerOpen[aria-expanded="true"] .templatePickerOpenArrow{
+  transform:rotate(180deg);
 }
 
-.templatePickerOverlay{
-  display:none;
-  position:fixed;
-  inset:0;
-  z-index:12000;
-  background:rgba(0,0,0,.82);
-  backdrop-filter:blur(6px);
-  -webkit-backdrop-filter:blur(6px);
-  align-items:center;
-  justify-content:center;
-  padding:18px;
-}
-.templatePickerOverlay.open{
-  display:flex;
-}
-.templatePickerSheet{
-  width:min(560px,100%);
-  max-height:min(76dvh,720px);
-  display:flex;
-  flex-direction:column;
+.templatePickerInline{
+  margin-top:8px;
+  border:1px solid #303030;
+  border-radius:12px;
+  background:#090909;
   overflow:hidden;
-  background:linear-gradient(145deg,#121212,#080808);
-  border:1px solid #363636;
-  border-radius:18px;
-  box-shadow:0 28px 90px rgba(0,0,0,.82);
 }
-.templatePickerSheetHead{
-  flex:0 0 auto;
+.templatePickerInline[hidden]{
+  display:none!important;
+}
+.templatePickerInlineHead{
   display:flex;
-  align-items:flex-start;
+  align-items:center;
   justify-content:space-between;
-  gap:12px;
-  padding:15px 16px;
-  border-bottom:1px solid #292929;
+  gap:10px;
+  padding:10px 12px;
+  border-bottom:1px solid #242424;
   background:#0f0f0f;
 }
-.templatePickerSheetHead b{
-  display:block;
-  font-size:1rem;
+.templatePickerInlineHead span{
+  font-weight:850;
+  color:#ddd;
+  font-size:.82rem;
 }
-.templatePickerSheetHead span{
-  display:block;
-  margin-top:3px;
-  color:#888;
-  font-size:.75rem;
-  line-height:1.4;
+.templatePickerInlineHead small{
+  color:#777;
+  font-size:.68rem;
+  text-align:right;
 }
-.templatePickerClose{
-  width:38px!important;
-  height:38px!important;
-  min-width:38px!important;
-  padding:0!important;
-  border-radius:10px!important;
-  background:#202020!important;
-  border:1px solid #3b3b3b!important;
-  color:#fff!important;
-  font-size:1.35rem!important;
-  line-height:1!important;
-}
-.templatePickerClose:hover{
-  background:#353535!important;
-  filter:none!important;
-}
+
 .templatePickerList{
-  flex:1 1 auto;
-  min-height:0;
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+  /* Yaklaşık 5 şablon satırı. Fazlası kaydırılır. */
+  max-height:365px;
   overflow-y:auto;
-  padding:12px;
+  overflow-x:hidden;
+  padding:9px;
   -webkit-overflow-scrolling:touch;
   overscroll-behavior:contain;
+  scrollbar-width:thin;
+  scrollbar-color:#555 #111;
 }
+.templatePickerList::-webkit-scrollbar{
+  width:8px;
+}
+.templatePickerList::-webkit-scrollbar-track{
+  background:#111;
+}
+.templatePickerList::-webkit-scrollbar-thumb{
+  background:#444;
+  border-radius:999px;
+  border:2px solid #111;
+}
+
 .templatePickerList .templateItem{
-  margin:0;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 50px!important;
+  gap:8px!important;
+  align-items:stretch!important;
+  margin:0!important;
 }
-body.templatePickerOpenBody{
-  overflow:hidden!important;
+.templatePickerList .templatePick{
+  width:100%!important;
+  min-width:0!important;
+  min-height:62px!important;
+  text-align:left!important;
+}
+.templatePickerList .templateDelete{
+  width:50px!important;
+  min-width:50px!important;
+  min-height:62px!important;
+  align-self:stretch!important;
 }
 
 @media(max-width:560px){
@@ -1675,27 +1682,24 @@ body.templatePickerOpenBody{
     min-height:58px!important;
     padding:10px 11px!important;
   }
-  .templatePickerOverlay{
-    align-items:flex-end;
-    padding:8px 8px max(8px,env(safe-area-inset-bottom));
+  .templatePickerInlineHead{
+    align-items:flex-start;
+    flex-direction:column;
+    gap:3px;
   }
-  .templatePickerSheet{
-    width:100%;
-    max-height:82dvh;
-    border-radius:18px 18px 10px 10px;
-  }
-  .templatePickerSheetHead{
-    padding:13px 13px 11px;
+  .templatePickerInlineHead small{
+    text-align:left;
   }
   .templatePickerList{
-    padding:10px;
+    max-height:350px;
+    padding:7px;
   }
-  .templatePickerList .templatePick{
-    min-height:58px!important;
+  .templatePickerList .templateItem{
+    grid-template-columns:minmax(0,1fr) 52px!important;
   }
   .templatePickerList .templateDelete{
-    width:48px!important;
-    min-width:48px!important;
+    width:52px!important;
+    min-width:52px!important;
   }
 }
 </style>
@@ -2758,43 +2762,29 @@ body.templatePickerOpenBody{
           <button type="button"
             id="openCreateTemplatePickerButton"
             class="templatePickerOpen"
-            onclick="openCreateTemplatePicker()">
+            onclick="toggleCreateTemplatePicker()"
+            aria-expanded="false"
+            aria-controls="createTemplatePickerInline">
             <span class="templatePickerOpenIcon">📋</span>
             <span class="templatePickerOpenText">
               <b>Şablon Seç</b>
               <small id="createTemplatePickerSummary">Kayıtlı şablonları görüntüle</small>
             </span>
-            <span class="templatePickerOpenArrow">›</span>
+            <span id="createTemplatePickerArrow" class="templatePickerOpenArrow">⌄</span>
           </button>
 
-          <div id="createTemplateSelectedNote" class="templateSelectedNote"></div>
-        </div>
-
-        <div id="createTemplatePickerOverlay"
-          class="templatePickerOverlay"
-          onclick="if(event.target===this) closeCreateTemplatePicker()"
-          aria-hidden="true">
-
-          <div class="templatePickerSheet"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="createTemplatePickerTitle">
-
-            <div class="templatePickerSheetHead">
-              <div>
-                <b id="createTemplatePickerTitle">📋 Turnuva Şablonları</b>
-                <span>Bir şablona dokun; form otomatik dolsun.</span>
-              </div>
-              <button type="button"
-                class="templatePickerClose"
-                onclick="closeCreateTemplatePicker()"
-                aria-label="Şablon penceresini kapat">×</button>
+          <div id="createTemplatePickerInline" class="templatePickerInline" hidden>
+            <div class="templatePickerInlineHead">
+              <span>Mevcut Şablonlar</span>
+              <small>5'ten fazla şablonda listeyi kaydırabilirsin.</small>
             </div>
 
             <div id="createTemplateList" class="templateList templatePickerList">
               <div class="templateEmpty">Şablonlar yükleniyor...</div>
             </div>
           </div>
+
+          <div id="createTemplateSelectedNote" class="templateSelectedNote"></div>
         </div>
 
         <div class="grid2">
@@ -7710,33 +7700,35 @@ function validateTournamentTimelineAdmin(openIso, closeIso, eventIso){
 
 let selectedCreateTemplateId = '';
 
-function openCreateTemplatePicker(){
-  const overlay = document.getElementById('createTemplatePickerOverlay');
-  if(!overlay) return;
+function setCreateTemplatePickerOpen(open){
+  const panel = document.getElementById('createTemplatePickerInline');
+  const button = document.getElementById('openCreateTemplatePickerButton');
+  if(!panel || !button) return;
 
-  renderCreateTournamentTemplates();
+  if(open){
+    renderCreateTournamentTemplates();
+    panel.hidden = false;
+    button.setAttribute('aria-expanded','true');
+  }else{
+    panel.hidden = true;
+    button.setAttribute('aria-expanded','false');
+  }
+}
 
-  overlay.classList.add('open');
-  overlay.setAttribute('aria-hidden','false');
-  document.body.classList.add('templatePickerOpenBody');
-
-  const closeButton = overlay.querySelector('.templatePickerClose');
-  try{ closeButton?.focus?.({preventScroll:true}); }catch(_){}
+function toggleCreateTemplatePicker(){
+  const panel = document.getElementById('createTemplatePickerInline');
+  if(!panel) return;
+  setCreateTemplatePickerOpen(panel.hidden);
 }
 
 function closeCreateTemplatePicker(){
-  const overlay = document.getElementById('createTemplatePickerOverlay');
-  if(!overlay) return;
-
-  overlay.classList.remove('open');
-  overlay.setAttribute('aria-hidden','true');
-  document.body.classList.remove('templatePickerOpenBody');
+  setCreateTemplatePickerOpen(false);
 }
 
 document.addEventListener('keydown',event=>{
   if(event.key === 'Escape'){
-    const overlay = document.getElementById('createTemplatePickerOverlay');
-    if(overlay?.classList.contains('open')){
+    const panel = document.getElementById('createTemplatePickerInline');
+    if(panel && !panel.hidden){
       event.preventDefault();
       closeCreateTemplatePicker();
     }
@@ -7936,14 +7928,6 @@ async function loadCreateTournamentTemplate(encodedId){
     );
 
     closeCreateTemplatePicker();
-
-    // Formun başlangıcını görünür tut; kullanıcı doğrudan düzenlemeye devam edebilsin.
-    try{
-      document.getElementById('tcName')?.scrollIntoView({
-        behavior:'smooth',
-        block:'center'
-      });
-    }catch(_){}
 
   }catch(error){
     showStatus(
