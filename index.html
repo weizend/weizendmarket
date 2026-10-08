@@ -3560,6 +3560,33 @@ body.wz-turn-modal-open{
 }
 </style>
 
+
+<style id="wz-v82-refresh-modal-stability">
+/* Modal DOM'u detay verisi / sekme değişimi yüzünden yeniden kurulduğunda
+   açılış animasyonu tekrar çalışmaz. */
+.wz-turn-detail-page,
+.wz-turn-detail-window{
+  animation:none!important;
+}
+
+body.wz-turn-modal-entering .wz-turn-detail-page{
+  animation:wzTurnModalFadeIn .16s ease-out!important;
+}
+
+body.wz-turn-modal-entering .wz-turn-detail-window{
+  animation:wzTurnModalWindowIn .18s ease-out!important;
+}
+
+/* Refresh ilk karesinde transition/animation kaynaklı göz kırpma olmasın. */
+body.wz-initializing .wz-turn-detail-page,
+body.wz-initializing .wz-turn-detail-window,
+body.wz-initializing #urunGrid,
+body.wz-initializing #wzMobileProfileView{
+  transition:none!important;
+  animation:none!important;
+}
+</style>
+
 </head>
 <body>
 <script id="wz-v58-prepaint-view">
@@ -4159,6 +4186,13 @@ body.wz-turn-modal-open{
     const cached=JSON.parse(raw);
     if(typeof cached.html==='string' && cached.html.trim()){
       host.innerHTML=cached.html;
+      window.__WZ_TOURNAMENT_SHELL_HYDRATED__=true;
+
+      const savedScreen=sessionStorage.getItem('wz_t_screen') || 'list';
+      const savedSelected=sessionStorage.getItem('wz_t_selected') || '';
+      if(savedScreen==='detail' && savedSelected){
+        document.body.classList.add('wz-turn-modal-open');
+      }
     }
   }catch(_){}
 })();
@@ -7321,6 +7355,124 @@ body.wz-turn-modal-open{
             }
         }
 
+
+        function marketSurfaceItemsFromState() {
+            let items = URUNLER.filter(urun => urun && urun.durum === 'on');
+            const category = String(aktifKategori || 'Tümü');
+
+            if (category === 'Tükendi') {
+                items = items.filter(urun => stokDurumu(urun.stok) <= 0);
+                items.sort((a,b)=>{
+                    const ta = a.tukenmeZamani ? new Date(a.tukenmeZamani).getTime() : 0;
+                    const tb = b.tukenmeZamani ? new Date(b.tukenmeZamani).getTime() : 0;
+                    return tb-ta;
+                });
+            } else {
+                if (category !== 'Tümü') {
+                    items = items.filter(urun => urun.kategori === category);
+                }
+
+                items.sort((a,b)=>{
+                    const sa = stokDurumu(a.stok) > 0 ? 1 : 0;
+                    const sb = stokDurumu(b.stok) > 0 ? 1 : 0;
+                    if (sa !== sb) return sb-sa;
+
+                    if (sa === 0 && sb === 0) {
+                        const ta = a.tukenmeZamani ? new Date(a.tukenmeZamani).getTime() : 0;
+                        const tb = b.tukenmeZamani ? new Date(b.tukenmeZamani).getTime() : 0;
+                        return tb-ta;
+                    }
+
+                    const pa = parseInt(String(a.puan || '').replace(/[^0-9]/g,'')) || 0;
+                    const pb = parseInt(String(b.puan || '').replace(/[^0-9]/g,'')) || 0;
+                    return pa-pb;
+                });
+            }
+
+            if (productSearchQuery) {
+                items = items.filter(urun => productSearchText(urun).includes(productSearchQuery));
+            }
+
+            return items;
+        }
+
+        function marketExpectedSurfaceSnapshot() {
+            const accountRestricted =
+                marketAuthenticated &&
+                String(currentAccountStatus || '').toLowerCase() === 'blocked';
+
+            return marketSurfaceItemsFromState().map(urun=>{
+                const soldOut = stokDurumu(urun.stok) <= 0;
+                const paymentType = String(
+                    urun.paymentType ||
+                    (urun.webPurchase === true ? 'points' : 'stream')
+                ).toLowerCase();
+
+                const streamCommand = String(urun.streamCommand || urun.komut || '').trim();
+
+                const actionText = accountRestricted
+                    ? '⛔ HESABIN KISITLANDI'
+                    : soldOut
+                        ? 'TÜKENDİ'
+                        : marketAuthenticated
+                            ? (
+                                paymentType === 'free'
+                                    ? 'ÜCRETSİZ AL'
+                                    : paymentType === 'stream'
+                                        ? 'İŞLEM YAP'
+                                        : 'SATIN AL'
+                              )
+                            : '🔒 Doğrulama Gerekiyor';
+
+                return {
+                    title:String(urun.ad || '').trim(),
+                    category:String(urun.kategori || '').trim(),
+                    price:String(urun.puan || '').trim(),
+                    stock:soldOut ? 'Tükendi' : `Stok: ${String(urun.stok)}`,
+                    command:soldOut
+                        ? 'TÜKENDİ'
+                        : (paymentType === 'stream' ? streamCommand : 'SİTE ÜZERİNDEN'),
+                    action:actionText,
+                    image:String(safeImageUrl(Array.isArray(urun.gorseller) ? urun.gorseller[0] : '') || '').trim()
+                };
+            });
+        }
+
+        function marketDomSurfaceSnapshot() {
+            const gridEl = document.getElementById('urunGrid');
+            if (!gridEl) return null;
+
+            const cards = Array.from(gridEl.children).filter(
+                el => el.classList && el.classList.contains('card')
+            );
+
+            if (!cards.length) {
+                return gridEl.querySelector('.market-empty-search') ? [] : null;
+            }
+
+            return cards.map(card=>({
+                title:String(card.querySelector('.product-title')?.textContent || '').trim(),
+                category:String(card.querySelector('.category-badge')?.textContent || '').trim(),
+                price:String(card.querySelector('.price')?.textContent || '').trim(),
+                stock:String(card.querySelector('.stock-badge')?.textContent || '').trim(),
+                command:String(card.querySelector('.command')?.textContent || '').trim(),
+                action:String(card.querySelector('.action-btn')?.textContent || '').trim(),
+                image:String(card.querySelector('.main-card-img')?.getAttribute('src') || '').trim()
+            }));
+        }
+
+        function marketHydratedSurfaceMatchesState() {
+            try {
+                if (window.__WZ_MARKET_SHELL_HYDRATED__ !== true) return false;
+                const expected = marketExpectedSurfaceSnapshot();
+                const current = marketDomSurfaceSnapshot();
+                if (!Array.isArray(current)) return false;
+                return JSON.stringify(current) === JSON.stringify(expected);
+            } catch (_) {
+                return false;
+            }
+        }
+
         async function syncCatalogStock() {
             const beforeSignature = marketCatalogSignature();
 
@@ -7429,7 +7581,19 @@ urun.paymentType = String(serverProduct.paymentType || '').toLowerCase();
             }
 
             if (marketInitialized && catalogChanged) {
-                urunleriYukle(aktifKategori || 'Tümü');
+                const hydratedVisibleMarket =
+                    window.__WZ_MARKET_SHELL_HYDRATED__ === true &&
+                    document.body.classList.contains('wz-view-market');
+
+                // Cache'den gelen Market zaten yeni sunucu verisiyle birebir aynıysa
+                // DOM'u söküp yeniden kurma. Böylece refresh'te kartlar/görseller
+                // bir an kaybolup tekrar gelmez.
+                if (hydratedVisibleMarket && marketHydratedSurfaceMatchesState()) {
+                    marketGridNeedsRender = false;
+                    cacheMarketShell();
+                } else {
+                    urunleriYukle(aktifKategori || 'Tümü');
+                }
             }
 
             return true;
@@ -11993,7 +12157,8 @@ return;
   }
 
   function syncProfile(){
-    document.body.classList.remove('wz-profile-ready');
+    // Refresh sırasında cache ile çizilmiş profil görünümünü ASLA tekrar gizleme.
+    // Wallet/profile observer'ları art arda çalışsa bile mevcut profil yerinde kalır.
     const token=getSessionToken();
     const cache=getProfileCache()||{};
     // A valid local session token means we keep the profile shell stable while
@@ -12274,6 +12439,31 @@ return;
     }[ch]));
   }
   function catalog(){ try{return Array.isArray(tv2Catalog)?tv2Catalog:[]}catch(_){return []} }
+
+  function wzTournamentCatalogDataSignature(){
+    try{
+      return JSON.stringify(
+        catalog().map(item=>({
+          tournament:item?.tournament || {},
+          rule:item?.rule || {}
+        }))
+      );
+    }catch(_){
+      return '';
+    }
+  }
+
+  let wzKeepHydratedTournamentShell =
+    window.__WZ_TOURNAMENT_SHELL_HYDRATED__ === true &&
+    (window.__WZ_INITIAL_VIEW__ || '') === 'tournament';
+
+  let wzHydratedTournamentCatalogSignature =
+    wzTournamentCatalogDataSignature();
+
+  function wzReleaseHydratedTournamentShell(){
+    wzKeepHydratedTournamentShell=false;
+    window.__WZ_TOURNAMENT_SHELL_HYDRATED__=false;
+  }
   function lifecycle(item){
     const t=item?.tournament||{};
     return String(t.lifecycleStatus || (t.registrationOpen?'registration_open':'registration_closed'));
@@ -13759,6 +13949,22 @@ return;
     const host=document.getElementById('wzEsportsHub');
     if(!host) return;
 
+    const detailOpen = state.screen === 'detail';
+    document.body.classList.toggle('wz-turn-modal-open', detailOpen);
+
+    // Refresh'in ilk karesinde sessionStorage'dan geri yüklenen gerçek Turnuva
+    // görünümünü, DOMContentLoaded'daki erken render çağrılarıyla ezme.
+    if(
+      wzKeepHydratedTournamentShell &&
+      document.body.classList.contains('wz-view-tournament') &&
+      host.querySelector('.wz-turn-root')
+    ){
+      if(state.screen==='list'){
+        wzTurnListStatusSignature=wzTournamentListStatusSignature();
+      }
+      return;
+    }
+
     const catalogLoaded = (()=>{ try{return tv2CatalogLoadedOnce===true}catch(_){return false} })();
     if(!catalogLoaded){
       if(wzTournamentCatalogError){
@@ -13788,14 +13994,20 @@ return;
       ? (window.scrollY || document.documentElement.scrollTop || 0)
       : null;
 
-    const detailOpen = state.screen === 'detail';
-
-    document.body.classList.toggle('wz-turn-modal-open', detailOpen);
+    const previousDetailScroll = detailOpen
+      ? (host.querySelector('.wz-turn-detail-window')?.scrollTop ?? null)
+      : null;
 
     host.innerHTML = `<div class="wz-turn-root">
       ${renderListPage()}
       ${detailOpen ? renderDetailPage() : ''}
     </div>`;
+
+    if(previousDetailScroll !== null){
+      const nextDetailWindow=host.querySelector('.wz-turn-detail-window');
+      if(nextDetailWindow) nextDetailWindow.scrollTop=previousDetailScroll;
+    }
+
     cacheTournamentShell(host);
 
     if(state.screen==='list'){
@@ -13814,7 +14026,13 @@ return;
   async function loadSelected(){
     const id=state.selectedId; if(!id) return;
     await ensureDetail(id);
-    if(state.selectedId===id && state.screen==='detail') render();
+    if(state.selectedId===id && state.screen==='detail'){
+      // İlk açılış animasyonu yalnızca kullanıcının ilk tıklamasında çalışır.
+      // Detay API cevabı geldiğinde modal yeniden oluşturulsa bile tekrar
+      // kapanıp-açılıyormuş gibi görünmez.
+      document.body.classList.remove('wz-turn-modal-entering');
+      render();
+    }
   }
 
   let wzTurnTimelineTimer=null;
@@ -13895,11 +14113,34 @@ return;
       try{ input.setSelectionRange(0,0); }catch(_){}
     }
   };
-  window.wzTurnSetFilter=function(filter){ state.filter=filter; persistTournamentState(); render(); };
-  window.wzTurnOpen=function(id){ state.selectedId=String(id||''); state.screen='detail'; state.tab='overview'; state.bracketMode='tree'; persistTournamentState(); render(); };
+  window.wzTurnSetFilter=function(filter){
+    wzReleaseHydratedTournamentShell();
+    state.filter=filter;
+    persistTournamentState();
+    render();
+  };
+
+  window.wzTurnOpen=function(id){
+    wzReleaseHydratedTournamentShell();
+    state.selectedId=String(id||'');
+    state.screen='detail';
+    state.tab='overview';
+    state.bracketMode='tree';
+    persistTournamentState();
+
+    document.body.classList.add('wz-turn-modal-entering');
+    render();
+
+    clearTimeout(window.__wzTurnModalEnterTimer);
+    window.__wzTurnModalEnterTimer=setTimeout(()=>{
+      document.body.classList.remove('wz-turn-modal-entering');
+    },240);
+  };
+
   window.wzTurnBack=function(){
+    wzReleaseHydratedTournamentShell();
     state.screen='list';
-    document.body.classList.remove('wz-turn-modal-open');
+    document.body.classList.remove('wz-turn-modal-open','wz-turn-modal-entering');
     persistTournamentState();
     render();
   };
@@ -13911,6 +14152,7 @@ return;
   });
 
   window.wzTurnSetTab=function(tab){
+    wzReleaseHydratedTournamentShell();
     state.tab=['overview','rules','prizes','bracket','predictions'].includes(tab)?tab:'overview';
     persistTournamentState();
     render();
@@ -13918,8 +14160,18 @@ return;
       loadPredictionState(state.selectedId,true);
     }
   };
-  window.wzTurnSetBracket=function(mode){ state.bracketMode=(mode==='list'?'list':'tree'); persistTournamentState(); render(); };
-  window.wzTurnToggleRule=function(index){ if(state.openRules.has(index)) state.openRules.delete(index); else state.openRules.add(index); render(); };
+  window.wzTurnSetBracket=function(mode){
+    wzReleaseHydratedTournamentShell();
+    state.bracketMode=(mode==='list'?'list':'tree');
+    persistTournamentState();
+    render();
+  };
+  window.wzTurnToggleRule=function(index){
+    wzReleaseHydratedTournamentShell();
+    if(state.openRules.has(index)) state.openRules.delete(index);
+    else state.openRules.add(index);
+    render();
+  };
 
   window.wzTurnReloadPredictions=function(tournamentId){
     state.predictionCache.delete(String(tournamentId||''));
@@ -13987,6 +14239,27 @@ return;
     wzTournamentCatalogError = detail.ok===false
       ? String(detail.error || 'Turnuva bilgileri alınamadı.')
       : '';
+
+    const nextSignature=wzTournamentCatalogDataSignature();
+
+    if(wzKeepHydratedTournamentShell){
+      const changed =
+        detail.ok !== false &&
+        nextSignature !== wzHydratedTournamentCatalogSignature;
+
+      wzReleaseHydratedTournamentShell();
+      wzHydratedTournamentCatalogSignature=nextSignature;
+
+      // Sunucudan dönen katalog cache'dekiyle aynıysa hiçbir DOM yazımı yapma.
+      // Mevcut görünüm ilk kareden itibaren aynen kalır.
+      if(!changed){
+        updateTournamentTimelineDom();
+        if(state.screen==='list'){
+          wzTurnListStatusSignature=wzTournamentListStatusSignature();
+        }
+        return;
+      }
+    }
 
     if(document.body.classList.contains('wz-view-tournament')){
       render();
