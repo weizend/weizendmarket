@@ -3633,6 +3633,242 @@ body.wz-initializing{
 }
 </style>
 
+
+<style id="wz-v84-public-participants-final">
+/* =========================================================
+   V84 FINAL · Public Katılımcılar
+   ========================================================= */
+
+/* 6 sekme masaüstünde tek satır. */
+.wz-turn-detail-page .wz-turn-tabs{
+  grid-template-columns:repeat(6,minmax(0,1fr))!important;
+}
+
+/* Katılımcı başlığı */
+.wz-turn-participants-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  margin-bottom:14px;
+}
+.wz-turn-participants-head h3{
+  margin:0 0 5px!important;
+}
+.wz-turn-participants-note{
+  color:#9da3ad;
+  font-size:.75rem;
+  line-height:1.5;
+  max-width:620px;
+}
+.wz-turn-participants-count{
+  flex:0 0 auto;
+  min-width:92px;
+  padding:9px 11px;
+  border:1px solid #343943;
+  border-radius:13px;
+  background:#11151c;
+  text-align:center;
+}
+.wz-turn-participants-count strong{
+  display:block;
+  color:#fff;
+  font-size:1rem;
+  line-height:1.1;
+}
+.wz-turn-participants-count span{
+  display:block;
+  margin-top:3px;
+  color:#a5aab3;
+  font-size:.67rem;
+  font-weight:850;
+}
+.wz-turn-participants-count small{
+  display:block;
+  margin-top:4px;
+  color:#737a85;
+  font-size:.61rem;
+  font-weight:800;
+}
+
+/* Solo oyuncu listesi */
+.wz-turn-participant-list,
+.wz-turn-team-list{
+  display:grid;
+  gap:9px;
+}
+.wz-turn-participant-card{
+  display:grid;
+  grid-template-columns:40px minmax(0,1fr) auto;
+  gap:10px;
+  align-items:center;
+  padding:10px 11px;
+  border:1px solid #292e37;
+  border-radius:13px;
+  background:#10141b;
+}
+.wz-turn-participant-no,
+.wz-turn-team-order{
+  display:grid;
+  place-items:center;
+  width:34px;
+  height:34px;
+  border-radius:10px;
+  background:#191e26;
+  color:#fff;
+  font-size:.77rem;
+  font-weight:1000;
+}
+.wz-turn-participant-main{
+  min-width:0;
+}
+.wz-turn-participant-main b,
+.wz-turn-public-player b{
+  display:block;
+  color:#fff;
+  font-size:.82rem;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.wz-turn-participant-main span,
+.wz-turn-public-player span{
+  display:block;
+  margin-top:3px;
+  color:#9299a4;
+  font-size:.70rem;
+  overflow-wrap:anywhere;
+}
+.wz-turn-confirmed-badge{
+  flex:0 0 auto;
+  padding:6px 8px;
+  border:1px solid #256541;
+  border-radius:999px;
+  background:#102a1c;
+  color:#68f0a0;
+  font-size:.61rem;
+  font-weight:950;
+  white-space:nowrap;
+}
+
+/* Takım listesi */
+.wz-turn-public-team{
+  border:1px solid #292e37;
+  border-radius:15px;
+  background:#10141b;
+  overflow:hidden;
+}
+.wz-turn-public-team-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:11px 12px;
+  border-bottom:1px solid #252a33;
+  background:#121720;
+}
+.wz-turn-public-team-title{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+}
+.wz-turn-public-team-title>div{
+  min-width:0;
+}
+.wz-turn-public-team-title b{
+  display:block;
+  color:#fff;
+  font-size:.86rem;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.wz-turn-public-team-title span{
+  display:block;
+  margin-top:3px;
+  color:#8f96a1;
+  font-size:.67rem;
+}
+.wz-turn-public-roster{
+  display:grid;
+  gap:0;
+  padding:4px 11px 8px;
+}
+.wz-turn-public-player{
+  display:grid;
+  grid-template-columns:35px minmax(0,1fr) auto;
+  gap:9px;
+  align-items:center;
+  padding:9px 0;
+  border-bottom:1px solid #222730;
+}
+.wz-turn-public-player:last-child{
+  border-bottom:0;
+}
+.wz-turn-player-role{
+  display:grid;
+  place-items:center;
+  width:31px;
+  height:31px;
+  border-radius:9px;
+  background:#191e26;
+  color:#fff;
+  font-size:.72rem;
+  font-weight:1000;
+}
+.wz-turn-public-player small{
+  color:#f0c766;
+  font-size:.62rem;
+  font-weight:900;
+}
+
+/* Mobil: 6 sekme 3x2. Böylece "Katılımcılar" gözden kaçmaz. */
+@media(max-width:700px){
+  .wz-turn-detail-page .wz-turn-tabs{
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    overflow:visible!important;
+  }
+
+  .wz-turn-detail-page .wz-turn-tab{
+    min-height:52px!important;
+  }
+
+  .wz-turn-participants-head{
+    align-items:stretch;
+    gap:9px;
+  }
+  .wz-turn-participants-count{
+    min-width:78px;
+    padding:8px 7px;
+  }
+
+  .wz-turn-participant-card{
+    grid-template-columns:35px minmax(0,1fr);
+  }
+  .wz-turn-participant-card .wz-turn-confirmed-badge{
+    grid-column:2;
+    justify-self:start;
+    margin-top:-2px;
+  }
+
+  .wz-turn-public-team-head{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  .wz-turn-public-team-head .wz-turn-confirmed-badge{
+    align-self:flex-start;
+  }
+}
+
+/* Çok dar ekranlarda 2x3 sekme. */
+@media(max-width:370px){
+  .wz-turn-detail-page .wz-turn-tabs{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    overflow:visible!important;
+  }
+}
+</style>
+
 </head>
 <body>
 <script id="wz-v58-prepaint-view">
@@ -13557,6 +13793,121 @@ return;
       </div>
     </div>`;
   }
+  function renderParticipants(detail,item){
+    const t=detail?.tournament||item?.tournament||{};
+    const teamMode=Number(t.teamSize||1)>1;
+    const capacity=Math.max(0,Number(t.capacity||0));
+
+    if(!teamMode){
+      const participants=(Array.isArray(detail?.participants)?detail.participants:[])
+        .filter(p=>String(p?.status||'').toLowerCase()==='active');
+
+      return `<div class="wz-turn-box wz-turn-participants-box">
+        <div class="wz-turn-participants-head">
+          <div>
+            <h3>👥 Katılımcılar</h3>
+            <div class="wz-turn-participants-note">
+              Yalnızca kaydı ve katılım şartı tamamen onaylanan oyuncular burada görünür.
+              Ödeme yöntemi ve ödeme tutarı herkese açık gösterilmez.
+            </div>
+          </div>
+          <div class="wz-turn-participants-count">
+            <strong>${participants.length}${capacity?` / ${capacity}`:''}</strong>
+            <span>Oyuncu</span>
+          </div>
+        </div>
+
+        ${participants.length ? `
+          <div class="wz-turn-participant-list">
+            ${participants.map((p,index)=>`
+              <div class="wz-turn-participant-card">
+                <div class="wz-turn-participant-no">${index+1}</div>
+                <div class="wz-turn-participant-main">
+                  <b>${esc(p?.username||'-')}</b>
+                  <span>${esc(p?.riotId||p?.gameId||'-')}</span>
+                </div>
+                <div class="wz-turn-confirmed-badge">✓ Kayıt Onaylandı</div>
+              </div>
+            `).join('')}
+          </div>
+        ` : `
+          <div class="wz-turn-empty">
+            Henüz kaydı tamamen onaylanan oyuncu yok.
+          </div>
+        `}
+      </div>`;
+    }
+
+    const teams=(Array.isArray(detail?.teams)?detail.teams:[])
+      .filter(team=>['ready','locked','active'].includes(
+        String(team?.status||'').toLowerCase()
+      ));
+
+    const totalPlayers=teams.reduce(
+      (sum,team)=>sum+(Array.isArray(team?.members)?team.members.length:0),
+      0
+    );
+
+    return `<div class="wz-turn-box wz-turn-participants-box">
+      <div class="wz-turn-participants-head">
+        <div>
+          <h3>👥 Katılımcılar</h3>
+          <div class="wz-turn-participants-note">
+            Yalnızca tüm oyuncuları ve katılım şartları tamamlanan takımlar burada görünür.
+            Ödeme yöntemi ve ödeme tutarı herkese açık gösterilmez.
+          </div>
+        </div>
+        <div class="wz-turn-participants-count">
+          <strong>${teams.length}${capacity?` / ${capacity}`:''}</strong>
+          <span>Takım</span>
+          ${totalPlayers ? `<small>${totalPlayers} Oyuncu</small>` : ''}
+        </div>
+      </div>
+
+      ${teams.length ? `
+        <div class="wz-turn-team-list">
+          ${teams.map((team,teamIndex)=>{
+            const members=Array.isArray(team?.members)?team.members:[];
+            return `<div class="wz-turn-public-team">
+              <div class="wz-turn-public-team-head">
+                <div class="wz-turn-public-team-title">
+                  <span class="wz-turn-team-order">${teamIndex+1}</span>
+                  <div>
+                    <b>${esc(team?.name||'-')}</b>
+                    <span>${members.length} Oyuncu</span>
+                  </div>
+                </div>
+                <div class="wz-turn-confirmed-badge">✓ Kayıt Onaylandı</div>
+              </div>
+
+              <div class="wz-turn-public-roster">
+                ${members.length ? members.map((m,index)=>{
+                  const isCaptain=
+                    String(m?.role||'').toLowerCase()==='captain' ||
+                    index===0;
+                  return `<div class="wz-turn-public-player">
+                    <div class="wz-turn-player-role">${isCaptain?'👑':index+1}</div>
+                    <div>
+                      <b>${esc(m?.username||m?.plannedUsername||'-')}</b>
+                      <span>${esc(m?.gameId||m?.riotId||'-')}</span>
+                    </div>
+                    ${isCaptain?'<small>Kaptan</small>':''}
+                  </div>`;
+                }).join('') : `
+                  <div class="wz-turn-empty">Kadro bilgisi henüz yayınlanmadı.</div>
+                `}
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      ` : `
+        <div class="wz-turn-empty">
+          Henüz kaydı tamamen onaylanan takım yok.
+        </div>
+      `}
+    </div>`;
+  }
+
   function renderBracket(detail,item){
     const t=detail?.tournament||item?.tournament||{}; const rule=item?.rule||{};
     const mapImage=cssUrl(tournamentMapImageUrl(item,detail));
@@ -13972,6 +14323,7 @@ return;
       ['overview','⌂','Genel Bakış'],
       ['rules','☷','Kurallar'],
       ['prizes','🏆','Ödüller'],
+      ['participants','👥','Katılımcılar'],
       ['bracket','▦','Fikstür'],
       ['predictions','🎯','Tahminler']
     ];
@@ -13981,6 +14333,7 @@ return;
       if(state.tab==='overview') panel = renderOverview(detail,item);
       if(state.tab==='rules') panel = renderRules(item);
       if(state.tab==='prizes') panel = renderPrizes(detail,item);
+      if(state.tab==='participants') panel = renderParticipants(detail,item);
       if(state.tab==='bracket') panel = renderBracket(detail,item);
       if(state.tab==='predictions') panel = renderPredictions(detail,item);
     }
@@ -14235,7 +14588,7 @@ return;
 
   window.wzTurnSetTab=function(tab){
     wzReleaseHydratedTournamentShell();
-    state.tab=['overview','rules','prizes','bracket','predictions'].includes(tab)?tab:'overview';
+    state.tab=['overview','rules','prizes','participants','bracket','predictions'].includes(tab)?tab:'overview';
     persistTournamentState();
     render();
     if(state.tab==='predictions' && state.selectedId){
