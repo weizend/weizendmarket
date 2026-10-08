@@ -3054,6 +3054,150 @@ body.wz-inbox-open{
 }
 </style>
 
+
+<style id="wz-payment-popup-test-v77">
+#redirectExternalOpenButton{
+  width:100%;
+  border-radius:11px!important;
+  min-height:46px;
+}
+#redirectModal .redirect-command-box{
+  user-select:all;
+  -webkit-user-select:all;
+}
+@media(max-width:640px){
+  #redirectModal .modal-content{
+    width:min(94vw,450px);
+    margin:auto;
+  }
+  #redirectExternalOpenButton{
+    min-height:50px;
+    font-size:.92rem;
+  }
+}
+</style>
+
+
+<style id="wz-tournament-detail-modal-v78">
+/* V78 · Turnuva detayları artık liste üzerinde modal/pencere */
+body.wz-view-tournament.wz-turn-modal-open{
+  overflow:hidden!important;
+}
+
+.wz-turn-detail-page{
+  position:fixed!important;
+  inset:0!important;
+  z-index:26000!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:22px!important;
+  background:rgba(0,0,0,.78)!important;
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  animation:wzTurnModalFadeIn .16s ease-out;
+}
+
+.wz-turn-detail-window{
+  width:min(980px,calc(100vw - 44px));
+  max-height:calc(100dvh - 44px);
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  border:1px solid #30343e;
+  border-radius:24px;
+  background:#090b0f;
+  box-shadow:0 26px 90px rgba(0,0,0,.72);
+  animation:wzTurnModalWindowIn .18s ease-out;
+  scrollbar-width:thin;
+  scrollbar-color:#4b4f59 #0b0d11;
+}
+
+.wz-turn-detail-window::-webkit-scrollbar{width:9px}
+.wz-turn-detail-window::-webkit-scrollbar-track{background:#0b0d11}
+.wz-turn-detail-window::-webkit-scrollbar-thumb{
+  background:#444a55;
+  border-radius:999px;
+  border:2px solid #0b0d11;
+}
+
+.wz-turn-detail-window>.wz-turn-hero{
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  min-height:0;
+}
+
+.wz-turn-detail-page .wz-turn-cover-back{
+  left:auto!important;
+  right:14px!important;
+  top:14px!important;
+  width:42px!important;
+  height:42px!important;
+  border-radius:50%!important;
+  font-size:1.55rem!important;
+  line-height:1!important;
+  background:rgba(7,9,13,.84)!important;
+}
+
+.wz-turn-detail-page .wz-turn-tabs{
+  position:sticky;
+  top:0;
+  z-index:6;
+  background:rgba(9,11,15,.96);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+}
+
+@keyframes wzTurnModalFadeIn{
+  from{opacity:0}
+  to{opacity:1}
+}
+@keyframes wzTurnModalWindowIn{
+  from{opacity:0;transform:translateY(12px) scale(.985)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+
+@media(max-width:700px){
+  .wz-turn-detail-page{
+    align-items:center!important;
+    padding:
+      max(8px,env(safe-area-inset-top))
+      8px
+      max(8px,env(safe-area-inset-bottom))!important;
+  }
+
+  .wz-turn-detail-window{
+    width:100%;
+    max-height:calc(
+      100dvh
+      - max(8px,env(safe-area-inset-top))
+      - max(8px,env(safe-area-inset-bottom))
+    );
+    border-radius:20px;
+  }
+
+  .wz-turn-detail-page .wz-turn-hero-cover{
+    min-height:180px;
+  }
+
+  .wz-turn-detail-page .wz-turn-cover-back{
+    width:40px!important;
+    height:40px!important;
+    right:12px!important;
+    top:12px!important;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  .wz-turn-detail-page,
+  .wz-turn-detail-window{
+    animation:none!important;
+  }
+}
+</style>
+
 </head>
 <body>
 <script id="wz-v58-prepaint-view">
@@ -3829,8 +3973,13 @@ body.wz-inbox-open{
             <div class="redirect-modal-body">
                 <p id="redirectStatusText" style="color: #fff; margin: 0; font-size: 1.05rem;">Komut kopyalandı, Kick sohbete yönlendiriliyorsunuz:</p>
                 <div class="redirect-command-box" id="modalCommandText">!komut</div>
-                <div class="redirect-timer" id="timerText">3 saniye içinde yönlendirileceksiniz...</div>
-                <button class="cancel-btn" onclick="yonlendirmeyiIptalEt()">İptal Et</button>
+                <div class="redirect-timer" id="timerText">Ödeme sayfası hazırlanıyor...</div>
+                <button id="redirectExternalOpenButton"
+                        class="purchase-confirm-btn"
+                        type="button"
+                        style="display:none;margin-top:16px;"
+                        onclick="wzOpenPendingExternalPayment()">ÖDEME SAYFASINI AÇ</button>
+                <button id="redirectCancelButton" class="cancel-btn" onclick="yonlendirmeyiIptalEt()">Kapat</button>
             </div>
         </div>
     </div>
@@ -4049,6 +4198,8 @@ body.wz-inbox-open{
         let aktifResimIndex = 0;
         let redirectTimer = null;
         let pendingKickWindow = null;
+        let pendingExternalPaymentUrl = '';
+        let pendingExternalPaymentLabel = '';
         let zoomLevel = 1;
         let wzPanX = 0;
         let wzPanY = 0;
@@ -7545,28 +7696,173 @@ return;
             }
         }
 
-        function showBynoGameRedirect(reference) {
-            document.getElementById('redirectModalTitle').innerText = '💳 BynoGame Sayfasına Yönlendiriliyorsunuz';
-            document.getElementById('redirectStatusText').innerText = 'Lütfen açılacak BynoGame sayfasında bağış işlemini tamamlayın. Ödeme kodun panoya kopyalandı:';
-            document.getElementById('modalCommandText').innerText = reference;
-            document.getElementById('redirectModal').style.display = 'flex';
+        function wzPaymentPopupFeatures() {
+            const availW = Math.max(320, Number(window.screen?.availWidth || window.innerWidth || 520));
+            const availH = Math.max(520, Number(window.screen?.availHeight || window.innerHeight || 760));
 
-            let kalanSaniye = 3;
-            document.getElementById('timerText').innerText = `${kalanSaniye} saniye içinde BynoGame bağış sayfası açılacak...`;
+            // Masaüstünde küçük, ortalanmış pencere.
+            // Mobil tarayıcı bu ölçüleri desteklemiyorsa kendi kararıyla yeni sekme /
+            // tam ekran açabilir. Ana Weizend sayfası yine açık kalır.
+            const width = Math.max(360, Math.min(540, availW - 24));
+            const height = Math.max(560, Math.min(780, availH - 36));
+            const left = Math.max(0, Math.round((availW - width) / 2));
+            const top = Math.max(0, Math.round((availH - height) / 2));
 
-            if (redirectTimer) clearInterval(redirectTimer);
-            redirectTimer = setInterval(() => {
-                kalanSaniye--;
-                if (kalanSaniye > 0) {
-                    document.getElementById('timerText').innerText = `${kalanSaniye} saniye içinde BynoGame bağış sayfası açılacak...`;
-                    return;
+            return [
+                'popup=yes',
+                `width=${width}`,
+                `height=${height}`,
+                `left=${left}`,
+                `top=${top}`,
+                'resizable=yes',
+                'scrollbars=yes',
+                'menubar=no',
+                'toolbar=no',
+                'status=no',
+                'noopener=no'
+            ].join(',');
+        }
+
+        function wzOpenExternalPaymentWindow(url) {
+            const targetUrl = String(url || '').trim();
+            if (!/^https:\/\//i.test(targetUrl)) return false;
+
+            try {
+                if (pendingKickWindow && !pendingKickWindow.closed) {
+                    pendingKickWindow.location.href = targetUrl;
+                    pendingKickWindow.focus();
+                    return true;
                 }
+            } catch (_) {
+                pendingKickWindow = null;
+            }
 
+            try {
+                const popup = window.open(
+                    targetUrl,
+                    'weizendPaymentPopup',
+                    wzPaymentPopupFeatures()
+                );
+
+                if (!popup) return false;
+
+                pendingKickWindow = popup;
+                try { popup.focus(); } catch (_) {}
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+
+        function wzExternalPaymentIsMobileLike() {
+            try {
+                return (
+                    window.matchMedia('(pointer:coarse)').matches ||
+                    window.matchMedia('(max-width:820px)').matches ||
+                    Number(navigator.maxTouchPoints || 0) > 1
+                );
+            } catch (_) {
+                return window.innerWidth <= 820;
+            }
+        }
+
+        function wzShowExternalPaymentModal({
+            url,
+            title,
+            message,
+            codeText='',
+            buttonText='ÖDEME SAYFASINI AÇ'
+        }) {
+            pendingExternalPaymentUrl = String(url || '').trim();
+            pendingExternalPaymentLabel = String(title || 'Ödeme');
+
+            const modal = document.getElementById('redirectModal');
+            const titleEl = document.getElementById('redirectModalTitle');
+            const statusEl = document.getElementById('redirectStatusText');
+            const commandEl = document.getElementById('modalCommandText');
+            const timerEl = document.getElementById('timerText');
+            const openButton = document.getElementById('redirectExternalOpenButton');
+            const cancelButton = document.getElementById('redirectCancelButton');
+
+            if (!modal || !titleEl || !statusEl || !commandEl || !timerEl || !openButton) {
+                // UI bulunamazsa mevcut sayfayı bozma; yeni sekme/popup dene.
+                if (!wzOpenExternalPaymentWindow(pendingExternalPaymentUrl)) {
+                    window.open(pendingExternalPaymentUrl, '_blank', 'noopener');
+                }
+                return;
+            }
+
+            if (redirectTimer) {
                 clearInterval(redirectTimer);
                 redirectTimer = null;
-                document.getElementById('redirectModal').style.display = 'none';
-                window.location.href = BYNOGAME_DONATION_URL;
-            }, 1000);
+            }
+
+            titleEl.innerText = title;
+            statusEl.innerText = message;
+            commandEl.innerText = codeText || 'İşlemi resmi ödeme sayfasında tamamla.';
+            openButton.innerText = buttonText;
+            openButton.style.display = 'block';
+            openButton.disabled = false;
+            if (cancelButton) cancelButton.innerText = 'Kapat';
+
+            timerEl.innerText = wzExternalPaymentIsMobileLike()
+                ? 'Mobilde küçük pencere desteklenirse popup açılır; tarayıcın desteklemiyorsa yeni sekme açılır. Weizend sayfası kapanmaz.'
+                : 'Masaüstünde ödeme sayfası küçük ayrı pencerede açılır.';
+
+            modal.style.display = 'flex';
+
+            // Otomatik olarak da dene. Tarayıcı popup engellerse aşağıdaki buton
+            // doğrudan kullanıcı dokunuşuyla kesin fallback görevi görür.
+            const opened = wzOpenExternalPaymentWindow(pendingExternalPaymentUrl);
+
+            if (opened) {
+                timerEl.innerText = wzExternalPaymentIsMobileLike()
+                    ? 'Ödeme sayfası açıldı. Mobil tarayıcın popup boyutunu desteklemiyorsa yeni sekmede görünmesi normal.'
+                    : 'Ödeme sayfası küçük pencerede açıldı. İşlemi tamamlayıp buraya geri dönebilirsin.';
+                openButton.innerText = 'ÖDEME SAYFASINI TEKRAR AÇ';
+            } else {
+                timerEl.innerText = 'Tarayıcı otomatik açılışı engelledi. Aşağıdaki butona dokunarak ödeme sayfasını aç.';
+            }
+        }
+
+        function wzOpenPendingExternalPayment() {
+            const url = String(pendingExternalPaymentUrl || '').trim();
+            const timerEl = document.getElementById('timerText');
+            const openButton = document.getElementById('redirectExternalOpenButton');
+
+            if (!url) {
+                if (timerEl) timerEl.innerText = 'Açılacak ödeme bağlantısı bulunamadı.';
+                return;
+            }
+
+            const opened = wzOpenExternalPaymentWindow(url);
+
+            if (opened) {
+                if (timerEl) {
+                    timerEl.innerText = wzExternalPaymentIsMobileLike()
+                        ? 'Ödeme sayfası açıldı. Mobilde yeni sekme/tam ekran açılması tarayıcı davranışıdır.'
+                        : 'Ödeme sayfası küçük pencerede açıldı.';
+                }
+                if (openButton) openButton.innerText = 'ÖDEME SAYFASINI TEKRAR AÇ';
+            } else {
+                // Popup hâlâ engelliyorsa normal yeni sekme fallback'i.
+                const fallback = window.open(url, '_blank', 'noopener');
+                if (timerEl) {
+                    timerEl.innerText = fallback
+                        ? 'Ödeme sayfası yeni sekmede açıldı.'
+                        : 'Tarayıcı açılır pencereyi engelledi. Tarayıcı ayarlarından popuplara izin vermen gerekebilir.';
+                }
+            }
+        }
+
+        function showBynoGameRedirect(reference) {
+            wzShowExternalPaymentModal({
+                url: BYNOGAME_DONATION_URL,
+                title: '💳 BynoGame Bağış / Ödeme',
+                message: 'Ödeme kodun panoya kopyalandı. Resmi BynoGame sayfasında bağışı tamamla ve bağış mesajına yalnızca bu kodu yapıştır:',
+                codeText: reference,
+                buttonText: 'BYNOGAME ÖDEME SAYFASINI AÇ'
+            });
         }
 
         async function checkTlPaymentOnce() {
@@ -7961,6 +8257,16 @@ return;
                 try { pendingKickWindow.close(); } catch (_) {}
             }
             pendingKickWindow = null;
+            pendingExternalPaymentUrl = '';
+            pendingExternalPaymentLabel = '';
+
+            const openButton = document.getElementById('redirectExternalOpenButton');
+            if (openButton) {
+                openButton.style.display = 'none';
+                openButton.disabled = false;
+                openButton.innerText = 'ÖDEME SAYFASINI AÇ';
+            }
+
             document.getElementById('redirectModal').style.display = 'none';
         }
 
@@ -9723,38 +10029,15 @@ return;
     }
 
     function tv2RedirectCountdown(url, title, message, codeText='') {
-        const modal = document.getElementById('redirectModal');
-        const titleEl = document.getElementById('redirectModalTitle');
-        const statusEl = document.getElementById('redirectStatusText');
-        const commandEl = document.getElementById('modalCommandText');
-        const timerEl = document.getElementById('timerText');
-
-        if (!modal || !titleEl || !statusEl || !commandEl || !timerEl) {
-            window.location.href = url;
-            return;
-        }
-
-        titleEl.innerText = title;
-        statusEl.innerText = message;
-        commandEl.innerText = codeText || 'Lütfen açılacak sayfadaki işlemi tamamlayın.';
-        modal.style.display = 'flex';
-
-        let kalan = 3;
-        timerEl.innerText = `${kalan} saniye içinde yönlendiriliyorsunuz...`;
-
-        if (redirectTimer) clearInterval(redirectTimer);
-        redirectTimer = setInterval(() => {
-            kalan--;
-            if (kalan > 0) {
-                timerEl.innerText = `${kalan} saniye içinde yönlendiriliyorsunuz...`;
-                return;
-            }
-
-            clearInterval(redirectTimer);
-            redirectTimer = null;
-            modal.style.display = 'none';
-            window.location.href = url;
-        },1000);
+        wzShowExternalPaymentModal({
+            url,
+            title,
+            message,
+            codeText,
+            buttonText: /kick\.com/i.test(String(url || ''))
+                ? 'KICK ABONELİK SAYFASINI AÇ'
+                : 'ÖDEME SAYFASINI AÇ'
+        });
     }
 
     function tv2OpenKickChannel() {
@@ -13063,17 +13346,23 @@ return;
     const heroStyle=heroImage ? ` style="--wz-turn-cover-image:url(${heroImage})"` : '';
     const stream=safeHttpUrl(rule?.streamUrl || t?.streamUrl || 'https://kick.com/weizend');
     const openAt=registrationOpenAt(item); const closeAt=registrationCloseAt(item);
-    return `<div class="wz-turn-detail-page">
-      <section class="wz-turn-hero">
-        <div class="wz-turn-hero-cover"${heroStyle}>
-          <button type="button" class="wz-turn-cover-back" onclick="wzTurnBack()" aria-label="Turnuvalara geri dön">←</button>
-        </div>
-        ${renderTournamentTimeline(item)}
-        <button id="wzTurnRegisterBtn" type="button" class="wz-turn-register ${registrationIsOpen(item)?'':'is-disabled'}"
-          onclick="wzTournamentRegistration('${esc(id)}')" ${registrationIsOpen(item) ? '' : 'disabled'}>KAYIT OL</button>
-        <nav class="wz-turn-tabs">${tabButtons.map(([id2,name])=>`<button type="button" class="wz-turn-tab ${state.tab===id2?'active':''}" onclick="wzTurnSetTab('${id2}')">${name}</button>`).join('')}</nav>
-        <div class="wz-turn-panel">${panel}</div>
-      </section>
+    return `<div class="wz-turn-detail-page"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Turnuva detayları"
+      onclick="if(event.target===this) wzTurnBack()">
+      <div class="wz-turn-detail-window">
+        <section class="wz-turn-hero">
+          <div class="wz-turn-hero-cover"${heroStyle}>
+            <button type="button" class="wz-turn-cover-back" onclick="wzTurnBack()" aria-label="Turnuva detaylarını kapat">×</button>
+          </div>
+          ${renderTournamentTimeline(item)}
+          <button id="wzTurnRegisterBtn" type="button" class="wz-turn-register ${registrationIsOpen(item)?'':'is-disabled'}"
+            onclick="wzTournamentRegistration('${esc(id)}')" ${registrationIsOpen(item) ? '' : 'disabled'}>KAYIT OL</button>
+          <nav class="wz-turn-tabs">${tabButtons.map(([id2,name])=>`<button type="button" class="wz-turn-tab ${state.tab===id2?'active':''}" onclick="wzTurnSetTab('${id2}')">${name}</button>`).join('')}</nav>
+          <div class="wz-turn-panel">${panel}</div>
+        </section>
+      </div>
     </div>`;
   }
 
@@ -13128,7 +13417,14 @@ return;
       ? (window.scrollY || document.documentElement.scrollTop || 0)
       : null;
 
-    host.innerHTML = `<div class="wz-turn-root">${state.screen==='detail' ? renderDetailPage() : renderListPage()}</div>`;
+    const detailOpen = state.screen === 'detail';
+
+    document.body.classList.toggle('wz-turn-modal-open', detailOpen);
+
+    host.innerHTML = `<div class="wz-turn-root">
+      ${renderListPage()}
+      ${detailOpen ? renderDetailPage() : ''}
+    </div>`;
     cacheTournamentShell(host);
 
     if(state.screen==='list'){
@@ -13230,7 +13526,19 @@ return;
   };
   window.wzTurnSetFilter=function(filter){ state.filter=filter; persistTournamentState(); render(); };
   window.wzTurnOpen=function(id){ state.selectedId=String(id||''); state.screen='detail'; state.tab='overview'; state.bracketMode='tree'; persistTournamentState(); render(); };
-  window.wzTurnBack=function(){ state.screen='list'; persistTournamentState(); render(); };
+  window.wzTurnBack=function(){
+    state.screen='list';
+    document.body.classList.remove('wz-turn-modal-open');
+    persistTournamentState();
+    render();
+  };
+  document.addEventListener('keydown',(event)=>{
+    if(event.key==='Escape' && state.screen==='detail' && document.body.classList.contains('wz-view-tournament')){
+      event.preventDefault();
+      wzTurnBack();
+    }
+  });
+
   window.wzTurnSetTab=function(tab){
     state.tab=['overview','rules','prizes','bracket','predictions'].includes(tab)?tab:'overview';
     persistTournamentState();
