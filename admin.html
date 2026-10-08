@@ -1705,9 +1705,9 @@ body.dmModalOpen{overflow:hidden}
 </style>
 
 
-<style id="wz-admin-tournament-clean-v45">
+<style id="wz-admin-tournament-clean-v46">
 /* =========================================================
-   V45 · Derli toplu Turnuva Yönetimi
+   V46 · Mobil sade turnuva yönetimi
    ========================================================= */
 
 .tournamentActionPanel{
@@ -1718,143 +1718,129 @@ body.dmModalOpen{overflow:hidden}
   background:linear-gradient(145deg,#101010,#090909);
 }
 
-.tournamentSaveButton{
-  width:100%!important;
-  margin:0!important;
+.tournamentStateBar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:10px 12px;
+  margin-bottom:9px;
+  border:1px solid #292929;
+  border-radius:11px;
+  background:#0b0b0b;
+}
+.tournamentStateBar span{
+  display:block;
+  color:#868686;
+  font-size:.68rem;
+  font-weight:750;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.tournamentStateBar b{
+  display:block;
+  margin-top:3px;
+  color:#fff;
+  font-size:.88rem;
 }
 
-.tournamentLifecycleGrid{
+.tournamentSaveButton,
+.tournamentLifecycleToggle{
+  width:100%!important;
+  min-height:46px!important;
+  margin:0!important;
+}
+.tournamentLifecycleToggle{
+  margin-top:8px!important;
+}
+
+.tournamentDangerGrid{
   display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
+  grid-template-columns:1fr 1fr;
   gap:8px;
   margin-top:8px;
 }
-.tournamentLifecycleGrid button{
+.tournamentDangerGrid button{
   min-width:0!important;
-  padding:10px 8px!important;
-  min-height:46px!important;
-  font-size:.78rem!important;
+  min-height:43px!important;
+  padding:9px 7px!important;
+  font-size:.75rem!important;
 }
 
-.sectionHeaderActions{
+.tournamentInlineStatus{
+  margin-top:8px!important;
+  margin-bottom:0!important;
+  padding:10px 11px!important;
+  font-size:.78rem!important;
+  line-height:1.4!important;
+}
+
+.sectionHeaderActions,
+.sectionInlineActions{
   display:flex;
   align-items:center;
   justify-content:flex-end;
   flex-wrap:wrap;
   gap:7px;
 }
-.sectionHeaderActions button{
+.sectionHeaderActions button,
+.sectionInlineActions button{
   margin:0!important;
 }
 
-/* Ekranın neresinde olursan ol işlem sonucu görünür. */
-.tournamentActionToast{
-  position:fixed;
-  z-index:50000;
-  top:max(12px,env(safe-area-inset-top));
-  left:50%;
-  transform:translate(-50%,-18px);
-  width:min(92vw,560px);
-  display:flex;
-  align-items:flex-start;
-  gap:10px;
-  padding:12px 12px 12px 14px;
-  border:1px solid #3a3a3a;
-  border-radius:14px;
-  background:rgba(15,15,15,.97);
-  color:#fff;
-  box-shadow:0 18px 55px rgba(0,0,0,.72);
-  backdrop-filter:blur(12px);
-  -webkit-backdrop-filter:blur(12px);
-  opacity:0;
-  visibility:hidden;
-  pointer-events:none;
-  transition:
-    opacity .16s ease,
-    transform .16s ease,
-    visibility .16s ease;
-}
-.tournamentActionToast.show{
-  opacity:1;
-  visibility:visible;
-  transform:translate(-50%,0);
-  pointer-events:auto;
-}
-.tournamentActionToast.ok{
-  border-color:#236b3d;
-  box-shadow:
-    0 18px 55px rgba(0,0,0,.72),
-    0 0 0 1px rgba(46,204,113,.08) inset;
-}
-.tournamentActionToast.error{
-  border-color:#7a2828;
-  box-shadow:
-    0 18px 55px rgba(0,0,0,.72),
-    0 0 0 1px rgba(231,76,60,.08) inset;
-}
-.tournamentActionToast.loading{
-  border-color:#8a6720;
-}
-.tournamentActionToastText{
-  flex:1 1 auto;
-  min-width:0;
-  font-size:.84rem;
-  line-height:1.45;
-  font-weight:650;
-  overflow-wrap:anywhere;
-}
-.tournamentActionToastClose{
-  flex:0 0 auto;
-  width:31px!important;
-  height:31px!important;
-  min-width:31px!important;
-  padding:0!important;
-  margin:0!important;
-  border-radius:9px!important;
-  background:#252525!important;
-  border:1px solid #3b3b3b!important;
-  color:#fff!important;
-  font-size:1.08rem!important;
-  line-height:1!important;
-}
-.tournamentActionToastClose:hover{
-  background:#333!important;
-  filter:none!important;
+.sectionInlineActions{
+  margin-top:9px;
 }
 
 @media(max-width:760px){
-  .tournamentLifecycleGrid{
-    grid-template-columns:repeat(2,minmax(0,1fr));
+  .tournamentActionPanel{
+    padding:9px;
   }
-  .tournamentLifecycleGrid button{
+
+  .tournamentStateBar{
+    padding:9px 10px;
+  }
+
+  .tournamentSaveButton,
+  .tournamentLifecycleToggle{
     min-height:44px!important;
-    font-size:.76rem!important;
+    font-size:.79rem!important;
+  }
+
+  .tournamentDangerGrid{
+    grid-template-columns:1fr 1fr;
+    gap:7px;
+  }
+
+  .tournamentDangerGrid button{
+    min-height:41px!important;
+    font-size:.70rem!important;
   }
 
   .sectionHeaderRow{
     align-items:flex-start!important;
   }
-  .sectionHeaderActions{
+
+  .sectionHeaderActions,
+  .sectionInlineActions{
     width:100%;
     display:grid;
-    grid-template-columns:repeat(2,minmax(0,1fr));
+    grid-template-columns:1fr;
+    gap:6px;
   }
-  .sectionHeaderActions button{
+
+  .sectionHeaderActions button,
+  .sectionInlineActions button{
     width:100%!important;
     min-width:0!important;
-    min-height:42px!important;
-    padding:9px 7px!important;
+    min-height:40px!important;
+    padding:8px 7px!important;
     font-size:.72rem!important;
   }
 
-  .tournamentActionToast{
-    top:max(8px,env(safe-area-inset-top));
-    width:calc(100vw - 18px);
-    padding:11px 10px 11px 12px;
-    border-radius:12px;
-  }
-  .tournamentActionToastText{
-    font-size:.78rem;
+  .tournamentInlineStatus{
+    font-size:.74rem!important;
+    padding:9px 10px!important;
   }
 }
 </style>
@@ -1862,17 +1848,7 @@ body.dmModalOpen{overflow:hidden}
 </head>
 
 <body>
-  <div id="tournamentActionToast"
-    class="tournamentActionToast"
-    role="status"
-    aria-live="polite"
-    aria-atomic="true">
-    <div id="tournamentActionToastText" class="tournamentActionToastText"></div>
-    <button type="button"
-      class="tournamentActionToastClose"
-      onclick="hideTournamentActionToast()"
-      aria-label="Bildirimi kapat">×</button>
-  </div>
+  
 
 <div class="wrap">
 
@@ -3313,16 +3289,27 @@ body.dmModalOpen{overflow:hidden}
         <h3 class="subTitle">⚙️ Yönetim İşlemleri</h3>
 
         <div class="tournamentActionPanel">
+          <div class="tournamentStateBar">
+            <div>
+              <span>Turnuva Durumu</span>
+              <b id="tLifecycleStateText">Durum yükleniyor...</b>
+            </div>
+          </div>
+
           <button id="saveTournamentButton"
             class="tournamentSaveButton"
             onclick="saveTournamentConfig()">💾 Ayarları Kaydet</button>
 
-          <div class="tournamentLifecycleGrid">
-            <button id="tActivateButton" class="success" onclick="setTournamentLifecycle('active')">🟢 Aktif Yap</button>
-            <button id="tPassiveButton" class="secondary" onclick="setTournamentLifecycle('passive')">⚫ Pasife Al</button>
+          <button id="tLifecycleToggleButton"
+            class="secondary tournamentLifecycleToggle"
+            onclick="toggleTournamentActiveState()">⚫ Pasife Al</button>
+
+          <div class="tournamentDangerGrid">
             <button id="tCompleteButton" class="warn" onclick="setTournamentLifecycle('completed')">🏁 Tamamlandı Yap</button>
             <button id="tDeleteButton" class="danger" onclick="deleteTournamentFromPanel()">🗑 Turnuvayı Sil</button>
           </div>
+
+          <div id="tournamentStatus" class="status tournamentInlineStatus"></div>
         </div>
 
         <h3 class="subTitle">🎯 Tahmin / Pick'em Sistemi</h3>
@@ -3331,17 +3318,17 @@ body.dmModalOpen{overflow:hidden}
             Fikstür oluşturulduktan sonra tahmin sistemini buradan açabilirsin.
           </div>
 
-          <div class="btnRow" style="margin-top:9px;">
-            <button id="tPredictionOpenButton" class="success" onclick="setTournamentPredictions(true)">🔓 Tahminleri Aç</button>
-            <button id="tPredictionCloseButton" class="danger" onclick="setTournamentPredictions(false)">🔒 Tahminleri Kapat</button>
-            <button class="secondary" onclick="loadTournamentPredictions()">🔄 Tahminleri Yenile</button>
+          <div class="sectionInlineActions">
+            <button id="tPredictionToggleButton"
+              class="success"
+              onclick="toggleTournamentPredictions()">🔓 Tahminleri Aç</button>
+            <button class="secondary" onclick="loadTournamentPredictions()">🔄 Yenile</button>
           </div>
 
+          <div id="tPredictionStatus" class="status tournamentInlineStatus"></div>
           <div id="tPredictionLeaderboard" class="tPredictionLeaderboard"></div>
-          <div id="tPredictionStatus" class="status"></div>
         </div>
 
-        <div id="tournamentStatus" class="status"></div>
       </div>
 
       <div class="card" id="pastTournamentsCard">
@@ -3356,10 +3343,10 @@ body.dmModalOpen{overflow:hidden}
           </div>
           <button class="secondary smallButton" onclick="loadTournamentList(true)">🔄 Yenile</button>
         </div>
+        <div id="pastTournamentStatus" class="status tournamentInlineStatus"></div>
         <div id="pastTournamentList" class="pastTournamentList">
           <div class="pastTournamentEmpty">Geçmiş turnuvalar yükleniyor...</div>
         </div>
-        <div id="pastTournamentStatus" class="status"></div>
       </div>
 
 
@@ -3372,6 +3359,7 @@ body.dmModalOpen{overflow:hidden}
           <button class="secondary smallButton" onclick="loadTournamentEntries()">🔄 Yenile</button>
         </div>
 
+        <div id="tournamentEntriesStatus" class="status tournamentInlineStatus"></div>
         <div id="tournamentEntrySummary" class="tournamentEntrySummary">Bir turnuva seç ve kayıtları yükle.</div>
         <div class="tournamentV3Notice">
           <b>Turnuva V3:</b> Takım tamamlanmadan public listede görünmez. Davet kodu tek kullanımlıktır; ön ödemeli koltuk varsa katılan oyuncudan tekrar ücret istenmez.
@@ -3398,6 +3386,7 @@ body.dmModalOpen{overflow:hidden}
           </div>
         </div>
 
+        <div id="tournamentBracketStatus" class="status tournamentInlineStatus"></div>
         <div id="tournamentBracketSummary" class="tournamentEntrySummary">Henüz fikstür yüklenmedi.</div>
         <div id="tournamentBracketView" class="tournamentEntriesView"></div>
       </div>
@@ -3411,14 +3400,13 @@ body.dmModalOpen{overflow:hidden}
           </div>
 
           <div class="sectionHeaderActions">
-            <button id="tSubscriptionSyncButton"
+            <button id="tParticipationRefreshButton"
               class="secondary smallButton"
-              onclick="syncTournamentSubscriptions()">⭐ Abonelikleri Kontrol Et</button>
-            <button class="secondary smallButton"
-              onclick="loadTournamentSubscriptionEvents()">🔄 İşlemleri Yenile</button>
+              onclick="refreshTournamentParticipationTransactions()">🔄 İşlemleri Yenile</button>
           </div>
         </div>
 
+        <div id="tournamentParticipationStatus" class="status tournamentInlineStatus"></div>
         <div id="tournamentSubscriptionSummary" class="tournamentEntrySummary">Henüz turnuva katılım işlemi yüklenmedi.</div>
         <div id="tournamentSubscriptionEvents" class="tournamentEntriesView"></div>
       </div>
@@ -3891,71 +3879,14 @@ function tlFromCents(value){
   )} TL`;
 }
 
-let tournamentActionToastTimer = null;
-
-function hideTournamentActionToast(){
-  clearTimeout(tournamentActionToastTimer);
-  tournamentActionToastTimer = null;
-
-  const toast = document.getElementById('tournamentActionToast');
-  if(!toast) return;
-
-  toast.classList.remove('show','ok','error','loading');
-}
-
-function showTournamentActionToast(message,ok=false){
-  const toast = document.getElementById('tournamentActionToast');
-  const text = document.getElementById('tournamentActionToastText');
-  if(!toast || !text) return;
-
-  clearTimeout(tournamentActionToastTimer);
-  tournamentActionToastTimer = null;
-
-  const raw = String(message || '');
-  const isLoading = raw.includes('⏳');
-
-  text.innerHTML = raw;
-
-  toast.classList.remove('ok','error','loading');
-  toast.classList.add(
-    isLoading
-      ? 'loading'
-      : (ok ? 'ok' : 'error')
-  );
-  toast.classList.add('show');
-
-  // "İşleniyor..." bildirimi işlem bitene kadar ekranda kalır.
-  // Sonuç geldikten sonra başarı/hata kendiliğinden kapanır.
-  if(!isLoading){
-    tournamentActionToastTimer = setTimeout(
-      hideTournamentActionToast,
-      ok ? 5000 : 8000
-    );
-  }
-}
-
 function showStatus(id,message,ok=false){
   const el = document.getElementById(id);
 
-  if(el){
-    el.style.display = 'block';
+  if(!el) return;
 
-    el.style.borderColor =
-      ok ? '#236b3d' : '#6b2323';
-
-    el.innerHTML = message;
-  }
-
-  const tournamentStatusIds = new Set([
-    'createTournamentStatus',
-    'tournamentStatus',
-    'tPredictionStatus',
-    'pastTournamentStatus'
-  ]);
-
-  if(tournamentStatusIds.has(String(id || ''))){
-    showTournamentActionToast(message,ok);
-  }
+  el.style.display = 'block';
+  el.style.borderColor = ok ? '#236b3d' : '#6b2323';
+  el.innerHTML = message;
 }
 
 function hideStatus(id){
@@ -8755,7 +8686,7 @@ function setTournamentTemplateMode(isTemplate){
   }
 
   const normalButtons = [
-    'saveTournamentButton','tActivateButton','tPassiveButton','tCompleteButton','tDeleteButton'
+    'saveTournamentButton','tLifecycleToggleButton','tCompleteButton','tDeleteButton'
   ];
   for(const id of normalButtons){
     const el = document.getElementById(id);
@@ -9005,6 +8936,7 @@ async function loadTournamentConfig(){
 
     const isTemplate = false;
     const lifecycle = catalogItem.lifecycleStatus || 'registration_closed';
+    updateTournamentLifecycleControls(lifecycle);
 
     const quick = document.getElementById('tournamentQuickInfo');
 
@@ -9061,11 +8993,7 @@ async function loadTournamentConfig(){
       loadTournamentPredictions(true)
     ]);
 
-    showStatus(
-      'tournamentStatus',
-      `✅ ${esc(t.name)} yönetim bilgileri yüklendi.`,
-      true
-    );
+    hideStatus('tournamentStatus');
 
   }catch(error){
     showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
@@ -9078,7 +9006,6 @@ function updateTournamentEntryFields(){
   const fee = document.getElementById('tFee');
   const close = document.getElementById('tRegistrationClosesAt');
   const hint = document.getElementById('tEntryModeHint');
-  const syncBtn = document.getElementById('tSubscriptionSyncButton');
 
   if(feeBox) feeBox.style.display = mode === 'tl' ? '' : 'none';
 
@@ -9091,7 +9018,6 @@ function updateTournamentEntryFields(){
     close.required = mode === 'subscription';
   }
 
-  if(syncBtn) syncBtn.style.display = mode === 'subscription' ? '' : 'none';
 
   if(hint){
     if(mode === 'tl'){
@@ -9261,8 +9187,7 @@ function renderTournamentPredictions(data){
 
   const summary=document.getElementById('tPredictionSummary');
   const leaderboard=document.getElementById('tPredictionLeaderboard');
-  const openButton=document.getElementById('tPredictionOpenButton');
-  const closeButton=document.getElementById('tPredictionCloseButton');
+  const toggleButton=document.getElementById('tPredictionToggleButton');
 
   if(!summary || !leaderboard) return;
 
@@ -9300,12 +9225,21 @@ function renderTournamentPredictions(data){
     </div>
   `;
 
-  if(openButton){
-    openButton.disabled=effectiveOpen;
-    openButton.title=effectiveOpen?'Tahminler zaten açık.':'Fikstür hazırsa tahminleri aç.';
-  }
-  if(closeButton){
-    closeButton.disabled=!configuredOpen;
+  if(toggleButton){
+    const shouldClose = configuredOpen === true;
+
+    toggleButton.dataset.nextOpen = shouldClose ? 'false' : 'true';
+    toggleButton.innerHTML = shouldClose
+      ? '🔒 Tahminleri Kapat'
+      : '🔓 Tahminleri Aç';
+
+    toggleButton.classList.remove('success','danger');
+    toggleButton.classList.add(shouldClose ? 'danger' : 'success');
+
+    toggleButton.disabled = false;
+    toggleButton.title = shouldClose
+      ? (effectiveOpen ? 'Tahminleri kapat.' : 'Ayar açık fakat sistem otomatik kilitli. İstersen tamamen kapatabilirsin.')
+      : 'Fikstür hazırsa tahminleri aç.';
   }
 
   if(!rows.length){
@@ -9360,6 +9294,13 @@ async function loadTournamentPredictions(silent=false){
   }
 }
 
+
+function toggleTournamentPredictions(){
+  const button = document.getElementById('tPredictionToggleButton');
+  const next = String(button?.dataset?.nextOpen || 'true') === 'true';
+  return setTournamentPredictions(next);
+}
+
 async function setTournamentPredictions(open){
   const tournamentId=document.getElementById('tournamentSelect')?.value||'';
   if(!tournamentId) return;
@@ -9404,6 +9345,53 @@ async function setTournamentPredictions(open){
 }
 
 
+
+function currentTournamentLifecycleState(){
+  const selectId = document.getElementById('tournamentSelect')?.value || '';
+  const catalogItem = tournamentCatalogCache.find(
+    x => String(x?.id || '') === String(selectId)
+  );
+
+  return String(
+    currentTournamentAdmin?.lifecycleStatus ||
+    catalogItem?.lifecycleStatus ||
+    'registration_closed'
+  ).toLowerCase();
+}
+
+function updateTournamentLifecycleControls(lifecycleValue){
+  const lifecycle = String(lifecycleValue || currentTournamentLifecycleState()).toLowerCase();
+  const stateText = document.getElementById('tLifecycleStateText');
+  const toggle = document.getElementById('tLifecycleToggleButton');
+
+  if(stateText){
+    stateText.textContent = tournamentLifecycleText(lifecycle);
+  }
+
+  if(!toggle) return;
+
+  const isPassive = lifecycle === 'passive';
+
+  toggle.dataset.nextState = isPassive ? 'active' : 'passive';
+  toggle.innerHTML = isPassive
+    ? '🟢 Turnuvayı Aktif Yap'
+    : '⚫ Turnuvayı Pasife Al';
+
+  toggle.classList.remove('success','secondary');
+  toggle.classList.add(isPassive ? 'success' : 'secondary');
+
+  const locked = lifecycle === 'completed' || lifecycle === 'template';
+  toggle.disabled = locked;
+}
+
+async function toggleTournamentActiveState(){
+  const button = document.getElementById('tLifecycleToggleButton');
+  const nextState = String(button?.dataset?.nextState || '').trim();
+
+  if(!['active','passive'].includes(nextState)) return;
+  await setTournamentLifecycle(nextState);
+}
+
 async function setTournamentLifecycle(state){
   const tournamentId = document.getElementById('tournamentSelect')?.value || '';
   if(!tournamentId) return;
@@ -9444,6 +9432,14 @@ async function setTournamentLifecycle(state){
         : state === 'passive'
           ? '✅ Turnuva pasife alındı. Kullanıcı marketinde görünmez.'
           : '✅ Turnuva tamamlandı. Yönetim listesinden Geçmiş Turnuvalar bölümüne taşındı ve kullanıcı tarafında TAMAMLANDI olarak görünür.';
+
+    const refreshedItem = tournamentCatalogCache.find(
+      x => String(x?.id || '') === String(tournamentId)
+    );
+    updateTournamentLifecycleControls(
+      refreshedItem?.lifecycleStatus ||
+      (state === 'passive' ? 'passive' : currentTournamentLifecycleState())
+    );
 
     showStatus('tournamentStatus',successText,true);
 
@@ -9501,7 +9497,7 @@ async function loadTournamentEntries(silent=false){
   if(!id) return;
 
   if(!silent){
-    showStatus('tournamentStatus','⏳ Turnuva V3 kayıtları yenileniyor...',true);
+    showStatus('tournamentEntriesStatus','⏳ Turnuva V3 kayıtları yenileniyor...',true);
   }
 
   try{
@@ -9511,7 +9507,7 @@ async function loadTournamentEntries(silent=false){
     renderTournamentV3Entries(d);
 
     if(!silent){
-      showStatus('tournamentStatus','✅ Turnuva V3 kayıtları güncellendi.',true);
+      showStatus('tournamentEntriesStatus','✅ Turnuva V3 kayıtları güncellendi.',true);
     }
   }catch(error){
     document.getElementById('tournamentEntrySummary').innerHTML = '❌ Kayıtlar yüklenemedi.';
@@ -9519,7 +9515,7 @@ async function loadTournamentEntries(silent=false){
       `<div class="tournamentEmpty">${esc(error.message || error)}</div>`;
 
     if(!silent){
-      showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
+      showStatus('tournamentEntriesStatus','❌ ' + esc(error.message || error),false);
     }
   }
 }
@@ -9707,9 +9703,9 @@ async function regenerateTournamentInvite(encodedInviteId){
     });
     if(!r.ok||!d?.success) throw new Error(d?.error||`HTTP ${r.status}`);
     await loadTournamentEntries(true);
-    showStatus('tournamentStatus','✅ Yeni davet kodu oluşturuldu.',true);
+    showStatus('tournamentEntriesStatus','✅ Yeni davet kodu oluşturuldu.',true);
   }catch(error){
-    showStatus('tournamentStatus','❌ '+esc(error.message||error),false);
+    showStatus('tournamentEntriesStatus','❌ '+esc(error.message||error),false);
   }
 }
 
@@ -9718,7 +9714,7 @@ async function copyTextAdmin(encodedValue){
   if(!value) return;
   try{
     await navigator.clipboard.writeText(value);
-    showStatus('tournamentStatus','✅ Davet kodu panoya kopyalandı.',true);
+    showStatus('tournamentEntriesStatus','✅ Davet kodu panoya kopyalandı.',true);
   }catch{
     prompt('Kodu kopyala:',value);
   }
@@ -9787,9 +9783,9 @@ async function deleteTournamentTeam(encodedTeamId){
     if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
     await loadTournamentEntries(true);
     await loadTournamentConfig();
-    showStatus('tournamentStatus','✅ Takım turnuvadan silindi.',true);
+    showStatus('tournamentEntriesStatus','✅ Takım turnuvadan silindi.',true);
   }catch(error){
-    showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
+    showStatus('tournamentEntriesStatus','❌ ' + esc(error.message || error),false);
   }
 }
 
@@ -9851,7 +9847,7 @@ async function saveTournamentSlotEditor(){
 
     closeTournamentSlotEditor();
     await loadTournamentEntries(true);
-    showStatus('tournamentStatus','✅ Kick kullanıcı adı ve oyun içi ad güncellendi.',true);
+    showStatus('tournamentEntriesStatus','✅ Kick kullanıcı adı ve oyun içi ad güncellendi.',true);
   }catch(error){
     showStatus('tournamentPlayerEditStatus','❌ ' + esc(error.message || error),false);
   }finally{
@@ -9873,9 +9869,9 @@ async function deleteTournamentSlot(encodedSlotId){
     if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
     await loadTournamentEntries(true);
     await loadTournamentConfig();
-    showStatus('tournamentStatus','✅ Oyuncu çıkarıldı. Yeni tek kullanımlık davet kodu oluşturuldu.',true);
+    showStatus('tournamentEntriesStatus','✅ Oyuncu çıkarıldı. Yeni tek kullanımlık davet kodu oluşturuldu.',true);
   }catch(error){
-    showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
+    showStatus('tournamentEntriesStatus','❌ ' + esc(error.message || error),false);
   }
 }
 
@@ -9892,9 +9888,9 @@ async function editSoloTournamentPlayer(encodedMembershipId,encodedGameId){
     });
     if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
     await loadTournamentEntries(true);
-    showStatus('tournamentStatus','✅ Oyuncu bilgisi güncellendi.',true);
+    showStatus('tournamentEntriesStatus','✅ Oyuncu bilgisi güncellendi.',true);
   }catch(error){
-    showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
+    showStatus('tournamentEntriesStatus','❌ ' + esc(error.message || error),false);
   }
 }
 
@@ -9909,9 +9905,9 @@ async function deleteSoloTournamentPlayer(encodedMembershipId){
     if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
     await loadTournamentEntries(true);
     await loadTournamentConfig();
-    showStatus('tournamentStatus','✅ Oyuncu turnuvadan silindi.',true);
+    showStatus('tournamentEntriesStatus','✅ Oyuncu turnuvadan silindi.',true);
   }catch(error){
-    showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
+    showStatus('tournamentEntriesStatus','❌ ' + esc(error.message || error),false);
   }
 }
 
@@ -9967,10 +9963,75 @@ function renderTournamentSubscriptionPayments(subs){
   }
 }
 
+
+async function refreshTournamentParticipationTransactions(){
+  const button = document.getElementById('tParticipationRefreshButton');
+  const entryMode = String(
+    currentTournamentRule?.entryMode ||
+    document.getElementById('tEntryMode')?.value ||
+    'free'
+  ).toLowerCase();
+
+  try{
+    if(button){
+      button.disabled = true;
+      button.innerText = '⏳ Yenileniyor...';
+    }
+
+    showStatus(
+      'tournamentParticipationStatus',
+      entryMode === 'subscription'
+        ? '⏳ Abonelik / Gift olayları kontrol ediliyor; BynoGame katılım işlemleri de yenileniyor...'
+        : '⏳ Turnuva katılım işlemleri yenileniyor...',
+      true
+    );
+
+    let syncSummary = '';
+
+    if(entryMode === 'subscription'){
+      const {r,d} = await api(
+        '/admin/tournament/v2/subscriptions/sync',
+        {method:'POST'}
+      );
+
+      if(!r.ok || !d?.success){
+        throw new Error(d?.error || `HTTP ${r.status}`);
+      }
+
+      syncSummary =
+        ` · Yeni abonelik/gift olayı: ${Number(d?.sync?.inserted||0)}` +
+        ` · Dağıtılan hak: ${Number(d?.allocation?.allocated||0)}`;
+    }
+
+    await Promise.all([
+      loadTournamentEntries(true),
+      loadTournamentSubscriptionEvents(true)
+    ]);
+
+    showStatus(
+      'tournamentParticipationStatus',
+      `✅ İşlemler güncellendi. Abonelik / Gift ve BynoGame katılım kayıtları yenilendi${syncSummary}.`,
+      true
+    );
+
+  }catch(error){
+    showStatus(
+      'tournamentParticipationStatus',
+      '❌ ' + esc(error.message || error),
+      false
+    );
+  }finally{
+    if(button){
+      button.disabled = false;
+      button.innerText = '🔄 İşlemleri Yenile';
+    }
+  }
+}
+
 async function syncTournamentSubscriptions(){
   try{
     showStatus(
-      'tournamentStatus',
+      'tournamentParticipationStatus',
       '⏳ MissXss abonelik / gift olayları kontrol ediliyor...',
       true
     );
@@ -9986,7 +10047,7 @@ async function syncTournamentSubscriptions(){
     }
 
     showStatus(
-      'tournamentStatus',
+      'tournamentParticipationStatus',
       `✅ Abonelik senkronizasyonu tamamlandı. Yeni olay: ${Number(d?.sync?.inserted||0)} · Dağıtılan hak: ${Number(d?.allocation?.allocated||0)}`,
       true
     );
@@ -9995,7 +10056,7 @@ async function syncTournamentSubscriptions(){
     await loadTournamentSubscriptionEvents(true);
 
   }catch(error){
-    showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
+    showStatus('tournamentParticipationStatus','❌ ' + esc(error.message || error),false);
   }
 }
 
@@ -10117,15 +10178,19 @@ async function loadTournamentSubscriptionEvents(silent=false){
 
     if(!silent){
       showStatus(
-        'tournamentStatus',
+        'tournamentParticipationStatus',
         '✅ Turnuva katılım işlemleri yenilendi.',
         true
       );
     }
 
+    if(!silent){
+      showStatus('tournamentParticipationStatus','✅ Katılım işlemleri güncellendi.',true);
+    }
+
   }catch(error){
     if(!silent){
-      showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
+      showStatus('tournamentParticipationStatus','❌ ' + esc(error.message || error),false);
     }
   }
 }
@@ -10143,9 +10208,9 @@ async function hideTournamentSupportEvent(encodedTrackingKey){
     });
     if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
     await loadTournamentSubscriptionEvents(true);
-    showStatus('tournamentStatus','✅ Turnuva katılım işlemi takip listesinden kaldırıldı.',true);
+    showStatus('tournamentParticipationStatus','✅ Turnuva katılım işlemi takip listesinden kaldırıldı.',true);
   }catch(error){
-    showStatus('tournamentStatus','❌ '+esc(error.message||error),false);
+    showStatus('tournamentParticipationStatus','❌ '+esc(error.message||error),false);
   }
 }
 
@@ -10161,7 +10226,7 @@ async function drawTournament(){
 
   try{
     showStatus(
-      'tournamentStatus',
+      'tournamentBracketStatus',
       '⏳ Katılımcılar karıştırılıyor ve fikstür oluşturuluyor...',
       true
     );
@@ -10194,13 +10259,13 @@ async function drawTournament(){
     ]);
 
     showStatus(
-      'tournamentStatus',
+      'tournamentBracketStatus',
       `✅ Fikstür oluşturuldu. ${Number(d.participantCount||0)} katılımcı · ${Number(d.rounds||0)} tur. Tahmin sistemini artık açabilirsin.`,
       true
     );
 
   }catch(error){
-    showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
+    showStatus('tournamentBracketStatus','❌ ' + esc(error.message || error),false);
   }
 }
 
@@ -10234,7 +10299,7 @@ async function loadTournamentBracket(silent=false){
     renderTournamentBracket(d);
 
     if(!silent){
-      showStatus('tournamentStatus','✅ Fikstür yenilendi.',true);
+      showStatus('tournamentBracketStatus','✅ Fikstür yenilendi.',true);
     }
 
   }catch(error){
@@ -10245,7 +10310,7 @@ async function loadTournamentBracket(silent=false){
     }
 
     if(!silent){
-      showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
+      showStatus('tournamentBracketStatus','❌ ' + esc(error.message || error),false);
     }
   }
 }
@@ -10399,7 +10464,7 @@ async function saveTournamentMatchResult(encodedMatchId){
     document.getElementById(`score-${matchId}`)?.value.trim() || '';
 
   if(!winnerId){
-    showStatus('tournamentStatus','❌ Önce kazananı seç.',false);
+    showStatus('tournamentBracketStatus','❌ Önce kazananı seç.',false);
     return;
   }
 
@@ -10428,13 +10493,13 @@ async function saveTournamentMatchResult(encodedMatchId){
     ]);
 
     showStatus(
-      'tournamentStatus',
+      'tournamentBracketStatus',
       '✅ Maç sonucu kaydedildi, kazanan bir sonraki tura aktarıldı ve tahmin puanları güncellendi.',
       true
     );
 
   }catch(error){
-    showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
+    showStatus('tournamentBracketStatus','❌ ' + esc(error.message || error),false);
   }
 }
 
