@@ -12290,11 +12290,23 @@ return;
     const t=detail?.tournament||item?.tournament||{};
     const r=item?.rule||{};
     const get=(keys)=>{ for(const k of keys){ if(t?.[k] || r?.[k]) return String(t?.[k] || r?.[k]); } return ''; };
-    return [
+
+    const prizes=[
       {place:'1.', label:'Şampiyon', icon:'🏆', className:'pos1', value:get(['firstPrize','prize1','prizeFirst','first_place_prize']) || 'Açıklanmadı'},
-      {place:'2.', label:'Finalist', icon:'🥈', className:'pos2', value:get(['secondPrize','prize2','prizeSecond','second_place_prize']) || 'Açıklanmadı'},
-      {place:'3.', label:'Üçüncü', icon:'🥉', className:'pos3', value:get(['thirdPrize','prize3','prizeThird','third_place_prize']) || 'Açıklanmadı'}
+      {place:'2.', label:'Finalist', icon:'🥈', className:'pos2', value:get(['secondPrize','prize2','prizeSecond','second_place_prize']) || 'Açıklanmadı'}
     ];
+
+    if(thirdPlaceIsEnabled(item,detail)){
+      prizes.push({
+        place:'3.',
+        label:'Üçüncü',
+        icon:'🥉',
+        className:'pos3',
+        value:get(['thirdPrize','prize3','prizeThird','third_place_prize']) || 'Açıklanmadı'
+      });
+    }
+
+    return prizes;
   }
   function defaultRules(item){
     const t=item?.tournament||{};
@@ -12380,17 +12392,31 @@ return;
     const t=detail?.tournament||item?.tournament||{}; const rule=item?.rule||{};
     return String(rule?.mapImageUrl || t?.mapImageUrl || '').trim();
   }
+
+  function thirdPlaceIsEnabled(item, detail=null){
+    const t=detail?.tournament||item?.tournament||{};
+    const rule=item?.rule||{};
+    return rule?.thirdPlaceEnabled === true || t?.thirdPlaceEnabled === true;
+  }
+
   function tournamentCardPrizes(item){
     const t=item?.tournament||{};
     const rule=item?.rule||{};
 
     const values=[
       ['🥇','1.', String(rule?.firstPrize || t?.firstPrize || '').trim()],
-      ['🥈','2.', String(rule?.secondPrize || t?.secondPrize || '').trim()],
-      ['🥉','3.', String(rule?.thirdPrize || t?.thirdPrize || '').trim()]
-    ].filter(row=>row[2]);
+      ['🥈','2.', String(rule?.secondPrize || t?.secondPrize || '').trim()]
+    ];
 
-    return values;
+    if(thirdPlaceIsEnabled(item)){
+      values.push([
+        '🥉',
+        '3.',
+        String(rule?.thirdPrize || t?.thirdPrize || '').trim()
+      ]);
+    }
+
+    return values.filter(row=>row[2]);
   }
 
   function tournamentEntryBadge(item){
@@ -12552,12 +12578,20 @@ return;
     return `<div class="wz-turn-box"><h3>Turnuva Kuralları</h3><div class="wz-turn-acc">${rules.map((r,i)=>`<div class="wz-turn-accitem ${state.openRules.has(i)?'open':''}"><button type="button" class="wz-turn-accbtn" onclick="wzTurnToggleRule(${i})"><span>${esc(r[0])}</span><span>${state.openRules.has(i)?'−':'+'}</span></button><div class="wz-turn-acccontent" style="white-space:pre-line">${esc(r[1])}</div></div>`).join('')}</div></div>`;
   }
   function renderPrizes(detail,item){
-    const prizes=extractPrizes(detail,item); const fin=finalInfo(detail);
+    const prizes=extractPrizes(detail,item);
+    const fin=finalInfo(detail);
     const rankings=[
       {name: fin.champion || 'Henüz yok', pts: fin.champion ? '320 Puan' : '—'},
-      {name: fin.runner || 'Henüz yok', pts: fin.runner ? '280 Puan' : '—'},
-      {name: fin.third || 'Henüz yok', pts: fin.third ? '250 Puan' : '—'}
+      {name: fin.runner || 'Henüz yok', pts: fin.runner ? '280 Puan' : '—'}
     ];
+
+    if(thirdPlaceIsEnabled(item,detail)){
+      rankings.push({
+        name: fin.third || 'Henüz yok',
+        pts: fin.third ? '250 Puan' : '—'
+      });
+    }
+
     return `<div class="wz-turn-box"><h3>Ödüller</h3><div class="wz-turn-prizes">${prizes.map(p=>`<div class="wz-turn-prize ${p.className}"><div class="icon">${p.icon}</div><div><b>${p.place}</b><span>${p.label}</span></div><strong>${esc(p.value)}</strong></div>`).join('')}</div>
       <div class="wz-turn-ranking"><h4>Sıralama</h4>${rankings.map((r,i)=>`<div class="wz-turn-rankrow"><div class="wz-turn-rankbadge">${i+1}</div><div>${esc(r.name)}</div><div>${esc(r.pts)}</div></div>`).join('')}</div>
     </div>`;
