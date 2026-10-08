@@ -2666,18 +2666,32 @@ body.dmModalOpen{overflow:hidden}
           <textarea id="tcAboutText" maxlength="3000" placeholder="Turnuvayı kullanıcıya açık ve ayrıntılı şekilde anlat. Katılım, maç düzeni, önemli notlar vb."></textarea>
         </div>
 
-        <div class="grid2">
-          <div class="field">
-            <label class="title">Kapak Görseli URL</label>
-            <input id="tcHeroImageUrl" type="url" maxlength="700" placeholder="https://.../turnuva-kapak.jpg">
-            <div class="muted" style="margin-top:6px;">Turnuva listesindeki ve detay sayfasındaki kapak görseli.</div>
-          </div>
-          <div class="field">
-            <label class="title">Turnuva Logo URL</label>
-            <input id="tcLogoImageUrl" type="url" maxlength="700" placeholder="https://.../turnuva-logo.png">
-            <div class="muted" style="margin-top:6px;">Turnuva kartında başlığın solunda gösterilecek logo. PNG kullanabilirsin.</div>
-          </div>
+        <h3 class="subTitle">🖼️ Görsel URL Yönetimi</h3>
+
+        <div class="field">
+          <label class="title">1. Turnuva Logo URL</label>
+          <input id="tcLogoImageUrl" type="url" maxlength="700" placeholder="https://.../turnuva-logo.png">
+          <div class="muted" style="margin-top:6px;">Turnuva kartında başlığın solundaki yuvarlak logo.</div>
         </div>
+
+        <div class="field">
+          <label class="title">2. Dış Kapak Görseli URL</label>
+          <input id="tcCardImageUrl" type="url" maxlength="700" placeholder="https://.../liste-kapak.jpg">
+          <div class="muted" style="margin-top:6px;">Turnuvalar listesindeki kartın büyük arka plan görseli. Ödüller ve kayıt şartı bu görselin üzerinde gösterilir.</div>
+        </div>
+
+        <div class="field">
+          <label class="title">3. Detay Kapak Görseli URL</label>
+          <input id="tcHeroImageUrl" type="url" maxlength="700" placeholder="https://.../detay-kapak.jpg">
+          <div class="muted" style="margin-top:6px;">Kullanıcı Detayları Gör dediğinde açılan turnuva sayfasının üst kapak görseli.</div>
+        </div>
+
+        <div class="field">
+          <label class="title">4. Harita Görseli URL</label>
+          <input id="tcMapImageUrl" type="url" maxlength="700" placeholder="https://.../harita.jpg">
+          <div class="muted" style="margin-top:6px;">Fikstür bölümündeki Harita Bilgisi kartının arka plan görseli.</div>
+        </div>
+
         <div class="field">
           <label class="title">Canlı Yayın URL</label>
           <input id="tcStreamUrl" type="url" maxlength="700" value="https://kick.com/weizend">
@@ -2705,12 +2719,6 @@ body.dmModalOpen{overflow:hidden}
           </div>
 
         </div>
-        <div class="field">
-          <label class="title">Harita Görseli URL</label>
-          <input id="tcMapImageUrl" type="url" maxlength="700" placeholder="https://.../map-gorsel.jpg">
-          <div class="muted" style="margin-top:6px;">Fikstür bölümündeki “Harita Bilgisi” kartının arka planında görünecek görsel bağlantısı.</div>
-        </div>
-
         <label class="checkline">
           <input id="tcThirdPlaceEnabled" type="checkbox">
           <span>Yarı final kaybedenleri için 3.'lük maçı oluştur</span>
@@ -2853,16 +2861,32 @@ body.dmModalOpen{overflow:hidden}
           <label class="title">Turnuva Hakkında</label>
           <textarea id="tAboutText" maxlength="3000" placeholder="Turnuva açıklaması, katılım bilgileri ve önemli notlar..."></textarea>
         </div>
-        <div class="grid2">
-          <div class="field">
-            <label class="title">Kapak Görseli URL</label>
-            <input id="tHeroImageUrl" type="url" maxlength="700" placeholder="https://.../turnuva-kapak.jpg">
-          </div>
-          <div class="field">
-            <label class="title">Turnuva Logo URL</label>
-            <input id="tLogoImageUrl" type="url" maxlength="700" placeholder="https://.../turnuva-logo.png">
-          </div>
+        <h3 class="subTitle">🖼️ Görsel URL Yönetimi</h3>
+
+        <div class="field">
+          <label class="title">1. Turnuva Logo URL</label>
+          <input id="tLogoImageUrl" type="url" maxlength="700" placeholder="https://.../turnuva-logo.png">
+          <div class="muted" style="margin-top:6px;">Turnuva kartında başlığın solundaki yuvarlak logo.</div>
         </div>
+
+        <div class="field">
+          <label class="title">2. Dış Kapak Görseli URL</label>
+          <input id="tCardImageUrl" type="url" maxlength="700" placeholder="https://.../liste-kapak.jpg">
+          <div class="muted" style="margin-top:6px;">Turnuvalar listesindeki kartın arka planı. Ödüller ve kayıt şartı bu görselin üzerinde gösterilir.</div>
+        </div>
+
+        <div class="field">
+          <label class="title">3. Detay Kapak Görseli URL</label>
+          <input id="tHeroImageUrl" type="url" maxlength="700" placeholder="https://.../detay-kapak.jpg">
+          <div class="muted" style="margin-top:6px;">Turnuva detay sayfasının üst kapak görseli.</div>
+        </div>
+
+        <div class="field">
+          <label class="title">4. Harita Görseli URL</label>
+          <input id="tMapImageUrl" type="url" maxlength="700" placeholder="https://.../harita.jpg">
+          <div class="muted" style="margin-top:6px;">Fikstür bölümündeki harita kartının arka plan görseli.</div>
+        </div>
+
         <div class="field">
           <label class="title">Canlı Yayın URL</label>
           <input id="tStreamUrl" type="url" maxlength="700" value="https://kick.com/weizend">
@@ -2887,12 +2911,6 @@ body.dmModalOpen{overflow:hidden}
           </div>
 
         </div>
-        <div class="field">
-          <label class="title">Harita Görseli URL</label>
-          <input id="tMapImageUrl" type="url" maxlength="700" placeholder="https://.../map-gorsel.jpg">
-          <div class="muted" style="margin-top:6px;">Fikstür bölümündeki harita kartının arka planında görünmesini istediğin görsel bağlantısını buraya ekle.</div>
-        </div>
-
         <label class="checkline">
           <input id="tThirdPlaceEnabled" type="checkbox">
           <span>Yarı final kaybedenleri için 3.'lük maçı oluştur</span>
@@ -7596,6 +7614,8 @@ async function loadCreateTournamentTemplate(encodedId){
 
     document.getElementById('tcAboutText').value =
       rule.aboutText || item.aboutText || '';
+    document.getElementById('tcCardImageUrl').value =
+      rule.cardImageUrl ?? item.cardImageUrl ?? rule.heroImageUrl ?? item.heroImageUrl ?? '';
     document.getElementById('tcHeroImageUrl').value =
       rule.heroImageUrl || item.heroImageUrl || '';
     document.getElementById('tcLogoImageUrl').value =
@@ -7717,6 +7737,7 @@ async function createTournament(){
   const gameName = document.getElementById('tcGameName')?.value.trim() || 'VALORANT';
   const gameIdLabel = document.getElementById('tcGameIdLabel')?.value.trim() || 'VALORANT ID';
   const aboutText = document.getElementById('tcAboutText')?.value.trim() || '';
+  const cardImageUrl = document.getElementById('tcCardImageUrl')?.value.trim() || '';
   const heroImageUrl = document.getElementById('tcHeroImageUrl')?.value.trim() || '';
   const logoImageUrl = document.getElementById('tcLogoImageUrl')?.value.trim() || '';
   const streamUrl = document.getElementById('tcStreamUrl')?.value.trim() || 'https://kick.com/weizend';
@@ -7791,6 +7812,7 @@ async function createTournament(){
         gameName,
         gameIdLabel,
         aboutText,
+        cardImageUrl,
         heroImageUrl,
         logoImageUrl,
         streamUrl,
@@ -7822,6 +7844,7 @@ async function createTournament(){
     document.getElementById('tcRegistrationClosesAt').value = '';
     document.getElementById('tcEventDate').value = '';
     document.getElementById('tcAboutText').value = '';
+    document.getElementById('tcCardImageUrl').value = '';
     document.getElementById('tcHeroImageUrl').value = '';
     document.getElementById('tcLogoImageUrl').value = '';
     document.getElementById('tcStreamUrl').value = 'https://kick.com/weizend';
@@ -8075,7 +8098,7 @@ function isCurrentTournamentTemplate(){
 function setTournamentTemplateMode(isTemplate){
   const fieldIds = [
     'tName','tTeamSize','tCapacity','tRegistrationOpensAt','tRegistrationClosesAt','tEventDate',
-    'tComingSoon','tEntryMode','tFee','tGameName','tGameIdLabel','tAboutText','tHeroImageUrl',
+    'tComingSoon','tEntryMode','tFee','tGameName','tGameIdLabel','tAboutText','tCardImageUrl','tHeroImageUrl',
     'tLogoImageUrl','tStreamUrl','tBestOf','tMapName','tMapImageUrl','tThirdPlaceEnabled',
     'tRulesText','tPrizeFirst','tPrizeSecond','tPrizeThird','tPredictionPrize','tRegistrationOpen'
   ];
@@ -8141,6 +8164,7 @@ function copyTournamentTemplateToCreate(){
   copyValue('tGameName','tcGameName');
   copyValue('tGameIdLabel','tcGameIdLabel');
   copyValue('tAboutText','tcAboutText');
+  copyValue('tCardImageUrl','tcCardImageUrl');
   copyValue('tHeroImageUrl','tcHeroImageUrl');
   copyValue('tLogoImageUrl','tcLogoImageUrl');
   copyValue('tStreamUrl','tcStreamUrl');
@@ -8315,6 +8339,8 @@ async function loadTournamentConfig(){
       'VALORANT ID';
 
     document.getElementById('tAboutText').value = rule.aboutText || catalogItem.aboutText || '';
+    document.getElementById('tCardImageUrl').value =
+      rule.cardImageUrl ?? catalogItem.cardImageUrl ?? rule.heroImageUrl ?? catalogItem.heroImageUrl ?? '';
     document.getElementById('tHeroImageUrl').value = rule.heroImageUrl || catalogItem.heroImageUrl || '';
     document.getElementById('tLogoImageUrl').value = rule.logoImageUrl || catalogItem.logoImageUrl || '';
     document.getElementById('tStreamUrl').value = rule.streamUrl || catalogItem.streamUrl || 'https://kick.com/weizend';
@@ -8461,6 +8487,7 @@ async function saveTournamentConfig(){
   const gameName = document.getElementById('tGameName')?.value.trim() || 'VALORANT';
   const gameIdLabel = document.getElementById('tGameIdLabel')?.value.trim() || 'VALORANT ID';
   const aboutText = document.getElementById('tAboutText')?.value.trim() || '';
+  const cardImageUrl = document.getElementById('tCardImageUrl')?.value.trim() || '';
   const heroImageUrl = document.getElementById('tHeroImageUrl')?.value.trim() || '';
   const logoImageUrl = document.getElementById('tLogoImageUrl')?.value.trim() || '';
   const streamUrl = document.getElementById('tStreamUrl')?.value.trim() || 'https://kick.com/weizend';
@@ -8529,6 +8556,7 @@ async function saveTournamentConfig(){
         gameName,
         gameIdLabel,
         aboutText,
+        cardImageUrl,
         heroImageUrl,
         logoImageUrl,
         streamUrl,
