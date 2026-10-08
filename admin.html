@@ -3884,7 +3884,9 @@ function renderGiftCodes(items){
         ? 'Puan Gönderiliyor'
         : status === 'redeemed'
           ? 'Kullanıldı'
-          : 'SİLİNDİ / GEÇERSİZ';
+          : status === 'expired'
+            ? 'Süresi Doldu'
+            : 'Geçersiz';
     const badge = status === 'unused'
       ? 'ok'
       : status === 'processing'
@@ -3907,17 +3909,15 @@ function renderGiftCodes(items){
       <td>${esc(dateText(item.redeemed_at))}</td>
       <td>
         <div class="inlineActions">
-          ${status === 'disabled'
-            ? '<span class="muted">SİLİNDİ / GEÇERSİZ</span>'
-            : status === 'processing'
-              ? '<span class="muted">MissXss doğrulaması bekleniyor</span>'
-              : ''}
+          ${status === 'processing'
+            ? '<span class="muted">MissXss doğrulaması bekleniyor</span>'
+            : ''}
           ${status === 'processing' && rewardType === 'points'
             ? `<button class="smallBtn" title="BotRix geçmişinde puanın gerçekten eklendiğini doğruladıysan işlemi tamamla" onclick="confirmGiftPoints('${encodeURIComponent(item.id)}',${Number(item.points_amount || 0)})">✅ Puan eklendi: onayla</button>`
             : ''}
           ${status === 'processing'
             ? ''
-            : `<button class="smallBtn iconDanger" title="${status === 'redeemed' || status === 'disabled' ? 'Listeden tamamen kaldır' : 'Geçersiz hale getir'}" onclick="deleteGiftCode('${encodeURIComponent(item.id)}','${esc(status)}')">🗑</button>`}
+            : `<button class="smallBtn iconDanger" title="Admin listesinden kaldır" onclick="deleteGiftCode('${encodeURIComponent(item.id)}','${esc(status)}')">🗑</button>`}
         </div>
       </td>`;
     body.appendChild(tr);
@@ -3969,13 +3969,10 @@ async function deleteGiftCode(encodedId,currentStatus=''){
   if(!id) return;
 
   const status = String(currentStatus || '');
-  const hardDelete = status === 'redeemed' || status === 'disabled';
 
   const question = status === 'redeemed'
-    ? 'Bu kod zaten kullanıldı. Hediye kodları listesinden tamamen kaldırılsın mı?'
-    : status === 'disabled'
-      ? 'Bu kod zaten geçersiz. Hediye kodları listesinden tamamen kaldırılsın mı?'
-      : 'Bu kullanılmamış hediye kodu geçersiz hale getirilsin mi? İlk işlemden sonra kod artık kullanılamaz; ikinci çöp kutusunda listeden tamamen silinir.';
+    ? 'Bu kullanılmış kod admin listesinden kaldırılsın mı?\n\nKodun kullanım geçmişi ve kimin kullandığı bilgisi korunacak. Kullanıcı aynı kodu tekrar yazarsa kullanan kişi yine görünecek.'
+    : 'Bu kullanılmamış kod admin listesinden kaldırılsın mı?\n\nKod "süresi doldu" durumuna alınacak. Kullanıcı daha sonra bu kodu yazarsa "Bu hediye kodunun süresi doldu." mesajını görecek.';
 
   if(!confirm(question)) return;
 
@@ -3985,16 +3982,22 @@ async function deleteGiftCode(encodedId,currentStatus=''){
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({id})
     });
-    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+
+    if(!r.ok || !d?.success){
+      throw new Error(d?.error || `HTTP ${r.status}`);
+    }
+
     await loadGiftCodes();
 
-    showStatus(
-      'giftCodeStatus',
-      d?.action === 'deleted'
-        ? '✅ Hediye kodu listeden tamamen kaldırıldı.'
-        : '✅ Kullanılmamış hediye kodu SİLİNDİ / GEÇERSİZ durumuna alındı. İstersen çöp kutusuna tekrar basıp listeden tamamen kaldırabilirsin.',
-      true
-    );
+    const message =
+      d?.action === 'hidden_redeemed'
+        ? '✅ Kullanılmış kod admin listesinden kaldırıldı. Kullanıcı ve kullanım geçmişi korundu.'
+        : d?.action === 'expired_hidden'
+          ? '✅ Kullanılmamış kod listeden kaldırıldı ve süresi doldu olarak kaydedildi.'
+          : (d?.message || '✅ Hediye kodu listeden kaldırıldı.');
+
+    showStatus('giftCodeStatus',message,true);
+
   }catch(error){
     showStatus('giftCodeStatus','❌ '+esc(error.message || error),false);
   }
