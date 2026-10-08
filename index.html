@@ -57,7 +57,7 @@ body.wz-initializing *{
 </style>
 
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
 <link rel="preconnect" href="https://i.hizliresim.com" crossorigin>
 <link rel="dns-prefetch" href="//i.hizliresim.com">
     <title>Weizend Market</title>
@@ -3194,6 +3194,122 @@ body.wz-view-tournament.wz-turn-modal-open{
   .wz-turn-detail-page,
   .wz-turn-detail-window{
     animation:none!important;
+  }
+}
+</style>
+
+
+<style id="wz-v79-modal-scroll-zoom-fix">
+/* =========================================================
+   V79 · MOBİL MODAL SCROLL + PINCH ZOOM
+   ========================================================= */
+
+/* Turnuva detayı her zaman alt menünün üstünde olmalı. */
+.wz-turn-detail-page{
+  z-index:45000!important;
+  touch-action:pan-x pan-y pinch-zoom!important;
+}
+
+/* Modal açıkken alttaki Market / Turnuva barı ekrana ve dokunmaya karışmasın. */
+@media(max-width:768px){
+  body.wz-turn-modal-open .wz-mobile-bottom-nav{
+    opacity:0!important;
+    visibility:hidden!important;
+    pointer-events:none!important;
+  }
+}
+
+/* Turnuva penceresi kendi içinde son piksele kadar kayabilsin. */
+.wz-turn-detail-window{
+  overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+  touch-action:pan-y pinch-zoom!important;
+  scroll-padding-bottom:calc(28px + env(safe-area-inset-bottom));
+}
+
+.wz-turn-detail-page .wz-turn-panel{
+  padding-bottom:calc(34px + env(safe-area-inset-bottom))!important;
+}
+
+/* Sayfa arka planı kilitli kalır ama iki parmak pinch zoom engellenmez. */
+body.wz-view-tournament.wz-turn-modal-open{
+  overflow:hidden!important;
+  touch-action:pan-x pan-y pinch-zoom!important;
+}
+
+/* Eski modal scroll-lock kuralındaki touch-action:none mobil pinch'i kesiyordu.
+   Arka sayfa overflow/fixed ile yine kilitli; yalnız zoom jestine izin veriyoruz. */
+html.wz-page-modal-open,
+body.wz-page-modal-open,
+html.wz-inbox-open,
+body.wz-inbox-open{
+  touch-action:pan-x pan-y pinch-zoom!important;
+}
+
+/* Resim görüntüleyici hariç tüm normal pencerelerde pinch zoom serbest. */
+.modal-overlay:not(#imageModal),
+.verify-wait-overlay,
+.wz-product-info-overlay,
+#inboxModal{
+  touch-action:pan-x pan-y pinch-zoom!important;
+}
+
+/* Pencere içindeki kaydırılabilir yüzeylerde hem dikey kaydırma hem pinch zoom. */
+.modal-content:not(#imageModal .modal-content),
+.modal-body,
+.redirect-modal-body,
+.purchase-body,
+.gift-modal-content,
+.notifications-modal-content,
+.inbox-modal-content,
+.inbox-body,
+.inbox-list,
+.inbox-conversation,
+#inboxModal #inboxMessages,
+#tv2ModalBody,
+.wz-product-info-card,
+.wz-product-info-body{
+  touch-action:pan-y pinch-zoom!important;
+}
+
+/* Görsel görüntüleyici kendi özel zoom/pan sistemini kullanmaya devam eder. */
+#imageModal,
+#imageModal .modal-overlay,
+#imageModal .modal-content,
+#imageModal .main-slider,
+#imageModal #modalMainImg{
+  touch-action:none!important;
+}
+
+@media(max-width:700px){
+  .wz-turn-detail-page{
+    /* Dinamik viewport; tarayıcı çubuğu açılıp kapanırken alt içerik kesilmesin. */
+    min-height:100dvh!important;
+    padding:
+      max(6px,env(safe-area-inset-top))
+      6px
+      max(6px,env(safe-area-inset-bottom))!important;
+  }
+
+  .wz-turn-detail-window{
+    width:100%!important;
+    height:auto!important;
+    max-height:calc(
+      100dvh
+      - max(12px,env(safe-area-inset-top))
+      - max(12px,env(safe-area-inset-bottom))
+    )!important;
+    padding-bottom:0!important;
+  }
+
+  /* Mesaj penceresi yakınlaştırılmış ekranda da iki parmakla geri küçültülebilsin. */
+  #inboxModal,
+  #inboxModal .inbox-modal-content,
+  #inboxModal .inbox-shell,
+  #inboxModal #inboxListView,
+  #inboxModal #inboxThreadView,
+  #inboxModal #inboxMessages{
+    touch-action:pan-y pinch-zoom!important;
   }
 }
 </style>
