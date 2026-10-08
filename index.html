@@ -31,6 +31,38 @@
     window.__WZ_INITIAL_VIEW__=view;
     document.documentElement.dataset.wzInitialView=view;
     document.documentElement.dataset.wzCurrentView=view;
+
+    window.__WZ_EARLY_RESTORE_SCROLL__=function(targetView){
+      try{
+        const clean=['market','tournament','profile'].includes(targetView)
+          ? targetView
+          : view;
+
+        const raw=sessionStorage.getItem('wz_v23_scroll_'+clean);
+        const y=Math.max(0,Number(raw || 0));
+        if(!y) return 0;
+
+        // Bu fonksiyon ilgili görünümün cache/profile içeriği DOM'a girdikten
+        // hemen sonra çağrılır; DOMContentLoaded beklenmez.
+        const maxY=Math.max(
+          0,
+          Math.max(
+            document.documentElement.scrollHeight || 0,
+            document.body?.scrollHeight || 0
+          ) - window.innerHeight
+        );
+
+        const target=Math.min(y,maxY);
+        window.scrollTo(0,target);
+
+        // İstenen yükseklik parser bu noktaya geldiğinde henüz tam oluşmadıysa
+        // değeri kaybetme; normal init daha sonra son düzeltmeyi yapacak.
+        window.__WZ_EARLY_SCROLL_TARGET__={view:clean,y};
+        return target;
+      }catch(_){
+        return 0;
+      }
+    };
   }catch(_){
     window.__WZ_INITIAL_VIEW__='market';
     document.documentElement.dataset.wzInitialView='market';
@@ -3587,6 +3619,20 @@ body.wz-initializing #wzMobileProfileView{
 }
 </style>
 
+
+<style id="wz-v83-early-scroll-restore">
+html.wz-boot,
+html.wz-boot body{
+  scroll-behavior:auto!important;
+  overflow-anchor:none!important;
+}
+
+body.wz-initializing{
+  scroll-behavior:auto!important;
+  overflow-anchor:none!important;
+}
+</style>
+
 </head>
 <body>
 <script id="wz-v58-prepaint-view">
@@ -4167,6 +4213,10 @@ body.wz-initializing #wzMobileProfileView{
 
     // DOMContentLoaded'da aynı grid bir daha kurulmasın.
     window.__WZ_MARKET_SHELL_HYDRATED__ = !!(grid && grid.children.length);
+
+    if(window.__WZ_MARKET_SHELL_HYDRATED__){
+      window.__WZ_EARLY_RESTORE_SCROLL__?.('market');
+    }
   }catch(_){}
 })();
 </script>
@@ -4193,6 +4243,8 @@ body.wz-initializing #wzMobileProfileView{
       if(savedScreen==='detail' && savedSelected){
         document.body.classList.add('wz-turn-modal-open');
       }
+
+      window.__WZ_EARLY_RESTORE_SCROLL__?.('tournament');
     }
   }catch(_){}
 })();
@@ -4324,6 +4376,7 @@ body.wz-initializing #wzMobileProfileView{
     );
 
     document.body.classList.add('wz-profile-ready');
+    window.__WZ_EARLY_RESTORE_SCROLL__?.('profile');
   }catch(_){}
 })();
 </script>
@@ -11870,6 +11923,13 @@ return;
   function wzRestoreViewScroll(view){
     let y=Math.max(0,Number(wzViewScroll[view] || 0));
 
+    try{
+      const early=window.__WZ_EARLY_SCROLL_TARGET__;
+      if(early && early.view===view && Number.isFinite(Number(early.y))){
+        y=Math.max(y,Number(early.y));
+      }
+    }catch(_){}
+
     // The visible page can change height after a category/product/tournament update.
     // Never restore to an empty coordinate below the current page.
     const maxY=Math.max(
@@ -12127,11 +12187,24 @@ return;
   window.addEventListener('scroll',()=>{
     if(wzRestoringScroll) return;
 
+    // Görünür görünümün anlık koordinatını RAM'de hemen güncelle.
+    // sessionStorage yazımı küçük debounce ile yapılmaya devam eder.
+    if(wzViewIsActuallyVisible(currentView)){
+      wzViewScroll[currentView]=Math.max(
+        0,
+        window.scrollY || document.documentElement.scrollTop || 0
+      );
+    }
+
     clearTimeout(wzScrollRememberTimer);
     wzScrollRememberTimer=setTimeout(()=>{
       wzRememberCurrentScroll();
-    },80);
+    },60);
   },{passive:true});
+
+  window.addEventListener('beforeunload',()=>{
+    wzRememberCurrentScroll();
+  },{capture:true});
 
   window.addEventListener('pagehide',()=>{
     wzRememberCurrentScroll();
@@ -12331,7 +12404,16 @@ return;
     });
 
     // Restore exactly the section that was open before refresh.
+    // V83'te çoğu durumda scroll zaten hydrate aşamasında ilk paint'ten önce
+    // yerine konmuş olur; bu çağrı yalnızca son yükseklik düzeltmesidir.
     window.wzSetView(currentView);
+
+    try{
+      const early=window.__WZ_EARLY_SCROLL_TARGET__;
+      if(early && early.view===currentView){
+        window.__WZ_EARLY_RESTORE_SCROLL__?.(currentView);
+      }
+    }catch(_){}
 
     // Tournament/Profile/Market doğru görünüm sınıfları uygulanmadan hiçbir ara tema gösterme.
     // İlk boyamada transition kapalı kalır; sonraki frame'de normal animasyonlar açılır.
