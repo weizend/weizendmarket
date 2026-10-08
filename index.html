@@ -1635,8 +1635,10 @@ body.wz-view-tournament #wzMobileTournamentHero{display:none!important}
 }
 .wz-turn-card-prizes{
   display:flex;
-  flex-wrap:wrap;
-  gap:5px;
+  flex-direction:column;
+  flex-wrap:nowrap;
+  align-items:flex-start;
+  gap:4px;
   min-width:0;
   flex:1 1 auto;
 }
@@ -13010,9 +13012,7 @@ return;
       <section class="wz-turn-hero">
         <div class="wz-turn-hero-cover"${heroStyle}>
           <button type="button" class="wz-turn-cover-back" onclick="wzTurnBack()" aria-label="Turnuvalara geri dön">←</button>
-          <div class="wz-turn-hero-body">
-          <div class="wz-turn-hero-title"><div class="wz-turn-h1">${esc(String(t.name||'Turnuva').replace(/cup/i,'').trim() || 'CUP')}</div></div>
-        </div></div>
+        </div>
         ${renderTournamentTimeline(item)}
         <button id="wzTurnRegisterBtn" type="button" class="wz-turn-register ${registrationIsOpen(item)?'':'is-disabled'}"
           onclick="wzTournamentRegistration('${esc(id)}')" ${registrationIsOpen(item) ? '' : 'disabled'}>KAYIT OL</button>
