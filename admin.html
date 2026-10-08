@@ -1845,6 +1845,31 @@ body.dmModalOpen{overflow:hidden}
 }
 </style>
 
+<style id="wz-v47-responsive-rescue">
+*{min-width:0}
+html,body{max-width:100%;overflow-x:hidden}
+.wrap,.card,.section,.tournamentActionPanel,.tPredictionBox{max-width:100%;min-width:0}
+.tournamentStateBar,.tournamentTeamHead,.sectionHeaderRow{min-width:0;overflow-wrap:anywhere}
+#tLifecycleStateText{overflow-wrap:anywhere}
+.tournamentDangerGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tournamentDangerGrid button{min-width:0;white-space:normal;line-height:1.35}
+@media(max-width:760px){
+  .wrap{width:100%!important;padding:8px 10px!important}
+  .card{padding:14px!important;border-radius:14px!important}
+  .grid2,.grid3{grid-template-columns:minmax(0,1fr)!important}
+  input,select,textarea{max-width:100%;font-size:16px!important}
+  .tournamentActionPanel{padding:12px!important}
+  .tournamentDangerGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+  .tournamentDangerGrid button{padding:12px 6px!important;font-size:.83rem!important}
+  .tPredictionBox{padding:12px!important}
+  .sectionInlineActions{display:flex;flex-wrap:wrap;gap:8px}
+  .sectionInlineActions button{flex:1 1 145px;min-width:0}
+  .tableWrap{overflow-x:auto!important;-webkit-overflow-scrolling:touch}
+  .tournamentTeamHead{display:flex;flex-wrap:wrap}
+  .tournamentV3InviteGrid,.tournamentV3Grid,.tournamentV3PaymentGrid{grid-template-columns:minmax(0,1fr)!important}
+}
+@media(max-width:380px){.tournamentDangerGrid{grid-template-columns:minmax(0,1fr)!important}}
+</style>
 </head>
 
 <body>
@@ -4088,14 +4113,22 @@ async function api(path,options={}){
       `Bearer ${token()}`
   };
 
-  const r = await fetch(
-    `${MARKET_WORKER}${path}`,
-    {
+  const controller = new AbortController();
+  const maxWait = options.method === 'POST' ? 30000 : 18000;
+  const timer = setTimeout(() => controller.abort(), maxWait);
+  let r;
+  try {
+    r = await fetch(`${MARKET_WORKER}${path}`, {
       ...options,
       headers,
+      signal: options.signal || controller.signal,
       cache:'no-store'
-    }
-  );
+    });
+  } catch (error) {
+    throw new Error(error?.name === 'AbortError'
+      ? `Worker ${maxWait / 1000} saniyede yanıt vermedi. Sunucu/D1 durumunu kontrol et ve yeniden dene.`
+      : `Worker bağlantı hatası: ${error?.message || error}`);
+  } finally { clearTimeout(timer); }
 
   let d = null;
 
@@ -8457,7 +8490,13 @@ async function createTournament(){
   }
 }
 
+let tournamentListRequest = null;
 async function loadTournamentList(force=false){
+  if(tournamentListRequest) return tournamentListRequest;
+  tournamentListRequest = (async()=>{
+  const stateEl = document.getElementById('tLifecycleStateText');
+  const selectEl = document.getElementById('tournamentSelect');
+  if(stateEl && !tournamentCatalogCache.length) stateEl.textContent = '⏳ Turnuvalar alınıyor...';
   try{
     if(!force && tournamentCatalogCache.length){
       renderTournamentOptions();
@@ -8477,6 +8516,7 @@ async function loadTournamentList(force=false){
     if(select?.value){
       await loadTournamentConfig();
     }else{
+      if(stateEl) stateEl.textContent = 'Yönetilecek turnuva yok';
       currentTournamentAdmin = null;
       currentTournamentRule = null;
       currentTournamentEntries = null;
@@ -8494,12 +8534,19 @@ async function loadTournamentList(force=false){
     }
 
   }catch(error){
+    if(stateEl) stateEl.textContent = '⚠️ Sunucu yanıt vermedi';
+    if(selectEl && !tournamentCatalogCache.length){
+      selectEl.innerHTML = '<option value="">⚠️ Liste alınamadı – Yenile</option>';
+    }
     showStatus(
       'tournamentStatus',
-      '❌ Turnuvalar alınamadı: ' + esc(error.message || error),
+      '❌ Turnuvalar alınamadı: ' + esc(error.message || error) + ' · Veriler silinmedi. Sunucu bağlantısını kontrol et.',
       false
     );
   }
+  })();
+  try{ await tournamentListRequest; }
+  finally{ tournamentListRequest = null; }
 }
 
 function renderTournamentOptions(){
@@ -8996,6 +9043,8 @@ async function loadTournamentConfig(){
     hideStatus('tournamentStatus');
 
   }catch(error){
+    const state = document.getElementById('tLifecycleStateText');
+    if(state) state.textContent = '⚠️ Ayrıntılar yüklenemedi';
     showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
   }
 }
@@ -9418,7 +9467,13 @@ async function setTournamentLifecycle(state){
       throw new Error(d?.error || `HTTP ${r.status}`);
     }
 
-    tournamentCatalogCache = [];
+    if(currentTournamentAdmin && String(currentTournamentAdmin.id)===String(tournamentId)){
+      currentTournamentAdmin.lifecycleStatus = state;
+    }
+    updateTournamentLifecycleControls(state);
+    const matching = tournamentCatalogCache.find(x=>String(x.id)===String(tournamentId));
+    if(matching) matching.lifecycleStatus = state;
+    // Değişiklik sunucuda gerçekleşti. Liste yenilenemese de yanlışlıkla işlem tekrarlanmasın.
     await loadTournamentList(true);
 
     const select = document.getElementById('tournamentSelect');
