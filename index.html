@@ -4656,7 +4656,7 @@ body.wz-initializing{
                 <button class="close-icon" onclick="yonlendirmeyiIptalEt()">✖</button>
             </div>
             <div class="redirect-modal-body">
-                <p id="redirectStatusText" style="color: #fff; margin: 0; font-size: 1.05rem;">Komut kopyalandı, Kick sohbete yönlendiriliyorsunuz:</p>
+                <p id="redirectStatusText" style="color: #fff; margin: 0; font-size: 1.05rem; white-space:pre-line; line-height:1.6;">Komut kopyalandı, Kick sohbete yönlendiriliyorsunuz:</p>
                 <div class="redirect-command-box" id="modalCommandText">!komut</div>
                 <div class="redirect-timer" id="timerText">Ödeme sayfası hazırlanıyor...</div>
                 <button id="redirectExternalOpenButton"
@@ -7578,11 +7578,14 @@ body.wz-initializing{
         }
 
         function copyTextReliable(text) {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text).catch(() => copyTextFallback(text));
-            } else {
-                copyTextFallback(text);
-            }
+            const value=String(text||'');
+            const result=(navigator.clipboard && navigator.clipboard.writeText)
+                ? navigator.clipboard.writeText(value).catch(()=>copyTextFallback(value))
+                : Promise.resolve(copyTextFallback(value));
+            return Promise.resolve(result).then(()=>true).catch(err=>{
+                showStatusToast('⚠️ Kopyalama başarısız. Kodu basılı tutup kopyala.',3200);
+                throw err;
+            });
         }
 
         function copyTextFallback(text) {
@@ -7597,8 +7600,11 @@ body.wz-initializing{
             temp.focus();
             temp.select();
             temp.setSelectionRange(0, temp.value.length);
-            try { document.execCommand('copy'); } catch (_) {}
+            let ok=false;
+            try { ok=Boolean(document.execCommand('copy')); } catch (_) {}
             temp.remove();
+            if(!ok) throw new Error('Kopyalama yapılamadı');
+            return true;
         }
 
         // Sayfa yenileme modu korunur: profil / puan / level / katalog için otomatik
@@ -8698,18 +8704,9 @@ return;
 
             modal.style.display = 'flex';
 
-            // Otomatik olarak da dene. Tarayıcı popup engellerse aşağıdaki buton
-            // doğrudan kullanıcı dokunuşuyla kesin fallback görevi görür.
-            const opened = wzOpenExternalPaymentWindow(pendingExternalPaymentUrl);
-
-            if (opened) {
-                timerEl.innerText = wzExternalPaymentIsMobileLike()
-                    ? 'Ödeme sayfası açıldı. Mobil tarayıcın popup boyutunu desteklemiyorsa yeni sekmede görünmesi normal.'
-                    : 'Ödeme sayfası küçük pencerede açıldı. İşlemi tamamlayıp buraya geri dönebilirsin.';
-                openButton.innerText = 'ÖDEME SAYFASINI TEKRAR AÇ';
-            } else {
-                timerEl.innerText = 'Tarayıcı otomatik açılışı engelledi. Aşağıdaki butona dokunarak ödeme sayfasını aç.';
-            }
+            // V86: Otomatik popup KALDIRILDI. Kullanıcının açık 'Okudum/Devam Et'
+            // dokunuşu ile açılır; ödeme hazırlama tamamlanmadan pencere açılmaz.
+            timerEl.innerText = 'Açıklamayı oku; hazır olduğunda aşağıdaki DEVAM ET düğmesine dokun.';
         }
 
         function wzOpenPendingExternalPayment() {
@@ -8742,13 +8739,27 @@ return;
             }
         }
 
-        function showBynoGameRedirect(reference) {
+        function showBynoGameRedirect(reference, amounts=null) {
+            let pending=amounts;
+            if(!pending){
+                const active=tv2State?.me?.activePayment;
+                if(active && String(active.reference||'')===String(reference||'')) pending=tv3PaymentAmounts(active);
+            }
+            if(!pending){
+                try{
+                    const saved=JSON.parse(localStorage.getItem(TV3_PENDING_TL_KEY)||'null');
+                    if(saved && String(saved.reference)===String(reference)) pending={expected:Number(saved.expectedAmountCents||0),received:0,remaining:Number(saved.expectedAmountCents||0)};
+                }catch(_){}
+            }
+            const hasAmount=pending && Number(pending.expected||0)>0;
+            const detail=hasAmount ?
+              `Toplam gerekli: ${formatTlFromCents(pending.expected)}\nGelen: ${formatTlFromCents(pending.received||0)}\nKalan: ${formatTlFromCents(pending.remaining)}\n\n` : '';
             wzShowExternalPaymentModal({
                 url: BYNOGAME_DONATION_URL,
-                title: '💳 BynoGame Bağış / Ödeme',
-                message: 'Ödeme kodun panoya kopyalandı. Resmi BynoGame sayfasında bağışı tamamla ve bağış mesajına yalnızca bu kodu yapıştır:',
+                title: '💳 Turnuva Katılım Bağışı',
+                message: detail+'BynoGame bağış mesajına YALNIZCA aşağıdaki tek kodu yaz.\n\nEksik ödeme yaparsan kalan tutarı AYNI KOD ile tamamlayabilirsin.\n\nGerekli tutarın üzerinde bağış gönderirsen fazlası için iade yapılmaz.\n\nBilgileri okuduktan sonra DEVAM ET butonuna dokun.',
                 codeText: reference,
-                buttonText: 'BYNOGAME ÖDEME SAYFASINI AÇ'
+                buttonText: 'OKUDUM · DEVAM ET · BYNOGAME'
             });
         }
 
@@ -10348,7 +10359,7 @@ return;
             </div>
 
             <div class="tv2-actions">
-                <button class="tv2-btn secondary" onclick="tv2ReloadMe(true)">🔄 Yenile</button>
+                <button class="tv2-btn secondary" onclick="tv3RefreshWithFeedback(this)">🔄 Yenile</button>
             </div>
         </div>
       `
@@ -10595,7 +10606,7 @@ return;
                     Durum: <b>${tv2Esc(req.status === 'pending' ? 'Kaptan Onayı Bekleniyor' : req.status === 'approved' ? 'Kabul Edildi' : req.status)}</b>
                     ${own ? `<br>Oyun içi adın: <b>${tv2Esc(own.gameId)}</b>` : ''}
                 </div>
-                <div class="tv2-actions">${action}<button class="tv2-btn secondary" onclick="tv2ReloadMe(true)">🔄 Kontrol Et</button></div>
+                <div class="tv2-actions">${action}<button class="tv2-btn secondary" onclick="tv3RefreshWithFeedback(this)">🔄 Kontrol Et</button></div>
             </div>
         `;
     }
@@ -10929,17 +10940,19 @@ return;
             message,
             codeText,
             buttonText: /kick\.com/i.test(String(url || ''))
-                ? 'KICK ABONELİK SAYFASINI AÇ'
-                : 'ÖDEME SAYFASINI AÇ'
+                ? 'OKUDUM · DEVAM ET · KICK'
+                : 'OKUDUM · DEVAM ET'
         });
     }
 
-    function tv2OpenKickChannel() {
+    function tv2OpenKickChannel(p = null) {
+        const direct=Number(p?.requiredDirectSubs||0), gift=Number(p?.requiredGifts||0);
+        const requirement = direct ? `${direct} normal Kick aboneliği` : gift ? `${gift} Kick hediye aboneliği (Gift)` : 'kendi abonelik veya hediye abonelik şartın';
         tv2RedirectCountdown(
             TV2_KICK_CHANNEL_URL,
-            '⭐ Kick Abonelik Sayfasına Yönlendiriliyorsunuz',
-            'Lütfen açılacak sayfada abonelik / hediye abonelik işlemini tamamlayın.',
-            'İşlem tamamlandıktan sonra markete geri dönebilirsin.'
+            '⭐ Kick Abonelik / Gift Onayı',
+            `Turnuva katılımın için gerekli: ${requirement}.\n\nHerkes KENDİ koltuğunun abonelik/gift şartını kendi doğrulanmış Kick hesabıyla tamamlamalıdır. Başka koltuğun ücretini yalnızca BynoGame bağışıyla ödeyebilirsin.\n\nİşlemi tamamlayıp markete geri döndüğünde KONTROL ET düğmesine dokun.`,
+            'Bilgileri okudum, abonelik sayfasına geçeceğim.'
         );
     }
 
@@ -11413,7 +11426,7 @@ return;
                     <div><span>Kalan</span><b>${tv2Esc(formatTlFromCents(a.remaining))}</b></div>
                     ${a.over > 0 ? `<div><span>Fazla</span><b>${tv2Esc(formatTlFromCents(a.over))}</b></div>` : ''}
                 </div>
-                ${a.over > 0 ? `<div class="tv2-message" style="margin-top:10px;">ℹ️ Fazla ödeme: <b>${tv2Esc(formatTlFromCents(a.over))}</b>. Yönetici bu tutarı daha sonra hediye kodu / puan olarak telafi edebilir.</div>` : ''}
+                ${a.over > 0 ? `<div class="tv2-message" style="margin-top:10px;">ℹ️ Fazla ödeme: <b>${tv2Esc(formatTlFromCents(a.over))}</b>. Katılım tutarı üzerindeki bağışlarda fazla kısım için iade yapılmaz.</div>` : ''}
                 ${!paid ? `
                     <div class="tv3-payment-note">
                         ${a.received > 0 ? `Eksik tutarı tamamlarken <b>aynı ödeme kodunu</b> kullan.` : 'Bağış mesajına yalnızca yukarıdaki tek kullanımlık ödeme kodunu yaz.'}
@@ -11447,7 +11460,7 @@ return;
                 </div>
                 ${!paid ? `
                     <div class="tv2-actions">
-                        <button class="tv2-btn" onclick="tv2OpenKickChannel()">⭐ KICK ABONELİK SAYFASINI AÇ</button>
+                        <button class="tv2-btn" onclick="tv2OpenKickChannel(tv2State.me?.subscriptionPayments?.find(x=>String(x.id)==='${tv2Esc(p.id)}')||null)">⭐ KICK ABONELİK SAYFASINI AÇ</button>
                         <button class="tv2-btn secondary" onclick="tv3RefreshSubscription('${tv2Esc(p.id)}',true)">🔄 KONTROL ET</button>
                         ${directReceived === 0 && giftsReceived === 0 ? `<button class="tv2-btn danger" onclick="tv3CancelPendingPayment('${tv2Esc(p.id)}','subscription')">İŞLEMİ İPTAL ET</button>` : ''}
                     </div>
@@ -11488,6 +11501,14 @@ return;
         document.getElementById('tv2Modal').style.display = 'flex';
         document.body.style.overflow = 'hidden';
         await tv2ReloadMe();
+    }
+
+    async function tv3RefreshWithFeedback(btn){
+        if(btn?.disabled) return;
+        const before=btn?.textContent||'🔄 Yenile';
+        if(btn){btn.disabled=true;btn.textContent='⏳ Yenileniyor...';}
+        try{await tv2ReloadMe(true);}
+        finally{if(btn?.isConnected){btn.disabled=false;btn.textContent=before;}}
     }
 
     let tv3ReloadSequence = 0;
@@ -11568,7 +11589,7 @@ return;
                     <div class="tv2-muted" style="margin-top:9px;">
                         ${teamSize > 1 ? 'Takım, bütün koltuklar dolup gerekli katılım şartları tamamlanınca hazır sayılır.' : 'Ödeme / abonelik şartı doğrulanmadan kayıt tamamlanmaz.'}
                     </div>
-                    <div class="tv2-actions"><button class="tv2-btn secondary" onclick="tv2ReloadMe(true)">🔄 Yenile</button></div>
+                    <div class="tv2-actions"><button class="tv2-btn secondary" onclick="tv3RefreshWithFeedback(this)">🔄 Yenile</button></div>
                 </div>
             </div>
         `;
@@ -11896,17 +11917,17 @@ return;
                 source:context.source || ''
             };
             localStorage.setItem(TV3_PENDING_TL_KEY, JSON.stringify(pending));
-            await copyTextReliable(reference);
-            await tv2ReloadMe();
-            showStatusToast(`💳 Ödeme kodu kopyalandı. Ödenecek tutar: ${formatTlFromCents(p.expectedAmountCents || 0)}`, 4500);
-            showBynoGameRedirect(reference);
+            copyTextReliable(reference).catch(()=>{});
+            showBynoGameRedirect(reference,tv3PaymentAmounts(p));
+            tv2ReloadMe().catch(()=>{});
+            showStatusToast(`💳 Bağış kodun hazır · ${formatTlFromCents(p.expectedAmountCents || 0)}`, 3300);
             return;
         }
 
         if (data.mode === 'subscription' && data.subscriptionPayment?.id) {
-            await tv2ReloadMe();
-            showStatusToast('⭐ Abonelik işlemi hazır. Gerçek abonelik / gift olayı doğrulandıktan sonra kayıt ilerleyecek.', 4800);
-            tv2OpenKickChannel();
+            tv2OpenKickChannel(data.subscriptionPayment);
+            tv2ReloadMe().catch(()=>{});
+            showStatusToast('⭐ Abonelik şartın hazır; okumadan yönlendirme yapılmaz.', 3500);
             return;
         }
 
@@ -11968,7 +11989,7 @@ return;
                             </div>
                             <div class="tv3-invite-code">${tv2Esc(inv.code || inv.displayCode || 'Kod gizli')}</div>
                             <div class="tv2-muted">Koltuk ${Number(inv.slotIndex || 0) || '-'}</div>
-                            ${(inv.code || inv.displayCode) && !['used','revoked','expired'].includes(String(inv.status||'')) ? `<button class="tv2-btn secondary" onclick="copyTextReliable('${tv2Esc(inv.code || inv.displayCode)}');showStatusToast('📋 Davet kodu kopyalandı',2200)">📋 KODU KOPYALA</button>` : ''}
+                            ${(inv.code || inv.displayCode) && !['used','revoked','expired'].includes(String(inv.status||'')) ? `<button class="tv2-btn secondary" onclick="copyTextReliable('${tv2Esc(inv.code || inv.displayCode)}').then(()=>{this.textContent='✅ KOPYALANDI';setTimeout(()=>{if(this.isConnected)this.textContent='📋 KODU KOPYALA'},2000)}).catch(()=>{})">📋 KODU KOPYALA</button>` : ''}
                         </div>
                     `).join('') : '<div class="tv2-message">Kaptanın kendi katılım şartı doğrulandıktan sonra davet kodları burada oluşur. Abonelik / Gift ile herkes kendi koltuğunun şartını tamamlar; yalnız BynoGame ile başkasının ücreti ödenebilir.</div>'}
                 </div>
@@ -11996,11 +12017,27 @@ return;
                 </div>
                 <div class="tv3-slot-list">${slotHtml}</div>
                 ${inviteHtml}
+                ${isCaptain && String((me.rule||rule).entryMode||'')==='tl' && !me.activePayment && String(team.status||'')==='captain_payment_pending' ? `<div class="tv2-panel"><div class="tv2-message">⚠️ Takım oluşturulmuş fakat aktif bağış kodu bulunamadı. Kayıtları silmeden ödeme hazırlamayı yeniden dene.</div><button class="tv2-btn" onclick="tv3RecoverCaptainPayment()">💳 ÖDEME KODUNU YENİDEN HAZIRLA</button></div>` : ''}
                 ${tlPayment}
                 ${subPayment}
                 <div id="tv2PendingTlHost"></div>
             </div>
         `;
+    }
+
+    async function tv3RecoverCaptainPayment(){
+        if(tv2State.busy) return;
+        tv2State.busy=true;
+        const btn=document.activeElement;
+        if(btn?.tagName==='BUTTON'){btn.disabled=true;btn.textContent='⏳ Ödeme kodu hazırlanıyor...';}
+        try{
+            const d=await tv2AuthFetch('/tournament/v3/team/payment/recover',{
+                method:'POST',headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({teamId:tv2State.me?.team?.id})
+            });
+            await tv3HandleStartResponse(d,{source:'recover'});
+        }catch(e){showStatusToast('❌ '+(e.message||e),5500);}
+        finally{tv2State.busy=false;if(btn?.tagName==='BUTTON'){btn.disabled=false;btn.textContent='💳 ÖDEME KODUNU YENİDEN HAZIRLA';}}
     }
 
     async function tv3RemoveMember(slotId, username) {
@@ -12069,12 +12106,17 @@ return;
     }
 
     function tv3ContinueTlPayment(paymentId, reference) {
-        if (reference) copyTextReliable(reference).catch(()=>{});
-        showBynoGameRedirect(reference || '');
+        if(reference) copyTextReliable(reference).catch(()=>{});
+        const p=tv2State.me?.activePayment;
+        const a=p && String(p.id)===String(paymentId) ? tv3PaymentAmounts(p) : null;
+        showBynoGameRedirect(reference||'',a);
     }
 
     async function tv3CheckTlPayment(paymentId, notify = false) {
         if (!paymentId) return;
+        const btn=document.activeElement;
+        const oldLabel=btn?.tagName==='BUTTON'?btn.textContent:'';
+        if(oldLabel){btn.disabled=true;btn.textContent='⏳ Ödeme kontrol ediliyor...';}
         try {
             const data = await tv2AuthFetch('/payment/check', {
                 method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({paymentId})
@@ -12100,6 +12142,8 @@ return;
             }
         } catch (error) {
             if (notify) showStatusToast(`⚠️ ${error.message || error}`, 4500);
+        }finally{
+            if(oldLabel&&btn.isConnected){btn.disabled=false;btn.textContent=oldLabel;}
         }
     }
 
@@ -12119,6 +12163,9 @@ return;
     }
 
     async function tv3RefreshSubscription(paymentId, notify = true) {
+        const btn=document.activeElement;
+        const oldLabel=btn?.tagName==='BUTTON'?btn.textContent:'';
+        if(oldLabel){btn.disabled=true;btn.textContent='⏳ Abonelik kontrol ediliyor...';}
         try {
             const d = await tv2AuthFetch(`/tournament/v3/subscription/status?id=${encodeURIComponent(paymentId)}&_=${Date.now()}`);
             const p = d.subscriptionPayment || d.payment || {};
@@ -12135,6 +12182,8 @@ return;
             await tv2ReloadMe();
         } catch (error) {
             if (notify) showStatusToast(`⚠️ ${error.message || error}`, 4500);
+        }finally{
+            if(oldLabel&&btn.isConnected){btn.disabled=false;btn.textContent=oldLabel;}
         }
     }
 
