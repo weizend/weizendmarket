@@ -3910,10 +3910,7 @@ body.wz-initializing{
     </nav>
 
     <button class="wz-profile-top-btn" id="wzProfileTopBtn" type="button" style="display:none" onclick="wzSetView('profile')" aria-label="Profil">
-      <span class="wz-top-avatar-wrap">
-        <span id="wzTopProfileAvatar" class="wz-profile-top-avatar-icon wz-kick-profile-icon" aria-hidden="true"></span>
-        <span id="wzTopProfileUnread" class="wz-top-unread-dot" aria-hidden="true">!</span>
-      </span>
+      <span id="wzTopProfileAvatar" class="wz-profile-top-avatar-icon wz-kick-profile-icon" aria-hidden="true"></span>
       <span class="wz-profile-top-copy">
         <strong id="wzTopProfileName">Profil</strong>
         <small>Hesabım</small>
@@ -4512,29 +4509,6 @@ body.wz-initializing{
       <div class="wz-profile-info-row"><span>Kick Kullanıcı Adı</span><strong id="wzProfileKick">-</strong></div>
       <div class="wz-profile-info-row"><span>Hesap Durumu</span><strong id="wzProfileAccountStatus">Aktif</strong></div>
     </div>
-
-    <section class="wz-profile-section wz-subscriber-section" id="wzSubscriberSection" aria-labelledby="wzSubscriberHeading">
-      <div class="wz-subscriber-header">
-        <div class="wz-profile-section-title" id="wzSubscriberHeading">⭐ Kick Abonelik Bilgilerim</div>
-        <button type="button" class="wz-subscriber-refresh" id="wzSubscriberRefresh" onclick="wzRefreshMySubscription(true)">↻ Kontrol Et</button>
-      </div>
-      <div id="wzSubscriberStatus" class="wz-subscriber-status" role="status" aria-live="polite">Abonelik bilgisi kontrol ediliyor…</div>
-      <div class="wz-subscriber-grid">
-        <div class="wz-subscriber-cell"><span>Abonelik Türü</span><strong id="wzSubscriberType">—</strong></div>
-        <div class="wz-subscriber-cell"><span>Seviye</span><strong id="wzSubscriberTier">—</strong></div>
-        <div class="wz-subscriber-cell"><span>Abonelik Durumu</span><strong id="wzSubscriberActiveState">—</strong></div>
-        <div class="wz-subscriber-cell"><span>Kaçıncı Ay</span><strong id="wzSubscriberMonth">—</strong></div>
-        <div class="wz-subscriber-cell" id="wzSubscriberEventCell" hidden><span>Son Abonelik İşlemi</span><strong id="wzSubscriberEvent">—</strong></div>
-        <div class="wz-subscriber-cell"><span>Başlangıç</span><strong id="wzSubscriberStart">—</strong></div>
-        <div class="wz-subscriber-cell"><span>Bitiş</span><strong id="wzSubscriberEnd">—</strong></div>
-      </div>
-      <div class="wz-subscriber-clock" id="wzSubscriberClockBox" hidden>
-        <span id="wzSubscriberClockLabel">⏳ Abonelik bitişine kalan süre</span>
-        <strong id="wzSubscriberClock" aria-live="off">—</strong>
-      </div>
-      <p id="wzSubscriberNote" class="wz-subscriber-note">Yalnızca doğruladığın Kick hesabının abonelik bilgileri gösterilir.</p>
-      <small id="wzSubscriberChecked" class="wz-subscriber-checked"></small>
-    </section>
 
     <div class="wz-profile-section">
       <div class="wz-profile-section-title">Hızlı İşlemler</div>
@@ -6254,10 +6228,6 @@ body.wz-initializing{
                 : inboxUnreadCount();
 
             inboxBadgeUnreadCount = unread;
-            const topAlert=document.getElementById('wzTopProfileUnread');
-            if(topAlert) topAlert.classList.toggle('visible',unread>0);
-            const profileNav=document.getElementById('wzProfileTopBtn');
-            if(profileNav) profileNav.setAttribute('aria-label',unread>0?`Profil, ${unread} okunmamış mesaj`:'Profil');
 
             const badge = document.getElementById('inboxBadge');
             if (badge) {
@@ -11287,7 +11257,6 @@ return;
                             <option value="not_subscribed">Abone değilim — 1 normal abonelik yapacağım</option>
                             <option value="already_subscribed">Zaten aboneyim — 1 abonelik hediyesi göndereceğim</option>
                         </select>
-                        <div class="tv3-subscription-lookup tv2-muted" style="margin-top:8px;" aria-live="polite">⭐ Abonelik kontrolü yapılacak. <button type="button" class="tv2-btn secondary" onclick="tv3CheckSubscriptionStatus(true)" style="width:auto;padding:7px 12px">🔄 Kontrol Et</button></div>
                         <div class="tv2-muted" style="margin-top:6px;">
                             Katılım işlemin kayıt kapanış tarihine kadar açık kalır. Gift alıcısı önemli değildir; gönderen doğrulanmış Kick hesabı ve adet kontrol edilir.
                         </div>
@@ -11332,7 +11301,6 @@ return;
             ${detail ? tv2PublicBracketHtml(detail) : ''}
         `;
         tv2RestorePendingTl();
-        if(document.getElementById('tv2SoloSubscriptionState')) setTimeout(()=>tv3CheckSubscriptionStatus(false),0);
     }
 
     async function tv2RegisterSolo() {
@@ -11483,51 +11451,6 @@ return;
         return html;
     }
 
-    // V90: Kimliği doğrulanan kullanıcı sadece kendi aktif abonelik durumunu alır.
-    // MissXss listesinde bulunamamak, Kick'te kesin olarak abone olmadığı anlamına gelmez.
-    let tv3SubLookup={data:null,expires:0,promise:null};
-    async function tv3CheckSubscriptionStatus(force=false){
-        const panels=[...document.querySelectorAll('.tv3-subscription-lookup')];
-        const selects=[...document.querySelectorAll('select[id$="SubscriptionState"]')];
-        if(!selects.length)return;
-        const token=localStorage.getItem(SESSION_STORAGE_KEY)||'';
-        if(!token){
-            panels.forEach(p=>{const text=p.firstChild;if(text)text.textContent=' Hesabını doğruladığında abonelik durumu sorgulanabilir. ';});
-            return;
-        }
-        if(!force && tv3SubLookup.data && tv3SubLookup.expires>Date.now()){
-            tv3ApplySubscriptionStatus(tv3SubLookup.data);return;
-        }
-        panels.forEach(p=>{if(p.firstChild)p.firstChild.textContent=' ⏳ MissXss abonelik durumun kontrol ediliyor... ';});
-        if(!tv3SubLookup.promise){
-            tv3SubLookup.promise=tv2AuthFetch('/subscriber/me').then(d=>{
-                tv3SubLookup.data=d;tv3SubLookup.expires=Date.now()+60000;return d;
-            }).catch(()=>({state:'unknown'})).finally(()=>{tv3SubLookup.promise=null;});
-        }
-        const d=await tv3SubLookup.promise;
-        tv3ApplySubscriptionStatus(d);
-    }
-    function tv3ApplySubscriptionStatus(data){
-        document.querySelectorAll('select[id$="SubscriptionState"]').forEach(select=>{
-            const panel=select.closest('.tv2-field');
-            const text=panel?.querySelector('.tv3-subscription-lookup');
-            const note=panel?.querySelector('.tv3-subscription-choice-note');
-            const confirmed=data?.state==='active';
-            const normal=[...select.options].find(o=>o.value==='not_subscribed');
-            // Kesin eşleşme varsa "yeni abone" işlemine sokmayalım.
-            if(normal)normal.disabled=confirmed;
-            if(confirmed){
-                select.value='already_subscribed';
-                if(text?.firstChild)text.firstChild.textContent=' ✅ MissXss listesinde aktif aboneliğin doğrulandı. Hediye abonelik gönder. ';
-                if(note)note.textContent='Aktif aboneliğin doğrulandı. Turnuva için kendi hesabından abonelik hediyesi gönder.';
-            }else if(data?.state==='not_found'){
-                if(text?.firstChild)text.firstChild.textContent=' ℹ️ MissXss aktif aboneler listesinde bulunamadın. Kayıt gecikebilir; gerekirse durumunu kendin seç. ';
-            }else{
-                if(text?.firstChild)text.firstChild.textContent=' ⚠️ Abonelik bilgisi doğrulanamadı. Mevcut seçimle devam edebilirsin. ';
-            }
-        });
-    }
-
     function tv3SubscriptionChoiceHtml(selectId) {
         return `
             <div class="tv2-field">
@@ -11539,10 +11462,6 @@ return;
                 </select>
                 <div class="tv2-muted tv3-subscription-choice-note" style="margin-top:6px;">
                     Seçimine göre kendi Kick hesabındaki ilgili işlem doğrulanır.
-                </div>
-                <div class="tv3-subscription-lookup tv2-muted" style="margin-top:9px;" aria-live="polite">
-                    ⭐ MissXss abonelik kontrolü hazırlanıyor...
-                    <button type="button" class="tv2-btn secondary" style="display:inline-block;width:auto;min-height:36px;padding:7px 12px;margin:6px 0;" onclick="tv3CheckSubscriptionStatus(true)">🔄 Aboneliğimi Kontrol Et</button>
                 </div>
             </div>
         `;
@@ -11796,7 +11715,6 @@ return;
         const modalBody = document.getElementById('tv2ModalBody');
         const previousScroll = modalBody.scrollTop;
         modalBody.innerHTML = content;
-        if (document.querySelector('.tv3-subscription-lookup')) setTimeout(()=>tv3CheckSubscriptionStatus(false),0);
         if (tv2State.form === 'create') tv2ShowCreateForm(true);
         if (tv2State.form === 'join') tv2ShowJoinForm(true);
         modalBody.scrollTop = previousScroll;
@@ -11859,7 +11777,6 @@ return;
                 </div>
             </div>
         `;
-        if(mode==='subscription') setTimeout(()=>tv3CheckSubscriptionStatus(false),0);
     }
 
     async function tv2SubmitCreate() {
@@ -13971,10 +13888,7 @@ return;
               <div class="wz-turn-card-sub">${esc(modeText(t))} • ${Number(t.capacity||0)||'-'} ${Number(t.teamSize||1)>1?'Takım':'Oyuncu'} • ${esc(mapDisplayName(t,rule))} • ${esc(matchFormat(t,rule))}</div>
             </div>
           </div>
-          <div class="wz-v93-card-status-group">
-            <span class="wz-v93-card-count">👥 ${Math.max(0,Number(t.completedCount??0)||0)}/${Math.max(0,Number(t.capacity||0))||'-'} ${Number(t.teamSize||1)>1?'takım':'oyuncu'}</span>
-            <span class="wz-turn-card-status ${tournamentCategory(item)}">${esc(tournamentCategoryLabel(item))}</span>
-          </div>
+          <span class="wz-turn-card-status ${tournamentCategory(item)}">${esc(tournamentCategoryLabel(item))}</span>
         </div>
 
         <div class="wz-turn-card-promo">
@@ -14164,34 +14078,75 @@ return;
     }
 
     const teams=(Array.isArray(detail?.teams)?detail.teams:[])
-      .filter(team=>['ready','locked','active'].includes(String(team?.status||'').toLowerCase()));
+      .filter(team=>['ready','locked','active'].includes(
+        String(team?.status||'').toLowerCase()
+      ));
+
+    const totalPlayers=teams.reduce(
+      (sum,team)=>sum+(Array.isArray(team?.members)?team.members.length:0),
+      0
+    );
+
     return `<div class="wz-turn-box wz-turn-participants-box">
-      <div class="wz-turn-participants-head"><div><h3>👥 Katılımcı Takımlar</h3>
-        <div class="wz-turn-participants-note">Yalnızca tüm oyuncularının katılım şartı onaylanan takımlar. Takım adına dokunarak kadroyu görebilirsin.</div>
-        </div><div class="wz-turn-participants-count"><strong>${teams.length}${capacity?` / ${capacity}`:''}</strong><span>Takım</span></div>
+      <div class="wz-turn-participants-head">
+        <div>
+          <h3>👥 Katılımcılar</h3>
+          <div class="wz-turn-participants-note">
+            Yalnızca tüm oyuncuları ve katılım şartları tamamlanan takımlar burada görünür.
+            Ödeme yöntemi ve ödeme tutarı herkese açık gösterilmez.
+          </div>
+        </div>
+        <div class="wz-turn-participants-count">
+          <strong>${teams.length}${capacity?` / ${capacity}`:''}</strong>
+          <span>Takım</span>
+          ${totalPlayers ? `<small>${totalPlayers} Oyuncu</small>` : ''}
+        </div>
       </div>
-      ${teams.length?`<div class="wz-v93-team-list">${teams.map((team,i)=>`
-        <button type="button" class="wz-v93-team-button" onclick="wzTurnShowPublicTeam('${encodeURIComponent(String(team.id||''))}')">
-          <span>👥 <b>${esc(team.name||'Takım')}</b></span><span>✓ Onaylı · Kadroyu gör ›</span>
-        </button>`).join('')}</div>`:'<div class="wz-turn-empty">Henüz tamamlanan takım yok.</div>'}
+
+      ${teams.length ? `
+        <div class="wz-turn-team-list">
+          ${teams.map((team,teamIndex)=>{
+            const members=Array.isArray(team?.members)?team.members:[];
+            return `<div class="wz-turn-public-team">
+              <div class="wz-turn-public-team-head">
+                <div class="wz-turn-public-team-title">
+                  <span class="wz-turn-team-order">${teamIndex+1}</span>
+                  <div>
+                    <b>${esc(team?.name||'-')}</b>
+                    <span>${members.length} Oyuncu</span>
+                  </div>
+                </div>
+                <div class="wz-turn-confirmed-badge">✓ Kayıt Onaylandı</div>
+              </div>
+
+              <div class="wz-turn-public-roster">
+                ${members.length ? members.map((m,index)=>{
+                  const isCaptain=
+                    String(m?.role||'').toLowerCase()==='captain' ||
+                    index===0;
+                  return `<div class="wz-turn-public-player">
+                    <div class="wz-turn-player-role">${isCaptain?'👑':index+1}</div>
+                    <div>
+                      <b>${esc(m?.username||m?.plannedUsername||'-')}</b>
+                      <span>${esc(m?.gameId||m?.riotId||'-')}</span>
+                    </div>
+                    ${isCaptain?'<small>Kaptan</small>':''}
+                  </div>`;
+                }).join('') : `
+                  <div class="wz-turn-empty">Kadro bilgisi henüz yayınlanmadı.</div>
+                `}
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      ` : `
+        <div class="wz-turn-empty">
+          Henüz kaydı tamamen onaylanan takım yok.
+        </div>
+      `}
     </div>`;
   }
-  function wzV93RosterMarkup(team){
-    const players=Array.isArray(team?.members)?team.members:[];
-    return `<div class="wz-v93-roster-list">${players.length?players.map((m,i)=>`
-      <div class="wz-v93-roster-row"><b>${i===0||m?.role==='captain'?'👑':'👤'} ${esc(m?.username||m?.kickUsername||'-')}</b><span>${esc(m?.gameId||m?.riotId||'-')}</span></div>`).join(''):'<p>Henüz oyuncu bilgisi yok.</p>'}</div>`;
-  }
-  window.wzTurnShowPublicTeam=function(id){
-    const detail=state.details.get(String(state.selectedId||''));
-    const teams=Array.isArray(detail?.teams)?detail.teams:[];
-    const team=teams.find(x=>String(x.id)===decodeURIComponent(id||''));
-    if(!team||!['ready','locked','active'].includes(String(team.status||'').toLowerCase()))return;
-    const overlay=document.getElementById('wzV93PublicTeamDialog');if(!overlay)return;
-    document.getElementById('wzV93PublicTeamTitle').textContent=team.name||'Takım';
-    document.getElementById('wzV93PublicTeamBody').innerHTML=wzV93RosterMarkup(team);
-    overlay.hidden=false;document.getElementById('wzV93PublicTeamClose')?.focus();
-  };
-  window.wzTurnClosePublicTeam=function(){const d=document.getElementById('wzV93PublicTeamDialog');if(d)d.hidden=true;};
+
   function renderBracket(detail,item){
     const t=detail?.tournament||item?.tournament||{}; const rule=item?.rule||{};
     const mapImage=cssUrl(tournamentMapImageUrl(item,detail));
@@ -14857,7 +14812,6 @@ return;
   };
 
   window.wzTurnBack=function(){
-    window.wzTurnClosePublicTeam?.();
     wzReleaseHydratedTournamentShell();
     state.screen='list';
     document.body.classList.remove('wz-turn-modal-open','wz-turn-modal-entering');
@@ -14872,7 +14826,6 @@ return;
   });
 
   window.wzTurnSetTab=function(tab){
-    window.wzTurnClosePublicTeam?.();
     wzReleaseHydratedTournamentShell();
     state.tab=['overview','rules','prizes','participants','bracket','predictions'].includes(tab)?tab:'overview';
     persistTournamentState();
@@ -15288,195 +15241,5 @@ return;
 }
 </style>
 
-<style id="wz-profile-subscriber-v91-css">
-.wz-subscriber-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
-.wz-subscriber-header .wz-profile-section-title{margin:0}
-.wz-subscriber-refresh{width:auto;min-width:0;flex:0 0 auto;padding:9px 12px;border:1px solid #41414b;background:#202024;color:#fff;border-radius:10px;font-size:.78rem;font-weight:800;cursor:pointer}
-.wz-subscriber-refresh:disabled{opacity:.6;cursor:wait}
-.wz-subscriber-status{border:1px solid #45414c;border-radius:12px;padding:11px 12px;background:#191820;font-size:.9rem;font-weight:750;line-height:1.4;color:#e5dce7}
-.wz-subscriber-status.active{border-color:#256b40;background:#0a2013;color:#8cedb0}
-.wz-subscriber-status.notfound{border-color:#76602c;background:#221d10;color:#f5d585}
-.wz-subscriber-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
-.wz-subscriber-cell{border:1px solid #2d2d33;background:#08080b;border-radius:12px;min-width:0;padding:13px 12px;display:flex;flex-direction:column;gap:7px}
-.wz-subscriber-cell[hidden]{display:none!important}
-.wz-subscriber-cell span{font-size:.74rem;color:#8f8f9b}
-.wz-subscriber-cell strong{font-size:.9rem;color:#f4f4f6;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
-.wz-subscriber-clock{margin-top:12px;border:1px solid #493b18;background:#17140c;border-radius:13px;padding:14px;text-align:center}
-.wz-subscriber-clock span{font-size:.8rem;color:#eac777;display:block;margin-bottom:6px}
-.wz-subscriber-clock strong{font-size:clamp(1.04rem,3vw,1.42rem);font-variant-numeric:tabular-nums;letter-spacing:.02em;overflow-wrap:anywhere}
-.wz-subscriber-note{color:#9999a4;font-size:.78rem;line-height:1.5;margin:13px 0 4px}
-.wz-subscriber-checked{color:#777783;font-size:.72rem}
-@media(max-width:360px){.wz-subscriber-grid{grid-template-columns:1fr}.wz-subscriber-header{align-items:stretch}.wz-subscriber-refresh{align-self:flex-start}}
-</style>
-<script id="wz-profile-subscriber-v91-js">
-(function(){
-  'use strict';
-  const TOKEN_KEY='weizend_market_session_secure_v2';
-  // Aynı Market Worker. Yalnızca sunucu, doğrulanmış oturumdaki kullanıcıyı arar.
-  const WORKER='https://weizend-botrix.weizendtv.workers.dev';
-  let lastToken='',lastResult=null,lastFetch=0,inflight=null,tick=null,expiryMs=0;
-  const find=id=>document.getElementById(id);
-  const show=(id,value)=>{const el=find(id);if(el)el.textContent=value;};
-  const dateString=value=>{
-    if(typeof value!=='string')return 'Bilgi sağlanmadı';
-    const time=Date.parse(value);
-    return Number.isFinite(time)?new Intl.DateTimeFormat('tr-TR',{
-      timeZone:'Europe/Istanbul',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false
-    }).format(new Date(time)):'Bilgi sağlanmadı';
-  };
-  function stopClock(){if(tick){clearInterval(tick);tick=null;}expiryMs=0;}
-  function updateClock(){
-    const dest=find('wzSubscriberClock');if(!dest||!expiryMs)return;
-    const diff=Math.max(0,Math.floor((expiryMs-Date.now())/1000));
-    const d=Math.floor(diff/86400),h=Math.floor(diff%86400/3600),m=Math.floor(diff%3600/60),s=diff%60;
-    dest.textContent=diff===0?'30 günlük dönem tamamlandı · abonelik durumunu kontrol et':`${d} gün ${String(h).padStart(2,'0')} saat ${String(m).padStart(2,'0')} dk ${String(s).padStart(2,'0')} sn`;
-    if(diff===0){stopClock();}
-  }
-  function refreshClock(expires){
-    stopClock();const box=find('wzSubscriberClockBox');if(box)box.hidden=true;
-    if(typeof expires!=='string')return;
-    const ms=Date.parse(expires);if(!Number.isFinite(ms))return;
-    expiryMs=ms;if(box)box.hidden=false;
-    updateClock();if(expiryMs>0)tick=setInterval(()=>{
-      if(document.hidden || !document.body.classList.contains('wz-view-profile'))return;
-      if(!localStorage.getItem(TOKEN_KEY)){stopClock();return;}
-      updateClock();
-    },1000);
-  }
-  function resetCard(){
-    stopClock();lastResult=null;lastFetch=0;
-    show('wzSubscriberStatus','Kick hesabını doğruladığında abonelik bilgilerini burada görebilirsin.');
-    const status=find('wzSubscriberStatus');if(status)status.className='wz-subscriber-status';
-    for(const id of ['wzSubscriberType','wzSubscriberTier','wzSubscriberStart','wzSubscriberEnd','wzSubscriberMonth','wzSubscriberActiveState','wzSubscriberEvent'])show(id,'—');
-    for(const id of ['wzSubscriberEventCell']){const el=find(id);if(el)el.hidden=true;}
-    show('wzSubscriberNote','Yalnızca doğrulanmış Kick hesabına ait bilgiler gösterilir.');
-    show('wzSubscriberChecked','');const box=find('wzSubscriberClockBox');if(box)box.hidden=true;
-  }
-  function render(data){
-    stopClock();const status=find('wzSubscriberStatus');if(status)status.className='wz-subscriber-status';
-    for(const id of ['wzSubscriberType','wzSubscriberTier','wzSubscriberStart','wzSubscriberEnd','wzSubscriberMonth','wzSubscriberActiveState','wzSubscriberEvent'])show(id,'—');
-    for(const id of ['wzSubscriberEventCell']){const el=find(id);if(el)el.hidden=true;}
-    const box=find('wzSubscriberClockBox');if(box)box.hidden=true;
-    if(data?.state==='active'){
-      if(status)status.classList.add('active');
-      show('wzSubscriberStatus','✅ Weizend kanalında aktif abonelik doğrulandı');
-      const t=String(data.subscriptionType||'').toLowerCase();
-      const type=t==='self'?'Kendi aboneliği':['gift','gifted','gift_sub','gifted_subscription','gifted_sub'].includes(t)?'Hediye abonelik':'Tür belirtilmedi';
-      show('wzSubscriberType',type);
-      show('wzSubscriberTier',data.tier===null||data.tier===undefined||data.tier===''?'Bilgi sağlanmadı':String(data.tier));
-      show('wzSubscriberActiveState','✅ Aktif');
-      const originalStart=Date.parse(data.firstSubscribedAt || '');
-      if(Number.isFinite(originalStart)) {
-        const ageMonths=Math.max(0,(new Date().getUTCFullYear()-new Date(originalStart).getUTCFullYear())*12 + new Date().getUTCMonth()-new Date(originalStart).getUTCMonth() - (new Date().getUTCDate()<new Date(originalStart).getUTCDate()?1:0));
-        show('wzSubscriberMonth',String(ageMonths+1)+'. ay (başlangıç tarihine göre)');
-      } else show('wzSubscriberMonth','İlk abonelik tarihi bulunamadı');
-      if(data.lastSubscriptionEventAt || data.lastSubscriptionEventText) {
-        const c=find('wzSubscriberEventCell');if(c)c.hidden=false;
-        show('wzSubscriberEvent',data.lastSubscriptionEventAt
-          ? dateString(data.lastSubscriptionEventAt)
-          : String(data.lastSubscriptionEventText)+' (MissXss saati)');
-      }
-      show('wzSubscriberStart',dateString(data.startedAt));
-      show('wzSubscriberEnd',dateString(data.expiresAt));
-      // Doğrulanmış bitiş zamanını tercih et. Tarih yoksa son etkinlikten
-      // itibaren SADECE yaklaşık 30 günlük dönem sayacı göster; bitiş iddiası yok.
-      const actualExpiry=Date.parse(data.expiresAt||'');
-      const periodCandidates=[data.startedAt,data.lastSubscriptionEventAt].map(v=>Date.parse(v||'')).filter(Number.isFinite);
-      const periodEvent=periodCandidates.length?Math.max(...periodCandidates):NaN;
-      const label=find('wzSubscriberClockLabel');
-      if(Number.isFinite(actualExpiry)) {
-        if(label) label.textContent='⏳ Doğrulanmış bitiş tarihine kalan süre';
-        refreshClock(data.expiresAt);
-        show('wzSubscriberNote','Bitiş tarihi MissXss kaydından alınmıştır.');
-      } else if(Number.isFinite(periodEvent)) {
-        if(label) label.textContent='⏳ Tahmini 30 günlük dönem sayacı';
-        refreshClock(new Date(periodEvent+30*86400000).toISOString());
-        show('wzSubscriberNote','Bu sayaç son abonelik işlemi veya dönem başlangıcından itibaren 30 gün hesaplar. KICK aboneliğinin kesin bitişi ya da otomatik yenilenme tarihi DEĞİLDİR.');
-      } else {
-        refreshClock(null);
-        show('wzSubscriberNote','MissXss başlangıç/bitiş zamanı sağlamadı. 30 günlük sayaç oluşturmak için doğrulanabilir işlem tarihi gerekir.');
-      }
-    }else if(data?.state==='not_found'){
-      if(status)status.classList.add('notfound');
-      show('wzSubscriberStatus','ℹ️ MissXss aktif aboneler listesinde kayıt bulunamadı');
-      show('wzSubscriberNote','Bu, Kick üzerinde kesin olarak abone olmadığın anlamına gelmez. MissXss kayıtları güncel olmayabilir.');
-    }else{
-      show('wzSubscriberStatus','⚠️ Abonelik bilgisi şu anda doğrulanamadı');
-      show('wzSubscriberNote','Lütfen daha sonra Kontrol Et butonuna dokun. Mevcut abonelik durumunu tahmin etmiyoruz.');
-    }
-    show('wzSubscriberChecked',data?.checkedAt?`Son sunucu kontrolü: ${dateString(data.checkedAt)}`:'');
-  }
-  window.wzRefreshMySubscription=async function(force=false){
-    if(!find('wzSubscriberSection'))return;
-    const token=localStorage.getItem(TOKEN_KEY)||'';
-    if(!token){lastToken='';resetCard();return;}
-    if(lastToken!==token){lastToken=token;lastResult=null;lastFetch=0;stopClock();}
-    if(inflight)return inflight;
-    if(!force&&lastResult&&Date.now()-lastFetch<60000){render(lastResult);return lastResult;}
-    const btn=find('wzSubscriberRefresh');if(btn)btn.disabled=true;
-    show('wzSubscriberStatus','⏳ MissXss abonelik bilgileri kontrol ediliyor…');
-    const control=new AbortController(),timeout=setTimeout(()=>control.abort(),15000);
-    inflight=(async()=>{
-      try{
-        const response=await fetch(`${WORKER}/subscriber/me`,{
-          method:'GET',cache:'no-store',signal:control.signal,
-          headers:{'Authorization':`Bearer ${token}`,'Accept':'application/json'}
-        });
-        const result=await response.json();
-        if(!response.ok||result?.success!==true)throw new Error('Abonelik bilgisi getirilemedi.');
-        if((localStorage.getItem(TOKEN_KEY)||'')!==token)return null;
-        lastResult=result;lastFetch=Date.now();render(result);return result;
-      }catch(_){
-        const failed={success:true,state:'unknown'};
-        if((localStorage.getItem(TOKEN_KEY)||'')===token)render(failed);
-        return failed;
-      }finally{clearTimeout(timeout);if(btn)btn.disabled=false;inflight=null;}
-    })();
-    return inflight;
-  };
-  // Profil her açıldığında; 60 sn'den tazeyse ağ isteği tekrarlanmaz.
-  const prior=window.wzSetView;
-  if(typeof prior==='function'){
-    window.wzSetView=function(view){const ret=prior.apply(this,arguments);
-      if(view==='profile')window.wzRefreshMySubscription(false);return ret;};
-    window.wzSetMobileView=window.wzSetView;
-  }
-  document.addEventListener('visibilitychange',()=>{
-    if(!document.hidden&&expiryMs&&document.body.classList.contains('wz-view-profile'))updateClock();
-  });
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{
-    if(document.body.classList.contains('wz-view-profile'))window.wzRefreshMySubscription(false);
-  },{once:true});
-  else if(document.body.classList.contains('wz-view-profile'))window.wzRefreshMySubscription(false);
-})();
-</script>
-
-
-<style id="wz-v93-styles">
-.wz-top-avatar-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center;overflow:visible;min-width:38px}
-.wz-top-unread-dot{display:none;position:absolute;right:-5px;top:-6px;width:19px;height:19px;border-radius:50%;background:#e31b1b;color:white;border:2px solid #0b0b0b;font-size:12px;font-weight:900;align-items:center;justify-content:center;z-index:10;box-shadow:0 0 9px rgba(227,27,27,.7)}
-.wz-top-unread-dot.visible{display:flex}
-.wz-v93-card-status-group{display:flex;flex:0 0 auto;flex-direction:column;align-items:flex-end;gap:7px;max-width:47%}
-.wz-v93-card-count{font-size:.72rem;font-weight:900;color:#fff;background:#08090cd9;padding:7px 9px;border-radius:9px;border:1px solid #ffffff43;white-space:normal;text-align:center}
-.wz-v93-card-status-group .wz-turn-card-status{max-width:100%;min-width:0;white-space:normal}
-.wz-v93-team-list{display:grid;gap:9px;margin-top:16px}
-.wz-v93-team-button{width:100%;background:#111114;color:#fff;border:1px solid #38383c;padding:14px;border-radius:13px;display:flex;justify-content:space-between;align-items:center;gap:12px;cursor:pointer;text-align:left}
-.wz-v93-team-button span:last-child{font-size:.78rem;color:#8fe3af}
-.wz-v93-team-button:hover,.wz-v93-team-button:focus-visible{border-color:#e31b1b}
-.wz-v93-dialog[hidden]{display:none!important}
-.wz-v93-dialog{position:fixed!important;inset:0!important;z-index:2147482000!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:16px!important;background:rgba(0,0,0,.82)!important;overscroll-behavior:contain!important}
-.wz-v93-dialog-card{width:min(620px,100%);max-height:min(82dvh,760px);overflow:hidden;display:flex;flex-direction:column;min-height:0;background:#111114;border:1px solid #414147;border-radius:20px;box-shadow:0 18px 70px #000b;touch-action:pan-y}
-.wz-v93-dialog-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;gap:12px;border-bottom:1px solid #343438;flex:0 0 auto}
-.wz-v93-dialog-head h3{margin:0;overflow-wrap:anywhere;font-size:1.13rem}
-.wz-v93-close{width:42px!important;min-width:42px!important;height:42px!important;border-radius:12px!important;background:#262629!important;color:white!important;border:1px solid #444!important;font-size:25px!important;padding:0!important;cursor:pointer}
-.wz-v93-dialog-scroll{min-height:0!important;overflow-x:hidden!important;overflow-y:auto!important;touch-action:pan-y!important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:16px 20px}
-.wz-v93-roster-list{display:grid;gap:9px}.wz-v93-roster-row{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#09090b;border:1px solid #333;border-radius:12px;padding:13px 14px;flex-wrap:wrap}.wz-v93-roster-row b{overflow-wrap:anywhere}.wz-v93-roster-row span{color:#ddd;overflow-wrap:anywhere}
-@media(max-width:530px){.wz-v93-dialog{padding:10px!important}.wz-v93-dialog-card{max-height:calc(100dvh - 36px)}.wz-v93-team-button{flex-wrap:wrap}.wz-v93-card-count{font-size:.63rem;padding:6px}.wz-v93-dialog-scroll{padding:12px}}
-</style>
-<div class="wz-v93-dialog" id="wzV93PublicTeamDialog" role="dialog" aria-modal="true" aria-label="Takım Kadrosu" hidden onclick="if(event.target===this)wzTurnClosePublicTeam()">
-  <div class="wz-v93-dialog-card"><div class="wz-v93-dialog-head"><h3 id="wzV93PublicTeamTitle">Takım</h3><button type="button" class="wz-v93-close" id="wzV93PublicTeamClose" onclick="wzTurnClosePublicTeam()" aria-label="Pencereyi kapat">×</button></div>
-  <div class="wz-v93-dialog-scroll" id="wzV93PublicTeamBody"></div></div>
-</div>
-<script>document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElementById('wzV93PublicTeamDialog')?.hidden){e.stopImmediatePropagation();window.wzTurnClosePublicTeam?.();}},true);</script>
 </body>
 </html>
