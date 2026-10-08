@@ -3527,21 +3527,6 @@ html,body{max-width:100%;overflow-x:hidden}
 
       </div>
 
-      <div class="card" id="wzActiveSubsAdminCard">
-        <h2>⭐ Aktif Kick Aboneleri</h2>
-        <p class="muted">MissXss abonelik veritabanındaki süresi dolmamış kayıtlar. Son 20 abonelik eyleminden farklıdır. Liste yalnızca yönetici oturumunda görüntülenir.</p>
-        <div class="btnRow" style="margin:10px 0;">
-          <button class="secondary" type="button" onclick="wzLoadActiveSubscribers(0)">🔄 Aktif Aboneleri Getir</button>
-        </div>
-        <input id="wzSubscriberFilter" type="search" placeholder="Bu sayfada kullanıcı ara" oninput="wzRenderActiveSubscribers()" aria-label="Abone ara" style="margin:0 0 10px;">
-        <div id="wzActiveSubsStatus" class="muted" role="status" aria-live="polite">Liste henüz yüklenmedi.</div>
-        <div id="wzActiveSubsTable" class="tableWrap" style="margin-top:10px;max-width:100%;overflow:auto;"></div>
-        <div class="btnRow" style="margin-top:12px;">
-          <button class="secondary" type="button" id="wzSubsPrev" onclick="wzLoadActiveSubscribers(Math.max(0,wzSubsPage.offset-wzSubsPage.limit))" disabled>← Önceki</button>
-          <button class="secondary" type="button" id="wzSubsNext" onclick="wzLoadActiveSubscribers(wzSubsPage.offset+wzSubsPage.limit)" disabled>Sonraki →</button>
-        </div>
-      </div>
-
       <div class="card">
 
         <h2>🎁 Abonelik Hediyesi Gönderenler Son 20</h2>
@@ -9659,7 +9644,6 @@ async function deleteTournamentFromPanel(){
 }
 
 async function loadTournamentEntries(silent=false){
-  if(typeof window.wzV93CloseAdminTeam==='function')window.wzV93CloseAdminTeam();
   const id = document.getElementById('tournamentSelect')?.value || '';
   if(!id) return;
 
@@ -9752,7 +9736,6 @@ function renderTournamentV3Entries(data){
     return;
   }
 
-  window.wzV93AdminTeamDetails = new Map();
   host.innerHTML = teams.map(entry=>{
     const team=entry.team||{};
     const slots=Array.isArray(entry.slots)?entry.slots:[];
@@ -9827,7 +9810,7 @@ function renderTournamentV3Entries(data){
         </div>`;
     }).join('') : '<div class="muted">Henüz ödeme işlemi yok.</div>';
 
-    const detailHtml = `
+    return `
       <div class="tournamentTeamCard">
         <div class="tournamentTeamHead">
           <div>
@@ -9856,11 +9839,6 @@ function renderTournamentV3Entries(data){
         ${tsize>1?`<div class="tournamentV3Section"><div class="tournamentV3SectionTitle">🔑 Tek Kullanımlık Davet Kodları</div><div class="tournamentV3InviteGrid">${inviteCards}</div></div>`:''}
         <div class="tournamentV3Section"><div class="tournamentV3SectionTitle">💳 Ödeme Hareketleri</div><div class="tournamentV3PaymentList">${paymentCards}</div></div>
       </div>`;
-    window.wzV93AdminTeamDetails.set(String(team.id),detailHtml);
-    return `<button type="button" class="wz-v93-admin-team" onclick="wzV93OpenAdminTeam('${encodeURIComponent(String(team.id))}')">
-       <span><b>👥 ${esc(team.name||'Takım')}</b><small>👑 ${esc(team.captainUsername||'-')} · ${joinedCount}/${tsize} oyuncu · ${paidCount}/${tsize} şart tamam</small></span>
-       <span class="tournamentV3Chip ${['ready','locked'].includes(status)?'ok':'warn'}">${esc(tournamentStatusText(status))} ›</span>
-    </button>`;
   }).join('');
 
   renderTournamentSubscriptionPayments(Array.isArray(data?.subscriptionPayments)?data.subscriptionPayments:[]);
@@ -11031,41 +11009,6 @@ function renderSimpleRecentActivity(kind,data){
 }
 
 
-// V52: MissXss aktif abone listesi. Kimlik doğrulaması Worker'da zorunludur.
-const wzSubsPage={offset:0,limit:100,total:0,rows:[],loading:false};
-function wzRenderActiveSubscribers(){
-  const host=document.getElementById('wzActiveSubsTable');
-  if(!host) return;
-  const needle=String(document.getElementById('wzSubscriberFilter')?.value||'').trim().toLowerCase();
-  const rows=wzSubsPage.rows.filter(s => (
-    String(s.kick_username||'')+' '+String(s.kick_displayname||'')+' '+String(s.kick_user_id||'')
-  ).toLowerCase().includes(needle));
-  host.innerHTML=rows.length ? `<table style="min-width:520px"><thead><tr><th>Kick Kullanıcısı</th><th>ID</th><th>Abonelik</th><th>Tier</th></tr></thead><tbody>${rows.map(s=>`<tr><td><strong>${esc(s.kick_displayname||s.kick_username||'-')}</strong><div class="muted">@${esc(s.kick_username||'-')}</div></td><td>${esc(s.kick_user_id||'-')}</td><td>${esc(s.subscription_type==='self'?'Kendi aboneliği':(s.subscription_type||'Abone'))}</td><td>${esc(s.tier==null?'-':s.tier)}</td></tr>`).join('')}</tbody></table>`
-    : '<div class="muted" style="padding:16px">Bu sayfada eşleşen abone bulunamadı.</div>';
-  const prev=document.getElementById('wzSubsPrev');
-  const next=document.getElementById('wzSubsNext');
-  if(prev)prev.disabled=wzSubsPage.loading||wzSubsPage.offset===0;
-  if(next)next.disabled=wzSubsPage.loading||wzSubsPage.offset+wzSubsPage.rows.length>=wzSubsPage.total;
-}
-async function wzLoadActiveSubscribers(offset=0){
-  if(wzSubsPage.loading)return;
-  wzSubsPage.loading=true;
-  const status=document.getElementById('wzActiveSubsStatus');
-  if(status)status.textContent='⏳ Aktif aboneler MissXss üzerinden alınıyor...';
-  wzRenderActiveSubscribers();
-  try{
-    const {r,d}=await api(`/admin/missxss/active-subscribers?limit=${wzSubsPage.limit}&offset=${Math.max(0,Math.trunc(offset))}`);
-    if(!r.ok||!d?.success)throw new Error(d?.error||`HTTP ${r.status}`);
-    wzSubsPage.rows=Array.isArray(d.subscribers)?d.subscribers:[];
-    wzSubsPage.total=Math.max(0,Number(d.total)||0);
-    wzSubsPage.offset=Math.max(0,Number(d.offset)||0);
-    if(status)status.textContent=`✅ MissXss aktif abone listesi: ${wzSubsPage.total} kayıt · ${wzSubsPage.offset+1}–${wzSubsPage.offset+wzSubsPage.rows.length} gösteriliyor. (Yalnızca MissXss kayıtları)`;
-  }catch(error){
-    if(status)status.textContent=`❌ ${error.message||error} — API anahtarının get-kick-subscribers yetkisini kontrol et.`;
-    wzSubsPage.rows=[];wzSubsPage.total=0;
-  }finally{wzSubsPage.loading=false;wzRenderActiveSubscribers();}
-}
-
 function recentActivityUi(kind){
   if(kind === 'donations'){
     return {
@@ -11270,32 +11213,5 @@ async function invalidateAllUserSessions(){
     </div>
   </div>
 </div>
-
-<style id="wz-v93-admin-team-styles">
-.wz-v93-admin-team{width:100%;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;text-align:left;background:#0b0b0d;border:1px solid #37373d;border-radius:13px;margin:0 0 9px;padding:15px;color:#fff;cursor:pointer}
-.wz-v93-admin-team:hover,.wz-v93-admin-team:focus-visible{border-color:#e31b1b}
-.wz-v93-admin-team>span:first-child{display:flex;flex-direction:column;min-width:0;gap:5px}.wz-v93-admin-team small{font-size:.79rem;color:#aaa;line-height:1.4}
-.wz-v93-admin-dialog[hidden]{display:none!important}
-.wz-v93-admin-dialog{position:fixed;inset:0;z-index:2147482000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.84);overscroll-behavior:contain}
-.wz-v93-admin-window{width:min(940px,100%);max-height:calc(100dvh - 32px);display:flex;flex-direction:column;min-height:0;overflow:hidden;background:#101012;border:1px solid #4b4b50;border-radius:19px;box-shadow:0 15px 70px #000c;touch-action:pan-y}
-.wz-v93-admin-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 17px;border-bottom:1px solid #38383d;flex:0 0 auto}
-.wz-v93-admin-head b{font-size:1.02rem}.wz-v93-admin-head button{width:42px!important;min-width:42px!important;height:42px!important;padding:0!important;background:#242428;border:1px solid #444;border-radius:10px;font-size:24px}
-.wz-v93-admin-content{overflow-y:auto!important;overflow-x:hidden!important;flex:1;min-height:0!important;touch-action:pan-y!important;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:14px}
-.wz-v93-admin-content .tournamentTeamCard{margin:0}.wz-v93-admin-content .tableWrap{overflow-x:auto;max-width:100%}
-@media(max-width:600px){.wz-v93-admin-dialog{padding:8px}.wz-v93-admin-content{padding:9px}.wz-v93-admin-head{padding:10px}}
-</style>
-<div class="wz-v93-admin-dialog" id="wzV93AdminDialog" hidden role="dialog" aria-modal="true" aria-label="Takım Detayları" onclick="if(event.target===this)wzV93CloseAdminTeam()">
-<div class="wz-v93-admin-window"><div class="wz-v93-admin-head"><b id="wzV93AdminTeamName">Takım Detayları</b><button type="button" id="wzV93AdminCloseBtn" aria-label="Kapat" onclick="wzV93CloseAdminTeam()">×</button></div><div id="wzV93AdminContents" class="wz-v93-admin-content"></div></div></div>
-<script id="wz-v93-admin-team-js">
-window.wzV93OpenAdminTeam=function(encoded){
- try{const id=decodeURIComponent(encoded||'');const html=window.wzV93AdminTeamDetails?.get(id);if(!html)return;
-  const d=document.getElementById('wzV93AdminDialog'),c=document.getElementById('wzV93AdminContents');if(!d||!c)return;
-  c.innerHTML=html;const title=c.querySelector('.tournamentTeamName');document.getElementById('wzV93AdminTeamName').textContent=title?.textContent||'Takım Detayı';
-  d.hidden=false;c.scrollTop=0;document.getElementById('wzV93AdminCloseBtn')?.focus();
- }catch(e){console.error('Takım penceresi açılamadı',e);}
-};
-window.wzV93CloseAdminTeam=function(){const d=document.getElementById('wzV93AdminDialog');if(d)d.hidden=true;};
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElementById('wzV93AdminDialog')?.hidden){e.stopImmediatePropagation();wzV93CloseAdminTeam();}},true);
-</script>
 </body>
 </html>
