@@ -11012,17 +11012,17 @@ return;
         if (isDirect && !isGift) {
             kind='direct';
             title='⭐ Normal Kick Aboneliği';
-            message='Katılım için kendi Kick hesabınla 1 normal abonelik yapmalısın.\nHediye gönderimleri bu işlem yerine geçmez.\nDöndüğünde KONTROL ET butonuna bas.';
+            message='Açılan Kick sayfasında ABONE OL butonuna basıp kendi hesabından abone ol.\nArdından turnuva ekranına geri dön ve KONTROL ET butonuna dokun.\nHediye abonelik bu şart yerine geçmez.';
             buttonText='⭐ ABONE OL · KICK’E GİT';
         } else if (isGift && !isDirect) {
             kind='gift';
             title='🎁 Hediye Abonelik Bekleniyor';
-            message='Zaten abone olduğun için 1 hediye abonelik (Gift) göndermelisin.\nNormal abonelik bu şartı karşılamaz.\nDöndüğünde KONTROL ET butonuna bas.';
+            message='Açılan Kick sayfasında ABONELİK HEDİYE ET butonuna bas ve 1 hediye abonelik gönder.\nArdından turnuva ekranına geri dön ve KONTROL ET butonuna dokun.\nBu seçenek mevcut aboneler içindir.';
             buttonText='🎁 HEDİYE GÖNDER · KICK’E GİT';
         } else {
             kind='direct';
             title='⭐ Kick Katılım Şartı';
-            message='Seçtiğin abonelik şartını kendi Kick hesabınla tamamla.\nDöndüğünde KONTROL ET butonuna bas.';
+            message='Kick sayfasında kayıt sırasında seçtiğin abonelik işlemini tamamla.\nTurnuvaya geri dönerek KONTROL ET butonuna bas.';
             buttonText='⭐ KICK SAYFASINA GİT';
         }
         wzShowExternalPaymentModal({
