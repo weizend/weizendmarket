@@ -12394,9 +12394,30 @@ return;
   }
 
   function thirdPlaceIsEnabled(item, detail=null){
-    const t=detail?.tournament||item?.tournament||{};
     const rule=item?.rule||{};
-    return rule?.thirdPlaceEnabled === true || t?.thirdPlaceEnabled === true;
+    const catalogTournament=item?.tournament||{};
+    const detailTournament=detail?.tournament||{};
+
+    // Kaynak önceliği:
+    // 1) Liste/katalog rule değeri (kapak kartında kullanılan güncel ayar)
+    // 2) Katalog turnuva değeri
+    // 3) Detay endpoint fallback'i
+    //
+    // Önceki sürüm OR kullandığı için katalogda false olsa bile detay cache'inde
+    // eski true değeri varsa 3. ödül tekrar görünüyordu.
+    if(typeof rule.thirdPlaceEnabled === 'boolean'){
+      return rule.thirdPlaceEnabled;
+    }
+
+    if(typeof catalogTournament.thirdPlaceEnabled === 'boolean'){
+      return catalogTournament.thirdPlaceEnabled;
+    }
+
+    if(typeof detailTournament.thirdPlaceEnabled === 'boolean'){
+      return detailTournament.thirdPlaceEnabled;
+    }
+
+    return false;
   }
 
   function tournamentCardPrizes(item){
