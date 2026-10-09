@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#080809">
+  <meta name="description" content="Weizend Arena – AFK VALORANT turnuva maç yönetimi için bağımsız test arayüzü.">
+  <title>WEIZEND ARENA | Weizend Market</title>
+  <link rel="stylesheet" href="./arena.css">
+  <script src="./arena.js" defer></script>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="identity"><img class="identity-logo" src="https://i.hizliresim.com/fo5evkh4.png" alt="Weizend logosu" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="identity-mark identity-logo-fallback" aria-hidden="true" style="display:none">W</span><div><strong>WEIZEND <span>ARENA</span></strong><small>WEIZEND MARKET · ARENA</small></div></div>
+      <div class="side-caption">TURNUVA</div>
+      <nav class="nav" aria-label="Arena gezinme">
+        <button class="nav-button active" data-page="home"><span>◈</span> Genel Bakış</button>
+        <button class="nav-button" data-page="bracket"><span>♜</span> Canlı Fikstür</button>
+        <button class="nav-button" data-page="room"><span>◉</span> Maç Lobisi</button>
+        <button class="nav-button" data-page="referee"><span>⚑</span> Hakem Merkezi</button>
+        <button class="nav-button" data-page="rules"><span>≡</span> Kurallar</button>
+      </nav>
+      <div class="side-foot">
+        <span class="blink-dot"></span> TEST SÜRÜMÜ
+        <p>Bu sürüm Riot API, Market veya canlı turnuva verilerine bağlı değildir.</p>
+        <a href="../index.html" class="return-link">← Weizend Market'e dön</a>
+      </div>
+    </aside>
+    <div class="main-area">
+      <header class="topbar">
+        <div class="topbar-left"><div class="eyebrow">WEIZEND MARKET / ARENA</div><h1 id="page-title">Turnuva Merkezi</h1></div>
+        <div class="topbar-right"><span class="live-chip">● TEST SÜRÜMÜ</span><label class="role-label" for="role">Test oyuncusu</label><select id="role" class="role-select" aria-label="Demo kullanıcısı"></select></div>
+      </header>
+      <main id="app-content" class="content" tabindex="-1"></main>
+      <footer class="footer">WEIZEND ARENA · V2 ÖN İZLEME · Riot Games tarafından desteklenen veya onaylanan bir ürün değildir. · <a href="../index.html">Markete dön</a></footer>
+    </div>
+    <nav class="arena-bottom-nav" aria-label="Mobil Arena menüsü">
+      <button type="button" class="arena-bottom-link active" data-page="home"><span aria-hidden="true">⌂</span><small>Genel</small></button>
+      <button type="button" class="arena-bottom-link" data-page="bracket"><span aria-hidden="true">♜</span><small>Fikstür</small></button>
+      <button type="button" class="arena-bottom-link" data-page="room"><span aria-hidden="true">◉</span><small>Maç</small></button>
+      <button type="button" class="arena-bottom-link" data-page="referee"><span aria-hidden="true">⚑</span><small>Hakem</small></button>
+      <button type="button" class="arena-bottom-link" data-page="rules"><span aria-hidden="true">≡</span><small>Kurallar</small></button>
+    </nav>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
