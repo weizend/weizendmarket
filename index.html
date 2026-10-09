@@ -3869,6 +3869,61 @@ body.wz-initializing{
 }
 </style>
 
+
+<style id="wz-v95-market-cards-and-tournament">
+/* V89 ürün mantığı korunur; yalnızca görsel hiyerarşi düzenlenir. */
+#urunGrid .card{ text-align:left!important; padding:12px!important; }
+#urunGrid .card .img-container{margin-bottom:9px!important;border-radius:10px!important;}
+#urunGrid .card .product-title{font-size:1.08rem!important;min-height:0!important;margin:0 0 9px!important;font-weight:900!important;line-height:1.24!important;text-align:left!important;}
+#urunGrid .card .stock-wrapper{margin:0 0 9px!important;text-align:left!important;}
+#urunGrid .card .stock-badge{font-size:.70rem!important;border-radius:6px!important;padding:4px 8px!important;}
+#urunGrid .card .stock-info-text{font-size:.66rem!important;line-height:1.36!important;margin-top:4px!important;overflow-wrap:anywhere!important;}
+#urunGrid .card .price-command{display:flex!important;align-items:center!important;justify-content:space-between!important;flex-wrap:wrap!important;gap:7px!important;padding-bottom:8px!important;margin:5px 0 10px!important;}
+#urunGrid .card .price{font-size:clamp(.91rem,2.4vw,1.16rem)!important;white-space:normal!important;text-align:left!important;}
+#urunGrid .card .command{font-size:.74rem!important;font-weight:850!important;padding:5px 8px!important;white-space:normal!important;overflow-wrap:anywhere!important;max-width:100%!important;border-radius:6px!important;}
+#urunGrid .card .action-btn{width:100%!important;font-size:.88rem!important;min-height:43px!important;margin:0 0 8px!important;}
+#urunGrid .card details{margin-top:6px!important;border-radius:8px!important;}
+#urunGrid .card details>summary{font-size:.84rem!important;text-align:left!important;padding:12px 13px!important;}
+#urunGrid .card details>summary:after{content:'+'!important;color:#ff2424!important;font-size:1.24rem!important;}
+@media(max-width:640px){#urunGrid .card{padding:12px!important}#urunGrid .card .price-command{gap:5px!important}#urunGrid .card .command{font-size:.69rem!important}}
+/* Profil ikonunda okunmamış mesaj. */
+#wzProfileTopBtn{position:relative!important;}
+#wzTopInboxNotice{position:absolute;z-index:20;right:0;top:-6px;width:22px;height:22px;place-items:center;border-radius:50%;background:#ed1616;border:2px solid #070707;color:#fff;font-size:14px;font-weight:1000;box-shadow:0 0 14px #d11a1a80;pointer-events:none;}
+body.wz-view-profile #wzTopInboxNotice{display:none!important;}
+/* Turnuva dış kapağı */
+.wz-turn-card-head{min-height:324px!important;}
+.wz-turn-card-participation{display:flex;justify-content:flex-end;margin:0 0 6px;}
+.wz-turn-card-count{border:1px solid #49816c;background:rgba(4,30,24,.87);color:#aeffd3;font-weight:1000;font-size:.73rem;border-radius:9px;padding:7px 10px;backdrop-filter:blur(5px);}
+.wz-turn-card-count strong{color:#fff;}
+.wz-turn-card-entry-stack{display:flex;flex-direction:column;align-items:flex-end;flex:0 0 auto;max-width:48%;}
+.wz-turn-card-entry-stack .wz-turn-entry-pill{max-width:100%!important;}
+.wz-v95-cover-timer{position:absolute!important;z-index:5!important;bottom:105px;left:12px;right:12px;max-width:410px;margin:auto;padding:9px 10px;border-radius:12px;border:1px solid #ffffff45;background:rgba(3,6,12,.88);box-shadow:0 8px 24px #0009;text-align:center;backdrop-filter:blur(7px);}
+.wz-v95-cover-caption{font-size:.67rem;letter-spacing:.08em;color:#e4e8f2;font-weight:900;margin-bottom:7px;}
+.wz-v95-cover-time{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;}
+.wz-v95-cover-time span{display:flex;flex-direction:column;align-items:center;min-width:0;gap:2px;}
+.wz-v95-cover-time b{font-size:clamp(.84rem,2.6vw,1.2rem);font-weight:1000;color:#fff;font-variant-numeric:tabular-nums;}
+.wz-v95-cover-time small{font-size:.50rem;font-weight:850;color:#aeb7c5;}
+.wz-v95-cover-state{font-size:.78rem;font-weight:900;color:#fbe4b8;}
+.wz-v95-personal-register{margin:3px 0 10px;display:flex;gap:8px;align-items:center;padding:9px 11px;border-radius:10px;font-weight:900;font-size:.76rem;line-height:1.4;}
+.wz-v95-personal-register.pending{background:#34260b;border:1px solid #795923;color:#ffe2a2;}
+.wz-v95-personal-register.completed{background:#0d3020;border:1px solid #24744d;color:#93ffbc;}
+/* Takım detayı, ana turnuva penceresinin dışında kendi katmanındadır. */
+.wz-v95-team-overlay{position:fixed;inset:0;z-index:2147482000;display:grid;place-items:center;padding:16px;padding-bottom:max(16px,env(safe-area-inset-bottom));background:rgba(0,0,0,.86);overscroll-behavior:contain;touch-action:pan-y;}
+.wz-v95-team-modal{width:min(570px,100%);max-height:min(85dvh,760px);min-height:0;display:flex;flex-direction:column;border-radius:18px;border:1px solid #46434b;background:#101013;box-shadow:0 20px 75px #000b;overflow:hidden;}
+.wz-v95-team-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 17px;border-bottom:1px solid #333;}
+.wz-v95-team-top h3{font-size:1.12rem;margin:0;overflow-wrap:anywhere;}
+.wz-v95-team-close{width:39px;height:39px;flex:none;border-radius:10px;border:1px solid #555;background:#252525;color:#fff;font-size:23px;cursor:pointer;}
+.wz-v95-team-scroll{padding:14px 16px;min-height:0;overflow-y:auto!important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
+.wz-v95-team-person{display:flex;gap:12px;align-items:flex-start;padding:12px;margin:0 0 9px;border:1px solid #333;border-radius:12px;background:#17191f;}
+.wz-v95-team-person .mark{font-size:1.35rem;min-width:28px;}
+.wz-v95-team-person strong{display:block;font-size:.91rem;overflow-wrap:anywhere;}
+.wz-v95-team-person small{display:block;color:#abb4c0;margin-top:4px;overflow-wrap:anywhere;}
+.wz-v95-public-team-btn{display:flex;width:100%;gap:10px;align-items:center;text-align:left;padding:12px;border:1px solid #343b46;border-radius:12px;background:#13171e;color:#fff;font:inherit;cursor:pointer;}
+.wz-v95-public-team-btn strong{flex:1;min-width:0;overflow-wrap:anywhere;}
+.wz-v95-public-team-btn:hover,.wz-v95-public-team-btn:focus-visible{border-color:#e31b1b;background:#1c1518;}
+@media(max-width:410px){.wz-turn-card-head{min-height:334px!important}.wz-v95-cover-timer{bottom:113px}.wz-v95-cover-time{gap:2px}.wz-v95-team-overlay{padding:8px}.wz-v95-team-modal{max-height:90dvh}.wz-v95-team-scroll{padding:10px}.wz-v95-personal-register{font-size:.72rem}}
+</style>
+
 </head>
 <body>
 <script id="wz-v58-prepaint-view">
@@ -3911,6 +3966,7 @@ body.wz-initializing{
 
     <button class="wz-profile-top-btn" id="wzProfileTopBtn" type="button" style="display:none" onclick="wzSetView('profile')" aria-label="Profil">
       <span id="wzTopProfileAvatar" class="wz-profile-top-avatar-icon wz-kick-profile-icon" aria-hidden="true"></span>
+      <span id="wzTopInboxNotice" class="wz-top-inbox-notice" style="display:none" aria-hidden="true">!</span>
       <span class="wz-profile-top-copy">
         <strong id="wzTopProfileName">Profil</strong>
         <small>Hesabım</small>
@@ -4466,7 +4522,7 @@ body.wz-initializing{
     const host=document.getElementById('wzEsportsHub');
     if(!host) return;
 
-    const raw=sessionStorage.getItem('weizend_tournament_shell_final_v66');
+    const raw=sessionStorage.getItem('weizend_tournament_shell_v95');
     if(!raw) return;
 
     const cached=JSON.parse(raw);
@@ -6228,6 +6284,11 @@ body.wz-initializing{
                 : inboxUnreadCount();
 
             inboxBadgeUnreadCount = unread;
+            const topNotice=document.getElementById('wzTopInboxNotice');
+            if(topNotice){
+                topNotice.style.display = unread > 0 ? 'grid' : 'none';
+                topNotice.title = unread > 0 ? `${unread} okunmamış mesaj` : '';
+            }
 
             const badge = document.getElementById('inboxBadge');
             if (badge) {
@@ -11637,6 +11698,7 @@ return;
             tv2State.joinDraft = me?.joinDraft || null;
             tv2State.publicDetail = detail;
             tv2RenderModal();
+            document.dispatchEvent(new Event('wz:registration-changed'));
             tv3RestorePendingTl();
             if (showToast) showStatusToast('✅ Turnuva durumu güncellendi.', 2200);
         } catch (error) {
@@ -12975,7 +13037,9 @@ return;
     loading:new Set(),
     openRules:new Set([0,1]),
     predictionCache:new Map(cachedPredictions),
-    predictionLoading:new Set()
+    predictionLoading:new Set(),
+    myEntryStatuses:new Map(),
+    myEntrySession:''
   };
 
   function persistTournamentState(){
@@ -13870,6 +13934,116 @@ return;
     };
   }
 
+
+  async function wzV95LoadMyEntryStatuses(){
+    let token='';
+    try{token=localStorage.getItem(SESSION_STORAGE_KEY)||'';}catch(_){ }
+    if(!token){
+      state.myEntryStatuses.clear(); state.myEntrySession='';
+      if(state.screen==='list') refreshTournamentListResults();
+      return;
+    }
+    if(window.__wzV95MyEntryPending) return;
+    window.__wzV95MyEntryPending=true;
+    try{
+      const controller=new AbortController();
+      const timeout=setTimeout(()=>controller.abort(),10000);
+      let response;
+      try{response=await fetch(`${MARKET_WORKER}/tournament/my-entry-statuses`,{
+        headers:{Authorization:`Bearer ${token}`,Accept:'application/json'},cache:'no-store',signal:controller.signal
+      });}finally{clearTimeout(timeout);}
+      if(!response.ok) return; // Çalışan kayıt ekranını bir ağ hatasıyla bozma.
+      const data=await response.json();
+      if(!data?.success || !data.entries || typeof data.entries!=='object') return;
+      if((localStorage.getItem(SESSION_STORAGE_KEY)||'')!==token) return;
+      state.myEntryStatuses=new Map(Object.entries(data.entries));
+      state.myEntrySession=token;
+      if(state.screen==='list') refreshTournamentListResults();
+    }catch(error){ console.warn('Turnuva durum bilgisi alınamadı:',error?.message||error); }
+    finally{window.__wzV95MyEntryPending=false;}
+  }
+  document.addEventListener('wz:registration-changed',()=>wzV95LoadMyEntryStatuses());
+  document.addEventListener('wz:tournament-catalog-updated', e=>{
+    if(e?.detail?.ok) wzV95LoadMyEntryStatuses();
+  });
+  document.addEventListener('DOMContentLoaded',()=>{
+    setTimeout(()=>{ if(typeof tv2CatalogLoadedOnce!=='undefined' && tv2CatalogLoadedOnce) wzV95LoadMyEntryStatuses(); },400);
+  });
+  window.addEventListener('focus',()=>{
+    if(typeof tv2CatalogLoadedOnce!=='undefined' && tv2CatalogLoadedOnce) wzV95LoadMyEntryStatuses();
+  });
+  function wzV95RegistrationNotice(id){
+    const token=localStorage.getItem(SESSION_STORAGE_KEY)||'';
+    if(!token || token!==state.myEntrySession)return '';
+    const item=state.myEntryStatuses.get(String(id));
+    if(item==='completed')return '<div class="wz-v95-personal-register completed">✅ Bu turnuvaya kaydın tamamlandı</div>';
+    if(item==='pending')return '<div class="wz-v95-personal-register pending">⏳ Bu turnuvadaki kayıt işlemin bekliyor</div>';
+    return '';
+  }
+  function wzV95ReadyCount(item){
+    const t=item?.tournament||{};
+    const val=Number(t.completedCount);
+    return Number.isFinite(val)?Math.max(0,val):0;
+  }
+  function wzV95CountdownModel(item){
+    const t=item?.tournament||{};
+    const phase=registrationPhase(item);
+    const open=registrationOpenAt(item), close=registrationCloseAt(item), start=t.eventDate;
+    const now=Date.now();
+    const parse=(value)=>value?Date.parse(value):NaN;
+    const o=parse(open),c=parse(close),s=parse(start);
+    const capacity=Math.max(0,Number(t.capacity||0));
+    const used=Math.max(0,Number(t.registeredCount||0));
+    if(phase==='completed')return {label:'🏁 TURNUVA TAMAMLANDI',target:null};
+    if(phase==='live')return {label:'🎮 TURNUVA BAŞLADI',target:null};
+    if(phase==='scheduled'||(Number.isFinite(o)&&now<o))return {label:'KAYIT AÇILIŞINA KALAN',target:Number.isFinite(o)?o:null};
+    if(phase==='open' && !(capacity>0&&used>=capacity)){
+      return Number.isFinite(c)&&c>now
+        ? {label:'KAYIT KAPANIŞINA KALAN',target:c}
+        : {label:'🟢 KAYITLAR AÇIK',target:null};
+    }
+    if(phase==='soon' && !Number.isFinite(o) && !Number.isFinite(s))return {label:'⏳ KAYITLAR YAKINDA',target:null};
+    if(Number.isFinite(s)&&s>now) return {label:'TURNUVA BAŞLANGICINA KALAN',target:s};
+    return {label:'🔴 KAYITLAR KAPALI',target:null};
+  }
+  function wzV95CountdownParts(timestamp){
+    const diff=Math.max(0,Math.floor((timestamp-Date.now())/1000));
+    const months=Math.floor(diff/(30*86400));
+    const days=Math.floor(diff/86400)%30;
+    const hours=Math.floor(diff/3600)%24;
+    const minutes=Math.floor(diff/60)%60;
+    const seconds=diff%60;
+    return [months,days,hours,minutes,seconds].map(v=>String(v).padStart(2,'0'));
+  }
+  function wzV95CoverTimerHtml(item){
+    const t=item?.tournament||{};
+    const model=wzV95CountdownModel(item);
+    const ts=Number(model.target);
+    const valid=model.target!==null&&Number.isFinite(ts)&&ts>Date.now();
+    const parts=valid?wzV95CountdownParts(ts):[];
+    return `<div class="wz-v95-cover-timer" data-tournament="${esc(t.id||'')}" data-target="${valid?ts:''}" data-label="${esc(model.label)}">
+      <div class="wz-v95-cover-caption">${esc(model.label)}</div>
+      ${valid?`<div class="wz-v95-cover-time">${parts.map((v,i)=>`<span><b>${v}</b><small>${['AY','GÜN','SAAT','DK','SN'][i]}</small></span>`).join('')}</div><small style="display:block;margin-top:3px;color:#9ca5ad;font-size:.51rem">1 ay = 30 gün</small>`:'<div class="wz-v95-cover-state">Turnuva bilgilerini incele</div>'}
+    </div>`;
+  }
+  function wzV95UpdateCoverTimers(){
+    document.querySelectorAll('.wz-v95-cover-timer[data-tournament]').forEach(el=>{
+      const item=getItem(el.dataset.tournament);
+      if(!item)return;
+      const model=wzV95CountdownModel(item);
+      const ts=model.target===null?'':String(Number(model.target));
+      if(el.dataset.target!==ts || el.dataset.label!==model.label){
+        const wrap=document.createElement('div');
+        wrap.innerHTML=wzV95CoverTimerHtml(item);
+        if(wrap.firstElementChild) el.replaceWith(wrap.firstElementChild);
+        return;
+      }
+      if(!ts)return;
+      const values=wzV95CountdownParts(Number(ts));
+      el.querySelectorAll('.wz-v95-cover-time b').forEach((b,i)=>{if(b.textContent!==values[i])b.textContent=values[i]});
+    });
+  }
+
   function renderListCard(item,completed=false){
     const t=item?.tournament||{}; const rule=item?.rule||{}; const id=String(t.id||'');
     const d=state.details.get(id); const fin=d && !d.__error ? finalInfo(d):{champion:''};
@@ -13891,6 +14065,7 @@ return;
           <span class="wz-turn-card-status ${tournamentCategory(item)}">${esc(tournamentCategoryLabel(item))}</span>
         </div>
 
+        ${wzV95CoverTimerHtml(item)}
         <div class="wz-turn-card-promo">
           <div class="wz-turn-card-prizes">
             ${cardPrizes.map(([icon,place,value])=>`
@@ -13899,9 +14074,12 @@ return;
               </span>
             `).join('')}
           </div>
-          <span class="wz-turn-entry-pill ${esc(entryBadge.className)}">
-            <span>${entryBadge.icon}</span><span>${esc(entryBadge.text)}</span>
-          </span>
+          <div class="wz-turn-card-entry-stack">
+            <div class="wz-turn-card-participation"><span class="wz-turn-card-count">👥 <strong>${wzV95ReadyCount(item)}/${Math.max(0,Number(t.capacity||0))}</strong> ${Number(t.teamSize||1)>1?'Takım':'Oyuncu'}</span></div>
+            <span class="wz-turn-entry-pill ${esc(entryBadge.className)}">
+              <span>${entryBadge.icon}</span><span>${esc(entryBadge.text)}</span>
+            </span>
+          </div>
         </div>
       </div>
       <div class="wz-turn-card-body">
@@ -13912,6 +14090,7 @@ return;
         </div>
 
         ${completed && fin.champion ? `<div class="wz-turn-completed-note">Şampiyon: <b>${esc(fin.champion)}</b></div>` : ''}
+        ${wzV95RegistrationNotice(id)}
         <div class="wz-turn-card-actions">
           <button type="button" class="wz-turn-mainbtn" onclick="wzTurnOpen('${esc(id)}')">Detayları Gör</button>
         </div>
@@ -14078,74 +14257,50 @@ return;
     }
 
     const teams=(Array.isArray(detail?.teams)?detail.teams:[])
-      .filter(team=>['ready','locked','active'].includes(
-        String(team?.status||'').toLowerCase()
-      ));
-
-    const totalPlayers=teams.reduce(
-      (sum,team)=>sum+(Array.isArray(team?.members)?team.members.length:0),
-      0
-    );
-
+      .filter(team=>['ready','locked','active'].includes(String(team?.status||'').toLowerCase()));
+    const totalPlayers=teams.reduce((n,t)=>n+(t.members?.length||0),0);
     return `<div class="wz-turn-box wz-turn-participants-box">
-      <div class="wz-turn-participants-head">
-        <div>
-          <h3>👥 Katılımcılar</h3>
-          <div class="wz-turn-participants-note">
-            Yalnızca tüm oyuncuları ve katılım şartları tamamlanan takımlar burada görünür.
-            Ödeme yöntemi ve ödeme tutarı herkese açık gösterilmez.
-          </div>
-        </div>
-        <div class="wz-turn-participants-count">
-          <strong>${teams.length}${capacity?` / ${capacity}`:''}</strong>
-          <span>Takım</span>
-          ${totalPlayers ? `<small>${totalPlayers} Oyuncu</small>` : ''}
-        </div>
-      </div>
-
-      ${teams.length ? `
-        <div class="wz-turn-team-list">
-          ${teams.map((team,teamIndex)=>{
-            const members=Array.isArray(team?.members)?team.members:[];
-            return `<div class="wz-turn-public-team">
-              <div class="wz-turn-public-team-head">
-                <div class="wz-turn-public-team-title">
-                  <span class="wz-turn-team-order">${teamIndex+1}</span>
-                  <div>
-                    <b>${esc(team?.name||'-')}</b>
-                    <span>${members.length} Oyuncu</span>
-                  </div>
-                </div>
-                <div class="wz-turn-confirmed-badge">✓ Kayıt Onaylandı</div>
-              </div>
-
-              <div class="wz-turn-public-roster">
-                ${members.length ? members.map((m,index)=>{
-                  const isCaptain=
-                    String(m?.role||'').toLowerCase()==='captain' ||
-                    index===0;
-                  return `<div class="wz-turn-public-player">
-                    <div class="wz-turn-player-role">${isCaptain?'👑':index+1}</div>
-                    <div>
-                      <b>${esc(m?.username||m?.plannedUsername||'-')}</b>
-                      <span>${esc(m?.gameId||m?.riotId||'-')}</span>
-                    </div>
-                    ${isCaptain?'<small>Kaptan</small>':''}
-                  </div>`;
-                }).join('') : `
-                  <div class="wz-turn-empty">Kadro bilgisi henüz yayınlanmadı.</div>
-                `}
-              </div>
-            </div>`;
-          }).join('')}
-        </div>
-      ` : `
-        <div class="wz-turn-empty">
-          Henüz kaydı tamamen onaylanan takım yok.
-        </div>
-      `}
+      <div class="wz-turn-participants-head"><div>
+        <h3>👥 Katılımcılar</h3>
+        <div class="wz-turn-participants-note">Yalnızca kaydı tamamlanmış takımlar listelenir. Takım adına dokunarak kadroyu görebilirsin.</div>
+      </div><div class="wz-turn-participants-count"><strong>${teams.length} / ${capacity||'-'}</strong><span>Takım</span><small>${totalPlayers} Oyuncu</small></div></div>
+      ${teams.length?`<div class="wz-turn-team-list">${teams.map((team,i)=>`
+        <button class="wz-v95-public-team-btn" type="button" onclick="wzV95OpenPublicTeam(${i})">
+          <span class="wz-turn-team-order">${i+1}</span><strong>${esc(team.name||'Takım')}</strong>
+          <span style="font-size:.72rem;color:#a9ebc1">✅ Onaylı</span><span>›</span>
+        </button>`).join('')}</div>`:'<div class="wz-turn-empty">Henüz onaylı takım bulunmuyor.</div>'}
     </div>`;
   }
+
+  function wzV95ClosePublicTeam(){
+    document.getElementById('wzV95PublicTeamDialog')?.remove();
+    window.__wzV95TeamDialogOpen=false;
+  }
+  window.wzV95ClosePublicTeam=wzV95ClosePublicTeam;
+  window.wzV95OpenPublicTeam=function(index){
+    const detail=state.details.get(state.selectedId);
+    const teams=(Array.isArray(detail?.teams)?detail.teams:[])
+      .filter(team=>['ready','locked','active'].includes(String(team?.status||'').toLowerCase()));
+    const team=teams[Number(index)]; if(!team)return;
+    wzV95ClosePublicTeam();
+    const members=Array.isArray(team.members)?team.members:[];
+    const overlay=document.createElement('div');
+    overlay.id='wzV95PublicTeamDialog';overlay.className='wz-v95-team-overlay';
+    overlay.setAttribute('role','presentation');
+    overlay.innerHTML=`<section class="wz-v95-team-modal" role="dialog" aria-modal="true" aria-label="Takım kadrosu">
+      <div class="wz-v95-team-top"><h3>👥 ${esc(team.name||'Takım')} · ${members.length} Oyuncu</h3>
+      <button class="wz-v95-team-close" type="button" onclick="wzV95ClosePublicTeam()" aria-label="Kapat">×</button></div>
+      <div class="wz-v95-team-scroll">${members.length?members.map((m,i)=>`
+        <div class="wz-v95-team-person"><span class="mark">${String(m.role||'').toLowerCase()==='captain'||i===0?'👑':'👤'}</span>
+        <div><strong>Kick: ${esc(m.username||m.plannedUsername||'-')}</strong>
+        <small>Oyun adı: ${esc(m.gameId||m.riotId||'-')}</small></div></div>`).join(''):'<p>Kadro bilgisi henüz bulunmuyor.</p>'}</div></section>`;
+    overlay.addEventListener('click',e=>{if(e.target===overlay)wzV95ClosePublicTeam()});
+    document.body.append(overlay);window.__wzV95TeamDialogOpen=true;
+    overlay.querySelector('.wz-v95-team-close')?.focus({preventScroll:true});
+  };
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'&&window.__wzV95TeamDialogOpen){e.stopImmediatePropagation();e.preventDefault();wzV95ClosePublicTeam()}
+  },true);
 
   function renderBracket(detail,item){
     const t=detail?.tournament||item?.tournament||{}; const rule=item?.rule||{};
@@ -14601,7 +14756,7 @@ return;
     </div>`;
   }
 
-  const WZ_T_SHELL_CACHE_KEY='weizend_tournament_shell_final_v66';
+  const WZ_T_SHELL_CACHE_KEY='weizend_tournament_shell_v95';
 
   function cacheTournamentShell(host){
     try{
@@ -14736,6 +14891,7 @@ return;
     try{
       updateTournamentTimelineDom();
       wzSyncTournamentListStatus();
+      wzV95UpdateCoverTimers();
     }catch(_){}
 
     // Her çalışmada bir sonraki tam saniye sınırına yeniden hizalanır.
@@ -14812,6 +14968,7 @@ return;
   };
 
   window.wzTurnBack=function(){
+    wzV95ClosePublicTeam();
     wzReleaseHydratedTournamentShell();
     state.screen='list';
     document.body.classList.remove('wz-turn-modal-open','wz-turn-modal-entering');
@@ -14826,6 +14983,7 @@ return;
   });
 
   window.wzTurnSetTab=function(tab){
+    wzV95ClosePublicTeam();
     wzReleaseHydratedTournamentShell();
     state.tab=['overview','rules','prizes','participants','bracket','predictions'].includes(tab)?tab:'overview';
     persistTournamentState();
