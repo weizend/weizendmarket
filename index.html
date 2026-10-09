@@ -3924,6 +3924,64 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
 @media(max-width:410px){.wz-turn-card-head{min-height:334px!important}.wz-v95-cover-timer{bottom:113px}.wz-v95-cover-time{gap:2px}.wz-v95-team-overlay{padding:8px}.wz-v95-team-modal{max-height:90dvh}.wz-v95-team-scroll{padding:10px}.wz-v95-personal-register{font-size:.72rem}}
 </style>
 
+
+<style id="wz-v96-last-touch">
+/* V96: V95'in ödeme/kayıt JS fonksiyonları değişmeden, ürün kartı akışı netleştirildi. */
+#urunGrid .card .product-title{
+  display:block!important; min-height:0!important; margin:0 0 10px!important;
+  font-size:1.14rem!important; font-weight:900!important; text-align:left!important;
+  line-height:1.3!important; overflow-wrap:anywhere!important;
+  -webkit-line-clamp:unset!important;
+}
+#urunGrid .card .stock-wrapper{display:block!important;margin:0 0 12px!important;text-align:left!important;}
+#urunGrid .card .stock-badge{display:inline-block!important;font-size:.78rem!important;padding:5px 9px!important;}
+#urunGrid .card .stock-info-text{
+  display:block!important; visibility:visible!important; font-style:italic!important;
+  margin:6px 0 0!important; font-size:.73rem!important; line-height:1.42!important;
+  color:#aeb0b7!important; text-align:left!important; white-space:normal!important;
+}
+#urunGrid .card .price-command{
+  display:flex!important; flex-direction:row!important; flex-wrap:nowrap!important;
+  align-items:center!important; justify-content:space-between!important;
+  gap:8px!important; margin:4px 0 12px!important; padding-bottom:9px!important;
+}
+#urunGrid .card .price{
+  display:block!important; flex:1 1 auto!important; min-width:0!important; margin:0!important;
+  font-size:clamp(1.05rem,1.7vw,1.34rem)!important;
+  line-height:1.25!important; white-space:normal!important; overflow-wrap:anywhere!important;
+  color:#ef2828!important; font-weight:900!important; text-align:left!important;
+}
+#urunGrid .card .command{
+  display:inline-block!important; flex:0 1 auto!important; align-self:center!important;
+  min-width:0!important; max-width:190px!important; margin:0!important;
+  padding:6px 9px!important; font-size:.79rem!important; line-height:1.3!important;
+  white-space:normal!important; overflow:visible!important; text-overflow:clip!important;
+  overflow-wrap:anywhere!important; word-break:break-word!important; text-align:center!important;
+  border:1px solid #a82121!important; border-radius:7px!important;
+}
+/* Telefonlarda iki dar kolon metinleri eziyordu: referanstaki tek kart akışı. */
+@media(max-width:640px){
+  #urunGrid.grid{grid-template-columns:minmax(0,1fr)!important;gap:15px!important;}
+  #urunGrid .card{padding:14px!important;}
+  #urunGrid .card .img-container{height:clamp(220px,64vw,330px)!important;}
+  #urunGrid .card .product-title{font-size:1.19rem!important;}
+  #urunGrid .card .price{font-size:1.22rem!important;}
+  #urunGrid .card .command{font-size:.85rem!important;max-width:50%!important;}
+  #urunGrid .card .stock-info-text{font-size:.74rem!important;}
+  #urunGrid .card .action-btn{font-size:.93rem!important;min-height:46px!important;}
+  #urunGrid .card details>summary{font-size:.88rem!important;padding:12px!important;}
+}
+/* 3v3/2v2 formatı, onaylı katılımcı sayısının hemen üstünde. */
+.wz-turn-card-entry-stack .wz-v96-format-badge{
+  display:inline-flex; align-items:center; justify-content:center; align-self:flex-end;
+  min-height:25px; padding:4px 10px; margin-bottom:6px;
+  border-radius:8px; border:1px solid rgba(215,227,245,.45);
+  background:rgba(13,17,27,.88); color:#fff; font-weight:1000;
+  font-size:.74rem; line-height:1.2; letter-spacing:.03em;
+  box-shadow:0 4px 12px #0007; backdrop-filter:blur(6px);
+}
+</style>
+
 </head>
 <body>
 <script id="wz-v58-prepaint-view">
@@ -14059,7 +14117,7 @@ return;
             <div class="wz-turn-game-logo"><img src="${esc(logo)}" alt="Weizend Logo"></div>
             <div>
               <div class="wz-turn-card-title">${esc(t.name||'Turnuva')}</div>
-              <div class="wz-turn-card-sub">${esc(modeText(t))} • ${Number(t.capacity||0)||'-'} ${Number(t.teamSize||1)>1?'Takım':'Oyuncu'} • ${esc(mapDisplayName(t,rule))} • ${esc(matchFormat(t,rule))}</div>
+              <div class="wz-turn-card-sub">${esc(mapDisplayName(t,rule))} • ${esc(matchFormat(t,rule))}</div>
             </div>
           </div>
           <span class="wz-turn-card-status ${tournamentCategory(item)}">${esc(tournamentCategoryLabel(item))}</span>
@@ -14075,6 +14133,7 @@ return;
             `).join('')}
           </div>
           <div class="wz-turn-card-entry-stack">
+            <span class="wz-v96-format-badge">${esc(modeText(t))}</span>
             <div class="wz-turn-card-participation"><span class="wz-turn-card-count">👥 <strong>${wzV95ReadyCount(item)}/${Math.max(0,Number(t.capacity||0))}</strong> ${Number(t.teamSize||1)>1?'Takım':'Oyuncu'}</span></div>
             <span class="wz-turn-entry-pill ${esc(entryBadge.className)}">
               <span>${entryBadge.icon}</span><span>${esc(entryBadge.text)}</span>
