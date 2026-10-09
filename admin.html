@@ -1877,6 +1877,34 @@ html,body{max-width:100%;overflow-x:hidden}
 #tournamentPendingSubscriptions .smallBtn{white-space:nowrap;min-width:80px}
 @media(max-width:650px){#tournamentPendingSubscriptions:before{content:'Tabloyu sağa kaydırarak silme sütununa ulaşabilirsin →';display:block;color:#aaa;font-size:.77rem;padding:8px 0}}
 </style>
+
+<style id="wz-v54-team-dialog-css">
+.wz-v54-team-pickers{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:9px;margin:4px 0 15px;}
+.wz-v54-team-pick{display:flex;flex-direction:column;gap:6px;align-items:flex-start;text-align:left;background:#17191d;color:#fff;border:1px solid #3b414b;border-radius:13px;padding:12px 14px;min-width:0;cursor:pointer;}
+.wz-v54-team-pick strong{font-size:.92rem;word-break:break-word;}
+.wz-v54-team-pick small{color:#c6c9d2;font-size:.72rem;line-height:1.45;}
+.wz-v54-team-pick:hover,.wz-v54-team-pick:focus-visible{border-color:#e31b1b;background:#211617;}
+.wz-v54-manage-details{border:1px solid #343434;border-radius:13px;padding:0;background:#101012;overflow:hidden;margin-top:10px;}
+.wz-v54-manage-details>summary{cursor:pointer;padding:15px;font-size:.89rem;font-weight:850;color:#fff;list-style:none;}
+.wz-v54-manage-details>summary::-webkit-details-marker{display:none;}
+.wz-v54-manage-details>summary:after{content:' +';color:#ef5555;}
+.wz-v54-manage-details[open]>summary{border-bottom:1px solid #303036;}
+.wz-v54-manage-body{padding:12px;}
+.wz-v54-admin-overlay{position:fixed;inset:0;z-index:2147483000;background:#000d;padding:16px;display:grid;place-items:center;touch-action:pan-y;overscroll-behavior:contain;}
+.wz-v54-admin-modal{width:min(690px,100%);max-height:min(88dvh,800px);min-height:0;display:flex;flex-direction:column;border:1px solid #45464b;background:#111214;border-radius:18px;overflow:hidden;box-shadow:0 25px 70px #000b;}
+.wz-v54-admin-modal-header{flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px;border-bottom:1px solid #363638;}
+.wz-v54-admin-modal-header h3{margin:0;font-size:1.05rem;overflow-wrap:anywhere;}
+.wz-v54-admin-close{flex:none;min-width:40px!important;width:40px!important;height:40px!important;background:#292929!important;border:1px solid #555!important;padding:0!important;border-radius:10px!important;font-size:24px!important;}
+.wz-v54-admin-modal-scroll{padding:14px 16px;overflow-y:auto!important;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior:contain;min-height:0;}
+.wz-v54-admin-stat{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:14px;}
+.wz-v54-admin-stat span{padding:7px 10px;border-radius:9px;background:#212126;color:#e3e3e5;font-size:.78rem;}
+.wz-v54-admin-slot{display:grid;grid-template-columns:36px minmax(0,1fr);gap:10px;padding:12px;margin:0 0 9px;background:#171719;border:1px solid #333;border-radius:11px;}
+.wz-v54-admin-slot .num{font-weight:900;color:#ffca73;font-size:1.1rem;}
+.wz-v54-admin-slot strong,.wz-v54-admin-slot small{display:block;overflow-wrap:anywhere;}
+.wz-v54-admin-slot small{font-size:.78rem;color:#bbb;margin-top:4px;line-height:1.45;}
+@media(max-width:620px){.wz-v54-admin-overlay{padding:8px}.wz-v54-admin-modal{max-height:92dvh}.wz-v54-admin-modal-scroll{padding:11px}.wz-v54-team-pickers{grid-template-columns:1fr;}}
+</style>
+
 </head>
 
 <body>
@@ -9710,8 +9738,54 @@ function tournamentV3PaymentStatusText(status){
   return map[String(status||'').toLowerCase()] || status || '-';
 }
 
+
+// V54: Takımların güncel koltuk / işlem bilgileri için yalnızca okuma penceresi.
+let wzV54AdminTeamEntries=[];
+function wzV54CloseAdminTeam(){ document.getElementById('wzV54TeamDialog')?.remove(); }
+function wzV54OpenAdminTeam(index){
+  const entry=wzV54AdminTeamEntries[Number(index)]; if(!entry)return;
+  const team=entry.team||{};
+  const slots=Array.isArray(entry.slots)?entry.slots:[];
+  const invites=Array.isArray(entry.invites)?entry.invites:[];
+  const payments=Array.isArray(entry.payments)?entry.payments:[];
+  wzV54CloseAdminTeam();
+  const overlay=document.createElement('div');overlay.id='wzV54TeamDialog';overlay.className='wz-v54-admin-overlay';
+  overlay.innerHTML=`<section class="wz-v54-admin-modal" role="dialog" aria-modal="true" aria-label="Takım oyuncuları ve kayıt durumu">
+    <div class="wz-v54-admin-modal-header"><h3>👥 ${esc(team.name||'Takım')} · ${esc(tournamentStatusText(team.status))}</h3>
+      <button class="wz-v54-admin-close" type="button" aria-label="Kapat" onclick="wzV54CloseAdminTeam()">×</button></div>
+    <div class="wz-v54-admin-modal-scroll">
+      <div class="wz-v54-admin-stat">
+        <span>👑 ${esc(team.captainUsername||'-')}</span>
+        <span>👥 ${Number(team.joinedCount||0)} / ${Number(team.teamSize||slots.length||1)} oyuncu</span>
+        <span>✅ ${Number(team.paidCount||0)} ödenmiş koltuk</span>
+      </div>
+      ${slots.map((s,i)=>{
+        const role=String(s.role||'').toLowerCase();
+        const status=String(s.status||s.joinStatus||'empty');
+        const pay=String(s.paymentStatus||'unpaid');
+        return `<div class="wz-v54-admin-slot"><span class="num">${role==='captain'?'👑':Number(s.slotNo||i+1)}</span>
+          <div><strong>Kick: ${esc(s.username||s.joinedUsername||s.plannedUsername||'Oyuncu Bekleniyor')}</strong>
+          <small>Oyun adı: ${esc(s.gameId||s.riotId||'-')}</small>
+          <small>Koltuk: ${esc(tournamentV3SlotText(status,role))}</small>
+          <small>Katılım: ${esc(tournamentPaymentText(pay,s.paidVia||s.paymentVia||''))}</small>
+          ${s.paidForByUsername?`<small>Ödeyen: ${esc(s.paidForByUsername)}</small>`:''}</div></div>`;
+      }).join('')}
+      <div class="muted">Aktif davet: ${invites.filter(x=>String(x.status)==='available').length} · Ödeme kaydı: ${payments.length}</div>
+    </div></section>`;
+  overlay.addEventListener('click',e=>{if(e.target===overlay)wzV54CloseAdminTeam()});
+  document.body.append(overlay);
+  overlay.querySelector('.wz-v54-admin-close')?.focus({preventScroll:true});
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&document.getElementById('wzV54TeamDialog')){
+    e.preventDefault();e.stopImmediatePropagation();wzV54CloseAdminTeam();
+  }
+},true);
+
 function renderTournamentV3Entries(data){
   const teams = Array.isArray(data?.teams) ? data.teams : [];
+  wzV54AdminTeamEntries=teams;
+  wzV54CloseAdminTeam();
   const summary = document.getElementById('tournamentEntrySummary');
   const host = document.getElementById('tournamentEntriesView');
 
@@ -9840,6 +9914,21 @@ function renderTournamentV3Entries(data){
         <div class="tournamentV3Section"><div class="tournamentV3SectionTitle">💳 Ödeme Hareketleri</div><div class="tournamentV3PaymentList">${paymentCards}</div></div>
       </div>`;
   }).join('');
+
+  // Var olan takım düzenleme / silme kontrollerini koru, yalnızca varsayılan görünümünü katla.
+  const advancedManagement=host.innerHTML;
+  host.innerHTML=`<div style="font-weight:900;margin:12px 0 9px">👥 Takımlar · İsme dokunup kadroyu kontrol et</div>
+    <div class="wz-v54-team-pickers">${teams.map((entry,i)=>{
+      const t=entry.team||{};
+      const ok=['ready','locked'].includes(String(t.status||''));
+      return `<button class="wz-v54-team-pick" type="button" onclick="wzV54OpenAdminTeam(${i})">
+        <strong>👥 ${esc(t.name||'Takım')}</strong>
+        <small>${esc(tournamentStatusText(t.status))} · ${Number(t.joinedCount||0)}/${Number(t.teamSize||teamSize||1)} oyuncu · ${Number(t.paidCount||0)} ücret tamam</small>
+        <small style="color:${ok?'#86ecae':'#ffd78a'}">${ok?'✅ Kayıt Tamamlandı':'⏳ Kayıt İşlemleri Bekliyor'} → Detay</small>
+      </button>`;
+    }).join('')}</div>
+    <details class="wz-v54-manage-details"><summary>⚙️ Gelişmiş Takım Yönetimi (Düzenle / Sil / Davet)</summary>
+    <div class="wz-v54-manage-body">${advancedManagement}</div></details>`;
 
   renderTournamentSubscriptionPayments(Array.isArray(data?.subscriptionPayments)?data.subscriptionPayments:[]);
 }
