@@ -4774,6 +4774,9 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
                 <div class="redirect-command-box" id="modalCommandText">!komut</div>
                 <p id="redirectPolicyText" class="wz-payment-policy" hidden></p>
                 <div class="redirect-timer" id="timerText">Ödeme sayfası hazırlanıyor...</div>
+                <button id="wzKickChatManualButton" class="purchase-confirm-btn" type="button"
+                        style="display:none;margin-top:16px;min-height:52px;"
+                        onclick="wzOpenKickChatManually()">💬 KICK SOHBETE GİT</button>
                 <button id="redirectExternalOpenButton"
                         class="purchase-confirm-btn"
                         type="button"
@@ -7541,6 +7544,8 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
             }
 
             // Önce 3 saniyelik yönlendirme ekranını göster; süre dolunca Kick'i yeni sekmede aç.
+            const kickButton = document.getElementById('wzKickChatManualButton');
+            if (kickButton) kickButton.style.display = 'none';
             document.getElementById('redirectModalTitle').innerText = 'Doğrulama Onayı';
             document.getElementById('redirectStatusText').innerText = 'Doğrulama kodu kopyalandı, Kick sohbete yönlendiriliyorsunuz:';
             document.getElementById('modalCommandText').innerText = command;
@@ -8837,6 +8842,8 @@ return;
                 policyEl.hidden = !policyText;
             }
             modal.classList.add('wz-payment-guide');
+            const kickButton = document.getElementById('wzKickChatManualButton');
+            if (kickButton) kickButton.style.display = 'none';
             modal.dataset.wzPaymentKind = String(paymentKind || (/bynogame/i.test(String(url)) ? 'tl' : 'direct'));
             openButton.innerText = buttonText;
             openButton.style.display = 'block';
@@ -9267,42 +9274,68 @@ return;
     document.body.style.overflow = '';
 }
 
+        // V97: Sadece market ürünü/OBS komutlarının sipariş penceresi manuel açılır.
+        // Turnuva ödemeleri ve Kick hesap doğrulama akışı değiştirilmez.
         function islemYapBaslat(komut) {
-            document.getElementById('redirectModal')?.classList.remove('wz-payment-guide');
             if (currentAccountStatus === 'blocked') {
                 showStatusToast(`⛔ HESABIN KISITLANDI${currentBlockedReason ? ': ' + currentBlockedReason : ''}`, 5000);
                 return;
             }
 
-            // Ürün komutunu hemen kopyala.
-            copyTextFallback(komut);
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(komut).catch(() => {});
+            const modal = document.getElementById('redirectModal');
+            modal?.classList.remove('wz-payment-guide');
+            if (modal) delete modal.dataset.wzPaymentKind;
+
+            // Diğer akışlardan kalabilecek yönlendirme zamanlayıcısını durdur.
+            if (redirectTimer) {
+                clearInterval(redirectTimer);
+                redirectTimer = null;
             }
 
-            // Önce 3 saniyelik sipariş onay ekranını göster; süre dolunca Kick'i yeni sekmede aç.
+            // Ortak pencerenin ödeme rehberi / diğer akış butonları gizli kalsın.
+            const paymentButton = document.getElementById('redirectExternalOpenButton');
+            if (paymentButton) paymentButton.style.display = 'none';
+            const policy = document.getElementById('redirectPolicyText');
+            if (policy) policy.hidden = true;
+
             document.getElementById('redirectModalTitle').innerText = 'Sipariş Onayı';
-            document.getElementById('redirectStatusText').innerText = 'Komut kopyalandı, Kick sohbete yönlendiriliyorsunuz:';
+            document.getElementById('redirectStatusText').innerText =
+                'Komutun hazır! Kick sohbetine gidip aşağıdaki komutu gönder:';
             document.getElementById('modalCommandText').innerText = komut;
-            document.getElementById('redirectModal').style.display = 'flex';
+            document.getElementById('timerText').innerText =
+                'Hazır olduğunda Kick Sohbete Git butonuna dokun.';
 
-            let kalanSaniye = 3;
-            document.getElementById('timerText').innerText = `${kalanSaniye} saniye içinde Kick sohbetine yönlendirileceksiniz...`;
+            const kickButton = document.getElementById('wzKickChatManualButton');
+            if (kickButton) kickButton.style.display = 'block';
+            if (modal) modal.style.display = 'flex';
 
-            if (redirectTimer) clearInterval(redirectTimer);
-            redirectTimer = setInterval(() => {
-                kalanSaniye--;
+            // Kullanıcı komut seçmek zorunda kalmasın; kopyalama engellenirse
+            // komut pencere üzerinde seçilebilir olarak görünmeye devam eder.
+            try {
+                Promise.resolve(copyTextReliable(komut))
+                .then(() => {
+                    const status = document.getElementById('redirectStatusText');
+                    if (status && modal?.style.display === 'flex' &&
+                        document.getElementById('modalCommandText')?.innerText === komut) {
+                        status.innerText = '✅ Komut kopyalandı! Kick sohbetine yapıştırıp gönder:';
+                    }
+                })
+                .catch(() => {
+                    const status = document.getElementById('redirectStatusText');
+                    if (status && modal?.style.display === 'flex' &&
+                        document.getElementById('modalCommandText')?.innerText === komut) {
+                        status.innerText = 'Komutu kopyalayamadık. Aşağıdaki komuta basılı tutup kopyalayabilirsin:';
+                    }
+                });
+            } catch (_) {
+                document.getElementById('redirectStatusText').innerText =
+                    'Komutu kopyalayamadık. Aşağıdaki komuta basılı tutup kopyalayabilirsin:';
+            }
+        }
 
-                if (kalanSaniye > 0) {
-                    document.getElementById('timerText').innerText = `${kalanSaniye} saniye içinde Kick sohbetine yönlendirileceksiniz...`;
-                } else {
-                    clearInterval(redirectTimer);
-                    redirectTimer = null;
-                    document.getElementById('redirectModal').style.display = 'none';
-                    openKickChatInNewTab();
-                    showStatusToast(`✅ ${komut} kopyalandı · Kick sohbetine yönlendiriliyorsunuz`, 4000);
-                }
-            }, 1000);
+        // Gerçek kullanıcı tıklaması olmadan Kick'e yönlendirme yapılmaz.
+        function wzOpenKickChatManually() {
+            openKickChatInNewTab();
         }
 
         function yonlendirmeyiIptalEt() {
@@ -9326,6 +9359,8 @@ return;
                 delete modal.dataset.wzPaymentKind;
             }
 
+            const kickButton = document.getElementById('wzKickChatManualButton');
+            if (kickButton) kickButton.style.display = 'none';
             const openButton = document.getElementById('redirectExternalOpenButton');
             if (openButton) {
                 openButton.style.display = 'none';
