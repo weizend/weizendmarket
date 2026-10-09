@@ -10177,21 +10177,35 @@ return;
 
 
     async function tv2FetchPublicDetail(tournamentId) {
-        const response = await fetch(
-            `${MARKET_WORKER}/tournament/public?id=${encodeURIComponent(tournamentId)}&_=${Date.now()}`,
-            {
-                headers:{'Accept':'application/json'},
-                cache:'no-store'
+        // Kullanıcıyı sonsuz "yükleniyor" ekranında bırakma.
+        // AbortController tüm fetch + yanıt okuma süresini sınırlar.
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 18000);
+        try {
+            const response = await fetch(
+                `${MARKET_WORKER}/tournament/public?id=${encodeURIComponent(tournamentId)}&_=${Date.now()}`,
+                {
+                    headers:{'Accept':'application/json'},
+                    cache:'no-store',
+                    signal:controller.signal
+                }
+            );
+
+            const data = await response.json();
+            if(!response.ok || !data?.success){
+                throw new Error(data?.error || `HTTP ${response.status}`);
             }
-        );
-
-        const data = await response.json();
-
-        if(!response.ok || !data?.success){
-            throw new Error(data?.error || `HTTP ${response.status}`);
+            return data;
+        }catch(error){
+            if(controller.signal.aborted){
+                const err=new Error('Turnuva detayları 18 saniye içinde yüklenemedi. Lütfen tekrar dene.');
+                err.name='TimeoutError';
+                throw err;
+            }
+            throw error;
+        }finally{
+            clearTimeout(timeoutId);
         }
-
-        return data;
     }
 
     async function tv2OpenPublic(tournamentId) {
@@ -14821,7 +14835,7 @@ return;
       ['predictions','🎯','Tahminler']
     ];
     let panel = `<div class="wz-turn-loading">Turnuva detayları yükleniyor...</div>`;
-    if(detail?.__error) panel = `<div class="wz-turn-empty">${esc(detail.__error)}</div>`;
+    if(detail?.__error) panel = `<div class="wz-turn-empty">⚠️ ${esc(detail.__error)}<div style="margin-top:14px"><button type="button" class="wz-turn-card-btn" onclick="wzTurnRetryDetail('${esc(id)}')">🔄 TEKRAR DENE</button></div></div>`;
     else if(detail){
       if(state.tab==='overview') panel = renderOverview(detail,item);
       if(state.tab==='rules') panel = renderRules(item);
@@ -15064,6 +15078,14 @@ return;
     window.__wzTurnModalEnterTimer=setTimeout(()=>{
       document.body.classList.remove('wz-turn-modal-entering');
     },240);
+  };
+
+  // Hata alan tek turnuvanın eski hata durumunu temizle ve tek sefer yeniden yükle.
+  window.wzTurnRetryDetail=function(id){
+    const key=String(id||'');
+    if(!key || state.loading.has(key)) return;
+    state.details.delete(key);
+    render();
   };
 
   window.wzTurnBack=function(){
