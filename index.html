@@ -2687,10 +2687,13 @@ body.wz-page-modal-open{
 
 
 <style id="wz-turn-chip-hover-v55">
-.wz-turn-chip:hover{
-  background:#ffffff!important;
-  color:#111111!important;
-  border-color:#ffffff!important;
+/* Touch devices can keep :hover after a tap. Limit hover to real mouse pointers. */
+@media (hover:hover) and (pointer:fine){
+  .wz-turn-chip:not(.active):hover{
+    background:#ffffff;
+    color:#111111;
+    border-color:#ffffff;
+  }
 }
 </style>
 
@@ -13931,7 +13934,22 @@ return;
       ['closed','Kayıt Kapandı'],
       ['done','Tamamlanan']
     ];
-    return `<div class="wz-turn-strip">${defs.map(([id,name])=>`<button type="button" class="wz-turn-chip ${state.filter===id?'active':''}" onclick="wzTurnSetFilter('${id}')">${name}</button>`).join('')}</div>`;
+    return `<div class="wz-turn-strip">${defs.map(([id,name])=>`<button type="button" data-filter="${id}" aria-pressed="${state.filter===id?'true':'false'}" class="wz-turn-chip ${state.filter===id?'active':''}" onclick="wzTurnSetFilter('${id}')">${name}</button>`).join('')}</div>`;
+  }
+  // Keep horizontal chip position across content and catalog rerenders.
+  let wzTurnFilterScroll=0;
+  function wzRestoreTurnFilterScroll(){
+    const strip=document.querySelector('#wzEsportsHub .wz-turn-strip');
+    if(!strip) return;
+    strip.scrollLeft=wzTurnFilterScroll;
+    const active=strip.querySelector('.wz-turn-chip.active');
+    if(active){
+      const box=strip.getBoundingClientRect();
+      const activeBox=active.getBoundingClientRect();
+      if(activeBox.left<box.left) strip.scrollLeft-=box.left-activeBox.left;
+      else if(activeBox.right>box.right) strip.scrollLeft+=activeBox.right-box.right;
+    }
+    wzTurnFilterScroll=strip.scrollLeft;
   }
   function tournamentLogoUrl(item){
     const t=item?.tournament||{}; const rule=item?.rule||{};
@@ -14907,6 +14925,8 @@ return;
       return;
     }
 
+    const existingFilterStrip=host.querySelector('.wz-turn-strip');
+    if(existingFilterStrip) wzTurnFilterScroll=existingFilterStrip.scrollLeft;
     const catalogLoaded = (()=>{ try{return tv2CatalogLoadedOnce===true}catch(_){return false} })();
     if(!catalogLoaded){
       if(wzTournamentCatalogError){
@@ -14919,12 +14939,14 @@ return;
       }else{
         host.innerHTML = `<div class="wz-turn-root">${renderSearch()}${renderFilters()}<div class="wz-turn-loading">Turnuvalar yükleniyor...</div></div>`;
       }
+      wzRestoreTurnFilterScroll();
       return;
     }
 
     const all=visibleCatalog();
     if(!all.length){
       host.innerHTML = `<div class="wz-turn-root">${renderSearch()}${renderFilters()}<div class="wz-turn-empty">Henüz yayınlanmış turnuva yok.</div></div>`;
+      wzRestoreTurnFilterScroll();
       cacheTournamentShell(host);
       return;
     }
@@ -14944,6 +14966,7 @@ return;
       ${renderListPage()}
       ${detailOpen ? renderDetailPage() : ''}
     </div>`;
+    wzRestoreTurnFilterScroll();
 
     if(previousDetailScroll !== null){
       const nextDetailWindow=host.querySelector('.wz-turn-detail-window');
@@ -15057,9 +15080,28 @@ return;
     }
   };
   window.wzTurnSetFilter=function(filter){
+    if(!['all','live','active','soon','closed','done'].includes(filter)) return;
     wzReleaseHydratedTournamentShell();
     state.filter=filter;
     persistTournamentState();
+
+    // Filtering is a local UI event: no need to destroy and recreate the chip bar.
+    const host=document.getElementById('wzEsportsHub');
+    const strip=host?.querySelector('.wz-turn-strip');
+    const results=host?.querySelector('#wzTournamentResults');
+    if(state.screen==='list' && strip && results){
+      strip.querySelectorAll('.wz-turn-chip').forEach(btn=>{
+        const active=btn.dataset.filter===filter;
+        btn.classList.toggle('active',active);
+        btn.setAttribute('aria-pressed',active?'true':'false');
+      });
+      wzTurnFilterScroll=strip.scrollLeft;
+      refreshTournamentListResults();
+      wzRestoreTurnFilterScroll();
+      wzTurnListStatusSignature=wzTournamentListStatusSignature();
+      cacheTournamentShell(host);
+      return;
+    }
     render();
   };
 
