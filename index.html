@@ -9878,7 +9878,7 @@ return;
                 console.error('TV2 CATALOG ERROR:', error);
                 const section = document.getElementById('tournamentMarketSection');
                 const list = document.getElementById('tournamentMarketGrid');
-                if (section && list) {
+                if (section && list && !tv2CatalogLoadedOnce && tv2Catalog.length===0) {
                     section.style.display = 'block';
                     list.innerHTML = `<div class="tv2-empty">⚠️ Turnuva bilgileri alınamadı.<br>${tv2Esc(error.name === 'TimeoutError' ? 'Sunucu 18 saniyede yanıt vermedi. Tekrar dene.' : (error.message || error))}<div style="margin-top:12px"><button class="tv2-btn secondary" onclick="tv2LoadCatalog(true)">🔄 TEKRAR DENE</button></div></div>`;
                 }
@@ -14028,10 +14028,14 @@ return;
   }
 
 
-  async function wzV95LoadMyEntryStatuses(){
+  let wzV95LastStatusAt=0;
+  async function wzV95LoadMyEntryStatuses(force=false){
     let token='';
     try{token=localStorage.getItem(SESSION_STORAGE_KEY)||'';}catch(_){ }
+    if(token!==state.myEntrySession) wzV95LastStatusAt=0;
+    if(!force && Date.now()-wzV95LastStatusAt<30000) return;
     if(!token){
+      wzV95LastStatusAt=0;
       state.myEntryStatuses.clear(); state.myEntrySession='';
       if(state.screen==='list') refreshTournamentListResults();
       return;
@@ -14051,11 +14055,12 @@ return;
       if((localStorage.getItem(SESSION_STORAGE_KEY)||'')!==token) return;
       state.myEntryStatuses=new Map(Object.entries(data.entries));
       state.myEntrySession=token;
+      wzV95LastStatusAt=Date.now();
       if(state.screen==='list') refreshTournamentListResults();
     }catch(error){ console.warn('Turnuva durum bilgisi alınamadı:',error?.message||error); }
     finally{window.__wzV95MyEntryPending=false;}
   }
-  document.addEventListener('wz:registration-changed',()=>wzV95LoadMyEntryStatuses());
+  document.addEventListener('wz:registration-changed',()=>wzV95LoadMyEntryStatuses(true));
   document.addEventListener('wz:tournament-catalog-updated', e=>{
     if(e?.detail?.ok) wzV95LoadMyEntryStatuses();
   });
