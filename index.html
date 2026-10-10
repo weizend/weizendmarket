@@ -3982,11 +3982,31 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
 }
 </style>
 
-<style id="wz-arena-tournament-navigation-v14">
-.wz-arena-tournament-bridge{margin:14px 12px;padding:13px;border-radius:13px;background:linear-gradient(130deg,#1b0b0c,#100f0f);border:1px solid #863034;text-align:center}
-.wz-arena-tournament-bridge p{margin:0 0 10px;font-size:12px;color:#ded4d4}
-.wz-arena-tournament-go{display:flex;align-items:center;justify-content:center;gap:9px;min-height:48px;padding:12px 17px;border-radius:10px;color:white!important;text-decoration:none!important;background:#e31b1b;border:1px solid #ef3434;font-weight:900;letter-spacing:.02em}
-.wz-arena-tournament-go:hover,.wz-arena-tournament-go:focus-visible{background:#bd1313;color:white!important;outline-offset:3px}
+<style id="wz-arena-tournament-navigation-v15">
+/* V15: Arena bağlantısı, Ödüller'in yanındaki dördüncü sekme olarak gösterilir. */
+.wz-turn-detail-page .wz-turn-tabs{
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+}
+.wz-turn-detail-page .wz-arena-tournament-go{
+  text-decoration:none!important;
+  border-color:#623038!important;
+  color:#f7f7f7!important;
+  background:#171318!important;
+  cursor:pointer;
+}
+.wz-turn-detail-page .wz-arena-tournament-go:hover,
+.wz-turn-detail-page .wz-arena-tournament-go:focus-visible{
+  color:#fff!important;
+  background:#3b151a!important;
+  border-color:#f13b43!important;
+  outline-offset:3px;
+}
+/* Telefonda iki satır, aynı boyutlu dört sekme. */
+@media(max-width:560px){
+  .wz-turn-detail-page .wz-turn-tabs{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+}
 </style>
 </head>
 <body>
@@ -14854,11 +14874,7 @@ return;
           <button id="wzTurnRegisterBtn" type="button" class="wz-turn-register ${registrationIsOpen(item)?'':'is-disabled'}"
             onclick="wzTournamentRegistration('${esc(id)}')" ${registrationIsOpen(item) ? '' : 'disabled'}>KAYIT OL</button>
           <div class="wz-turn-tabs-label">Turnuva Detayları</div>
-          <nav class="wz-turn-tabs" aria-label="Turnuva detay bölümleri">${tabButtons.map(([id2,icon,name])=>`<button type="button" class="wz-turn-tab ${state.tab===id2?'active':''}" onclick="wzTurnSetTab('${id2}')" aria-pressed="${state.tab===id2?'true':'false'}"><span class="wz-turn-tab-icon" aria-hidden="true">${icon}</span><span>${name}</span></button>`).join('')}</nav>
-          <div class="wz-arena-tournament-bridge">
-            <p>Katılımcılar, fikstür, maçlar ve tahmin sıralaması bu turnuvanın Arena sayfasında.</p>
-            <a class="wz-arena-tournament-go" href="${esc(wzArenaDeepLink(id))}" aria-label="${esc(t.name||'Turnuva')} için Arena'ya git">🏆 ARENA'YA GİT ↗</a>
-          </div>
+          <nav class="wz-turn-tabs" aria-label="Turnuva detay bölümleri">${tabButtons.map(([id2,icon,name])=>`<button type="button" class="wz-turn-tab ${state.tab===id2?'active':''}" onclick="wzTurnSetTab('${id2}')" aria-pressed="${state.tab===id2?'true':'false'}"><span class="wz-turn-tab-icon" aria-hidden="true">${icon}</span><span>${name}</span></button>`).join('')}<a class="wz-turn-tab wz-arena-tournament-go" href="${esc(wzArenaDeepLink(id))}" aria-label="${esc(t.name||'Turnuva')} için Arena'ya git"><span class="wz-turn-tab-icon" aria-hidden="true">🏆</span><span>Arena'ya Git ↗</span></a></nav>
           <div class="wz-turn-panel">${panel}</div>
         </section>
       </div>
