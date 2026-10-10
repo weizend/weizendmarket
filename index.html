@@ -32,6 +32,30 @@
     document.documentElement.dataset.wzInitialView=view;
     document.documentElement.dataset.wzCurrentView=view;
 
+    // V21: Onceden ziyaret edilen turnuvanin gercek oyun logolarini HTML
+    // islenirken onceden iste. F5 sonrasinda W placeholder gosterme.
+    if(view==='tournament'){
+      try{
+        const cached=JSON.parse(sessionStorage.getItem('weizend_tournament_shell_refreshfix_v20')||'null');
+        const html=typeof cached?.html==='string' ? cached.html : '';
+        const seen=new Set();
+        const logoPattern=/class="wz-turn-game-logo"\s*>\s*<img\b[^>]*\bsrc="([^"]+)"/g;
+        for(const match of html.matchAll(logoPattern)){
+          if(seen.size>=8) break;
+          const src=match[1].replace(/&amp;/g,'&');
+          const url=new URL(src,location.href);
+          if(url.protocol!=='https:' || seen.has(url.href)) continue;
+          seen.add(url.href);
+          const preload=document.createElement('link');
+          preload.rel='preload';
+          preload.as='image';
+          preload.href=url.href;
+          preload.fetchPriority='high';
+          document.head.appendChild(preload);
+        }
+      }catch(_){}
+    }
+
     window.__WZ_EARLY_RESTORE_SCROLL__=function(targetView){
       try{
         const clean=['market','tournament','profile'].includes(targetView)
@@ -1614,11 +1638,10 @@ body.wz-view-tournament #wzMobileTournamentHero{display:none!important}
   border:1px solid rgba(227,27,27,.65);overflow:hidden;flex:0 0 46px;
   box-shadow:0 0 22px rgba(227,27,27,.18)
 }
-/* F5 sırasında dış logo bir kare gecikirse siyah daire yerine sade W simgesi. */
-.wz-turn-game-logo{position:relative;isolation:isolate;background:linear-gradient(145deg,#290c12,#090909)!important}
-.wz-turn-game-logo::before{content:'W';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:1000;letter-spacing:-3px;color:#fff}
-.wz-turn-game-logo img{position:relative;z-index:1;width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;background:transparent;opacity:0}
-.wz-turn-game-logo img.wz-game-logo-ready{opacity:1}
+/* V21: Gercek oyun logosunu baslangicta direkt ciz. Onload/opacity
+   ve W placeholder, F5 sirasinda once yanlis logo gosteriyordu. */
+.wz-turn-game-logo{background:#0c0d11}
+.wz-turn-game-logo img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;background:transparent}
 .wz-turn-card-title{font-size:1.08rem;font-weight:1000;line-height:1.05;text-transform:uppercase;word-break:break-word}
 .wz-turn-card-sub{margin-top:4px;color:#d2d6dd;font-size:.73rem;font-weight:800;opacity:.88}
 .wz-turn-card-status{
@@ -14220,7 +14243,7 @@ return;
       <div class="wz-turn-card-head"${cardHeadStyle}>
         <div class="wz-turn-card-row">
           <div class="wz-turn-game">
-            <div class="wz-turn-game-logo"><img src="${esc(logo)}" alt="Oyun logosu" loading="eager" decoding="sync" onload="this.classList.add('wz-game-logo-ready')" onerror="this.classList.remove('wz-game-logo-ready')"></div>
+            <div class="wz-turn-game-logo"><img src="${esc(logo)}" alt="Oyun logosu" loading="eager" decoding="sync" fetchpriority="high"></div>
             <div>
               <div class="wz-turn-card-title">${esc(t.name||'Turnuva')}</div>
               <div class="wz-turn-card-sub">${esc(mapDisplayName(t,rule))} • ${esc(matchFormat(t,rule))}</div>
