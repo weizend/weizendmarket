@@ -2,6 +2,97 @@
 <html lang="tr">
 <head>
 
+<style id="wz-v22-logo-css">
+/* Until its exact source is decoded, the cover logo reserves space but does not paint a black circle. */
+.wz-turn-game-logo:not(.wz-logo-ready){
+  background:transparent!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+}
+.wz-turn-game-logo:not(.wz-logo-ready) img{visibility:hidden!important}
+</style>
+<script id="wz-v22-logo-early">
+(function(){
+  'use strict';
+  const KEY='wz_tournament_logo_binary_v22';
+  const FAILED='wz_tournament_logo_binary_fail_v22';
+  let imageMap={};
+  try{
+    const saved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(saved && typeof saved==='object' && !Array.isArray(saved)) imageMap=saved;
+  }catch(_){}
+  window.__WZ_LOGO_DATA__=imageMap;
+  const busy=new Set();
+  const seenThisVisit=new Set();
+  const maxSize=160000;
+  function original(img){return img.getAttribute('data-wz-original-src')||img.getAttribute('src')||''}
+  function dataUri(value){return /^data:image\/(?:png|jpeg|webp|gif|svg\+xml);base64,[A-Za-z0-9+/=]+$/i.test(value||'')}
+  function saveLogo(url){
+    if(!/^https:\/\//i.test(url)|| imageMap[url] || busy.has(url)||seenThisVisit.has(url))return;
+    // Remote servers without CORS cannot be copied into storage. Keep their normal image handling.
+    try{
+      const failures=JSON.parse(localStorage.getItem(FAILED)||'{}');
+      if(Number(failures?.[url])>Date.now()-86400000)return;
+    }catch(_){}
+    busy.add(url); seenThisVisit.add(url);
+    fetch(url,{mode:'cors',credentials:'omit',cache:'force-cache'})
+      .then(r=>{if(!r.ok)throw Error('image status');return r.blob()})
+      .then(blob=>{
+        if(!/^image\/(?:png|jpeg|webp|gif|svg\+xml)$/i.test(blob.type)||blob.size>maxSize)throw Error('type or size');
+        return new Promise((ok,fail)=>{
+          const fr=new FileReader();fr.onload=()=>ok(fr.result);fr.onerror=fail;fr.readAsDataURL(blob);
+        });
+      })
+      .then(data=>{
+        if(!dataUri(data))throw Error('invalid data');
+        imageMap[url]=data;
+        const entries=Object.entries(imageMap).slice(-8);
+        imageMap=Object.fromEntries(entries);
+        try{localStorage.setItem(KEY,JSON.stringify(imageMap));window.__WZ_LOGO_DATA__=imageMap}catch(_){}
+      })
+      .catch(()=>{
+        try{
+          const failures=JSON.parse(localStorage.getItem(FAILED)||'{}');
+          failures[url]=Date.now();
+          localStorage.setItem(FAILED,JSON.stringify(Object.fromEntries(Object.entries(failures).slice(-12))));
+        }catch(_){}
+      })
+      .finally(()=>busy.delete(url));
+  }
+  function show(img){
+    if(!img || !img.closest)return;
+    const wrap=img.closest('.wz-turn-game-logo');
+    if(!wrap)return;
+    if(img.complete&&img.naturalWidth>0){
+      wrap.classList.add('wz-logo-ready');
+      const url=original(img);
+      if(!dataUri(img.currentSrc||'') && !dataUri(url))saveLogo(url);
+    }
+  }
+  function restore(root){
+    if(!root?.querySelectorAll)return;
+    root.querySelectorAll('.wz-turn-game-logo img').forEach(img=>{
+      const url=original(img);
+      if(imageMap[url] && img.getAttribute('src')!==imageMap[url]){
+        img.setAttribute('data-wz-original-src',url);
+        img.setAttribute('src',imageMap[url]);
+      }
+      show(img);
+    });
+  }
+  // Register before cached tournament shell enters the DOM.
+  document.addEventListener('load',ev=>{
+    const img=ev.target;
+    if(img?.matches?.('.wz-turn-game-logo img'))show(img);
+  },true);
+  document.addEventListener('error',ev=>{
+    const img=ev.target;
+    if(img?.matches?.('.wz-turn-game-logo img'))img.closest('.wz-turn-game-logo')?.classList.remove('wz-logo-ready');
+  },true);
+  window.__WZ_RESTORE_LOGOS__=restore;
+  window.__WZ_CACHED_LOGO_SRC__=(src)=>imageMap[src]||src;
+})();
+</script>
 <script id="wz-v15-boot">
 (function(){
   document.documentElement.classList.add('wz-boot');
@@ -4665,6 +4756,7 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
     const cached=JSON.parse(raw);
     if(typeof cached.html==='string' && cached.html.trim()){
       host.innerHTML=cached.html;
+      window.__WZ_RESTORE_LOGOS__?.(host);
       window.__WZ_TOURNAMENT_SHELL_HYDRATED__=true;
 
       const savedScreen=sessionStorage.getItem('wz_t_screen') || 'list';
@@ -14243,7 +14335,7 @@ return;
       <div class="wz-turn-card-head"${cardHeadStyle}>
         <div class="wz-turn-card-row">
           <div class="wz-turn-game">
-            <div class="wz-turn-game-logo"><img src="${esc(logo)}" alt="Oyun logosu" loading="eager" decoding="sync" fetchpriority="high"></div>
+            <div class="wz-turn-game-logo"><img src="${esc(window.__WZ_CACHED_LOGO_SRC__?.(logo)||logo)}" data-wz-original-src="${esc(logo)}" alt="Oyun logosu" loading="eager" decoding="sync" fetchpriority="high"></div>
             <div>
               <div class="wz-turn-card-title">${esc(t.name||'Turnuva')}</div>
               <div class="wz-turn-card-sub">${esc(mapDisplayName(t,rule))} • ${esc(matchFormat(t,rule))}</div>
@@ -15052,6 +15144,7 @@ return;
       ${renderListPage()}
       ${detailOpen ? renderDetailPage() : ''}
     </div>`;
+    window.__WZ_RESTORE_LOGOS__?.(host);
 
     if(previousDetailScroll !== null){
       const nextDetailWindow=host.querySelector('.wz-turn-detail-window');
