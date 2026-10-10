@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex,nofollow">
-<title>Weizend Market Admin</title>
+<title>WEİZEND Market Admin</title>
 
 <style>
 :root{
@@ -4662,10 +4662,14 @@ async function syncSupportRewardSourcesAdmin(){
     const createdDonations=Number(d?.donations?.created||0);
     const issued=Number(d?.delivery?.issuedCodes||0);
     const delivered=Number(d?.delivery?.deliveredEvents||0);
+    const warnings=Array.isArray(d?.warnings)?d.warnings.filter(Boolean):[];
+    const base=`Yeni abonelik/Gift hakları: ${createdSubs}, yeni bağış hakları: ${createdDonations}, oluşturulan kod: ${issued}, teslim edilen destek olayı: ${delivered}.`;
     showStatus(
       'supportRewardEventsStatus',
-      `✅ Tarama tamamlandı. Yeni abonelik/Gift hakları: ${createdSubs}, yeni bağış hakları: ${createdDonations}, oluşturulan kod: ${issued}, teslim edilen destek olayı: ${delivered}.`,
-      true
+      warnings.length
+        ? `⚠️ Tarama kısmen tamamlandı. ${base}\n⚠️ ${warnings.join('\n⚠️ ')}`
+        : `✅ Tarama tamamlandı. ${base}`,
+      warnings.length === 0
     );
     await loadSupportRewardEvents();
     await loadGiftCodes();
