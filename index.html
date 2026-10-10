@@ -2687,13 +2687,10 @@ body.wz-page-modal-open{
 
 
 <style id="wz-turn-chip-hover-v55">
-/* Touch devices can keep :hover after a tap. Limit hover to real mouse pointers. */
-@media (hover:hover) and (pointer:fine){
-  .wz-turn-chip:not(.active):hover{
-    background:#ffffff;
-    color:#111111;
-    border-color:#ffffff;
-  }
+.wz-turn-chip:hover{
+  background:#ffffff!important;
+  color:#111111!important;
+  border-color:#ffffff!important;
 }
 </style>
 
@@ -3985,6 +3982,12 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
 }
 </style>
 
+<style id="wz-arena-tournament-navigation-v14">
+.wz-arena-tournament-bridge{margin:14px 12px;padding:13px;border-radius:13px;background:linear-gradient(130deg,#1b0b0c,#100f0f);border:1px solid #863034;text-align:center}
+.wz-arena-tournament-bridge p{margin:0 0 10px;font-size:12px;color:#ded4d4}
+.wz-arena-tournament-go{display:flex;align-items:center;justify-content:center;gap:9px;min-height:48px;padding:12px 17px;border-radius:10px;color:white!important;text-decoration:none!important;background:#e31b1b;border:1px solid #ef3434;font-weight:900;letter-spacing:.02em}
+.wz-arena-tournament-go:hover,.wz-arena-tournament-go:focus-visible{background:#bd1313;color:white!important;outline-offset:3px}
+</style>
 </head>
 <body>
 <script id="wz-v58-prepaint-view">
@@ -9881,7 +9884,7 @@ return;
                 console.error('TV2 CATALOG ERROR:', error);
                 const section = document.getElementById('tournamentMarketSection');
                 const list = document.getElementById('tournamentMarketGrid');
-                if (section && list && !tv2CatalogLoadedOnce && tv2Catalog.length===0) {
+                if (section && list) {
                     section.style.display = 'block';
                     list.innerHTML = `<div class="tv2-empty">⚠️ Turnuva bilgileri alınamadı.<br>${tv2Esc(error.name === 'TimeoutError' ? 'Sunucu 18 saniyede yanıt vermedi. Tekrar dene.' : (error.message || error))}<div style="margin-top:12px"><button class="tv2-btn secondary" onclick="tv2LoadCatalog(true)">🔄 TEKRAR DENE</button></div></div>`;
                 }
@@ -10180,35 +10183,21 @@ return;
 
 
     async function tv2FetchPublicDetail(tournamentId) {
-        // Kullanıcıyı sonsuz "yükleniyor" ekranında bırakma.
-        // AbortController tüm fetch + yanıt okuma süresini sınırlar.
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 18000);
-        try {
-            const response = await fetch(
-                `${MARKET_WORKER}/tournament/public?id=${encodeURIComponent(tournamentId)}&_=${Date.now()}`,
-                {
-                    headers:{'Accept':'application/json'},
-                    cache:'no-store',
-                    signal:controller.signal
-                }
-            );
+        const response = await fetch(
+            `${MARKET_WORKER}/tournament/public?id=${encodeURIComponent(tournamentId)}&_=${Date.now()}`,
+            {
+                headers:{'Accept':'application/json'},
+                cache:'no-store'
+            }
+        );
 
-            const data = await response.json();
-            if(!response.ok || !data?.success){
-                throw new Error(data?.error || `HTTP ${response.status}`);
-            }
-            return data;
-        }catch(error){
-            if(controller.signal.aborted){
-                const err=new Error('Turnuva detayları 18 saniye içinde yüklenemedi. Lütfen tekrar dene.');
-                err.name='TimeoutError';
-                throw err;
-            }
-            throw error;
-        }finally{
-            clearTimeout(timeoutId);
+        const data = await response.json();
+
+        if(!response.ok || !data?.success){
+            throw new Error(data?.error || `HTTP ${response.status}`);
         }
+
+        return data;
     }
 
     async function tv2OpenPublic(tournamentId) {
@@ -13934,22 +13923,7 @@ return;
       ['closed','Kayıt Kapandı'],
       ['done','Tamamlanan']
     ];
-    return `<div class="wz-turn-strip">${defs.map(([id,name])=>`<button type="button" data-filter="${id}" aria-pressed="${state.filter===id?'true':'false'}" class="wz-turn-chip ${state.filter===id?'active':''}" onclick="wzTurnSetFilter('${id}')">${name}</button>`).join('')}</div>`;
-  }
-  // Keep horizontal chip position across content and catalog rerenders.
-  let wzTurnFilterScroll=0;
-  function wzRestoreTurnFilterScroll(){
-    const strip=document.querySelector('#wzEsportsHub .wz-turn-strip');
-    if(!strip) return;
-    strip.scrollLeft=wzTurnFilterScroll;
-    const active=strip.querySelector('.wz-turn-chip.active');
-    if(active){
-      const box=strip.getBoundingClientRect();
-      const activeBox=active.getBoundingClientRect();
-      if(activeBox.left<box.left) strip.scrollLeft-=box.left-activeBox.left;
-      else if(activeBox.right>box.right) strip.scrollLeft+=activeBox.right-box.right;
-    }
-    wzTurnFilterScroll=strip.scrollLeft;
+    return `<div class="wz-turn-strip">${defs.map(([id,name])=>`<button type="button" class="wz-turn-chip ${state.filter===id?'active':''}" onclick="wzTurnSetFilter('${id}')">${name}</button>`).join('')}</div>`;
   }
   function tournamentLogoUrl(item){
     const t=item?.tournament||{}; const rule=item?.rule||{};
@@ -14060,14 +14034,10 @@ return;
   }
 
 
-  let wzV95LastStatusAt=0;
-  async function wzV95LoadMyEntryStatuses(force=false){
+  async function wzV95LoadMyEntryStatuses(){
     let token='';
     try{token=localStorage.getItem(SESSION_STORAGE_KEY)||'';}catch(_){ }
-    if(token!==state.myEntrySession) wzV95LastStatusAt=0;
-    if(!force && Date.now()-wzV95LastStatusAt<30000) return;
     if(!token){
-      wzV95LastStatusAt=0;
       state.myEntryStatuses.clear(); state.myEntrySession='';
       if(state.screen==='list') refreshTournamentListResults();
       return;
@@ -14087,12 +14057,11 @@ return;
       if((localStorage.getItem(SESSION_STORAGE_KEY)||'')!==token) return;
       state.myEntryStatuses=new Map(Object.entries(data.entries));
       state.myEntrySession=token;
-      wzV95LastStatusAt=Date.now();
       if(state.screen==='list') refreshTournamentListResults();
     }catch(error){ console.warn('Turnuva durum bilgisi alınamadı:',error?.message||error); }
     finally{window.__wzV95MyEntryPending=false;}
   }
-  document.addEventListener('wz:registration-changed',()=>wzV95LoadMyEntryStatuses(true));
+  document.addEventListener('wz:registration-changed',()=>wzV95LoadMyEntryStatuses());
   document.addEventListener('wz:tournament-catalog-updated', e=>{
     if(e?.detail?.ok) wzV95LoadMyEntryStatuses();
   });
@@ -14838,22 +14807,27 @@ return;
     </div>`;
   }
 
+  const WZ_ARENA_REAL_URL='https://weizend-arena-test.weizendtv.workers.dev/arena/real';
+  function wzArenaDeepLink(id){
+    // Her turnuvanın kendi gerçek Market kimliği; hiçbir sabit 1v1/3v3 yönlendirmesi yok.
+    return WZ_ARENA_REAL_URL+'?tournament='+encodeURIComponent(String(id||'')).replace(/'/g,'%27');
+  }
+
   function renderDetailPage(){
     const item=getItem(state.selectedId);
     if(!item) return `<div class="wz-turn-empty">Turnuva bulunamadı.</div>`;
     const t=item?.tournament||{}; const rule=item?.rule||{}; const id=String(t.id||'');
     const detail=state.details.get(id) || null;
     const status=statusClass(item);
+    // Eski sürümde kaydedilmiş Katılımcılar/Fikstür/Tahminler sekmelerini Genel Bakış'a taşı.
+    if(!['overview','rules','prizes'].includes(state.tab)) state.tab='overview';
     const tabButtons=[
       ['overview','⌂','Genel Bakış'],
       ['rules','☷','Kurallar'],
-      ['prizes','🏆','Ödüller'],
-      ['participants','👥','Katılımcılar'],
-      ['bracket','▦','Fikstür'],
-      ['predictions','🎯','Tahminler']
+      ['prizes','🏆','Ödüller']
     ];
     let panel = `<div class="wz-turn-loading">Turnuva detayları yükleniyor...</div>`;
-    if(detail?.__error) panel = `<div class="wz-turn-empty">⚠️ ${esc(detail.__error)}<div style="margin-top:14px"><button type="button" class="wz-turn-card-btn" onclick="wzTurnRetryDetail('${esc(id)}')">🔄 TEKRAR DENE</button></div></div>`;
+    if(detail?.__error) panel = `<div class="wz-turn-empty">${esc(detail.__error)}</div>`;
     else if(detail){
       if(state.tab==='overview') panel = renderOverview(detail,item);
       if(state.tab==='rules') panel = renderRules(item);
@@ -14881,6 +14855,10 @@ return;
             onclick="wzTournamentRegistration('${esc(id)}')" ${registrationIsOpen(item) ? '' : 'disabled'}>KAYIT OL</button>
           <div class="wz-turn-tabs-label">Turnuva Detayları</div>
           <nav class="wz-turn-tabs" aria-label="Turnuva detay bölümleri">${tabButtons.map(([id2,icon,name])=>`<button type="button" class="wz-turn-tab ${state.tab===id2?'active':''}" onclick="wzTurnSetTab('${id2}')" aria-pressed="${state.tab===id2?'true':'false'}"><span class="wz-turn-tab-icon" aria-hidden="true">${icon}</span><span>${name}</span></button>`).join('')}</nav>
+          <div class="wz-arena-tournament-bridge">
+            <p>Katılımcılar, fikstür, maçlar ve tahmin sıralaması bu turnuvanın Arena sayfasında.</p>
+            <a class="wz-arena-tournament-go" href="${esc(wzArenaDeepLink(id))}" aria-label="${esc(t.name||'Turnuva')} için Arena'ya git">🏆 ARENA'YA GİT ↗</a>
+          </div>
           <div class="wz-turn-panel">${panel}</div>
         </section>
       </div>
@@ -14925,8 +14903,6 @@ return;
       return;
     }
 
-    const existingFilterStrip=host.querySelector('.wz-turn-strip');
-    if(existingFilterStrip) wzTurnFilterScroll=existingFilterStrip.scrollLeft;
     const catalogLoaded = (()=>{ try{return tv2CatalogLoadedOnce===true}catch(_){return false} })();
     if(!catalogLoaded){
       if(wzTournamentCatalogError){
@@ -14939,14 +14915,12 @@ return;
       }else{
         host.innerHTML = `<div class="wz-turn-root">${renderSearch()}${renderFilters()}<div class="wz-turn-loading">Turnuvalar yükleniyor...</div></div>`;
       }
-      wzRestoreTurnFilterScroll();
       return;
     }
 
     const all=visibleCatalog();
     if(!all.length){
       host.innerHTML = `<div class="wz-turn-root">${renderSearch()}${renderFilters()}<div class="wz-turn-empty">Henüz yayınlanmış turnuva yok.</div></div>`;
-      wzRestoreTurnFilterScroll();
       cacheTournamentShell(host);
       return;
     }
@@ -14966,7 +14940,6 @@ return;
       ${renderListPage()}
       ${detailOpen ? renderDetailPage() : ''}
     </div>`;
-    wzRestoreTurnFilterScroll();
 
     if(previousDetailScroll !== null){
       const nextDetailWindow=host.querySelector('.wz-turn-detail-window');
@@ -15080,28 +15053,9 @@ return;
     }
   };
   window.wzTurnSetFilter=function(filter){
-    if(!['all','live','active','soon','closed','done'].includes(filter)) return;
     wzReleaseHydratedTournamentShell();
     state.filter=filter;
     persistTournamentState();
-
-    // Filtering is a local UI event: no need to destroy and recreate the chip bar.
-    const host=document.getElementById('wzEsportsHub');
-    const strip=host?.querySelector('.wz-turn-strip');
-    const results=host?.querySelector('#wzTournamentResults');
-    if(state.screen==='list' && strip && results){
-      strip.querySelectorAll('.wz-turn-chip').forEach(btn=>{
-        const active=btn.dataset.filter===filter;
-        btn.classList.toggle('active',active);
-        btn.setAttribute('aria-pressed',active?'true':'false');
-      });
-      wzTurnFilterScroll=strip.scrollLeft;
-      refreshTournamentListResults();
-      wzRestoreTurnFilterScroll();
-      wzTurnListStatusSignature=wzTournamentListStatusSignature();
-      cacheTournamentShell(host);
-      return;
-    }
     render();
   };
 
@@ -15122,14 +15076,6 @@ return;
     },240);
   };
 
-  // Hata alan tek turnuvanın eski hata durumunu temizle ve tek sefer yeniden yükle.
-  window.wzTurnRetryDetail=function(id){
-    const key=String(id||'');
-    if(!key || state.loading.has(key)) return;
-    state.details.delete(key);
-    render();
-  };
-
   window.wzTurnBack=function(){
     wzV95ClosePublicTeam();
     wzReleaseHydratedTournamentShell();
@@ -15148,7 +15094,7 @@ return;
   window.wzTurnSetTab=function(tab){
     wzV95ClosePublicTeam();
     wzReleaseHydratedTournamentShell();
-    state.tab=['overview','rules','prizes','participants','bracket','predictions'].includes(tab)?tab:'overview';
+    state.tab=['overview','rules','prizes'].includes(tab)?tab:'overview';
     persistTournamentState();
     render();
     if(state.tab==='predictions' && state.selectedId){
