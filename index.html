@@ -15017,7 +15017,7 @@ return;
     </div>`;
   }
 
-  const WZ_ARENA_REAL_URL='https://weizend-arena-test.weizendtv.workers.dev/arena/real';
+  const WZ_ARENA_REAL_URL='https://weizend.github.io/weizendmarket/arena.html';
   function wzArenaDeepLink(id){
     // Her turnuvanın kendi gerçek Market kimliği; hiçbir sabit 1v1/3v3 yönlendirmesi yok.
     return WZ_ARENA_REAL_URL+'?tournament='+encodeURIComponent(String(id||'')).replace(/'/g,'%27');
@@ -15028,9 +15028,9 @@ return;
     const link=esc(wzArenaDeepLink(item?.tournament?.id));
     return `<section class="wz-arena-intro" aria-label="WEIZEND Arena tanıtımı">
       <div class="wz-arena-intro-hero">
-        <span class="wz-arena-intro-label">🏆 WEIZEND ARENA</span>
+        <span class="wz-arena-intro-label">🏆 WEİZEND ARENA</span>
         <h3>Turnuvanın bütün heyecanı tek yerde!</h3>
-        <p>WEIZEND ARENA, turnuvaları takip edebileceğin özel merkezimiz. Katılımcıları, eşleşmeleri, maç sonuçlarını ve izleyici tahminlerini bu turnuvaya ait tek sayfadan keşfedebilirsin.</p>
+        <p>WEİZEND ARENA, turnuvaları takip edebileceğin özel merkezimiz. Katılımcıları, eşleşmeleri, maç sonuçlarını ve izleyici tahminlerini bu turnuvaya ait tek sayfadan keşfedebilirsin.</p>
         <div class="wz-arena-intro-event"><strong>Seçili turnuva:</strong> ${name}</div>
       </div>
       <div class="wz-arena-intro-grid">
@@ -15039,10 +15039,10 @@ return;
         <article class="wz-arena-feature"><span class="wz-arena-feature-icon" aria-hidden="true">🎯</span><div><h4>İzleyici Tahminleri</h4><p>Tahmin durumunu, mevcut tahmin dağılımını ve yayımlanan sıralamayı gör.</p></div></article>
         <article class="wz-arena-feature"><span class="wz-arena-feature-icon" aria-hidden="true">🏅</span><div><h4>Maç Sonuçları</h4><p>Kesinleşen skorları ve açıklanan galipleri aynı turnuva ekranında görüntüle.</p></div></article>
       </div>
-      <div class="wz-arena-intro-note"><span aria-hidden="true">ℹ️</span><span>Katılımcı, fikstür ve sonuç bilgileri turnuva ilerledikçe güncellenir. Tahmin verme ve maç odası gibi işlemler, ilgili özellikler açıldığında kullanılabilir.</span></div>
+      <div class="wz-arena-intro-note"><span aria-hidden="true">ℹ️</span><span>Katılımcılar, fikstür ve sonuçlar turnuva ilerledikçe güncellenir. Kick hesabınla Arena üzerinde tahmin yapabilirsin; maç odası ve kaptan sonuç bildirimi ise henüz ayrı bir bağlantı gerektirir.</span></div>
       <div class="wz-arena-intro-cta">
         <p>Hazırsan <strong>${name}</strong> turnuvasının Arena sayfasına geç!</p>
-        <a class="wz-arena-intro-go" href="${link}" aria-label="${name} için WEIZEND Arena sayfasına git">ŞİMDİ ARENA'YA GİT <span aria-hidden="true">↗</span></a>
+        <a class="wz-arena-intro-go" href="${link}" aria-label="${name} için WEİZEND Arena sayfasına git">ŞİMDİ ARENA'YA GİT <span aria-hidden="true">↗</span></a>
         <small>Yalnızca seçtiğin turnuvanın Arena ekranı açılır.</small>
       </div>
     </section>`;
