@@ -3982,30 +3982,52 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
 }
 </style>
 
-<style id="wz-arena-tournament-navigation-v15">
-/* V15: Arena bağlantısı, Ödüller'in yanındaki dördüncü sekme olarak gösterilir. */
+<style id="wz-arena-tournament-intro-v16">
+/* V16: Arena, Ödüller'in yanında normal bir turnuva detay sekmesidir. */
 .wz-turn-detail-page .wz-turn-tabs{
   grid-template-columns:repeat(4,minmax(0,1fr))!important;
 }
-.wz-turn-detail-page .wz-arena-tournament-go{
-  text-decoration:none!important;
-  border-color:#623038!important;
-  color:#f7f7f7!important;
-  background:#171318!important;
-  cursor:pointer;
-}
-.wz-turn-detail-page .wz-arena-tournament-go:hover,
-.wz-turn-detail-page .wz-arena-tournament-go:focus-visible{
+.wz-turn-detail-page .wz-turn-tab.wz-arena-intro-tab:not(.active){
+  border-color:#70313a!important;
+  background:#1b1316!important;
   color:#fff!important;
-  background:#3b151a!important;
-  border-color:#f13b43!important;
-  outline-offset:3px;
 }
-/* Telefonda iki satır, aynı boyutlu dört sekme. */
+.wz-arena-intro{display:flex;flex-direction:column;gap:16px;min-width:0;padding:17px;
+  border:1px solid #343039;border-radius:18px;background:linear-gradient(145deg,#151013 0%,#0d0e12 65%);color:#fff;}
+.wz-arena-intro-hero{position:relative;overflow:hidden;padding:20px;border:1px solid rgba(227,27,27,.38);
+  border-radius:16px;background:radial-gradient(ellipse at 95% 0%,rgba(227,27,27,.22),transparent 60%),#100e10;}
+.wz-arena-intro-label{display:inline-flex;align-items:center;gap:8px;letter-spacing:.12em;font-size:.7rem;
+  font-weight:900;color:#ff7272;text-transform:uppercase;}
+.wz-arena-intro-hero h3{margin:9px 0 9px;font-size:clamp(1.32rem,3.1vw,1.78rem);font-weight:950;line-height:1.18;}
+.wz-arena-intro-hero p{color:#ced0d5;font-size:.91rem;line-height:1.7;margin:0;max-width:640px;}
+.wz-arena-intro-event{margin:12px 0 0;padding:10px 12px;border-radius:10px;
+  background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.085);
+  font-size:.79rem;color:#dedee2;overflow-wrap:anywhere;}
+.wz-arena-intro-event strong{color:#ff7171;}
+.wz-arena-intro-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;}
+.wz-arena-feature{display:flex;align-items:flex-start;gap:12px;min-width:0;padding:15px;
+  border-radius:13px;border:1px solid #323137;background:#141518;}
+.wz-arena-feature-icon{display:flex;align-items:center;justify-content:center;flex:0 0 38px;width:38px;height:38px;
+  border-radius:10px;background:rgba(227,27,27,.10);border:1px solid rgba(227,27,27,.32);font-size:1.18rem;}
+.wz-arena-feature h4{margin:0 0 5px;font-size:.92rem;font-weight:900;color:#fff;}
+.wz-arena-feature p{margin:0;color:#bcbec5;font-size:.80rem;line-height:1.55;}
+.wz-arena-intro-note{display:flex;gap:10px;align-items:flex-start;padding:12px 13px;border:1px solid #39343a;
+  border-radius:12px;background:#111115;color:#bbbcc4;font-size:.8rem;line-height:1.58;}
+.wz-arena-intro-cta{display:flex;flex-direction:column;align-items:center;gap:9px;padding:3px 0 1px;text-align:center;}
+.wz-arena-intro-cta>p{margin:0 0 3px;color:#c1c2c8;font-size:.87rem;line-height:1.5;}
+.wz-arena-intro-go{display:flex;align-items:center;justify-content:center;gap:10px;max-width:500px;width:100%;
+  min-height:53px;border:1px solid #ff4343;border-radius:12px;background:linear-gradient(180deg,#e31b1b,#b70f17);
+  color:#fff!important;font-weight:950;font-size:.98rem;text-decoration:none!important;box-shadow:0 10px 26px rgba(227,27,27,.22);
+  transition:background .16s ease,transform .16s ease;}
+.wz-arena-intro-go:hover,.wz-arena-intro-go:focus-visible{background:#f02b30;transform:translateY(-1px);outline-offset:3px;}
+.wz-arena-intro-cta small{color:#92949d;line-height:1.45;font-size:.73rem;}
 @media(max-width:560px){
-  .wz-turn-detail-page .wz-turn-tabs{
-    grid-template-columns:repeat(2,minmax(0,1fr))!important;
-  }
+  .wz-turn-detail-page .wz-turn-tabs{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+  .wz-arena-intro{padding:11px;gap:12px;}
+  .wz-arena-intro-hero{padding:15px;}
+  .wz-arena-intro-grid{grid-template-columns:minmax(0,1fr);gap:9px;}
+  .wz-arena-feature{padding:12px;}
+  .wz-arena-intro-go{min-height:52px;}
 }
 </style>
 </head>
@@ -4606,7 +4628,7 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
     const host=document.getElementById('wzEsportsHub');
     if(!host) return;
 
-    const raw=sessionStorage.getItem('weizend_tournament_shell_v95');
+    const raw=sessionStorage.getItem('weizend_tournament_shell_arena_intro_v16');
     if(!raw) return;
 
     const cached=JSON.parse(raw);
@@ -14833,6 +14855,31 @@ return;
     return WZ_ARENA_REAL_URL+'?tournament='+encodeURIComponent(String(id||'')).replace(/'/g,'%27');
   }
 
+  function renderArenaIntro(item){
+    const name=esc(item?.tournament?.name || 'Bu turnuva');
+    const link=esc(wzArenaDeepLink(item?.tournament?.id));
+    return `<section class="wz-arena-intro" aria-label="WEIZEND Arena tanıtımı">
+      <div class="wz-arena-intro-hero">
+        <span class="wz-arena-intro-label">🏆 WEIZEND ARENA</span>
+        <h3>Turnuvanın bütün heyecanı tek yerde!</h3>
+        <p>WEIZEND ARENA, turnuvaları takip edebileceğin özel merkezimiz. Katılımcıları, eşleşmeleri, maç sonuçlarını ve izleyici tahminlerini bu turnuvaya ait tek sayfadan keşfedebilirsin.</p>
+        <div class="wz-arena-intro-event"><strong>Seçili turnuva:</strong> ${name}</div>
+      </div>
+      <div class="wz-arena-intro-grid">
+        <article class="wz-arena-feature"><span class="wz-arena-feature-icon" aria-hidden="true">👥</span><div><h4>Katılımcılar ve Takımlar</h4><p>Kayıtlı oyuncuları, takım adlarını ve açıklanan kadroları incele.</p></div></article>
+        <article class="wz-arena-feature"><span class="wz-arena-feature-icon" aria-hidden="true">🗂️</span><div><h4>Fikstür ve Turlar</h4><p>Eşleşmeleri, maç takvimini ve kazananların ilerleyişini takip et.</p></div></article>
+        <article class="wz-arena-feature"><span class="wz-arena-feature-icon" aria-hidden="true">🎯</span><div><h4>İzleyici Tahminleri</h4><p>Tahmin durumunu, mevcut tahmin dağılımını ve yayımlanan sıralamayı gör.</p></div></article>
+        <article class="wz-arena-feature"><span class="wz-arena-feature-icon" aria-hidden="true">🏅</span><div><h4>Maç Sonuçları</h4><p>Kesinleşen skorları ve açıklanan galipleri aynı turnuva ekranında görüntüle.</p></div></article>
+      </div>
+      <div class="wz-arena-intro-note"><span aria-hidden="true">ℹ️</span><span>Katılımcı, fikstür ve sonuç bilgileri turnuva ilerledikçe güncellenir. Tahmin verme ve maç odası gibi işlemler, ilgili özellikler açıldığında kullanılabilir.</span></div>
+      <div class="wz-arena-intro-cta">
+        <p>Hazırsan <strong>${name}</strong> turnuvasının Arena sayfasına geç!</p>
+        <a class="wz-arena-intro-go" href="${link}" aria-label="${name} için WEIZEND Arena sayfasına git">ŞİMDİ ARENA'YA GİT <span aria-hidden="true">↗</span></a>
+        <small>Yalnızca seçtiğin turnuvanın Arena ekranı açılır.</small>
+      </div>
+    </section>`;
+  }
+
   function renderDetailPage(){
     const item=getItem(state.selectedId);
     if(!item) return `<div class="wz-turn-empty">Turnuva bulunamadı.</div>`;
@@ -14840,14 +14887,17 @@ return;
     const detail=state.details.get(id) || null;
     const status=statusClass(item);
     // Eski sürümde kaydedilmiş Katılımcılar/Fikstür/Tahminler sekmelerini Genel Bakış'a taşı.
-    if(!['overview','rules','prizes'].includes(state.tab)) state.tab='overview';
+    if(!['overview','rules','prizes','arena'].includes(state.tab)) state.tab='overview';
     const tabButtons=[
       ['overview','⌂','Genel Bakış'],
       ['rules','☷','Kurallar'],
-      ['prizes','🏆','Ödüller']
+      ['prizes','🏆','Ödüller'],
+      ['arena','🎮','Arena']
     ];
     let panel = `<div class="wz-turn-loading">Turnuva detayları yükleniyor...</div>`;
-    if(detail?.__error) panel = `<div class="wz-turn-empty">${esc(detail.__error)}</div>`;
+    // Arena tanıtımı ayrı bir veri isteği beklemez; Market API geçici sorun yaşasa da açılır.
+    if(state.tab==='arena') panel=renderArenaIntro(item);
+    else if(detail?.__error) panel = `<div class="wz-turn-empty">${esc(detail.__error)}</div>`;
     else if(detail){
       if(state.tab==='overview') panel = renderOverview(detail,item);
       if(state.tab==='rules') panel = renderRules(item);
@@ -14874,14 +14924,14 @@ return;
           <button id="wzTurnRegisterBtn" type="button" class="wz-turn-register ${registrationIsOpen(item)?'':'is-disabled'}"
             onclick="wzTournamentRegistration('${esc(id)}')" ${registrationIsOpen(item) ? '' : 'disabled'}>KAYIT OL</button>
           <div class="wz-turn-tabs-label">Turnuva Detayları</div>
-          <nav class="wz-turn-tabs" aria-label="Turnuva detay bölümleri">${tabButtons.map(([id2,icon,name])=>`<button type="button" class="wz-turn-tab ${state.tab===id2?'active':''}" onclick="wzTurnSetTab('${id2}')" aria-pressed="${state.tab===id2?'true':'false'}"><span class="wz-turn-tab-icon" aria-hidden="true">${icon}</span><span>${name}</span></button>`).join('')}<a class="wz-turn-tab wz-arena-tournament-go" href="${esc(wzArenaDeepLink(id))}" aria-label="${esc(t.name||'Turnuva')} için Arena'ya git"><span class="wz-turn-tab-icon" aria-hidden="true">🏆</span><span>Arena'ya Git ↗</span></a></nav>
+          <nav class="wz-turn-tabs" aria-label="Turnuva detay bölümleri">${tabButtons.map(([id2,icon,name])=>`<button type="button" class="wz-turn-tab ${state.tab===id2?'active':''} ${id2==='arena'?'wz-arena-intro-tab':''}" onclick="wzTurnSetTab('${id2}')" aria-pressed="${state.tab===id2?'true':'false'}"><span class="wz-turn-tab-icon" aria-hidden="true">${icon}</span><span>${name}</span></button>`).join('')}</nav>
           <div class="wz-turn-panel">${panel}</div>
         </section>
       </div>
     </div>`;
   }
 
-  const WZ_T_SHELL_CACHE_KEY='weizend_tournament_shell_v95';
+  const WZ_T_SHELL_CACHE_KEY='weizend_tournament_shell_arena_intro_v16';
 
   function cacheTournamentShell(host){
     try{
@@ -15110,7 +15160,7 @@ return;
   window.wzTurnSetTab=function(tab){
     wzV95ClosePublicTeam();
     wzReleaseHydratedTournamentShell();
-    state.tab=['overview','rules','prizes'].includes(tab)?tab:'overview';
+    state.tab=['overview','rules','prizes','arena'].includes(tab)?tab:'overview';
     persistTournamentState();
     render();
     if(state.tab==='predictions' && state.selectedId){
