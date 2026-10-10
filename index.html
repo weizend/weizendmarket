@@ -2,14 +2,10 @@
 <html lang="tr">
 <head>
 
-<style id="wz-v22-logo-css">
-/* Until its exact source is decoded, the cover logo reserves space but does not paint a black circle. */
-.wz-turn-game-logo:not(.wz-logo-ready){
-  background:transparent!important;
-  border-color:transparent!important;
-  box-shadow:none!important;
-}
-.wz-turn-game-logo:not(.wz-logo-ready) img{visibility:hidden!important}
+<style id="wz-v23-logo-css">
+/* Oyun logosu kaynak yüklenirken asla CSS ile gizlenmez.
+   Hazır logo aynı turnuva listesi güncellendiğinde yeniden yaratılmaz. */
+.wz-turn-game-logo img{visibility:visible!important;opacity:1!important}
 </style>
 <script id="wz-v22-logo-early">
 (function(){
@@ -2107,7 +2103,7 @@ body.wz-view-tournament #wzMobileTournamentHero{display:none!important}
 <style id="wz-tournament-v7-overrides">
 /* Tournament simplification */
 body.wz-view-tournament #wzViewName{display:block!important}
-body.wz-view-tournament .wz-profile-top-copy small{display:none!important}
+/* V23: Hesabım etiketi Turnuvalar sekmesinde de görünür. */
 body.wz-view-tournament .wz-esports-kicker{color:#ff4d4d!important}
 body.wz-view-tournament .wz-esports-stage{display:block!important}
 body.wz-view-tournament .wz-esports-sidebar{
@@ -14331,7 +14327,7 @@ return;
     const logo=tournamentLogoUrl(item);
     const cardPrizes=tournamentCardPrizes(item);
     const entryBadge=tournamentEntryBadge(item);
-    return `<article class="wz-turn-card">
+    return `<article class="wz-turn-card" data-wz-tournament-id="${esc(id)}">
       <div class="wz-turn-card-head"${cardHeadStyle}>
         <div class="wz-turn-card-row">
           <div class="wz-turn-game">
@@ -14400,13 +14396,47 @@ return;
       : `<div class="wz-turn-empty">${tournamentListEmptyText()}</div>`;
     return `<div id="wzTournamentResults">${content}</div>`;
   }
+  // V23: Oyun ikonunun <img> dugumunu gereksiz yere degistirmeyerek,
+  // gorunur logonun F5 sonrasi cache -> guncel veri gecisinde kaybolmasini azaltir.
+  function wzPreserveTournamentLogoNodes(oldRoot,newRoot){
+    if(!oldRoot || !newRoot) return;
+    const oldCards=oldRoot.querySelectorAll('.wz-turn-card[data-wz-tournament-id]');
+    const images=new Map();
+    for(const card of oldCards){
+      const id=card.getAttribute('data-wz-tournament-id');
+      const img=card.querySelector('.wz-turn-game-logo img');
+      if(!id || !img) continue;
+      images.set(id,{
+        img,
+        url:img.getAttribute('data-wz-original-src')||img.getAttribute('src')||'',
+        ready:img.closest('.wz-logo-ready')!==null
+      });
+    }
+    for(const card of newRoot.querySelectorAll('.wz-turn-card[data-wz-tournament-id]')){
+      const id=card.getAttribute('data-wz-tournament-id');
+      const next=card.querySelector('.wz-turn-game-logo img');
+      const old=images.get(id);
+      if(!old || !next) continue;
+      const nextUrl=next.getAttribute('data-wz-original-src')||next.getAttribute('src')||'';
+      // URL degistiyse yeni logoya izin ver; farkli turnuvalarin logolari karismaz.
+      if(nextUrl!==old.url) continue;
+      const newWrapper=next.closest('.wz-turn-game-logo');
+      next.replaceWith(old.img);
+      if(old.ready) newWrapper?.classList.add('wz-logo-ready');
+    }
+  }
+
   function refreshTournamentListResults(){
     const current=document.getElementById('wzTournamentResults');
     if(!current) return;
     const shell=document.createElement('div');
     shell.innerHTML=renderTournamentListResults();
     const next=shell.firstElementChild;
-    if(next) current.replaceWith(next);
+    if(next){
+      wzPreserveTournamentLogoNodes(current,next);
+      current.replaceWith(next);
+      window.__WZ_RESTORE_LOGOS__?.(next);
+    }
   }
   function renderListPage(){
     return `<div class="wz-turn-list-page">
@@ -15140,10 +15170,13 @@ return;
       ? (host.querySelector('.wz-turn-detail-window')?.scrollTop ?? null)
       : null;
 
-    host.innerHTML = `<div class="wz-turn-root">
+    const newTree=document.createElement('div');
+    newTree.innerHTML = `<div class="wz-turn-root">
       ${renderListPage()}
       ${detailOpen ? renderDetailPage() : ''}
     </div>`;
+    wzPreserveTournamentLogoNodes(host,newTree);
+    host.replaceChildren(...newTree.childNodes);
     window.__WZ_RESTORE_LOGOS__?.(host);
 
     if(previousDetailScroll !== null){
