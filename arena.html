@@ -21,7 +21,7 @@ main{width:min(1360px,100%);padding:18px 16px 55px;margin:auto}.hero{background:
 <div id="alert" class="notice" role="status" hidden></div>
 <div class="grid" id="content">
 <section class="panel"><div class="toolbar"><h2>🏆 Turnuva Fikstürü</h2><button class="btn secondary" type="button" id="refreshBtn">↻ Yenile</button></div><p class="hint">Bir maça tıklayarak eşleşmeyi ve tahmin seçeneklerini incele.</p><div id="bracket" class="bracket-viewport"><div class="empty">Fikstür bilgileri alınıyor...</div></div></section>
-<aside class="panel"><h2>🎮 Maç Bilgisi</h2><div id="matchInfo" class="match-focus">Maç seçilmesi bekleniyor.</div><div id="picksBox"><h3>🎯 Tahminim</h3><p id="authText" class="hint">Kick hesabı kontrol ediliyor...</p><div class="choices"><button class="choose" id="pickA" disabled>Oyuncu A</button><button class="choose" id="pickB" disabled>Oyuncu B</button></div><p id="pickProgress" class="pick-status">Tahmin durumu yükleniyor...</p><p class="small">Her seçim anında kaydedilir. Tahminler kapalıysa değişiklik yapılamaz.</p></div><hr style="border:0;border-top:1px solid #333;margin:16px 0"><h3>👥 Takımlar / Oyuncular</h3><div id="participants" class="members"><div class="small">Katılımcılar yükleniyor...</div></div><hr style="border:0;border-top:1px solid #333;margin:16px 0"><h3>🏅 Tahmin Sıralaması</h3><div id="predictionBoard" class="small">Sıralama yükleniyor...</div></aside>
+<aside class="panel"><h2>🎮 Maç Bilgisi</h2><div id="matchInfo" class="match-focus">Maç seçilmesi bekleniyor.</div><div id="picksBox"><h3>🎯 Tahminim</h3><p id="authText" class="hint">Kick hesabı kontrol ediliyor...</p><div class="choices"><button class="choose" id="pickA" disabled>Oyuncu A</button><button class="choose" id="pickB" disabled>Oyuncu B</button></div><p id="pickProgress" class="pick-status">Tahmin durumu yükleniyor...</p><button id="confirmPicks" type="button" class="btn" style="width:100%;margin:7px 0 9px;display:none" disabled>Tahminleri Onayla</button><button id="editPicks" type="button" class="btn secondary" style="width:100%;margin:7px 0 9px;display:none">Tahminleri Düzenle</button><p class="small">Seçimler taslak olarak kaydedilir. Yalnızca tamamını onayladığın kupon sıralamaya girer.</p></div><hr style="border:0;border-top:1px solid #333;margin:16px 0"><h3>👥 Takımlar / Oyuncular</h3><div id="participants" class="members"><div class="small">Katılımcılar yükleniyor...</div></div><hr style="border:0;border-top:1px solid #333;margin:16px 0"><h3>🏅 Tahmin Sıralaması</h3><div id="predictionBoard" class="small">Sıralama yükleniyor...</div></aside>
 </div>
 <div class="footer">WEİZEND ARENA • Turnuva Merkezi</div>
 </main>
@@ -32,7 +32,7 @@ const $=s=>document.getElementById(s);
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const clean=x=>String(x??'').trim();
 const query=new URLSearchParams(location.search);const tid=clean(query.get('tournament'));
-const state={tid,t:null,detail:null,pred:null,selected:null,loading:false,saving:false,authed:false,identityRequested:false};
+const state={tid,t:null,detail:null,pred:null,selected:null,loading:false,saving:false,authed:false,identityRequested:false,editMode:false};
 const href='https://weizend.github.io/weizendmarket/';
 const cacheKey='wz_arena_public_v1:'+tid;
 function token(){try{return localStorage.getItem(TOKEN_KEY)||''}catch{return ''}}
@@ -77,12 +77,24 @@ function renderBracket(){const matches=state.detail?.matches||[];if(!matches.len
  return `<button class="match ${state.selected===m.id?'active':''}" type="button" data-mid="${esc(m.id)}"><div class="match-head"><span>M${Number(m.matchNumber)||'?'} · ${Number(m.roundNumber)||'?'}. tur</span><span>${m.status==='completed'?'SONUÇLANDI':'BEKLİYOR'}</span></div><div class="side ${a?'winner':s1?'predicted':''}"><strong>${esc(displayName(m,'a'))}</strong><span>${a?'✓':s1?'★':''}</span></div><div class="side ${b?'winner':s2?'predicted':''}"><strong>${esc(displayName(m,'b'))}</strong><span>${b?'✓':s2?'★':''}</span></div></button>`;
  }).join('')+'</div></section>').join('')+'</div>';
  document.querySelectorAll('[data-mid]').forEach(btn=>btn.addEventListener('click',()=>{state.selected=btn.dataset.mid;renderBracket();renderMatch();}));}
-function renderMatch(){const m=activeMatch();if(!m){$('matchInfo').textContent=state.detail?.matches?.length?'Bir maç seç.':'Fikstür bekleniyor.';$('pickA').disabled=$('pickB').disabled=true;$('pickProgress').textContent='Henüz maç bulunmuyor.';return;}
+function renderCouponControls(){
+ const sub=state.pred?.submission||{},expected=Number(sub.expectedCount||0),selected=Number(sub.selectedCount||0);
+ const submitted=sub.submitted===true,open=state.pred?.prediction?.open===true;
+ const confirm=$('confirmPicks'),edit=$('editPicks');
+ confirm.style.display=state.authed&&expected>0&&!submitted?'block':'none';
+ edit.style.display=state.authed&&submitted&&open?'block':'none';
+ confirm.disabled=!state.authed||!open||selected!==expected||state.saving;
+ confirm.textContent=`${selected}/${expected} • Tahminleri Onayla`;
+ edit.textContent=state.editMode?'✓ Düzenleme Açık':'✎ Tahminleri Düzenle';
+ $('pickProgress').textContent=expected===0?'Fikstür bekleniyor.':
+   submitted?`✓ ${selected}/${expected} onaylandı • Sıralamaya katıldın`:
+   `${selected}/${expected} tahmin • Taslak (henüz sıralamaya katılmaz)`;
+}
+function renderMatch(){const m=activeMatch();if(!m){$('matchInfo').textContent=state.detail?.matches?.length?'Bir maç seç.':'Fikstür bekleniyor.';$('pickA').disabled=$('pickB').disabled=true;renderCouponControls();return;}
  const done=String(m.status||'')==='completed';$('matchInfo').innerHTML=`<div class="focus-title">${esc(displayName(m,'a'))} <span style="color:#a1a1a1">VS</span> ${esc(displayName(m,'b'))}</div><div class="focus-line">${Number(m.roundNumber)||'?'} . Tur · M${Number(m.matchNumber)||'?'} · ${done?'Maç tamamlandı':'Sonuç bekleniyor'}</div>${m.winnerId?'<div class="pick-status" style="color:var(--green)">✓ Kazanan: '+esc(nameFor(m.winnerId))+'</div>':''}`;
- const chosen=predMap().get(String(m.id)),opts=optionsFor(m),open=state.pred?.prediction?.open===true,allow=state.authed&&open&&!state.saving&&opts.length===2&&m.status!=='completed';
+ const chosen=predMap().get(String(m.id)),opts=optionsFor(m),open=state.pred?.prediction?.open===true,allow=state.authed&&open&&!state.saving&&opts.length===2&&m.status!=='completed'&&(!state.pred?.submission?.submitted||state.editMode);
  for(let i=0;i<2;i++){const el=i===0?$('pickA'):$('pickB'),id=opts[i];el.dataset.winner=id||'';el.textContent=id?nameFor(id):(i?'B tarafı bekleniyor':'A tarafı bekleniyor');el.disabled=!allow||!id;el.classList.toggle('selected',!!id&&chosen===String(id));}
- const all=state.detail.matches.length,n=state.pred?.myPicks?.length||0;
- $('pickProgress').innerHTML=state.pred?`<b>${n}/${all}</b> tahmin kaydedildi · ${open?'Tahminler açık':'Tahminler kapalı'}`:'Tahmin durumu hazırlanıyor...';
+ renderCouponControls();
  $('authText').textContent=state.authed?'Kick oturumun doğrulandı. Bir tarafa basarak tahminini kaydedebilirsin.':token()?'Oturum doğrulanıyor...':'Tahmin yapmak için önce WEİZEND sitesinden Kick hesabına giriş yap.';
 }
 function renderParticipants(){const d=state.detail||{},teams=d.teams||[],people=d.participants||[];
@@ -104,9 +116,19 @@ async function refresh(initial=false){if(state.loading)return;state.loading=true
  else {state.authed=false;renderMatch();}
  }catch(e){if(state.detail){toast('Güncel bilgiler alınamadı. Son görüntülenen turnuva korunuyor. '+e.message,'error');}else{toast('Turnuva açılamadı: '+e.message,'error');$('tournamentTitle').textContent='Turnuva yüklenemedi';$('bracket').innerHTML='<div class="empty">Bağlantıyı kontrol edip Yenile butonuna bas.</div>';}}
  finally{state.loading=false;$('refreshBtn').disabled=false}}
-async function savePick(i){const m=activeMatch();if(!m||state.saving||!state.authed||state.pred?.prediction?.open!==true)return;const id=(i===0?$('pickA'):$('pickB')).dataset.winner;if(!id)return;
+async function savePick(i){const m=activeMatch();if(!m||state.saving||!state.authed||state.pred?.prediction?.open!==true||(state.pred?.submission?.submitted&&!state.editMode))return;const id=(i===0?$('pickA'):$('pickB')).dataset.winner;if(!id)return;
  state.saving=true;renderMatch();try{const p=await api('/tournament/predictions/pick',true,{tournamentId:tid,matchId:m.id,winnerId:id});state.pred=p;state.authed=true;toast('✓ Tahminin hesabına kaydedildi.','ok');renderAll();}catch(e){toast('Tahmin kaydedilemedi: '+e.message,'error');await refresh();}finally{state.saving=false;renderMatch()}}
+async function confirmCoupon(){
+ if(state.saving||!state.authed||!state.pred?.submission?.canSubmit)return;
+ state.saving=true;renderMatch();
+ try{const p=await api('/tournament/predictions/submit',true,{tournamentId:tid});
+   state.pred=p;state.editMode=false;toast('✓ Kuponun onaylandı! Puan sıralamasına katıldın.','ok');renderAll();
+ }catch(e){toast('Kupon onaylanamadı: '+e.message,'error');await refresh();}
+ finally{state.saving=false;renderMatch();}
+}
 $('refreshBtn').onclick=()=>refresh();$('pickA').onclick=()=>savePick(0);$('pickB').onclick=()=>savePick(1);
+$('confirmPicks').onclick=()=>confirmCoupon();
+$('editPicks').onclick=()=>{state.editMode=true;renderMatch();};
 if(!tid||tid.length>120||!/^[a-zA-Z0-9_:-]+$/.test(tid)){
  $('tournamentTitle').textContent='Turnuva seçilmedi';$('bracket').innerHTML='<div class="empty">Bir turnuvanın Arena bağlantısını aç. <a href="'+href+'">Siteye dön</a>.</div>';$('pickProgress').textContent='Turnuva bekleniyor.';$('authText').textContent='';$('participants').textContent='';$('predictionBoard').textContent='';$('refreshBtn').disabled=true;
 }else{restorePublic();refresh(true)}
