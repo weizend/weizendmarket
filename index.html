@@ -102,6 +102,11 @@
     let view=historyView || sessionStorage.getItem('wz_current_view') || 'market';
     if(!allowed.includes(view)) view='market';
 
+    // V30.3.7: Paylaşılan turnuva adresi Market yerine doğru turnuvayı açar.
+    const sharedId=(new URLSearchParams(location.search)).get('turnuva')||'';
+    window.__WZ_TOURNAMENT_DEEP_LINK__=/^[A-Za-z0-9_-]{1,110}$/.test(sharedId)?sharedId:'';
+    if(window.__WZ_TOURNAMENT_DEEP_LINK__) view='tournament';
+
     const token=localStorage.getItem('weizend_market_session_secure_v2') || '';
     if(view==='profile' && !token){
       view='market';
@@ -1813,6 +1818,22 @@ body.wz-view-tournament #wzMobileTournamentHero{display:none!important}
 .wz-turn-card-prize strong{
   color:#fff4c8;
   font-weight:1000;
+}
+/* V30.3.8: Takımlı turnuvada ödül oyuncu başına verilir. */
+.wz-turn-card-prize .wz-prize-per-player{
+  display:inline-block;margin-left:5px;padding:2px 5px;
+  border:1px solid rgba(255,219,132,.5);border-radius:5px;
+  font-size:.56rem;letter-spacing:.02em;color:#ffdf86;
+  white-space:nowrap;vertical-align:middle;
+}
+.wz-turn-prize strong .wz-prize-per-player{
+  display:block;margin-top:4px;font-size:.68rem;color:#f7d388;
+  font-weight:850;letter-spacing:.02em;
+}
+.wz-prize-split-note{
+  margin:0 0 12px;padding:10px 12px;border:1px solid #58441f;
+  background:#221b12;border-radius:10px;color:#eeddba;
+  font-size:.78rem;line-height:1.5;
 }
 .wz-turn-entry-pill{
   flex:0 0 auto;
@@ -4254,6 +4275,35 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
   .wz-turn-card-status-stack > .wz-turn-broadcast-upcoming{font-size:9px;padding:5px 8px;}
 }
 </style>
+<style id="wz-v3037-easy-registration-style">
+/* WEİZEND V30.3.7 — Mevcut Market kırmızı-siyah teması */
+.wz-v3037-help{margin:0 0 16px;border:1px solid #522124;background:linear-gradient(125deg,#201015,#0e1119);border-radius:15px;overflow:hidden;color:#fff}
+.wz-v3037-help summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;padding:14px 15px;font-weight:900;font-size:.88rem}
+.wz-v3037-help summary::-webkit-details-marker{display:none}
+.wz-v3037-help summary span{font-size:.68rem;color:#bbc0ca;font-weight:650;text-align:right}
+.wz-v3037-help[open] summary{border-bottom:1px solid #3a272b}
+.wz-v3037-help-body{display:grid;gap:9px;padding:11px}
+.wz-v3037-help-card{background:#13151b;border:1px solid #2c2e36;border-radius:10px;padding:12px}
+.wz-v3037-help-card b{color:#fff;font-size:.88rem}
+.wz-v3037-help-card p,.wz-v3037-detail-guide p{line-height:1.5;color:#c9cbd4;font-size:.77rem;margin:8px 0 0}
+.wz-v3037-help-card strong{color:#fff}
+.wz-v3037-detail-guide{margin:0 12px 12px}
+.wz-v3037-detail-guide details{background:#151419;border:1px solid #43242a;border-radius:10px;color:#eee;padding:11px}
+.wz-v3037-detail-guide summary{cursor:pointer;font-size:.78rem;font-weight:850}
+.wz-v3037-share-link{padding:11px 12px;border:1px solid #9b2329;border-radius:9px;background:#411719;color:#fff;font-size:.73rem;font-weight:850;margin-top:13px;width:100%;cursor:pointer}
+.wz-v3037-team-share{display:flex;flex-wrap:wrap;gap:8px;margin:11px 0 9px}
+.wz-v3037-team-share button{flex:1 1 180px;min-width:0}
+.wz-v3037-team-share button:disabled{opacity:.55;cursor:not-allowed}
+.wz-v3037-invite-note{line-height:1.45;margin-bottom:10px}
+.wz-v3037-register-hint{border-radius:12px;border:1px solid #702a30;background:#260e13;color:#fff;padding:12px;font-weight:750;font-size:.79rem;margin-bottom:12px;line-height:1.5}
+.wz-v3037-register-hint details{margin-top:9px;font-size:.75rem;color:#e8d5d8;font-weight:500}
+.wz-v3037-register-hint summary{font-weight:850;cursor:pointer}
+.wz-v3037-register-hint p{margin:7px 0 0}
+.wz-turn-chip[onclick*="'free'"]{border-color:#297f4b;color:#baf6ce}
+.wz-turn-chip[onclick*="'mine'"]{border-color:#84272c;color:#ffd6d6}
+.wz-turn-chip.active{background:#e31b1b!important;border-color:#e31b1b!important;color:#fff!important}
+@media(max-width:500px){.wz-v3037-help summary{align-items:flex-start;flex-direction:column}.wz-v3037-help summary span{text-align:left}.wz-v3037-team-share button{flex:1 1 100%}}
+</style>
 </head>
 <body>
 <script id="wz-v58-prepaint-view">
@@ -4852,6 +4902,7 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
 (function(){
   try{
     if((window.__WZ_INITIAL_VIEW__||'market')!=='tournament') return;
+    if(window.__WZ_TOURNAMENT_DEEP_LINK__) return; // başka turnuvanın cache'ini gösterme
 
     const host=document.getElementById('wzEsportsHub');
     if(!host) return;
@@ -6004,6 +6055,12 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
                     if (reason === 'inbox_changed') {
                         refreshInboxAfterRealtime().catch(() => {});
                         return;
+                    }
+
+                    if (reason === 'arena_match_changed') {
+                        const matchId=String(message?.matchId||message?.payload?.matchId||message?.data?.matchId||'');
+                        wzArenaRefreshInviteButtons(matchId);
+                        return; // No unnecessary BotRix profile lookup for Arena signals.
                     }
 
                     // Bazı Realtime sürümleri event tipini iletip payload/reason alanını
@@ -7399,15 +7456,17 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
                 button.disabled=true;button.textContent='⚠️ LOBİ KONTROL EDİLEMEDİ';
             }finally{button.__wzLinkChecking=false;}
         }
-        // While the inbox is open, a captain's saved code unlocks players' buttons
-        // without requiring message reload. Max 5 checks per 12 seconds.
-        setInterval(()=>{
+        // V30.3.6: Invitation buttons refresh only on an actual Arena event.
+        // No 12-second background polling while the inbox remains open.
+        function wzArenaRefreshInviteButtons(matchId=''){
             const modal=document.getElementById('inboxModal');
             if(!modal||modal.style.display!=='flex'||document.hidden)return;
-            [...modal.querySelectorAll('.inbox-arena-room-btn[disabled]')].slice(0,5).forEach(button=>{
-                if(button.__wzArenaInvite)inboxSetArenaLinkStatus(button,button.__wzArenaInvite);
+            modal.querySelectorAll('.inbox-arena-room-btn').forEach(button=>{
+                const invite=button.__wzArenaInvite;
+                if(invite && (!matchId||invite.matchId===matchId))
+                    inboxSetArenaLinkStatus(button,invite).catch(()=>{});
             });
-        },12000);
+        }
 
 
         // Vaktiyle bazı OTOMATİK bildirimler D1'e 'admin' olarak kaydedilmişti.
@@ -12282,6 +12341,17 @@ return;
             content += tv2PublicBracketHtml(tv2State.publicDetail);
         }
 
+        // V30.3.7: Gerçek ödeme/abonelik/kayıt akışına dokunmadan rehber ekle.
+        if(teamSize>1){
+          const guide=team
+            ? (['ready','locked'].includes(String(team.status||'').toLowerCase())
+                ? '✅ Takımın hazır. Başlangıç saatini ve Arena maç davetini bekle.'
+                : '⏳ Takımın hazır olması için tüm oyuncuların davetle katılıp kendi şartını tamamlaması gerekiyor.')
+            : joinDraft
+              ? '⏳ Takıma katılım işlemin bekliyor. Ekrandaki katılım şartını tamamla.'
+              : '👑 Kaptansan Takım Kur, arkadaşın davet kodu verdiyse Takıma Katıl seçeneğini kullan.';
+          content = `<div class="wz-v3037-register-hint">${guide}<details><summary>❓ Nasıl yapacağım?</summary><p>Kaptan takımını oluşturup şartını tamamlayınca tek kullanımlık kodu arkadaşına yollar. Arkadaşı Kick hesabıyla giriş yapıp Takıma Katıl alanına kodu ve Riot ID'sini yazar. Her oyuncu kendi katılım şartını tamamlar. Maçlar Arena'dan AFK oynanır; yayın şart değildir.</p></details></div>`+content;
+        }
         const modalBody = document.getElementById('tv2ModalBody');
         const previousScroll = modalBody.scrollTop;
         modalBody.innerHTML = content;
@@ -12637,6 +12707,11 @@ return;
                         <div class="tv2-muted">Aktif kodu oyuncuya gönder. “Ücreti ödenmiş” kodu kullanan oyuncudan tekrar ödeme istenmez.</div>
                     </div>
                 </div>
+                <div class="wz-v3037-team-share">
+                  <button class="tv2-btn secondary" type="button" onclick="wzV3037CopyTournamentLink()">🔗 TURNUVA BAĞLANTISINI KOPYALA</button>
+                  <button class="tv2-btn" type="button" onclick="wzV3037CopyTeamInvite()" ${invites.some(x=>(x.code||x.displayCode)&&!['used','revoked','expired'].includes(String(x.status||'')))?'':'disabled'}>📨 ARKADAŞIMA DAVET MESAJI</button>
+                </div>
+                <div class="tv2-muted wz-v3037-invite-note">Bağlantı doğru turnuvayı açar. Davet mesajı, ilk kullanılabilir özel kodunu da içerir. Kod yalnızca güvendiğin takım arkadaşına gönderilmeli.</div>
                 <div class="tv3-invite-grid">
                     ${invites.length ? invites.map(inv => `
                         <div class="tv3-invite-card ${inv.prepaid ? 'prepaid' : ''} ${String(inv.status||'') === 'used' ? 'used' : ''}">
@@ -13543,8 +13618,8 @@ return;
 
   const state={
     filter:(()=>{try{return sessionStorage.getItem('wz_t_filter')||'all'}catch(_){return 'all'}})(),
-    screen:(()=>{try{return sessionStorage.getItem('wz_t_screen')||'list'}catch(_){return 'list'}})(),
-    selectedId:(()=>{try{return sessionStorage.getItem('wz_t_selected')||''}catch(_){return ''}})(),
+    screen:(()=>{try{return window.__WZ_TOURNAMENT_DEEP_LINK__?'detail':(sessionStorage.getItem('wz_t_screen')||'list')}catch(_){return 'list'}})(),
+    selectedId:(()=>{try{return window.__WZ_TOURNAMENT_DEEP_LINK__ || sessionStorage.getItem('wz_t_selected')||''}catch(_){return ''}})(),
     tab:(()=>{try{return sessionStorage.getItem('wz_t_tab')||'overview'}catch(_){return 'overview'}})(),
     bracketMode:(()=>{try{return sessionStorage.getItem('wz_t_bracket')||'tree'}catch(_){return 'tree'}})(),
     search:(()=>{try{return sessionStorage.getItem('wz_t_search')||''}catch(_){return ''}})(),
@@ -13554,7 +13629,8 @@ return;
     predictionCache:new Map(cachedPredictions),
     predictionLoading:new Set(),
     myEntryStatuses:new Map(),
-    myEntrySession:''
+    myEntrySession:'',
+    guideOpen:false
   };
 
   function persistTournamentState(){
@@ -14202,7 +14278,16 @@ return;
     const sourceIndex=tournamentSourceIndex();
 
     let list=visibleCatalog().filter(item=>{
-      if(state.filter!=='all' && tournamentCategory(item)!==state.filter) return false;
+      const selected=state.filter;
+      if(selected==='free' && tournamentEntryBadge(item).className!=='free') return false;
+      if(selected==='subscription' && tournamentEntryBadge(item).className!=='subscription') return false;
+      if(selected==='paid' && !['donation','other'].includes(tournamentEntryBadge(item).className)) return false;
+      if(selected==='mine'){
+        let token='';try{token=localStorage.getItem(SESSION_STORAGE_KEY)||''}catch(_){}
+        if(!token || state.myEntrySession!==token ||
+           !['pending','completed'].includes(state.myEntryStatuses.get(String(item?.tournament?.id||'')))) return false;
+      }
+      if(!['all','free','subscription','paid','mine'].includes(selected) && tournamentCategory(item)!==selected) return false;
       if(!q) return true;
       return tournamentSearchText(item).includes(q);
     });
@@ -14419,6 +14504,10 @@ return;
   function renderFilters(){
     const defs=[
       ['all','Tümü'],
+      ['free','🎁 Ücretsiz'],
+      ['subscription','⭐ Abonelik'],
+      ['paid','💸 Ücretli'],
+      ['mine','👤 Turnuvalarım'],
       ['live','Başlayan'],
       ['active','Aktif'],
       ['soon','Yakında'],
@@ -14543,7 +14632,10 @@ return;
     try{token=localStorage.getItem(SESSION_STORAGE_KEY)||'';}catch(_){ }
     if(!token){
       state.myEntryStatuses.clear(); state.myEntrySession='';
-      if(state.screen==='list') updateTournamentEntryNotices();
+      if(state.screen==='list') {
+        if(state.filter==='mine') refreshTournamentListResults();
+        else updateTournamentEntryNotices();
+      }
       return;
     }
     if(window.__wzV95MyEntryPending) return;
@@ -14561,7 +14653,10 @@ return;
       if((localStorage.getItem(SESSION_STORAGE_KEY)||'')!==token) return;
       state.myEntryStatuses=new Map(Object.entries(data.entries));
       state.myEntrySession=token;
-      if(state.screen==='list') updateTournamentEntryNotices();
+      if(state.screen==='list') {
+        if(state.filter==='mine') refreshTournamentListResults();
+        else updateTournamentEntryNotices();
+      }
     }catch(error){ console.warn('Turnuva durum bilgisi alınamadı:',error?.message||error); }
     finally{window.__wzV95MyEntryPending=false;}
   }
@@ -14685,7 +14780,7 @@ return;
           <div class="wz-turn-card-prizes">
             ${cardPrizes.map(([icon,place,value])=>`
               <span class="wz-turn-card-prize">
-                <span>${icon}</span><span>${esc(place)}</span><strong>${esc(value)}</strong>
+                <span>${icon}</span><span>${esc(place)}</span><strong>${esc(value)}${Number(t.teamSize||1)>1?'<small class="wz-prize-per-player">KİŞİ BAŞI</small>':''}</strong>
               </span>
             `).join('')}
           </div>
@@ -14718,6 +14813,13 @@ return;
   function tournamentListEmptyText(){
     return state.search
       ? 'Aramana uygun turnuva bulunamadı.'
+      : state.filter==='mine'
+        ? (!localStorage.getItem(SESSION_STORAGE_KEY)
+           ? '🔐 Turnuvalarını görmek için Kick hesabını doğrula.'
+           : 'Henüz kayıtlı olduğun turnuva bulunmuyor. Kayıt yaptıysan Yenile butonuna basabilirsin.')
+        : state.filter==='free' ? 'Şu anda ücretsiz turnuva bulunmuyor.'
+        : state.filter==='subscription' ? 'Şu anda abonelikle katılınabilen turnuva bulunmuyor.'
+        : state.filter==='paid' ? 'Şu anda ücretli turnuva bulunmuyor.'
       : state.filter==='done'
         ? 'Henüz tamamlanan turnuva yok.'
         : state.filter==='live'
@@ -14779,10 +14881,24 @@ return;
       window.__WZ_RESTORE_LOGOS__?.(next);
     }
   }
+  function renderEasyGuide(){
+    return `<details class="wz-v3037-help" id="wzTournamentEasyGuide" ${state.guideOpen?'open':''}>
+      <summary>❓ Nasıl katılırım? <span>Takım kurma · Davet kodu · AFK maç</span></summary>
+      <div class="wz-v3037-help-body">
+        <div class="wz-v3037-help-card"><b>👑 Takım kuracağım</b>
+          <p>Kick hesabını doğrula → turnuvada <strong>Takım Kur</strong> → takım adını ve Riot ID'ni yaz → katılım şartını tamamla → oluşturulan tek kullanımlık davet kodunu arkadaşına gönder.</p></div>
+        <div class="wz-v3037-help-card"><b>🔑 Arkadaşımın takımına katılacağım</b>
+          <p>Kaptandan turnuva bağlantısını ve davet kodunu al → Kick hesabını doğrula → <strong>Takıma Katıl</strong> → davet kodunu ve Riot ID'ni gir → gerekiyorsa kendi katılım şartını tamamla.</p></div>
+        <div class="wz-v3037-help-card"><b>🎮 Yayın olmadan AFK maç nasıl oynanır?</b>
+          <p>Başlangıçta maç davetin gelir. Kaptanlardan biri VALORANT özel oyun kodunu sisteme kaydeder; oyuncular lobiye katılıp hazır verir. Kaptanlar kadro görsellerini gönderir, onay verir ve maç başlar. Maç bitince skor ve kanıt girilir; uyuşmazlıkta yönetici inceler.</p></div>
+      </div>
+    </details>`;
+  }
   function renderListPage(){
     return `<div class="wz-turn-list-page">
       ${renderSearch()}
       ${renderFilters()}
+      ${renderEasyGuide()}
       ${renderTournamentListResults()}
     </div>`;
   }
@@ -14826,6 +14942,7 @@ return;
     const prizes=extractPrizes(detail,item);
     const pickemAward=predictionPrize(item,detail);
     const fin=finalInfo(detail);
+    const teamPrize=Number(item?.tournament?.teamSize||detail?.tournament?.teamSize||1)>1;
     const rankings=[
       {name: fin.champion || 'Henüz yok', pts: fin.champion ? '320 Puan' : '—'},
       {name: fin.runner || 'Henüz yok', pts: fin.runner ? '280 Puan' : '—'}
@@ -14838,7 +14955,7 @@ return;
       });
     }
 
-    return `<div class="wz-turn-box"><h3>Ödüller</h3><div class="wz-turn-prizes">${prizes.map(p=>`<div class="wz-turn-prize ${p.className}"><div class="icon">${p.icon}</div><div><b>${p.place}</b><span>${p.label}</span></div><strong>${esc(p.value)}</strong></div>`).join('')}</div>
+    return `<div class="wz-turn-box"><h3>Ödüller</h3>${teamPrize?'<div class="wz-prize-split-note">🏅 <b>KİŞİ BAŞI ÖDÜL</b> — 1., 2. ve 3. sıradaki takım ödülleri her oyuncuya ayrı ayrı verilir; takım arasında bölünmez.</div>':''}<div class="wz-turn-prizes">${prizes.map(p=>`<div class="wz-turn-prize ${p.className}"><div class="icon">${p.icon}</div><div><b>${p.place}</b><span>${p.label}</span></div><strong>${esc(p.value)}${teamPrize && p.value!=='Açıklanmadı'?'<small class="wz-prize-per-player">KİŞİ BAŞI</small>':''}</strong></div>`).join('')}</div>
       <div class="wz-turn-pickem-award"><div class="wz-turn-prize"><div class="icon">🎯</div><div><b>En İyi Tahmin Ödülü</b><span>WEİZEND ARENA fikstür tahmini ödülü</span></div><strong>${esc(pickemAward)}</strong></div></div>
       <div class="wz-turn-ranking"><h4>Sıralama</h4>${rankings.map((r,i)=>`<div class="wz-turn-rankrow"><div class="wz-turn-rankbadge">${i+1}</div><div>${esc(r.name)}</div><div>${esc(r.pts)}</div></div>`).join('')}</div>
     </div>`;
@@ -14861,6 +14978,7 @@ return;
         <div class="wz-turn-detailrow"><span>Maç Formatı</span><b>${esc(matchFormat(t,rule))}</b></div>
         <div class="wz-turn-detailrow"><span>Kontenjan</span><b>${Number(t.capacity||0)||'-'} ${Number(t.teamSize||1)>1?'Takım':'Oyuncu'}</b></div>
         <div class="wz-turn-detailrow"><span>Katılım</span><b>${esc(entryText(item))}</b></div>
+        ${Number(t.teamSize||1)>1?'<div class="wz-turn-detailrow"><span>Ödül Dağılımı</span><b>🏅 Kişi Başı</b></div>':''}
       </div>
     </div>`;
   }
@@ -15435,6 +15553,13 @@ return;
             </div>` : `
             <button id="wzTurnRegisterBtn" type="button" class="wz-turn-register ${registrationAction.enabled?'':'is-disabled'}"
               onclick="wzTournamentRegistration('${esc(id)}')" ${registrationAction.enabled ? '' : 'disabled'}>${esc(registrationAction.label)}</button>`}
+          <div class="wz-v3037-detail-guide"><details>
+            <summary>❓ Kayıt ve AFK maç nasıl işliyor?</summary>
+            <p><strong>Kaptan:</strong> Takım Kur → katılım şartını tamamla → davet kodunu arkadaşına gönder.</p>
+            <p><strong>Oyuncu:</strong> Takıma Katıl → davet kodunu ve Riot ID'ni gir → katılım şartını tamamla.</p>
+            <p><strong>AFK:</strong> Maç daveti → kaptanın VALORANT lobisi → hazır onayları → kadro kanıtları → maç → sonuç. Canlı yayın gerekmiyor.</p>
+            <button type="button" class="wz-v3037-share-link" onclick="wzV3037CopyTournamentLink('${esc(id)}')">🔗 BU TURNUVANIN BAĞLANTISINI KOPYALA</button>
+          </details></div>
           <div class="wz-turn-tabs-label">Turnuva Detayları</div>
           <nav class="wz-turn-tabs" aria-label="Turnuva detay bölümleri">${tabButtons.map(([id2,icon,name])=>`<button type="button" class="wz-turn-tab ${state.tab===id2?'active':''} ${id2==='arena'?'wz-arena-intro-tab':''}" onclick="wzTurnSetTab('${id2}')" aria-pressed="${state.tab===id2?'true':'false'}"><span class="wz-turn-tab-icon" aria-hidden="true">${icon}</span><span>${name}</span></button>`).join('')}</nav>
           <div class="wz-turn-panel">${panel}</div>
@@ -15636,7 +15761,12 @@ return;
   };
   window.wzTurnSetFilter=function(filter){
     wzReleaseHydratedTournamentShell();
+    state.guideOpen=!!document.getElementById('wzTournamentEasyGuide')?.open;
     state.filter=filter;
+    if(filter==='mine' && state.myEntrySession!==(localStorage.getItem(SESSION_STORAGE_KEY)||'')){
+      // Mevcut endpoint, yalnızca gerçekten gerekliyse bir kez çağrılır.
+      wzV95LoadMyEntryStatuses();
+    }
     persistTournamentState();
     render();
   };
@@ -15659,6 +15789,11 @@ return;
   };
 
   window.wzTurnBack=function(){
+    // Kişisel davet bağlantısındaki turnuva parametresini geri çıkarken temizle.
+    if(window.__WZ_TOURNAMENT_DEEP_LINK__){
+      try{const url=new URL(location.href);url.searchParams.delete('turnuva');history.replaceState(history.state,'',url.href);}catch(_){}
+      window.__WZ_TOURNAMENT_DEEP_LINK__='';
+    }
     wzV95ClosePublicTeam();
     wzReleaseHydratedTournamentShell();
     state.screen='list';
@@ -16136,5 +16271,49 @@ return;
 }
 </style>
 
+<script id="wz-v3037-share-js">
+(function(){
+  'use strict';
+  function linkFor(id){
+    const key=String(id||'');
+    if(!/^[A-Za-z0-9_-]{1,110}$/.test(key)) throw new Error('Turnuva bağlantısı oluşturulamadı.');
+    // URL'deki diğer parametreler özel bilgi içerebilir; paylaşma.
+    const url=new URL(location.pathname,location.origin);
+    url.searchParams.set('turnuva',key);
+    return url.href;
+  }
+  function currentTeamTournamentId(){
+    try{return String(tv2State?.tournamentId||'');}catch(_){return '';}
+  }
+  async function copyOut(value,msg){
+    if(typeof copyTextReliable!=='function') throw new Error('Kopyalama kullanılamıyor.');
+    await copyTextReliable(value);
+    if(typeof showStatusToast==='function')showStatusToast(msg||'✅ Kopyalandı.',2600);
+  }
+  window.wzV3037CopyTournamentLink=async function(tournamentId){
+    try{
+      await copyOut(linkFor(tournamentId||currentTeamTournamentId()),'✅ Turnuva bağlantısı kopyalandı.');
+    }catch(err){if(typeof showStatusToast==='function')showStatusToast('⚠️ '+(err?.message||err),3500);}
+  };
+  window.wzV3037CopyTeamInvite=async function(){
+    try{
+      const me=typeof tv2State!=='undefined'?tv2State.me:null;
+      if(!me?.team)throw new Error('Takım kaydın bulunamadı.');
+      if(typeof tv3IsCaptain!=='function'||!tv3IsCaptain(me))throw new Error('Davet mesajını sadece kaptan hazırlayabilir.');
+      const invites=Array.isArray(me.invites)?me.invites:[];
+      const invite=invites.find(i=>
+        (i.code||i.displayCode) && !['used','revoked','expired'].includes(String(i.status||''))
+      );
+      if(!invite)throw new Error('Kaptanın katılım şartı doğrulandığında davet kodun burada oluşacak.');
+      const code=String(invite.code||invite.displayCode);
+      const id=currentTeamTournamentId();
+      const title=String(tv2State?.publicData?.tournament?.name||'WEİZEND Turnuvası');
+      const teamName=String(me.team.name||me.team.teamName||'takımımız');
+      const message=`🎮 ${title}\n👑 ${teamName} takımına davetlisin!\n\n1️⃣ Bu turnuvayı aç: ${linkFor(id)}\n2️⃣ Kick hesabınla doğrulama yap.\n3️⃣ TAKIMA KATIL butonuna bas.\n4️⃣ Davet kodunu ve Riot ID'ni gir.\n5️⃣ Gerekli katılım şartını tamamla.\n\n🔑 Tek kullanımlık takım kodun: ${code}\n\n🏆 Maçlar WEİZEND ARENA'da AFK oynanır, yayın gerekmez.\n🔒 Bu kodu başka kimseyle paylaşma.`;
+      await copyOut(message,'✅ Davet mesajı kopyalandı. Arkadaşına gönderebilirsin.');
+    }catch(err){if(typeof showStatusToast==='function')showStatusToast('⚠️ '+(err?.message||err),4100);}
+  };
+})();
+</script>
 </body>
 </html>
