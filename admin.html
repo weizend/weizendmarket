@@ -6256,6 +6256,23 @@ function dmInitial(value){
   return esc((text[0] || '?').toLocaleUpperCase('tr-TR'));
 }
 
+// Eski otomatik kayıtların bir kısmı yanlışlıkla 'admin' olarak kaydedilmişti.
+// Yalnızca işleme özgü belirteci olan şablonları griye çeviriyoruz;
+// kişisel yönetici mesajlarını asla genel bir metin/renk kuralıyla değiştirme.
+function dmIsLegacyAutomaticNotice(message){
+  const sender = String(message?.sender_type || message?.last_sender_type || '');
+  const subject = String(message?.subject || message?.last_subject || '').trim();
+  const body = String(message?.body || message?.last_body || '');
+  if(sender !== 'admin') return false;
+  if(subject === '🎁 Hediye Kodunuz Teslim Edildi') {
+    return body.includes('Hediye İşlem No: GFTORD');
+  }
+  if(subject === '📦 Siparişiniz Teslim Edildi') {
+    return /Sipariş No:\s*ORD[-_A-Za-z0-9]+/i.test(body);
+  }
+  return false;
+}
+
 function dmPreviewPrefix(senderType){
   if(senderType === 'admin') return 'Sen: ';
   if(senderType === 'system') return 'Sistem: ';
@@ -6351,7 +6368,8 @@ function renderAdminConversationList(){
     list.innerHTML = rows.map(c => {
       const active = c.kick_uid === currentAdminConversationUid ? ' active' : '';
       const unread = Number(c.unread_count || 0);
-      const preview = `${dmPreviewPrefix(c.last_sender_type)}${String(c.last_body || '').replace(/\s+/g,' ').trim() || 'Mesaj yok'}`;
+      const previewType = dmIsLegacyAutomaticNotice(c) ? 'system' : c.last_sender_type;
+      const preview = `${dmPreviewPrefix(previewType)}${String(c.last_body || '').replace(/\s+/g,' ').trim() || 'Mesaj yok'}`;
       return `
         <button class="dmConversationItem${active}" onclick="selectAdminConversation('${encodeURIComponent(c.kick_uid)}')">
           <span class="dmAvatar">${dmInitial(c.username || c.nickname || '?')}</span>
@@ -6462,7 +6480,12 @@ function renderAdminConversation(){
     box.innerHTML = '<div class="dmChatEmpty"><div class="dmChatEmptyIcon">✉️</div><strong style="color:#fff;">Henüz mesaj yok</strong><div style="margin-top:7px;">Aşağıdan ilk mesajı gönderebilirsin.</div></div>';
   }else{
     box.innerHTML = rows.map(m => {
-      const type = ['user','admin','system'].includes(m.sender_type) ? m.sender_type : 'system';
+      const type = dmIsLegacyAutomaticNotice(m)
+        ? 'system'
+        : (['user','admin','system'].includes(m.sender_type) ? m.sender_type : 'system');
+      const readText = type === 'system' && m.sender_type === 'admin'
+        ? (m.user_read_at ? 'Görüldü' : 'Sistem')
+        : dmReadText(m);
       const body = String(m.body || '')
         .replace(/\r\n/g,'\n')
         .replace(/\n{3,}/g,'\n\n')
@@ -6480,7 +6503,7 @@ function renderAdminConversation(){
               </svg>
             </button>
           </div>
-          <div class="dmBubbleMeta">${esc(dateText(m.created_at))} · ${esc(dmReadText(m))}</div>
+          <div class="dmBubbleMeta">${esc(dateText(m.created_at))} · ${esc(readText)}</div>
         </div>`;
     }).join('');
   }
