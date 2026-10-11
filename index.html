@@ -570,7 +570,7 @@ body.wz-initializing *{
         .inbox-thread-status { color:var(--text-muted); font-size:.8rem; margin-top:5px; }
         .inbox-messages { flex:1; overflow:auto; padding:18px; display:flex; flex-direction:column; gap:12px; background:#070707; min-height:0; }
         .inbox-message { max-width:86%; border-radius:14px; padding:12px 14px; border:1px solid #292929; background:#121212; align-self:flex-start; }
-        .inbox-message.admin, .inbox-message.system { border-color:#502020; background:#160b0b; }
+        .inbox-message.admin { border-color:#502020; background:#160b0b; }
         .inbox-message.user { align-self:flex-end; background:#171717; }
         .inbox-message-sender { font-size:.76rem; font-weight:900; color:#ff7777; margin-bottom:5px; }
         .inbox-message.user .inbox-message-sender { color:#ddd; text-align:right; }
@@ -4153,6 +4153,49 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
 }
 .wz-turn-game-logo:has(img[src^="data:image/"]){visibility:visible}
 </style>
+
+<!-- WEİZEND MARKET · Kullanıcı mesaj kutusu renk politikası: yalnızca manuel admin kırmızı -->
+<style id="wz-market-inbox-system-grey-v1">
+/* Yeni bildirimler sender_type=system, eski kesin şablonlar ön yüzde system olarak gösterilir. */
+#inboxModal #inboxMessages .inbox-message.system {
+  align-self:center !important;
+  margin-inline:auto !important;
+  max-width:min(86%,680px) !important;
+  padding:13px 44px !important;
+  background:#141414 !important;
+  border:1px solid #303030 !important;
+  border-radius:14px !important;
+  box-shadow:none !important;
+  text-align:center !important;
+  color:#e5e5e5 !important;
+}
+#inboxModal #inboxMessages .inbox-message.system .inbox-message-sender {
+  display:none !important;
+}
+#inboxModal #inboxMessages .inbox-message.system .inbox-message-text {
+  color:#dedede !important;
+  text-align:center !important;
+  white-space:pre-wrap !important;
+  overflow-wrap:anywhere !important;
+}
+#inboxModal #inboxMessages .inbox-message.system .inbox-message-date {
+  color:#858585 !important;
+  text-align:center !important;
+}
+/* Kullanıcının mesajı ve senin gerçek admin mesajın değişmez. */
+#inboxModal #inboxMessages .inbox-message.admin {
+  background:#160b0b;
+  border-color:#502020;
+  align-self:flex-start;
+  text-align:left;
+}
+@media(max-width:640px) {
+  #inboxModal #inboxMessages .inbox-message.system {
+    max-width:94% !important;
+    padding:12px 40px !important;
+  }
+}
+</style>
 </head>
 <body>
 <script id="wz-v58-prepaint-view">
@@ -7255,6 +7298,31 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
             );
         }
 
+        // Vaktiyle bazı OTOMATİK bildirimler D1'e 'admin' olarak kaydedilmişti.
+        // Yalnızca işleme özel, doğrulanabilir eski şablonlar griye dönüştürülür.
+        // Rastgele yazılmış yönetici mesajlarını içerik benziyor diye dönüştürmeyiz.
+        function isLegacyAutomaticMarketMessage(item) {
+            const kind = String(item?.sender_type || item?.senderType || '').trim().toLowerCase();
+            if (kind !== 'admin') return false;
+            const subject = String(item?.subject || '').trim();
+            const body = String(item?.body || '');
+            if (subject === '🎁 Hediye Kodunuz Teslim Edildi') {
+                return /Hediye İşlem No:\s*GFTORD[-_A-Z0-9]+/i.test(body);
+            }
+            if (subject === '📦 Siparişiniz Teslim Edildi') {
+                return /Sipariş No:\s*ORD[-_A-Z0-9]+/i.test(body);
+            }
+            return false;
+        }
+
+        function inboxMessageDisplayType(item) {
+            const kind = String(item?.sender_type || item?.senderType || 'system').trim().toLowerCase();
+            if (kind === 'user') return 'user';
+            if (kind === 'system' || isLegacyAutomaticMarketMessage(item)) return 'system';
+            // Tanınmayan türleri kırmızı bir yönetici mesajı olarak göstermiyoruz.
+            return kind === 'admin' ? 'admin' : 'system';
+        }
+
         function renderInboxMessages(items) {
             const box = document.getElementById('inboxMessages');
             const previousScrollTop = box.scrollTop;
@@ -7268,7 +7336,7 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
             }
 
             items.forEach(item => {
-                const senderType = String(item.sender_type || item.senderType || 'system');
+                const senderType = inboxMessageDisplayType(item);
                 const senderName = item.sender_name || item.senderName ||
                     (senderType === 'user' ? currentUsername : '(Yönetici) Weizend');
 
