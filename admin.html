@@ -10648,9 +10648,21 @@ async function loadArenaLobbiesAdmin(forcedId){
     const serverStart=d.tournamentStartsAt && Number.isFinite(Date.parse(d.tournamentStartsAt))
       ? new Date(d.tournamentStartsAt).toLocaleString('tr-TR',{dateStyle:'medium',timeStyle:'short'})
       : 'belirlenmemiş';
+    const startsMs=Date.parse(String(d.tournamentStartsAt||''));
+    const serverMs=Date.parse(String(d.serverNow||''));
+    const remaining=Number.isFinite(startsMs)&&Number.isFinite(serverMs)
+      ? Math.ceil((startsMs-serverMs)/60000)
+      : null;
+    const serverClock=Number.isFinite(serverMs)
+      ? new Date(serverMs).toLocaleString('tr-TR',{dateStyle:'medium',timeStyle:'short'})
+      : 'bilinmiyor';
+    const clockNote=remaining===null?'':remaining>0
+      ? ` · Sunucuya göre ${remaining} dk kaldı.`
+      : ` · Sunucuya göre başlangıç ${Math.abs(remaining)} dk önceydi.`;
     status.textContent=`✅ ${now} — Worker’dan lobi verileri yeniden alındı (${(d.matches||[]).length} maç). `+
       (oldSnapshot===undefined?'İlk kontrol tamamlandı.':oldSnapshot===snapshot?'Önceki kontrolle aynı; D1 kayıtları değişmedi.':'Lobi bilgilerinde değişiklik var.')+
-      (d.callAllowed===true?' · ✅ Maç çağrısı saat açısından açık.':' · ⏳ Maç çağrısı kilitli; başlangıç: '+serverStart);
+      (d.callAllowed===true?' · ✅ Maç çağrısı saat açısından açık.':' · ⏳ Maç çağrısı kilitli.')+
+      ' · Sunucu saati: '+serverClock+' · Turnuva başlangıcı: '+serverStart+clockNote;
   }
   const matchNames=new Map((currentTournamentBracket?.matches||[]).map(m=>[String(m.id),m]));
   const lob=new Map((d.lobbies||[]).map(x=>[String(x.match_id),x]));
