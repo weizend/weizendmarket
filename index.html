@@ -9992,7 +9992,14 @@ return;
         return '🎁 Ücretsiz';
     }
 
-    function tv2LifecycleLabel(status) {
+    function tv2LifecycleLabel(status,tournament) {
+        if(status === 'registration_complete' && tournament && Number(tournament.teamSize || 1) > 1){
+            const registered=Number(tournament.registeredCount);
+            const ready=Number(tournament.completedCount);
+            if(Number.isFinite(registered) && Number.isFinite(ready) && registered>ready){
+                return `⏳ TAKIM KADROLARI BEKLENİYOR (${ready}/${registered})`;
+            }
+        }
         const map = {
             completed:'🏁 TAMAMLANDI',
             in_progress:'🎮 TURNUVA BAŞLADI',
@@ -10056,6 +10063,30 @@ return;
 
         // Planlı açılış yoksa eski manuel açık/kapalı mantığı.
         if (Number.isFinite(closeTs) && now >= closeTs) return true;
+        return t.registrationOpen !== true;
+    }
+
+    // Takım kontenjanı dolduğunda yeni takım KAPALI kalır; fakat dolmamış
+    // kadroya davetle katılım, kayıt süresi hâlâ açıksa devam edebilir.
+    // Sunucu tek kullanımlık davet, Kick UID, koltuk ve tarih doğrulamasını yapar.
+    function tv3InviteJoinClosed(item){
+        const t=item?.tournament || {};
+        const rule=item?.rule || {};
+        if(rule.comingSoon === true || t.comingSoon === true || t.active === false) return true;
+        const lifecycle=String(t.lifecycleStatus || '').toLowerCase();
+        if(['completed','in_progress','passive'].includes(lifecycle)) return true;
+        const registered=Number(t.registeredCount || 0);
+        const ready=Number(t.completedCount || 0);
+        if(Number(t.teamSize || 1)<=1 || registered<=ready) return tv2RegistrationClosed(item);
+        const now=Date.now();
+        const open=rule.registrationOpensAt || t.registrationOpensAt;
+        const close=rule.registrationClosesAt || t.registrationClosesAt;
+        const opensAt=open ? Date.parse(open) : NaN;
+        const closesAt=close ? Date.parse(close) : NaN;
+        if(Number.isFinite(opensAt) && now<opensAt) return true;
+        if(Number.isFinite(closesAt) && now>=closesAt) return true;
+        // Planlı açılış varsa Worker'ın kontrolü de register flag'inden bağımsız.
+        if(Number.isFinite(opensAt) && now>=opensAt) return false;
         return t.registrationOpen !== true;
     }
 
@@ -10281,7 +10312,7 @@ return;
                     : (
                         lifecycle === 'registration_open'
                             ? 'Kayıtlar açık'
-                            : tv2LifecycleLabel(lifecycle)
+                            : tv2LifecycleLabel(lifecycle,t)
                     );
 
             return `
@@ -10296,7 +10327,7 @@ return;
                                         : lifecycle === 'registration_open'
                                             ? 'ok'
                                             : ''
-                                }">${tv2Esc(tv2LifecycleLabel(lifecycle))}</span>
+                                }">${tv2Esc(tv2LifecycleLabel(lifecycle,t))}</span>
                             </div>
                         </div>
                         <span class="tv2-card-badge">${tv2Esc(modeText)}</span>
@@ -10539,7 +10570,7 @@ return;
                 </div>
                 <div class="tv2-panel">
                     <span class="tv2-status-pill ${lifecycle==='registration_open'?'ok':lifecycle==='completed'?'bad':''}">
-                        ${tv2Esc(tv2LifecycleLabel(lifecycle))}
+                        ${tv2Esc(tv2LifecycleLabel(lifecycle,t))}
                     </span>
                     <div class="tv2-muted" style="margin-top:9px;">
                         Kayıt: <b>${Number(t?.registeredCount || 0)} / ${Number(t?.capacity || 0) || '-'}</b>
@@ -11703,7 +11734,7 @@ return;
                     </div>
                 </div>
                 <div class="tv2-panel">
-                    <span class="tv2-status-pill ${lifecycle==='registration_open'?'ok':lifecycle==='completed'?'bad':''}">${tv2Esc(tv2LifecycleLabel(lifecycle))}</span>
+                    <span class="tv2-status-pill ${lifecycle==='registration_open'?'ok':lifecycle==='completed'?'bad':''}">${tv2Esc(tv2LifecycleLabel(lifecycle,t))}</span>
                 </div>
             </div>
             <div class="tv2-panel">${action}</div>
@@ -12070,6 +12101,7 @@ return;
         const team = me.team || null;
         const joinDraft = me.joinDraft || tv2State.joinDraft || null;
         const closed = tv2RegistrationClosed({tournament:t,rule});
+        const inviteJoinClosed = tv3InviteJoinClosed({tournament:t,rule});
         const comingSoon = rule?.comingSoon === true || t?.comingSoon === true;
         const teamSize = Math.max(1, Number(t.teamSize || 1));
 
@@ -12084,7 +12116,7 @@ return;
                     </div>
                 </div>
                 <div class="tv2-panel">
-                    <span class="tv2-status-pill ${closed ? 'bad' : 'ok'}">${closed ? '🔒 Kayıt Kapalı' : '🟢 Kayıt Açık'}</span>
+                    <span class="tv2-status-pill ${closed ? 'bad' : 'ok'}">${closed ? (!inviteJoinClosed ? '⏳ Takım Kontenjanı Dolu · Davet Katılımı Açık' : '🔒 Kayıt Kapalı') : '🟢 Kayıt Açık'}</span>
                     <div class="tv2-muted" style="margin-top:9px;">
                         ${teamSize > 1 ? 'Takım, bütün koltuklar dolup gerekli katılım şartları tamamlanınca hazır sayılır.' : 'Ödeme / abonelik şartı doğrulanmadan kayıt tamamlanmaz.'}
                     </div>
@@ -12104,7 +12136,7 @@ return;
                     </div>
                     <div class="tv2-actions">
                         <button class="tv2-btn" ${closed?'disabled':''} onclick="tv2ShowCreateForm()">${teamSize <= 1 ? '🎮 KAYIT OL' : '👑 TAKIM OLUŞTUR'}</button>
-                        ${teamSize > 1 ? `<button class="tv2-btn secondary" ${closed?'disabled':''} onclick="tv2ShowJoinForm()">🔑 DAVET KODUYLA KATIL</button>` : ''}
+                        ${teamSize > 1 ? `<button class="tv2-btn secondary" ${inviteJoinClosed?'disabled':''} onclick="tv2ShowJoinForm()">🔑 DAVET KODUYLA KATIL</button>` : ''}
                     </div>
                     <div id="tv2InlineForm"></div>
                 </div>
@@ -13504,7 +13536,11 @@ return;
     if(p==='soon') return 'YAKINDA';
     if(p==='completed') return 'TAMAMLANDI';
     if(p==='live') return 'CANLI';
-    if(p==='full') return 'KAYITLAR DOLU';
+    if(p==='full'){
+      const t=item?.tournament||{};
+      if(Number(t.teamSize||1)>1 && Number(t.completedCount)<Number(t.registeredCount)) return 'KADROLAR BEKLENİYOR';
+      return 'KAYITLAR DOLU';
+    }
     if(p==='passive') return 'PASİF';
     if(p==='scheduled') return `KAYIT AÇILIŞI ${formatBadgeDate(registrationOpenAt(item))}`;
     if(p==='closed') return 'KAYITLAR KAPALI';
@@ -13532,7 +13568,11 @@ return;
     if(p==='live') return {label:'TURNUVA BAŞLADI',time:'',count};
     if(p==='soon') return {label:'YAKINDA',time:'',count};
     if(p==='passive') return {label:'KAYIT KAPALI',time:'',count};
-    if(p==='full') return {label:'KAYITLAR TAMAMLANDI',time:'',count};
+    if(p==='full'){
+      if(Number(t.teamSize||1)>1 && Number(t.completedCount)<Number(t.registeredCount))
+        return {label:`TAKIM KADROLARI BEKLENİYOR · ${Number(t.completedCount)}/${Number(t.registeredCount)} HAZIR`,time:'',count};
+      return {label:'KAYITLAR TAMAMLANDI',time:'',count};
+    }
 
     if(Number.isFinite(openTs) && now<openTs){
       const left=countdownTextUntil(openAt);
