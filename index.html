@@ -660,6 +660,10 @@ body.wz-initializing *{
         }
         #inboxReplyClosed .inbox-appeal-note { margin-bottom:9px; }
 
+        .inbox-arena-room-btn{display:block;width:min(100%,420px);margin:14px auto 6px;
+            padding:12px 16px;border-radius:11px;border:1px solid #f02c32;
+            background:linear-gradient(180deg,#e7252b,#a70f18);color:#fff;font-weight:900;cursor:pointer}
+        .inbox-arena-room-btn:disabled{background:#29292e;border-color:#444;color:#bcbcbc;cursor:not-allowed}
         /* ÜRÜN ARAMA */
         .market-search-wrap { max-width:760px; margin:0 auto 18px; }
         .market-search-box { display:flex; align-items:center; gap:10px; background:#0b0b0b; border:1px solid #2d2d2d; border-radius:14px; padding:8px 10px 8px 14px; box-shadow:0 6px 25px rgba(0,0,0,.22); }
@@ -7310,6 +7314,35 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
             );
         }
 
+        // V28.2: Server-created system notifications only. Never turn arbitrary chat text into a privileged button.
+        function inboxArenaInvite(body, senderType) {
+            if(senderType !== 'system') return null;
+            const m=String(body||'').match(/\[\[WEIZEND_ARENA_LOBBY\|([A-Za-z0-9_:-]{1,120})\|([A-Za-z0-9_:-]{1,160})\]\]/);
+            return m?{marker:m[0],tournamentId:m[1],matchId:m[2]}:null;
+        }
+        async function inboxSetArenaLinkStatus(button,invite){
+            try{
+                const res=await inboxRequest('/tournament/lobby/link?matchId='+encodeURIComponent(invite.matchId));
+                if(!button.isConnected)return;
+                if(res?.active===true){
+                    button.disabled=false;
+                    button.textContent='🎮 LOBİYE KATIL';
+                    button.onclick=()=>{
+                        location.href='https://weizend.github.io/weizendmarket/arena.html?tournament='
+                            +encodeURIComponent(invite.tournamentId)+'&match='+encodeURIComponent(invite.matchId)+'&room=1';
+                    };
+                }else{
+                    button.disabled=true;
+                    button.textContent=String(res?.reason||'').includes('tamamlandı')?'🔒 LOBİ KAPANDI':'⏳ LOBİ BEKLENİYOR';
+                    button.title=String(res?.reason||'Lobi henüz aktif değil.');
+                }
+            }catch(_){
+                if(!button.isConnected)return;
+                button.disabled=true;button.textContent='⚠️ LOBİ KONTROL EDİLEMEDİ';
+            }
+        }
+
+
         // Vaktiyle bazı OTOMATİK bildirimler D1'e 'admin' olarak kaydedilmişti.
         // Yalnızca işleme özel, doğrulanabilir eski şablonlar griye dönüştürülür.
         // Rastgele yazılmış yönetici mesajlarını içerik benziyor diye dönüştürmeyiz.
@@ -7367,10 +7400,16 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
                 // backend'de yeni hak adayı oluşturur; kullanıcı tek talep gönderdiğinde
                 // o ana kadar birikmiş haklar tek seferde tüketilir.
                 const supportHtml = '';
+                const arenaInvite=inboxArenaInvite(body,senderType);
+                const messageBody=arenaInvite?body.replace(arenaInvite.marker,'').trim():body;
+                const arenaButtonHtml=arenaInvite
+                    ? '<button class="inbox-arena-room-btn" type="button" disabled>⏳ LOBİ KONTROL EDİLİYOR...</button>'
+                    : '';
 
                 bubble.innerHTML = `
                     <div class="inbox-message-sender">${escapeHtml(senderName)}</div>
-                    <div class="inbox-message-text">${inboxMessageBodyHtml(body || '—')}</div>
+                    <div class="inbox-message-text">${inboxMessageBodyHtml(messageBody || '—')}
+                    ${arenaButtonHtml}</div>
                     <div class="inbox-message-date">${escapeHtml(inboxDateText(item.created_at || item.createdAt))}</div>
                     ${supportHtml}
                     <button class="inbox-message-delete" title="Bu mesajı yalnızca benden sil" aria-label="Bu mesajı yalnızca benden sil"
@@ -7383,6 +7422,10 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
                 `;
 
                 box.appendChild(bubble);
+                if(arenaInvite){
+                    const button=bubble.querySelector('.inbox-arena-room-btn');
+                    if(button)inboxSetArenaLinkStatus(button,arenaInvite);
+                }
             });
 
             // İlk açılışta veya kullanıcı zaten aşağıdaysa son mesaja git.
