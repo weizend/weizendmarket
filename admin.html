@@ -10645,8 +10645,12 @@ async function loadArenaLobbiesAdmin(forcedId){
   arenaLobbyLastSnapshotByTournament.set(String(tid),snapshot);
   if(status){
     const now=new Date().toLocaleTimeString('tr-TR');
+    const serverStart=d.tournamentStartsAt && Number.isFinite(Date.parse(d.tournamentStartsAt))
+      ? new Date(d.tournamentStartsAt).toLocaleString('tr-TR',{dateStyle:'medium',timeStyle:'short'})
+      : 'belirlenmemiş';
     status.textContent=`✅ ${now} — Worker’dan lobi verileri yeniden alındı (${(d.matches||[]).length} maç). `+
-      (oldSnapshot===undefined?'İlk kontrol tamamlandı.':oldSnapshot===snapshot?'Önceki kontrolle aynı; D1 kayıtları değişmedi.':'Lobi bilgilerinde değişiklik var.');
+      (oldSnapshot===undefined?'İlk kontrol tamamlandı.':oldSnapshot===snapshot?'Önceki kontrolle aynı; D1 kayıtları değişmedi.':'Lobi bilgilerinde değişiklik var.')+
+      (d.callAllowed===true?' · ✅ Maç çağrısı saat açısından açık.':' · ⏳ Maç çağrısı kilitli; başlangıç: '+serverStart);
   }
   const matchNames=new Map((currentTournamentBracket?.matches||[]).map(m=>[String(m.id),m]));
   const lob=new Map((d.lobbies||[]).map(x=>[String(x.match_id),x]));
@@ -10654,6 +10658,12 @@ async function loadArenaLobbiesAdmin(forcedId){
   const matches=(d.matches||[]).filter(m=>['ready','completed'].includes(String(m.status))&&m.participant_a_id&&m.participant_b_id);
   const reports=d.reports||[];
   const reviews=d.reviews||[];
+  // V28.4.2: Sunucunun hesapladığı tarihi kullan; bilgisayar saati yetki vermez.
+  const callAllowed=d.callAllowed===true;
+  const startDate=d.tournamentStartsAt ? new Date(d.tournamentStartsAt):null;
+  const startText=startDate&&Number.isFinite(startDate.getTime())
+    ? startDate.toLocaleString('tr-TR',{dateStyle:'medium',timeStyle:'short'})
+    : 'Turnuva başlangıç tarihi ayarlanmamış';
   if(!matches.length){host.innerHTML='<div class="tournamentEmpty">Henüz kaptanların lobi kurabileceği maç yok. Fikstür yayımlandığında burada görünecek.</div>';return;}
   host.innerHTML=matches.map(m=>{
    const l=lob.get(String(m.id))||{},room=roomMap.get(String(m.id))||{},n=matchNames.get(String(m.id))||{};
@@ -10668,7 +10678,8 @@ async function loadArenaLobbiesAdmin(forcedId){
        <div class="muted">V28: ${room.started_at?'🟢 MAÇ BAŞLADI':room.lobby_code?(room.proof_a&&room.proof_b?'Görseller hazır; oyuncular bekleniyor':'Kaptan kanıtları bekleniyor'):'VALORANT kodu bekleniyor'} · ${Number(room.ready_count||0)} oyuncu hazır</div></div>
        <span class="badge ${closed?'ok':'warn'}">${closed?'Sonuçlandı':room.started_at?'Maç başladı':'Lobi hazırlığında'}</span></div>
      ${!closed?`<div class="inlineActions" style="margin:10px 0">
-       <button class="smallBtn" onclick="arenaAdminLobbyAction('${esc(mid)}','call')" ${l.called_at?'disabled':''}>⏱️ ${l.called_at?'Çağrıldı':'Maçı Çağır (15 dk)'}</button>
+       <button class="smallBtn" onclick="arenaAdminLobbyAction('${esc(mid)}','call')" ${l.called_at||!callAllowed?'disabled':''}
+         title="${esc(l.called_at?'Maç daha önce çağrıldı':callAllowed?'Maç çağrısını başlat':'Başlangıç bekleniyor: '+startText)}">⏱️ ${l.called_at?'Çağrıldı':callAllowed?'Maçı Çağır (15 dk)':'Başlangıç Saati Bekleniyor'}</button>
        <button class="smallBtn secondary" onclick="arenaAdminLobbyAction('${esc(mid)}','host','a')">A Kaptanı Lobi Kursun</button>
        <button class="smallBtn secondary" onclick="arenaAdminLobbyAction('${esc(mid)}','host','b')">B Kaptanı Lobi Kursun</button></div>`:''}
      ${l.lobby_note?`<p class="muted">Kaptan notu: ${esc(l.lobby_note)}</p>`:''}
