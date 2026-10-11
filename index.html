@@ -7328,8 +7328,10 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
                     button.disabled=false;
                     button.textContent='🎮 LOBİYE KATIL';
                     button.onclick=()=>{
-                        location.href='https://weizend.github.io/weizendmarket/arena.html?tournament='
+                        const arenaUrl='https://weizend.github.io/weizendmarket/arena.html?tournament='
                             +encodeURIComponent(invite.tournamentId)+'&match='+encodeURIComponent(invite.matchId)+'&room=1';
+                        // Kullanıcının Market mesaj kutusu yerinde kalsın.
+                        window.open(arenaUrl,'_blank','noopener,noreferrer');
                     };
                 }else{
                     button.disabled=true;
@@ -15285,8 +15287,8 @@ return;
       <div class="wz-arena-intro-note"><span aria-hidden="true">ℹ️</span><span>Katılımcılar, fikstür ve sonuçlar turnuva ilerledikçe güncellenir. Kick hesabınla Arena üzerinde tahmin yapabilirsin; maç odası ve kaptan sonuç bildirimi ise henüz ayrı bir bağlantı gerektirir.</span></div>
       <div class="wz-arena-intro-cta">
         <p>Hazırsan <strong>${name}</strong> turnuvasının Arena sayfasına geç!</p>
-        <a class="wz-arena-intro-go" href="${link}" aria-label="${name} için WEİZEND Arena sayfasına git">ŞİMDİ ARENA'YA GİT <span aria-hidden="true">↗</span></a>
-        <small>Yalnızca seçtiğin turnuvanın Arena ekranı açılır.</small>
+        <a class="wz-arena-intro-go" href="${link}" target="_blank" rel="noopener noreferrer" aria-label="${name} için WEİZEND Arena sayfasını yeni sekmede aç">ŞİMDİ ARENA'YA GİT <span aria-hidden="true">↗</span></a>
+        <small>Arena yeni sekmede açılır; Market hesabın bu sekmede açık kalır.</small>
       </div>
     </section>`;
   }
@@ -15739,6 +15741,16 @@ return;
       const enteringTournament =
         view==='tournament' &&
         !document.body.classList.contains('wz-view-tournament');
+
+      // Yalnızca gerçek sekme geçişinde listeye dön. İlk yükleme/F5 sırasında
+      // 'wz-ready' henüz yoktur; mevcut detay ve scroll restore'u korunur.
+      if(enteringTournament && document.body.classList.contains('wz-ready')){
+        wzReleaseHydratedTournamentShell();
+        state.screen='list';
+        state.tab='overview';
+        document.body.classList.remove('wz-turn-modal-open','wz-turn-modal-entering');
+        persistTournamentState();
+      }
 
       baseSetView(view);
 
