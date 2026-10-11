@@ -110,9 +110,6 @@ const $=s=>document.getElementById(s);
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const clean=x=>String(x??'').trim();
 const query=new URLSearchParams(location.search);const tid=clean(query.get('tournament'));
-const preferredMatch=clean(query.get('match'));
-const autoEnterLobby=query.get('room')==='1';
-let autoEntered=false;
 const state={tid,t:null,detail:null,pred:null,selected:null,loading:false,saving:false,authed:false,identityRequested:false,editMode:false,authState:'checking',authError:''};
 const href='https://weizend.github.io/weizendmarket/';
 const cacheKey='wz_arena_public_v1:'+tid;
@@ -258,7 +255,7 @@ function renderLobby(){
  </div>`;
  const step4=`<div class="room-step"><h3>4. Her oyuncu kendisi Hazırım der</h3><div class="lobby-grid">${rosterHtml(pa,'a')}${rosterHtml(pb,'b')}</div>
  ${!done&&!started?`<div class="lobby-actions"><button type="button" class="btn ${s.myReady?'secondary':''}" id="lobbyReadyBtn" ${!proofReady||!codeReady?'disabled':''}>${s.myReady?'↩ Hazır Değilim':'✅ Hazırım'}</button></div>`:''}
- ${started?'<p style="color:#70eb9d;font-weight:900">🟢 MAÇ BAŞLADI — Hakem tarafından onaylandı.</p>':`<p class="room-progress">${pa.ready+pb.ready}/${pa.expected+pb.expected} oyuncu hazır. ${proofReady?'Kanıtlar tamam.':'Her iki kaptanın kanıtı bekleniyor.'} Tüm oyuncular hazır olduğunda hakem/kaptan itiraz kontrolü beklenir. Başlatma yetkisi V29 ikinci aşamada açılacak.</p>`}
+ ${started?'<p style="color:#70eb9d;font-weight:900">🟢 MAÇ BAŞLADI — Bütün oyuncular hazır, kaptan kanıtları tamamlandı.</p>':`<p class="room-progress">${pa.ready+pb.ready}/${pa.expected+pb.expected} oyuncu hazır. ${proofReady?'Kanıtlar tamam.':'Her iki kaptanın kanıtı bekleniyor.'} Herkes hazır olduğunda maç durumu otomatik BAŞLADI olur.</p>`}
  <small>Site VALORANT oyununu uzaktan başlatamaz. Başladı kaydı Arena'da tutulur; sonucu hakem girer.</small></div>`;
  const reports=(s.reports||[]).map(r=>`<p class="lobby-note">🚩 ${esc(r.reason)} · ${esc(r.status)}</p>`).join('');
  const afk=!started&&!done&&s.isCaptain&&s.canReportAfk&&!s.reports?.length?`<div class="room-step"><h3>🚩 AFK Başvurusu</h3><textarea id="captainAfkReason" maxlength="800" placeholder="Rakip oyuncu gelmedi, saat ve açıklama..."></textarea><button class="btn secondary" id="lobbyAfkBtn" type="button">Hakeme Bildir</button></div>`:'';
@@ -292,9 +289,7 @@ function restorePublic(){try{const v=JSON.parse(sessionStorage.getItem(cacheKey)
 async function refresh(initial=false){if(state.loading)return;state.loading=true;state.authState=token()?'checking':'guest';state.authError='';renderAuthStatus();$('refreshBtn').disabled=true;
  try{const [detail,pred]=await Promise.all([api('/tournament/public?id='+encodeURIComponent(tid)),api('/tournament/predictions?id='+encodeURIComponent(tid))]);
  if(detail?.tournament?.id!==tid)throw Error('Sunucudan beklenen turnuva dönmedi.');
- state.detail=detail;state.t=detail.tournament;cachePublic();state.pred=pred;const matches=detail.matches||[];
- if(preferredMatch&&matches.some(m=>m.id===preferredMatch))state.selected=preferredMatch;
- else if(!matches.some(m=>m.id===state.selected))state.selected=matches[0]?.id||null;
+ state.detail=detail;state.t=detail.tournament;cachePublic();state.pred=pred;const matches=detail.matches||[];if(!matches.some(m=>m.id===state.selected))state.selected=matches[0]?.id||null;
  hideToast();renderAll();
  }catch(e){if(state.detail){toast('Güncel bilgiler alınamadı. Son görüntülenen turnuva korunuyor. '+e.message,'error');}else{toast('Turnuva açılamadı: '+e.message,'error');$('tournamentTitle').textContent='Turnuva yüklenemedi';$('bracket').innerHTML='<div class="empty">Bağlantıyı kontrol edip Yenile butonuna bas.</div>';}}
  finally{
@@ -304,10 +299,6 @@ async function refresh(initial=false){if(state.loading)return;state.loading=true
        const own=await api('/tournament/predictions/me?id='+encodeURIComponent(tid),true);
        state.pred=own;state.authed=true;state.authState='ok';state.authError='';
        renderAll();loadLobby();
-       if(autoEnterLobby&&!autoEntered&&state.selected===preferredMatch){
-         autoEntered=true;document.body.classList.add('room-focus');window.scrollTo(0,0);
-         await loadLobby();
-       }
      }catch(e){
        state.authed=false;state.authState='error';state.authError=e.message||'Oturum kontrolü başarısız.';
        renderAuthStatus();renderCouponControls();
