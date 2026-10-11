@@ -133,6 +133,13 @@ body.arena-dialog-open{overflow:hidden}
 .arena-prediction-award-caption{
   display:block;margin-top:4px;font-size:11px;color:#bcb0a0;
 }
+/* V30.3.8: Takımlı turnuva derece ödülleri kişi başı açıklaması */
+.arena-team-prize-note{
+  margin:0 0 15px;padding:11px 12px;border:1px solid #5c4522;
+  border-radius:10px;background:#241c11;color:#f2dbb1;
+  font-size:12px;line-height:1.5;
+}
+.arena-team-prize-note[hidden]{display:none}
 
 </style>
 </head>
@@ -156,6 +163,7 @@ body.arena-dialog-open{overflow:hidden}
     <span class="arena-prediction-award-caption">WEİZEND ARENA • Fikstür tahminleri</span>
   </div>
 </div>
+<div id="arenaTeamPrizeNote" class="arena-team-prize-note" hidden>🏅 <b>TAKIM ÖDÜLLERİ KİŞİ BAŞI</b> — Derece ödülü kazanan takımın her oyuncusuna ayrı ayrı verilir; ikiye bölünmez. Tahmin ödülü ise tahmin yarışmasının kazananına aittir.</div>
 <div id="picksBox"><h3>🎯 Tahminim</h3><p id="authText" class="hint">Kick hesabı kontrol ediliyor...</p><div class="choices"><button class="choose" id="pickA" disabled>Oyuncu A</button><button class="choose" id="pickB" disabled>Oyuncu B</button></div><p id="pickProgress" class="pick-status">Tahmin durumu yükleniyor...</p><button id="confirmPicks" type="button" class="btn" style="width:100%;margin:7px 0 9px;display:none" disabled>Tahminleri Onayla</button><button id="editPicks" type="button" class="btn secondary" style="width:100%;margin:7px 0 9px;display:none">Tahminleri Düzenle</button><p class="small">Seçimler taslak olarak kaydedilir. Yalnızca tamamını onayladığın kupon sıralamaya girer.</p></div><hr style="border:0;border-top:1px solid #333;margin:16px 0"><h3>👥 Takımlar / Oyuncular</h3><div id="participants" class="members"><div class="small">Katılımcılar yükleniyor...</div></div><hr style="border:0;border-top:1px solid #333;margin:16px 0"><h3>🏅 Tahmin Sıralaması</h3><div id="predictionBoard" class="small">Sıralama yükleniyor...</div></aside>
 </div>
 <div class="arena-room-overlay" id="roomDialog" role="dialog" aria-modal="true" aria-label="WEİZEND Arena maç lobisi" hidden><section class="panel lobby-panel" id="lobbyPanel"><div class="toolbar"><h2>🎮 Kaptan Lobisi ve Hazır Kontrolü</h2><button type="button" class="btn secondary" id="roomExit">← Fikstüre Dön</button><button type="button" class="btn secondary" id="lobbyRefresh">↻ Yenile</button></div>
@@ -219,6 +227,8 @@ function renderPredictionAward(){
   const prize=clean(t.predictionPrize||'');
   card.hidden=!state.detail;
   value.textContent=prize||'Belirlenmedi';
+  const teamPrizeNote=$('arenaTeamPrizeNote');
+  if(teamPrizeNote)teamPrizeNote.hidden=!state.detail || Number(t.teamSize||1)<=1;
 }
 function renderHero(){const t=state.t||{},loaded=!!state.detail;$('tournamentTitle').textContent=loaded?t.name||t.gameName||'Turnuva':'Turnuva bilgileri hazırlanıyor';$('tournamentSubtitle').textContent=loaded?`${t.gameName||'Oyun'} • ${t.mode==='solo'?'Solo':(t.teamSize||'?')+'v'+(t.teamSize||'?')} • ${t.bestOf||'BO1'}`:'Katılımcılar, fikstür, maç sonuçları ve tahminler tek yerde.';
  $('stats').innerHTML=loaded?`<span class="tag">${esc(t.gameName||'Oyun')}</span><span class="tag">${esc(t.bestOf||'BO1')}</span><span class="tag">${Number(t.registeredCount||0)} / ${Number(t.capacity||0)} ${t.mode==='solo'?'oyuncu':'takım'}</span><span class="tag red">${state.detail.matches.length?'Fikstür Yayında':'Fikstür Bekleniyor'}</span>`:'';}
@@ -320,7 +330,7 @@ function openInvitationRoom(){
  roomDialog.hidden=false;document.body.classList.add('arena-dialog-open');try{sessionStorage.setItem('wz_v30_active_match_'+tid,state.selected);}catch{};loadLobby();
 }
 function closeInvitationRoom(){
- roomDialog.hidden=true;document.body.classList.remove('arena-dialog-open');
+ roomDialog.hidden=true;document.body.classList.remove('arena-dialog-open');v306Disconnect();
  if(v30RoomInterval){clearInterval(v30RoomInterval);v30RoomInterval=null;}
  lobbySeq++;lobbyCache=null;
  const params=new URLSearchParams(location.search);params.delete('room');params.delete('match');
@@ -332,6 +342,62 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!roomDialog.hidden&
 function lobbyMarkup(text){const el=$('lobbyContent');if(el)el.textContent=text;}
 // V30 isolated UI. The previous V28 view remains for non-enabled tournaments.
 let v30RoomSnapshot='',v30RoomInterval=null,v30PollingBusy=false;
+let v306Socket=null,v306SocketUser='',v306Reconnect=null,v306SyncPending=false;
+const V306_REALTIME_URL='wss://weizend-realtime.weizendtv.workers.dev/ws';
+function v306Username(){try{return String(localStorage.getItem('weizend_market_username')||'').trim();}catch{return '';}}
+function v306Disconnect(){
+ if(v306Reconnect){clearTimeout(v306Reconnect);v306Reconnect=null;}
+ const socket=v306Socket;v306Socket=null;v306SocketUser='';
+ if(socket){try{socket.close(1000,'Arena match closed');}catch{}}
+}
+async function v306SyncOnce(){
+ if(roomDialog.hidden||!lobbyCache?.v30||lobbySaving||v30PollingBusy||document.hidden){v306SyncPending=true;return;}
+ const m=activeMatch();if(!m)return;
+ v30PollingBusy=true;v306SyncPending=false;
+ const tag=String(document.activeElement?.tagName||'').toUpperCase();
+ const editing=['INPUT','TEXTAREA','SELECT'].includes(tag);
+ try{
+  const data=await api('/tournament/lobby?matchId='+encodeURIComponent(m.id),true);
+  if(roomDialog.hidden||lobbySaving||activeMatch()?.id!==m.id)return;
+  const snapshot=JSON.stringify(data);
+  if(snapshot!==v30RoomSnapshot){
+   const samePhase=lobbyCache?.phase===data.phase;
+   lobbyCache=data;v30RoomSnapshot=snapshot;
+   if(!editing||!samePhase){renderLobby();if(data.matchStatus==='completed')await refresh();}
+  }
+ }catch(e){const status=$('v30InlineStatus');if(status){status.hidden=false;status.textContent='Bağlantı kontrolü: '+e.message;}}
+ finally{v30PollingBusy=false;if(v306SyncPending){v306SyncPending=false;queueMicrotask(v306SyncOnce);}}
+}
+function v306Connect(){
+ if(roomDialog.hidden||!lobbyCache?.v30||!token())return;
+ const user=v306Username();if(!/^[A-Za-z0-9_]{2,40}$/.test(user))return;
+ if(v306Socket&&v306SocketUser.toLowerCase()===user.toLowerCase()&&v306Socket.readyState<=1)return;
+ if(v306Socket){try{v306Socket.close();}catch{}}
+ if(v306Reconnect){clearTimeout(v306Reconnect);v306Reconnect=null;}
+ v306SocketUser=user;
+ let socket;try{socket=new WebSocket(V306_REALTIME_URL+'?user='+encodeURIComponent(user));}catch{return;}
+ v306Socket=socket;
+ socket.onopen=()=>{if(v306Socket===socket)v306SyncOnce();};
+ socket.onmessage=e=>{
+  if(v306Socket!==socket)return;
+  let msg;try{msg=JSON.parse(String(e.data||''));}catch{return;}
+  const reason=String(msg?.reason||msg?.payload?.reason||msg?.data?.reason||'');
+  const mid=String(msg?.matchId||msg?.payload?.matchId||msg?.data?.matchId||'');
+  if(msg?.type==='profile_changed'&&reason==='arena_match_changed'&&mid===activeMatch()?.id)v306SyncOnce();
+ };
+ socket.onclose=()=>{
+  if(v306Socket!==socket)return;
+  v306Socket=null;
+  if(!roomDialog.hidden&&!document.hidden&&!v306Reconnect){
+   v306Reconnect=setTimeout(()=>{v306Reconnect=null;v306Connect();},12000);
+  }
+ };
+ socket.onerror=()=>{try{socket.close();}catch{}};
+}
+document.addEventListener('visibilitychange',()=>{
+ if(!roomDialog.hidden&&lobbyCache?.v30&&!document.hidden){v306Connect();v306SyncOnce();}
+});
+
 function v30RoomHtml(s,m){
   const p=s.players||{},a=p.a||{expected:0,ready:0,members:[]},b=p.b||{expected:0,ready:0,members:[]};
   const cap=s.isCaptain,side=s.side,host=s.hostSide||'a';
@@ -380,26 +446,8 @@ function v30RenderLobby(s,m){
   updateRoomCountdown();
 }
 function v30StartPolling(){
-  if(v30RoomInterval)return;
-  v30RoomInterval=setInterval(async()=>{
-    if(roomDialog.hidden||!lobbyCache?.v30||lobbySaving||v30PollingBusy||document.hidden)return;
-    // Never erase a typed draft in the same phase; a phase change is authoritative
-    // and MUST replace an outdated code input even if it is focused.
-    const tag=String(document.activeElement?.tagName||'').toUpperCase();
-    const editing=['INPUT','TEXTAREA','SELECT'].includes(tag);
-    const m=activeMatch();if(!m)return;
-    v30PollingBusy=true;
-    try{
-      const data=await api('/tournament/lobby?matchId='+encodeURIComponent(m.id),true);
-      if(roomDialog.hidden||lobbySaving)return;
-      const next=JSON.stringify(data);
-      if(next!==v30RoomSnapshot){
-        const samePhase=lobbyCache?.phase===data.phase;
-        v30RoomSnapshot=next;lobbyCache=data;
-        if(!editing||!samePhase){renderLobby();if(data.matchStatus==='completed')await refresh();}
-      }
-    }catch(e){const status=$('v30InlineStatus');if(status){status.hidden=false;status.textContent='Bağlantı kontrolü: '+e.message;}}finally{v30PollingBusy=false;}
-  },9000);
+ // Arena state is updated on WebSocket events; do not make idle requests.
+ v306Connect();
 }
 
 function renderLobby(){
