@@ -10060,7 +10060,7 @@ return;
         const map = {
             completed:'🏁 TAMAMLANDI',
             in_progress:'🎮 TURNUVA BAŞLADI',
-            registration_complete:'✅ KAYITLAR TAMAMLANDI',
+            registration_complete:'✅ KAYITLAR DOLDU',
             registration_open:'🟢 KAYITLAR AÇIK',
             registration_closed:'🔴 KAYITLAR KAPALI'
         };
@@ -13550,9 +13550,10 @@ return;
     // Tamamlandı admin/lifecycle tarafından kesin durumdur.
     if(l==='completed') return 'completed';
 
-    // Turnuva başlangıç saati geçtiyse lifecycle güncellenmesini beklemeden CANLI göster.
-    // Böylece dış kart, detay zaman çizelgesiyle aynı durumu kullanır.
-    if(l==='in_progress' || (Number.isFinite(startTs) && now>=startTs)) return 'live';
+    // V28.4.3: Fikstür tek başına CANLI anlamına gelmez.
+    // Worker sunucu saatine göre in_progress döndürmüş OLMALI ve yerel sayaç
+    // da başlangıca ulaşmış olmalı; erken CANLI göstermemek için iki koşul var.
+    if(l==='in_progress' && Number.isFinite(startTs) && now>=startTs) return 'live';
 
     // Manuel "Yakında" modu tarih/saatten bağımsızdır ama başlamış turnuvayı ezmez.
     if(comingSoon(item)) return 'soon';
@@ -13599,7 +13600,7 @@ return;
     if(p==='full'){
       const t=item?.tournament||{};
       if(Number(t.teamSize||1)>1 && Number(t.completedCount)<Number(t.registeredCount)) return 'KADROLAR BEKLENİYOR';
-      return 'KAYITLAR DOLU';
+      return 'KAYITLAR DOLDU';
     }
     if(p==='passive') return 'PASİF';
     if(p==='scheduled') return `KAYIT AÇILIŞI ${formatBadgeDate(registrationOpenAt(item))}`;
@@ -14027,6 +14028,7 @@ return;
     const c=tournamentCategory(item);
     if(c==='done') return 'TAMAMLANDI';
     if(c==='live') return 'CANLI';
+    if(registrationPhase(item)==='full') return 'KAYITLAR DOLDU';
     if(c==='soon') return 'YAKINDA';
     if(wzV272RosterWaiting(item)) return 'KADROLAR BEKLENİYOR';
     if(registrationPhase(item)==='full') return 'KAYITLAR DOLU';
