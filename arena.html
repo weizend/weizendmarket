@@ -345,8 +345,8 @@ function v30RoomHtml(s,m){
   const blocked=s.phase==='blocked';
   const waitLine='<p class="hint">Diğer kaptanın onayı bekleniyor. İşlemler sunucuda saklanır; sayfayı yenilemen gerekmez.</p>';
   let controls='';
-  if(s.phase==='captains')controls=`<div class="room-step"><h3>1. İki kaptan lobiye katılır</h3><p>${s.captainAJoined?'✅':'⏳'} ${esc(displayName(m,'a'))} kaptanı · ${s.captainBJoined?'✅':'⏳'} ${esc(displayName(m,'b'))} kaptanı</p>${cap&&!myJoin?'<button class="btn" id="v30Join">🎮 Lobiye Katıl</button>':waitLine}</div>`;
-  if(s.phase==='code')controls=`<div class="room-step"><h3>2. VALORANT lobi davet kodu</h3><p class="hint">İki kaptan katıldı. Sorumlu kaptan oyun lobisini kurup davet kodunu girsin.</p>${cap&&side===host?'<input id="v30Code" maxlength="64" placeholder="VALORANT davet kodu" autocomplete="off"><button class="btn" id="v30CodeSave">🔑 Davet Kodunu Kaydet</button>':waitLine}</div>`;
+  if(s.phase==='captains')controls=`<div class="room-step"><h3>1. Kaptan VALORANT lobisini kurar</h3><p class="hint">İlk katılan kaptan özel VALORANT lobisini kurup davet kodunu kaydedebilir. Diğer kaptan geldiğinde aynı kodu görecek; oyuncular kod gelene kadar bekler.</p><p>${s.captainAJoined?'✅':'⏳'} ${esc(displayName(m,'a'))} kaptanı · ${s.captainBJoined?'✅':'⏳'} ${esc(displayName(m,'b'))} kaptanı</p>${cap&&!myJoin?'<button class="btn" id="v30Join">🎮 Lobiye Katıl</button>':waitLine}</div>`;
+  if(s.phase==='code')controls=`<div class="room-step"><h3>2. VALORANT lobi davet kodu</h3><p class="hint">İlk kodu kaydeden kaptanın VALORANT lobisi geçerli olur. Diğer kaptanın kod alanı kendiliğinden kapanır ve oyuncuların Lobiye Katıl butonu açılır.</p><p>${s.captainAJoined?'✅':'⏳'} A kaptanı · ${s.captainBJoined?'✅':'⏳'} B kaptanı</p>${cap&&myJoin?'<input id="v30Code" maxlength="64" placeholder="VALORANT davet kodu" autocomplete="off"><button class="btn" id="v30CodeSave">🔑 Davet Kodunu Kaydet</button>':cap?'<button class="btn" id="v30Join">🎮 Lobiye Katıl</button>':waitLine}</div>`;
   if(s.phase==='ready')controls=`<div class="room-step"><h3>3. Her oyuncu VALORANT lobisine katılır ve Hazırım der</h3><div class="lobby-note">🔑 VALORANT davet kodu: <strong>${esc(s.lobbyCode)}</strong></div><div class="lobby-grid">${players}</div><button class="btn ${s.myReady?'secondary':''}" id="v30Ready">${s.myReady?'↩ Hazır Değilim':'✅ Hazırım'}</button><p class="hint">Dört oyuncu hazır olunca kaptan kanıtı aşaması açılır.</p></div>`;
   if(s.phase==='proof')controls=`<div class="room-step"><h3>4. İki kaptan lobi kanıtını yükler</h3><div class="lobby-grid">${players}</div><p>${s.proofA?'✅':'⏳'} A Takımı kanıtı · ${s.proofB?'✅':'⏳'} B Takımı kanıtı</p>${cap?`<a href="https://hizliresim.com" target="_blank" rel="noopener noreferrer">Hızlıresim'e git ↗</a><p class="hint">VALORANT içindeki oyun isimlerinin göründüğü ekran görüntüsünü paylaş.</p><input id="v30Proof" type="url" maxlength="500" placeholder="https://hizliresim.com/..." value="${esc(myProof||'')}"><button class="btn" id="v30ProofSave">📸 Kanıtı Kaydet</button>`:waitLine}</div>`;
   if(s.phase==='review')controls=`<div class="room-step"><h3>5. Kadroyu Kontrol Et</h3><p><a href="${esc(s.proofA)}" rel="noopener noreferrer" target="_blank">A takımının kanıtını aç ↗</a> · <a href="${esc(s.proofB)}" rel="noopener noreferrer" target="_blank">B takımının kanıtını aç ↗</a></p><p class="hint">Oyuncuların VALORANT isimleri kayıtlı kadroyla uyuşuyorsa Devam Et'e bas. İtirazın varsa gerekçe ve görsel ekle.</p><div class="lobby-grid">${players}</div>${cap&&!myConsent?'<button class="btn" id="v30Consent">✅ Devam Et</button>':waitLine}${cap?'<button class="btn secondary" id="v30DisputeShow" style="margin-left:8px">🚩 İtiraz Et</button>':''}<p>${s.consentA?'✅':'⏳'} A Kaptanı onayı · ${s.consentB?'✅':'⏳'} B Kaptanı onayı</p></div>`;
@@ -383,16 +383,21 @@ function v30StartPolling(){
   if(v30RoomInterval)return;
   v30RoomInterval=setInterval(async()=>{
     if(roomDialog.hidden||!lobbyCache?.v30||lobbySaving||v30PollingBusy||document.hidden)return;
-    // Avoid destroying in-progress text entry. Changes are applied on blur or after submission.
+    // Never erase a typed draft in the same phase; a phase change is authoritative
+    // and MUST replace an outdated code input even if it is focused.
     const tag=String(document.activeElement?.tagName||'').toUpperCase();
-    if(['INPUT','TEXTAREA','SELECT'].includes(tag))return;
+    const editing=['INPUT','TEXTAREA','SELECT'].includes(tag);
     const m=activeMatch();if(!m)return;
     v30PollingBusy=true;
     try{
       const data=await api('/tournament/lobby?matchId='+encodeURIComponent(m.id),true);
       if(roomDialog.hidden||lobbySaving)return;
       const next=JSON.stringify(data);
-      if(next!==v30RoomSnapshot){v30RoomSnapshot=next;lobbyCache=data;renderLobby();if(data.matchStatus==='completed')await refresh();}
+      if(next!==v30RoomSnapshot){
+        const samePhase=lobbyCache?.phase===data.phase;
+        v30RoomSnapshot=next;lobbyCache=data;
+        if(!editing||!samePhase){renderLobby();if(data.matchStatus==='completed')await refresh();}
+      }
     }catch(e){const status=$('v30InlineStatus');if(status){status.hidden=false;status.textContent='Bağlantı kontrolü: '+e.message;}}finally{v30PollingBusy=false;}
   },9000);
 }
@@ -459,7 +464,7 @@ async function loadLobby(){
  try{const result=await api('/tournament/lobby?matchId='+encodeURIComponent(m.id),true);
   if(seq!==lobbySeq)return;lobbyCache=result;v30RoomSnapshot=JSON.stringify(result);renderLobby();renderMatch();
   // Clicking the invitation is the captain's join confirmation; no second click required.
-  if(result?.v30&&result.phase==='captains'&&result.isCaptain&&!(result.side==='a'?result.captainAJoined:result.captainBJoined)){
+  if(result?.v30&&['captains','code','ready','proof','review','start','playing','result_pending'].includes(result.phase)&&result.isCaptain&&!(result.side==='a'?result.captainAJoined:result.captainBJoined)){
     try{await api('/tournament/lobby/update',true,{matchId:m.id,action:'join'});
       if(seq===lobbySeq){const updated=await api('/tournament/lobby?matchId='+encodeURIComponent(m.id),true);if(seq===lobbySeq){lobbyCache=updated;v30RoomSnapshot=JSON.stringify(updated);renderLobby();}}
     }catch(e){toast('Kaptan katılımı kaydedilemedi: '+e.message,'error');}
