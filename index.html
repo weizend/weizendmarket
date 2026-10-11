@@ -4196,6 +4196,11 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
   }
 }
 </style>
+<style id="wz-v272-roster-status-style">
+.wz-turn-card-status.roster-waiting{background:#362612;border-color:#92642a;color:#ffd68c}
+.wz-v272-roster-note{border:1px solid #614625;border-radius:9px;background:#17120d;color:#f3d3a7;font-size:12px;line-height:1.5;padding:9px 11px;margin:4px 0 9px}
+.wz-v272-roster-note b{color:#fff}
+</style>
 </head>
 <body>
 <script id="wz-v58-prepaint-view">
@@ -13600,6 +13605,16 @@ return;
   function registrationIsOpen(item){
     return !comingSoon(item) && registrationPhase(item)==='open';
   }
+  // Yeni takım açma ile mevcut takıma tek kullanımlık davet üzerinden katılma
+  // aynı işlem değildir. Yetki ve tarih kontrolleri yine V27 Worker'da yapılır.
+  function wzV272RegistrationAction(item){
+    const invitation= wzV272RosterWaiting(item) &&
+      typeof tv3InviteJoinClosed==='function' && !tv3InviteJoinClosed(item);
+    return {
+      enabled:registrationIsOpen(item)||invitation,
+      label:invitation?'🔑 DAVET KODUYLA KATIL':'KAYIT OL'
+    };
+  }
   function modeText(t){
     const n=Math.max(1,Number(t?.teamSize||1));
     return n<=1?'1v1':'%sv%s'.replace('%s',n).replace('%s',n);
@@ -13858,9 +13873,10 @@ return;
 
     const registerBtn=document.getElementById('wzTurnRegisterBtn');
     if(registerBtn){
-      const open=registrationIsOpen(item);
-      registerBtn.disabled=!open;
-      registerBtn.classList.toggle('is-disabled',!open);
+      const action=wzV272RegistrationAction(item);
+      registerBtn.disabled=!action.enabled;
+      registerBtn.classList.toggle('is-disabled',!action.enabled);
+      registerBtn.textContent=action.label;
     }
   }
   function heroStatusLabel(item){
@@ -13914,11 +13930,22 @@ return;
 
     return 'closed';
   }
+  // Takım slotunun dolması ile bütün oyuncuların kadroyu tamamlaması ayrı durumlardır.
+  // Bu yalnızca görünen metni düzeltir; kayıt/davet/ödeme yetkisini değiştirmez.
+  function wzV272RosterWaiting(item){
+    const t=item?.tournament||{};
+    if(Number(t.teamSize||1)<=1 || registrationPhase(item)!=='full') return false;
+    const registered=Number(t.registeredCount);
+    const ready=Number(t.completedCount);
+    return Number.isFinite(registered) && Number.isFinite(ready) && registered>0 && ready<registered;
+  }
   function tournamentCategoryLabel(item){
     const c=tournamentCategory(item);
     if(c==='done') return 'TAMAMLANDI';
     if(c==='live') return 'CANLI';
     if(c==='soon') return 'YAKINDA';
+    if(wzV272RosterWaiting(item)) return 'KADROLAR BEKLENİYOR';
+    if(registrationPhase(item)==='full') return 'KAYITLAR DOLU';
     if(c==='closed') return 'KAYIT KAPANDI';
     return 'AKTİF';
   }
@@ -14470,7 +14497,7 @@ return;
               <div class="wz-turn-card-sub">${esc(mapDisplayName(t,rule))} • ${esc(matchFormat(t,rule))}</div>
             </div>
           </div>
-          <span class="wz-turn-card-status ${tournamentCategory(item)}">${esc(tournamentCategoryLabel(item))}</span>
+          <span class="wz-turn-card-status ${tournamentCategory(item)}${wzV272RosterWaiting(item)?' roster-waiting':''}">${esc(tournamentCategoryLabel(item))}</span>
         </div>
 
         ${wzV95CoverTimerHtml(item)}
@@ -14484,7 +14511,7 @@ return;
           </div>
           <div class="wz-turn-card-entry-stack">
             <span class="wz-v96-format-badge">${esc(modeText(t))}</span>
-            <div class="wz-turn-card-participation"><span class="wz-turn-card-count">👥 <strong>${wzV95ReadyCount(item)}/${Math.max(0,Number(t.capacity||0))}</strong> ${Number(t.teamSize||1)>1?'Takım':'Oyuncu'}</span></div>
+            <div class="wz-turn-card-participation"><span class="wz-turn-card-count">👥 <strong>${wzV95ReadyCount(item)}/${Math.max(0,Number(t.capacity||0))}</strong> ${Number(t.teamSize||1)>1?'Hazır Takım':'Oyuncu'}</span></div>
             <span class="wz-turn-entry-pill ${esc(entryBadge.className)}">
               <span>${entryBadge.icon}</span><span>${esc(entryBadge.text)}</span>
             </span>
@@ -14500,6 +14527,7 @@ return;
 
         ${completed && fin.champion ? `<div class="wz-turn-completed-note">Şampiyon: <b>${esc(fin.champion)}</b></div>` : ''}
         <div data-wz-entry-tournament="${esc(id)}">${wzV95RegistrationNotice(id)}</div>
+        ${wzV272RosterWaiting(item)?`<div class="wz-v272-roster-note">👥 Yeni takım kontenjanı dolu; eksik oyuncu geçerli davet koduyla <b>Detayları Gör → Davet Koduyla Katıl</b> adımından ilerleyebilir. Kayıt süresi ve diğer şartlar geçerlidir.</div>`:''}
         <div class="wz-turn-card-actions">
           <button type="button" class="wz-turn-mainbtn" onclick="wzTurnOpen('${esc(id)}')">Detayları Gör</button>
         </div>
@@ -15211,6 +15239,7 @@ return;
     const heroStyle=heroImage ? ` style="--wz-turn-cover-image:url(${heroImage})"` : '';
     const stream=safeHttpUrl(rule?.streamUrl || t?.streamUrl || 'https://kick.com/weizend');
     const openAt=registrationOpenAt(item); const closeAt=registrationCloseAt(item);
+    const registrationAction=wzV272RegistrationAction(item);
     return `<div class="wz-turn-detail-page"
       role="dialog"
       aria-modal="true"
@@ -15222,8 +15251,8 @@ return;
             <button type="button" class="wz-turn-cover-back" onclick="wzTurnBack()" aria-label="Turnuva detaylarını kapat">×</button>
           </div>
           ${renderTournamentTimeline(item)}
-          <button id="wzTurnRegisterBtn" type="button" class="wz-turn-register ${registrationIsOpen(item)?'':'is-disabled'}"
-            onclick="wzTournamentRegistration('${esc(id)}')" ${registrationIsOpen(item) ? '' : 'disabled'}>KAYIT OL</button>
+          <button id="wzTurnRegisterBtn" type="button" class="wz-turn-register ${registrationAction.enabled?'':'is-disabled'}"
+            onclick="wzTournamentRegistration('${esc(id)}')" ${registrationAction.enabled ? '' : 'disabled'}>${esc(registrationAction.label)}</button>
           <div class="wz-turn-tabs-label">Turnuva Detayları</div>
           <nav class="wz-turn-tabs" aria-label="Turnuva detay bölümleri">${tabButtons.map(([id2,icon,name])=>`<button type="button" class="wz-turn-tab ${state.tab===id2?'active':''} ${id2==='arena'?'wz-arena-intro-tab':''}" onclick="wzTurnSetTab('${id2}')" aria-pressed="${state.tab===id2?'true':'false'}"><span class="wz-turn-tab-icon" aria-hidden="true">${icon}</span><span>${name}</span></button>`).join('')}</nav>
           <div class="wz-turn-panel">${panel}</div>
