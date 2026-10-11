@@ -105,6 +105,35 @@ body.arena-dialog-open{overflow:hidden}
 #roomExit{display:inline-flex!important}
 @media(max-width:650px){.arena-room-overlay{padding:8px 6px 18px}.arena-room-overlay .lobby-panel{border-radius:13px;padding:12px}}
 
+
+/* V30.3.4 — Admin'deki güncel En İyi Tahmin Ödülü Arena'da da görünür. */
+.arena-prediction-award{
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr);
+  gap:12px;
+  align-items:center;
+  margin:13px 0 17px;
+  padding:15px 16px;
+  border:1px solid rgba(245,181,63,.46);
+  border-radius:13px;
+  background:linear-gradient(115deg,rgba(65,38,15,.56),rgba(24,22,20,.9) 68%);
+  box-shadow:inset 0 1px 0 rgba(255,221,142,.07);
+}
+.arena-prediction-award-icon{
+  width:42px;height:42px;display:grid;place-items:center;
+  border-radius:11px;background:rgba(255,198,81,.12);font-size:24px;
+}
+.arena-prediction-award-label{
+  display:block;font-size:11px;font-weight:900;letter-spacing:.065em;color:#ffcc79;
+}
+.arena-prediction-award-value{
+  display:block;margin-top:3px;font-size:17px;line-height:1.35;
+  font-weight:900;color:#fff;overflow-wrap:anywhere;
+}
+.arena-prediction-award-caption{
+  display:block;margin-top:4px;font-size:11px;color:#bcb0a0;
+}
+
 </style>
 </head>
 <body>
@@ -118,7 +147,16 @@ body.arena-dialog-open{overflow:hidden}
 <div id="alert" class="notice" role="status" hidden></div><button class="btn" type="button" id="v30ActiveMatch" style="display:none;margin:0 0 12px">🎮 Aktif Maçıma Dön</button>
 <div class="grid" id="content">
 <section class="panel"><div class="toolbar"><h2>🏆 Turnuva Fikstürü</h2><button class="btn secondary" type="button" id="refreshBtn">↻ Yenile</button></div><p class="hint">Bir maça tıklayarak eşleşmeyi ve tahmin seçeneklerini incele.</p><div id="bracket" class="bracket-viewport"><div class="empty">Fikstür bilgileri alınıyor...</div></div></section>
-<aside class="panel"><h2>🎮 Maç Bilgisi</h2><div id="matchInfo" class="match-focus">Maç seçilmesi bekleniyor.</div><div id="picksBox"><h3>🎯 Tahminim</h3><p id="authText" class="hint">Kick hesabı kontrol ediliyor...</p><div class="choices"><button class="choose" id="pickA" disabled>Oyuncu A</button><button class="choose" id="pickB" disabled>Oyuncu B</button></div><p id="pickProgress" class="pick-status">Tahmin durumu yükleniyor...</p><button id="confirmPicks" type="button" class="btn" style="width:100%;margin:7px 0 9px;display:none" disabled>Tahminleri Onayla</button><button id="editPicks" type="button" class="btn secondary" style="width:100%;margin:7px 0 9px;display:none">Tahminleri Düzenle</button><p class="small">Seçimler taslak olarak kaydedilir. Yalnızca tamamını onayladığın kupon sıralamaya girer.</p></div><hr style="border:0;border-top:1px solid #333;margin:16px 0"><h3>👥 Takımlar / Oyuncular</h3><div id="participants" class="members"><div class="small">Katılımcılar yükleniyor...</div></div><hr style="border:0;border-top:1px solid #333;margin:16px 0"><h3>🏅 Tahmin Sıralaması</h3><div id="predictionBoard" class="small">Sıralama yükleniyor...</div></aside>
+<aside class="panel"><h2>🎮 Maç Bilgisi</h2><div id="matchInfo" class="match-focus">Maç seçilmesi bekleniyor.</div>
+<div id="arenaPredictionAward" class="arena-prediction-award" hidden aria-live="polite">
+  <div class="arena-prediction-award-icon" aria-hidden="true">🎯</div>
+  <div>
+    <span class="arena-prediction-award-label">EN İYİ TAHMİN ÖDÜLÜ</span>
+    <strong id="arenaPredictionAwardValue" class="arena-prediction-award-value">Belirlenmedi</strong>
+    <span class="arena-prediction-award-caption">WEİZEND ARENA • Fikstür tahminleri</span>
+  </div>
+</div>
+<div id="picksBox"><h3>🎯 Tahminim</h3><p id="authText" class="hint">Kick hesabı kontrol ediliyor...</p><div class="choices"><button class="choose" id="pickA" disabled>Oyuncu A</button><button class="choose" id="pickB" disabled>Oyuncu B</button></div><p id="pickProgress" class="pick-status">Tahmin durumu yükleniyor...</p><button id="confirmPicks" type="button" class="btn" style="width:100%;margin:7px 0 9px;display:none" disabled>Tahminleri Onayla</button><button id="editPicks" type="button" class="btn secondary" style="width:100%;margin:7px 0 9px;display:none">Tahminleri Düzenle</button><p class="small">Seçimler taslak olarak kaydedilir. Yalnızca tamamını onayladığın kupon sıralamaya girer.</p></div><hr style="border:0;border-top:1px solid #333;margin:16px 0"><h3>👥 Takımlar / Oyuncular</h3><div id="participants" class="members"><div class="small">Katılımcılar yükleniyor...</div></div><hr style="border:0;border-top:1px solid #333;margin:16px 0"><h3>🏅 Tahmin Sıralaması</h3><div id="predictionBoard" class="small">Sıralama yükleniyor...</div></aside>
 </div>
 <div class="arena-room-overlay" id="roomDialog" role="dialog" aria-modal="true" aria-label="WEİZEND Arena maç lobisi" hidden><section class="panel lobby-panel" id="lobbyPanel"><div class="toolbar"><h2>🎮 Kaptan Lobisi ve Hazır Kontrolü</h2><button type="button" class="btn secondary" id="roomExit">← Fikstüre Dön</button><button type="button" class="btn secondary" id="lobbyRefresh">↻ Yenile</button></div>
 <p class="hint">Lobiler VALORANT oyunu içinden kaptanlar tarafından kurulur. Arena yalnızca maç organizasyonunu yönetir.</p>
@@ -171,6 +209,17 @@ function optionsFor(target){const all=state.detail?.matches||[],lookup=keys(all)
  }else{a=[r*0+Number(m.matchNumber||0)*2-1,Number(m.matchNumber||0)*2].map(n=>{const prev=lookup.get('main:'+(r-1)+':'+n);if(!prev)return null;const opts=evaluate(prev);if(opts.length===1)return opts[0];const choice=picks.get(String(prev.id));return choice&&opts.includes(choice)?choice:null}).filter(Boolean)}
  seen.delete(m.id);return [...new Set(a.map(String).filter(Boolean))];}return evaluate(target)}
 function activeMatch(){return (state.detail?.matches||[]).find(m=>m.id===state.selected)||null;}
+function renderPredictionAward(){
+  const card=$('arenaPredictionAward');
+  const value=$('arenaPredictionAwardValue');
+  if(!card||!value)return;
+  // Turnuva detayı /tournament/public yanıtı güncel Admin ödülünü içerir.
+  // Giriş yapma veya fikstürün oluşması şart değildir.
+  const t=state.detail?.tournament||state.t||{};
+  const prize=clean(t.predictionPrize||'');
+  card.hidden=!state.detail;
+  value.textContent=prize||'Belirlenmedi';
+}
 function renderHero(){const t=state.t||{},loaded=!!state.detail;$('tournamentTitle').textContent=loaded?t.name||t.gameName||'Turnuva':'Turnuva bilgileri hazırlanıyor';$('tournamentSubtitle').textContent=loaded?`${t.gameName||'Oyun'} • ${t.mode==='solo'?'Solo':(t.teamSize||'?')+'v'+(t.teamSize||'?')} • ${t.bestOf||'BO1'}`:'Katılımcılar, fikstür, maç sonuçları ve tahminler tek yerde.';
  $('stats').innerHTML=loaded?`<span class="tag">${esc(t.gameName||'Oyun')}</span><span class="tag">${esc(t.bestOf||'BO1')}</span><span class="tag">${Number(t.registeredCount||0)} / ${Number(t.capacity||0)} ${t.mode==='solo'?'oyuncu':'takım'}</span><span class="tag red">${state.detail.matches.length?'Fikstür Yayında':'Fikstür Bekleniyor'}</span>`:'';}
 function projectedSlot(m,which){
@@ -439,7 +488,7 @@ async function lobbyReview(kind,data){
 $('lobbyRefresh').addEventListener('click',loadLobby);
 $('v30ActiveMatch').addEventListener('click',()=>{const id=sessionStorage.getItem('wz_v30_active_match_'+tid)||lobbySelected;if(id){const found=(state.detail?.matches||[]).find(m=>m.id===id);if(found){state.selected=id;renderBracket();renderMatch();openInvitationRoom();}else toast('Aktif maçın henüz fikstürde görünmüyor.','error');}});
 
-function renderAll(){renderLobby();renderHero();renderBracket();renderParticipants();renderMatch();renderBoard();}
+function renderAll(){renderLobby();renderHero();renderPredictionAward();renderBracket();renderParticipants();renderMatch();renderBoard();}
 function cachePublic(){try{sessionStorage.setItem(cacheKey,JSON.stringify({at:Date.now(),detail:state.detail}));}catch{}}
 function restorePublic(){try{const v=JSON.parse(sessionStorage.getItem(cacheKey)||'null');if(!v||Date.now()-Number(v.at)>12*3600*1000||v.detail?.tournament?.id!==tid)return;state.detail=v.detail;state.t=v.detail.tournament;state.selected=v.detail.matches?.[0]?.id||null;renderAll();}catch{}}
 async function refresh(initial=false){if(state.loading)return;state.loading=true;state.authState=token()?'checking':'guest';state.authError='';renderAuthStatus();$('refreshBtn').disabled=true;
