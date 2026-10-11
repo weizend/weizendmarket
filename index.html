@@ -10163,7 +10163,7 @@ return;
     }
 
     function tv2EntryLabel(rule, tournament) {
-        const mode = String(rule?.entryMode || '').toLowerCase();
+        const mode = String(rule?.entryMode || tournament?.entryMode || '').toLowerCase();
         if (mode === 'subscription') return '⭐ Abonelik / Hediye';
         if (mode === 'tl') return `${formatTlFromCents(tournament?.feePerPlayerCents || 0)} / oyuncu`;
         if (mode === 'free') return '🎁 Ücretsiz';
@@ -12009,6 +12009,76 @@ return;
         ).toLowerCase();
     }
 
+    // V30.4.0: Yalnızca sunucudan gelen turnuva katılım türüne uygun metin göster.
+    // Ödeme / abonelik davranışını değiştirmez; mevcut V3 doğrulama API'si yetkilidir.
+    function tv3EntryUX(rule = {}, t = {}) {
+        const mode = String(rule?.entryMode || t?.entryMode || 'free').trim().toLowerCase();
+        const fee = tv2Esc(formatTlFromCents(t?.feePerPlayerCents || 0));
+        if (mode === 'subscription') return {
+            mode, label:'⭐ ABONELİKLE KATILIM',
+            overviewTeam:'⭐ Bu turnuva Kick aboneliği veya hediye abonelik şartıyla düzenleniyor. Her oyuncu kendi hesabıyla şartını tamamlayınca takım hazır olur.',
+            overviewSolo:'⭐ Kaydının tamamlanması için Kick abonelik şartının doğrulanması gerekir.',
+            selectionTeam:'Kaptan takımı oluşturur. Ardından her oyuncu Kick aboneliği veya hediye abonelik şartını kendi hesabıyla tamamlar. Takım arkadaşı davet koduyla katılır.',
+            selectionSolo:'Oyun içi adını gir, Kick abonelik durumunu belirt ve doğrulama adımlarını tamamla.',
+            createTeam:'⭐ Kaptan takım adını ve oyun içi adını girer. Her oyuncu Kick abonelik şartını kendi hesabıyla tamamlar. Arkadaşın kaptanın gönderdiği tek kullanımlık kodla katılır.',
+            createSolo:'⭐ Oyun içi adını gir. Kick abonelik durumunu belirt ve doğrulama adımlarını tamamla.',
+            createTerms:'Bilgilerimin doğru olduğunu, Kick abonelik koşulunu ve turnuva kurallarını okuduğumu, kabul ettiğimi onaylıyorum.',
+            joinIntro:'⭐ Kaptanın gönderdiği davet kodunu ve oyun içi adını gir. Sonraki aşamada kendi Kick abonelik şartını tamamlayacaksın.',
+            joinTerms:'Bilgilerimin doğru olduğunu, Kick abonelik koşulunu ve turnuva kurallarını kabul ettiğimi onaylıyorum.',
+            draftTitle:'⭐ Abonelik Şartını Tamamla', draftStatus:'⏳ Abonelik Doğrulaması Bekleniyor',
+            inviteNote:'Aktif kodu arkadaşına gönder. Takıma katılan her oyuncu kendi Kick abonelik şartını tamamlar.',
+            noInvites:'Kaptanın Kick abonelik şartı doğrulandığında davet kodları burada oluşur. Arkadaşın da kendi Kick hesabıyla katılım şartını tamamlar.',
+            teamPending:'⏳ Takımın hazır olması için bütün oyuncuların Kick abonelik şartlarının doğrulanması gerekiyor.',
+            teamReady:'✅ Takımın oyuncuları ve abonelik şartları tamamlandı. Takım artık hazır.',
+            guideTeam:'⏳ Takım oyuncuları katılıp Kick abonelik şartlarını tamamladıktan sonra maç saatini bekleyebilirsin.',
+            guideJoin:'⏳ Davet kodun kabul edildi. Kick abonelik şartını tamamla.',
+            guideHelp:'Kaptan takımını oluşturur, Kick abonelik şartı doğrulanınca davet kodunu arkadaşına gönderir. Arkadaşı kendi hesabıyla katılır ve kendi abonelik şartını tamamlar.',
+            inviteStep:'Kick aboneliği veya hediye abonelik şartını kendi hesabında tamamla.'
+        };
+        if (mode === 'tl') return {
+            mode, label:'💸 BAĞIŞLA KATILIM',
+            overviewTeam:`💸 Bu turnuvaya katılım için kişi başı ${fee} bağış gerekir. Her koltuğun bağış doğrulaması tamamlanınca takım hazır olur.`,
+            overviewSolo:`💸 Katılım için kişi başı ${fee} bağış ve ödeme doğrulaması gerekir.`,
+            selectionTeam:'Kaptan takımını oluşturur ve kaç oyuncunun katılım bağışını yapacağını seçer. Takım arkadaşı davet koduyla katılır; ödenmiş koltuk için yeniden bağış yapmaz.',
+            selectionSolo:`Oyun içi adını gir ve ${fee} katılım bağışı için yönlendirmeyi takip et.`,
+            createTeam:`💸 Kaptan takım adını ve oyun içi adını girer. Kişi başı ${fee} katılım bağışını kendi veya takım arkadaşları için hazırlayabilir. Arkadaşlar davet koduyla katılır.`,
+            createSolo:`💸 Oyun içi adını gir. Kişi başı ${fee} bağış işlemini sonraki adımda tamamlayacaksın.`,
+            createTerms:'Bilgilerimin doğru olduğunu, bağışla katılım koşulunu ve turnuva kurallarını okuduğumu, kabul ettiğimi onaylıyorum.',
+            joinIntro:'💸 Kaptanın verdiği davet kodunu ve oyun içi adını gir. Koltuğun önceden ödenmişse yeniden bağış istenmez; değilse bağış adımına geçersin.',
+            joinTerms:'Bilgilerimin doğru olduğunu, bağışla katılım koşulunu ve turnuva kurallarını kabul ettiğimi onaylıyorum.',
+            draftTitle:'💸 Katılım Bağışını Tamamla', draftStatus:'⏳ Bağış Doğrulaması Bekleniyor',
+            inviteNote:'Aktif kodu arkadaşına gönder. Önceden ödenmiş koltuklarda yeni bağış istenmez.',
+            noInvites:'Kaptanın katılım bağışı doğrulandığında davet kodları burada oluşur. Arkadaşın kodla katılıp kendi koltuğunun bağış durumunu görür.',
+            teamPending:'⏳ Takımın hazır olması için oyuncuların kayıtları ve katılım bağışları tamamlanmalı.',
+            teamReady:'✅ Takımın oyuncuları ve katılım bağışları doğrulandı. Takım artık hazır.',
+            guideTeam:'⏳ Takımdaki bütün koltukların katılım bağışı doğrulanınca takım hazır olacak.',
+            guideJoin:'⏳ Davetin doğrulandı. Koltuğunun katılım bağışı adımını tamamla.',
+            guideHelp:'Kaptan takımını oluşturur ve bağış işlemini tamamlar. Kod hazır olunca arkadaşına gönderir. Arkadaşın önceden ödenmiş koltukla doğrudan katılabilir veya kendi katılım bağışını yapar.',
+            inviteStep:'Koltuk önceden ödenmemişse katılım bağışını tamamla.'
+        };
+        return {
+            mode:'free', label:'🎁 ÜCRETSİZ KATILIM',
+            overviewTeam:'🎁 Bu turnuvaya katılım ücretsizdir. Kaptan takımını kurar, arkadaşı davet koduyla katılır; takım kadrosu tamamlanınca hazır olur.',
+            overviewSolo:'🎁 Bu turnuva ücretsizdir. Oyun içi adını girip kaydını tamamla.',
+            selectionTeam:'🎁 Ücretsiz turnuva: Kaptan takımını oluşturur; arkadaşına tek kullanımlık davet kodu gönderir. Arkadaşın kendi hesabıyla kodu girerek takıma katılır.',
+            selectionSolo:'🎁 Ücretsiz turnuva: Oyun içi adını girip kaydını tamamla.',
+            createTeam:'🎁 Bu turnuva ücretsizdir. Takım adını ve oyun içi ID’ni girerek takımını kur. Ardından oluşan tek kullanımlık davet kodunu arkadaşına gönder.',
+            createSolo:'🎁 Ücretsiz katılım: Oyun içi adını girerek kaydını tamamla.',
+            createTerms:'Bilgilerimin doğru olduğunu ve ücretsiz turnuva kurallarını okuduğumu, kabul ettiğimi onaylıyorum.',
+            joinIntro:'🎁 Ücretsiz katılım: Kaptanının verdiği tek kullanımlık takım davet kodunu ve kendi oyun içi ID’ni gir.',
+            joinTerms:'Bilgilerimin doğru olduğunu ve ücretsiz turnuva kurallarını kabul ettiğimi onaylıyorum.',
+            draftTitle:'🎁 Ücretsiz Katılımı Tamamla', draftStatus:'🎁 Ücretsiz Davet İşlemi Bekleniyor',
+            inviteNote:'Aktif davet kodunu arkadaşına gönder. Arkadaşın kendi Kick hesabıyla ücretsiz olarak takıma katılabilir.',
+            noInvites:'Kaptan kaydını tamamladığında davet kodları burada oluşur. Takım arkadaşın kendi Kick hesabıyla ücretsiz katılır.',
+            teamPending:'⏳ Takımın hazır olması için bütün oyuncuların ücretsiz kayıtlarını tamamlaması gerekiyor.',
+            teamReady:'✅ Takımın bütün oyuncuları kaydoldu. Takım artık hazır.',
+            guideTeam:'⏳ Takımın hazır olması için arkadaşın davet kodunu kullanarak ücretsiz kaydını tamamlamalı.',
+            guideJoin:'⏳ Davet işlemin bekliyor. Ücretsiz kayıt adımını tamamla.',
+            guideHelp:'Kaptan ücretsiz takım kaydını yapınca tek kullanımlık davet kodunu arkadaşına gönderir. Arkadaşın Kick hesabıyla giriş yapıp kodu ve Riot ID’sini yazar.',
+            inviteStep:'Ücretsiz takım kaydını tamamla.'
+        };
+    }
+
     function tv3IsSolo() {
         return tv3TeamSize() <= 1 || String(tv2State.publicData?.tournament?.mode || '').toLowerCase() === 'solo';
     }
@@ -12036,13 +12106,17 @@ return;
         return map[String(status || '').toLowerCase()] || status || '-';
     }
 
-    function tv3SlotStatusLabel(slot = {}) {
+    function tv3SlotStatusLabel(slot = {}, entryMode = 'free') {
         const joined = String(slot.joinStatus || slot.status || '').toLowerCase();
         const payment = String(slot.paymentStatus || '').toLowerCase();
+        const mode = String(entryMode || 'free').toLowerCase();
         if (joined === 'joined' && payment === 'paid') return '✅ Hazır';
-        if (joined === 'joined') return '⏳ Ödeme Bekliyor';
+        if (joined === 'joined') {
+            if (mode === 'free') return '⏳ Kayıt Tamamlanıyor';
+            return mode === 'subscription' ? '⏳ Abonelik Bekleniyor' : '⏳ Bağış Doğrulaması Bekleniyor';
+        }
         if (joined === 'reserved') return '🕓 Katılım İşlemi Sürüyor';
-        if (payment === 'paid') return '💳 Ücreti Ödenmiş · Oyuncu Bekleniyor';
+        if (payment === 'paid') return mode === 'tl' ? '💳 Ücreti Ödenmiş · Oyuncu Bekleniyor' : '👤 Oyuncu Bekleniyor';
         return '👤 Oyuncu Bekleniyor';
     }
 
@@ -12289,6 +12363,7 @@ return;
           Number(t.registeredCount||0)<=Number(t.completedCount||0);
         const comingSoon = rule?.comingSoon === true || t?.comingSoon === true;
         const teamSize = Math.max(1, Number(t.teamSize || 1));
+        const entryUX = tv3EntryUX(rule, t);
 
         let content = `
             <div class="tv2-hero">
@@ -12297,13 +12372,14 @@ return;
                     <div class="tv2-muted">
                         ${teamSize <= 1 ? '1v1 Solo' : `${teamSize}v${teamSize} Takımlı`} · ${tv2Esc(rule.gameName || 'Oyun')}<br>
                         Katılım: <b>${tv2Esc(tv2EntryLabel(rule,t))}</b><br>
+                        <span class="wz-v3040-entry-badge">${entryUX.label}</span><br>
                         ${comingSoon ? '<b>🚀 ÇOK YAKINDA</b>' : `Turnuva tarihi: <b>${tv2Esc(t.eventDate ? tv2Date(t.eventDate) : 'Daha sonra duyurulacak')}</b>`}
                     </div>
                 </div>
                 <div class="tv2-panel">
                     <span class="tv2-status-pill ${closed ? 'bad' : 'ok'}">${closed ? (!inviteJoinClosed ? '⏳ Takım Kontenjanı Dolu · Davet Katılımı Açık' : '🔒 Kayıt Kapalı') : '🟢 Kayıt Açık'}</span>
                     <div class="tv2-muted" style="margin-top:9px;">
-                        ${teamSize > 1 ? 'Takım, bütün koltuklar dolup gerekli katılım şartları tamamlanınca hazır sayılır.' : 'Ödeme / abonelik şartı doğrulanmadan kayıt tamamlanmaz.'}
+                        ${teamSize > 1 ? entryUX.overviewTeam : entryUX.overviewSolo}
                     </div>
                     <div class="tv2-actions"><button class="tv2-btn secondary" onclick="tv3RefreshWithFeedback(this)">🔄 Yenile</button></div>
                 </div>
@@ -12315,9 +12391,7 @@ return;
                 <div class="tv2-panel">
                     <h4>${teamSize <= 1 ? 'Turnuva Kaydı' : 'Takım İşlemleri'}</h4>
                     <div class="tv2-muted">
-                        ${teamSize <= 1
-                            ? 'Oyun içi adını gir ve katılım şartını tamamla. Doğrulama bitmeden kayıt kesinleşmez.'
-                            : 'Kaptan takımı kendi hesabıyla başlatır. Her oyuncu kendi katılım şartını tamamlar. Takım arkadaşları davet koduyla katılır. Kaptanın şartı doğrulanınca davet kodları oluşur.'}
+                        ${teamSize <= 1 ? entryUX.selectionSolo : entryUX.selectionTeam}
                     </div>
                     ${!tv2State.form ? `<div class="tv2-actions">
                         <button class="tv2-btn ${createClosed?'secondary':''}" ${createClosed?'disabled':''} onclick="tv2ShowCreateForm()">${teamSize <= 1 ? '🎮 KAYIT OL' : '👑 TAKIM KUR'}</button>
@@ -12348,11 +12422,11 @@ return;
           const guide=team
             ? (['ready','locked'].includes(String(team.status||'').toLowerCase())
                 ? '✅ Takımın hazır. Başlangıç saatini ve Arena maç davetini bekle.'
-                : '⏳ Takımın hazır olması için tüm oyuncuların davetle katılıp kendi şartını tamamlaması gerekiyor.')
+                : entryUX.guideTeam)
             : joinDraft
-              ? '⏳ Takıma katılım işlemin bekliyor. Ekrandaki katılım şartını tamamla.'
+              ? entryUX.guideJoin
               : '👑 Kaptansan Takım Kur, arkadaşın davet kodu verdiyse Takıma Katıl seçeneğini kullan.';
-          content = `<div class="wz-v3037-register-hint">${guide}<details><summary>❓ Nasıl yapacağım?</summary><p>Kaptan takımını oluşturup şartını tamamlayınca tek kullanımlık kodu arkadaşına yollar. Arkadaşı Kick hesabıyla giriş yapıp Takıma Katıl alanına kodu ve Riot ID'sini yazar. Her oyuncu kendi katılım şartını tamamlar. Maçlar Arena'dan AFK oynanır; yayın şart değildir.</p></details></div>`+content;
+          content = `<div class="wz-v3037-register-hint"><b>${entryUX.label}</b><div>${guide}</div><details><summary>❓ Nasıl yapacağım?</summary><p>${entryUX.guideHelp} Maçlar Arena'dan AFK oynanır; yayın şart değildir.</p></details></div>`+content;
         }
         const modalBody = document.getElementById('tv2ModalBody');
         const previousScroll = modalBody.scrollTop;
@@ -12374,6 +12448,7 @@ return;
         const size = Math.max(1, Number(t.teamSize || 1));
         const mode = String(rule.entryMode || t.entryMode || 'free').toLowerCase();
         const solo = size <= 1;
+        const entryUX = tv3EntryUX(rule, t);
 
         const paymentChoice = mode === 'tl'
             ? `
@@ -12393,9 +12468,7 @@ return;
             <div class="tv2-panel tv2-form-card tv3-flow-card">
                 <div class="tv3-step-title"><span>1</span><b>${solo ? 'Turnuva Kaydı' : 'Takımını Başlat'}</b></div>
                 <div class="tv2-message" style="margin-bottom:12px;">
-                    ${solo
-                        ? 'Oyun içi adını doğru gir. Katılım şartı sunucuda doğrulanmadan kaydın aktif olmaz.'
-                        : 'Kaptan kendi hesabını kaydeder. Abonelik şartını her oyuncu kendi hesabıyla tamamlar. Diğer oyuncular tek kullanımlık davet koduyla katılır.'}
+                    ${solo ? entryUX.createSolo : entryUX.createTeam}
                 </div>
                 ${!solo ? `
                     <div class="tv2-field">
@@ -12410,7 +12483,7 @@ return;
                 ${paymentChoice}
                 <label class="tv2-terms">
                     <input id="tv2TermsCreate" type="checkbox">
-                    <span>Bilgilerimin doğru olduğunu, ödeme/abonelik şartını ve turnuva kurallarını okudum, onaylıyorum.</span>
+                    <span>${entryUX.createTerms}</span>
                 </label>
                 <div id="tv2FormStatus" style="margin-top:10px;"></div>
                 <div class="tv2-actions">
@@ -12486,11 +12559,12 @@ return;
         const host = document.getElementById('tv2InlineForm');
         if (!host) return;
         const rule = tv2State.me?.rule || tv2State.publicData?.rule || {};
+        const entryUX = tv3EntryUX(rule, tv2State.publicData?.tournament || {});
         host.innerHTML = `
             <div class="tv2-panel tv2-form-card tv3-flow-card">
                 <div class="tv3-step-title"><span>1</span><b>Davet Koduyla Takıma Katıl</b></div>
                 <div class="tv2-message" style="margin-bottom:12px;">
-                    Kaptanın gönderdiği <b>tek kullanımlık takım davet kodunu</b> ve kendi oyun içi adını gir. Takım adı yazmana gerek yok.
+                    ${entryUX.joinIntro}
                 </div>
                 <div class="tv2-field">
                     <label>Takım Davet Kodu</label>
@@ -12502,7 +12576,7 @@ return;
                 </div>
                 <label class="tv2-terms">
                     <input id="tv3JoinTerms" type="checkbox">
-                    <span>Bilgilerimin doğru olduğunu ve turnuva kurallarını kabul ediyorum.</span>
+                    <span>${entryUX.joinTerms}</span>
                 </label>
                 <div id="tv2FormStatus" style="margin-top:10px;"></div>
                 <div class="tv2-actions">
@@ -12560,16 +12634,17 @@ return;
     }
 
     function tv3JoinDraftHtml(draft = {}, rule = {}, t = {}) {
-        const mode = String(rule.entryMode || t.entryMode || 'free').toLowerCase();
+        const entryUX = tv3EntryUX(rule, t);
+        const mode = entryUX.mode;
         const maxPaySeats = Math.max(1, Number(draft.maxPaySeats || draft.unpaidSeatCount || 1));
         return `
             <div class="tv2-panel tv3-flow-card">
-                <div class="tv3-step-title"><span>2</span><b>Katılım Şartını Tamamla</b></div>
+                <div class="tv3-step-title"><span>2</span><b>${entryUX.draftTitle}</b></div>
                 <div class="tv3-summary-grid">
                     <div><span>Takım</span><b>${tv2Esc(draft.teamName || '-')}</b></div>
                     <div><span>${tv2Esc(rule.gameIdLabel || 'Oyun İçi Ad')}</span><b>${tv2Esc(draft.gameId || '-')}</b></div>
                     <div><span>Davet</span><b>${tv2Esc(draft.inviteCodeMasked || 'Doğrulandı')}</b></div>
-                    <div><span>Durum</span><b>${draft.prepaid ? '💳 Ücreti Önceden Ödenmiş' : '⏳ Ödeme Bekleniyor'}</b></div>
+                    <div><span>Durum</span><b>${mode === 'tl' && draft.prepaid ? '💳 Önceden Ödenmiş' : entryUX.draftStatus}</b></div>
                 </div>
                 ${mode === 'tl' ? `
                     <div class="tv2-field" style="margin-top:12px;">
@@ -12680,6 +12755,7 @@ return;
         const size = Math.max(1, Number(t.teamSize || slots.length || 1));
         const readyCount = slots.filter(s => String(s.joinStatus || s.status || '').toLowerCase() === 'joined' && String(s.paymentStatus || '').toLowerCase() === 'paid').length;
         const teamReady = ['ready','locked'].includes(String(team.status || '').toLowerCase()) || readyCount >= size;
+        const entryUX = tv3EntryUX({ ...rule, ...(me?.rule || {}), entryMode:me?.rule?.entryMode || rule?.entryMode || t?.entryMode }, t);
 
         const slotHtml = slots.length ? slots.map((s,index) => {
             const joined = String(s.joinStatus || s.status || '').toLowerCase() === 'joined';
@@ -12691,7 +12767,7 @@ return;
                     <div class="tv3-slot-main">
                         <b>${tv2Esc(s.username || s.kickUsername || (joined ? 'Oyuncu' : 'Boş Koltuk'))}${self ? ' · Sen' : ''}</b>
                         <span>${tv2Esc(s.gameId || s.riotId || 'Oyun içi ad bekleniyor')}</span>
-                        <small>${tv2Esc(tv3SlotStatusLabel(s))}${s.prepaid ? ' · Ön ödemeli' : ''}</small>
+                        <small>${tv2Esc(tv3SlotStatusLabel(s, entryUX.mode))}${entryUX.mode === 'tl' && s.prepaid ? ' · Ön ödemeli' : ''}</small>
                     </div>
                     ${isCaptain && joined && !isCaptainSlot && String(team.status || '').toLowerCase() !== 'locked' ? `
                         <button class="tv3-remove-member" onclick="tv3RemoveMember('${tv2Esc(s.id)}','${tv2Esc(s.username || s.kickUsername || 'oyuncu')}')">Oyuncuyu Çıkar</button>
@@ -12705,7 +12781,7 @@ return;
                 <div class="tv3-section-head">
                     <div>
                         <h4>🔑 Tek Kullanımlık Takım Davet Kodları</h4>
-                        <div class="tv2-muted">Aktif kodu oyuncuya gönder. “Ücreti ödenmiş” kodu kullanan oyuncudan tekrar ödeme istenmez.</div>
+                        <div class="tv2-muted">${entryUX.inviteNote}</div>
                     </div>
                 </div>
                 <div class="wz-v3037-team-share">
@@ -12718,13 +12794,13 @@ return;
                         <div class="tv3-invite-card ${inv.prepaid ? 'prepaid' : ''} ${String(inv.status||'') === 'used' ? 'used' : ''}">
                             <div class="tv3-invite-top">
                                 <span>${tv2Esc(tv3InviteStatusLabel(inv.status))}</span>
-                                ${inv.prepaid ? '<b class="tv3-chip ok">ÜCRETİ ÖDENMİŞ</b>' : ''}
+                                ${entryUX.mode === 'tl' && inv.prepaid ? '<b class="tv3-chip ok">ÜCRETİ ÖDENMİŞ</b>' : ''}
                             </div>
                             <div class="tv3-invite-code">${tv2Esc(inv.code || inv.displayCode || 'Kod gizli')}</div>
                             <div class="tv2-muted">Koltuk ${Number(inv.slotIndex || 0) || '-'}</div>
                             ${(inv.code || inv.displayCode) && !['used','revoked','expired'].includes(String(inv.status||'')) ? `<button class="tv2-btn secondary" onclick="copyTextReliable('${tv2Esc(inv.code || inv.displayCode)}').then(()=>{this.textContent='✅ KOPYALANDI';setTimeout(()=>{if(this.isConnected)this.textContent='📋 KODU KOPYALA'},2000)}).catch(()=>{})">📋 KODU KOPYALA</button>` : ''}
                         </div>
-                    `).join('') : '<div class="tv2-message">Kaptanın kendi katılım şartı doğrulandıktan sonra davet kodları burada oluşur. Herkes kendi abonelik şartını kendi hesabıyla tamamlar.</div>'}
+                    `).join('') : `<div class="tv2-message">${entryUX.noInvites}</div>`}
                 </div>
             </div>
         ` : '';
@@ -12750,8 +12826,8 @@ return;
                 </div>
                 <div class="tv2-message ${teamReady ? 'success' : ''}" style="margin-top:12px;">
                     ${teamReady
-                        ? `✅ ${size <= 1 ? 'Kaydın tamamlandı.' : 'Takımın bütün oyuncuları ve katılım şartları tamamlandı. Takım artık hazır.'}`
-                        : `⏳ ${size <= 1 ? 'Katılım şartının doğrulanması bekleniyor.' : `Takımın hazır olması için ${size - readyCount} koltuğun daha tamamlanması gerekiyor.`}`}
+                        ? (size <= 1 ? '✅ Kaydın tamamlandı.' : entryUX.teamReady)
+                        : (size <= 1 ? `⏳ ${entryUX.label} işleminin tamamlanması bekleniyor.` : `${entryUX.teamPending} (${readyCount}/${size})`)}
                 </div>
                 <div class="tv3-slot-list">${slotHtml}</div>
                 ${inviteHtml}
@@ -16271,6 +16347,10 @@ return;
   #redirectModal.wz-payment-guide .redirect-modal-body {padding:16px!important;}
 }
 </style>
+<style id="wz-v3040-entry-explanation">
+  #tv2ModalBody .wz-v3040-entry-badge {display:inline-block;margin-top:7px;font-size:12px;font-weight:900;letter-spacing:.045em;color:#fff;background:#7f1d1d;border:1px solid rgba(239,68,68,.45);border-radius:8px;padding:5px 8px;}
+  #tv2ModalBody .wz-v3037-register-hint > b {display:block;margin-bottom:5px;}
+</style>
 <style id="wz-v3039-single-choice">
   #tv2ModalBody .wz-v3039-choice-back {margin:0 0 8px;}
   #tv2ModalBody .wz-v3039-choice-back .tv2-btn {min-height:36px;font-size:.78rem;opacity:.88;}
@@ -16330,7 +16410,10 @@ return;
       const id=currentTeamTournamentId();
       const title=String(tv2State?.publicData?.tournament?.name||'WEİZEND Turnuvası');
       const teamName=String(me.team.name||me.team.teamName||'takımımız');
-      const message=`🎮 ${title}\n👑 ${teamName} takımına davetlisin!\n\n1️⃣ Bu turnuvayı aç: ${linkFor(id)}\n2️⃣ Kick hesabınla doğrulama yap.\n3️⃣ TAKIMA KATIL butonuna bas.\n4️⃣ Davet kodunu ve Riot ID'ni gir.\n5️⃣ Gerekli katılım şartını tamamla.\n\n🔑 Tek kullanımlık takım kodun: ${code}\n\n🏆 Maçlar WEİZEND ARENA'da AFK oynanır, yayın gerekmez.\n🔒 Bu kodu başka kimseyle paylaşma.`;
+      const entryUX=typeof tv3EntryUX==='function'
+        ? tv3EntryUX({...(tv2State?.publicData?.rule||{}),...(me?.rule||{}),entryMode:me?.rule?.entryMode||tv2State?.publicData?.rule?.entryMode||tv2State?.publicData?.tournament?.entryMode},tv2State?.publicData?.tournament||{})
+        : {inviteStep:'Katılım şartını tamamla.'};
+      const message=`🎮 ${title}\n👑 ${teamName} takımına davetlisin!\n\n1️⃣ Bu turnuvayı aç: ${linkFor(id)}\n2️⃣ Kick hesabınla doğrulama yap.\n3️⃣ TAKIMA KATIL butonuna bas.\n4️⃣ Davet kodunu ve Riot ID'ni gir.\n5️⃣ ${entryUX.inviteStep}\n\n🔑 Tek kullanımlık takım kodun: ${code}\n\n🏆 Maçlar WEİZEND ARENA'da AFK oynanır, yayın gerekmez.\n🔒 Bu kodu başka kimseyle paylaşma.`;
       await copyOut(message,'✅ Davet mesajı kopyalandı. Arkadaşına gönderebilirsin.');
     }catch(err){if(typeof showStatusToast==='function')showStatusToast('⚠️ '+(err?.message||err),4100);}
   };
