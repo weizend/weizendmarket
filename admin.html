@@ -2140,20 +2140,20 @@ html,body{max-width:100%;overflow-x:hidden}
             placeholder="Her satıra 1 adet HTTPS görsel adresi"></textarea>
         </div>
 
-        <label class="checkline">
-          <input id="pUnlimited" type="checkbox" onchange="updateStockField()">
-          <span>Sınırsız stok</span>
-        </label>
+        <div class="checkline">
+              <input id="pUnlimited" type="checkbox" onchange="updateStockField()">
+              <label for="pUnlimited" class="checklineText">Sınırsız stok</label>
+            </div>
 
-        <label class="checkline">
-          <input id="pWebPurchase" type="checkbox" checked>
-          <span>Siteden satın alınabilir</span>
-        </label>
+        <div class="checkline">
+              <input id="pWebPurchase" type="checkbox" checked>
+              <label for="pWebPurchase" class="checklineText">Siteden satın alınabilir</label>
+            </div>
 
-        <label class="checkline">
-          <input id="pActive" type="checkbox" checked>
-          <span>Ürün aktif</span>
-        </label>
+        <div class="checkline">
+              <input id="pActive" type="checkbox" checked>
+              <label for="pActive" class="checklineText">Ürün aktif</label>
+            </div>
 
         <div class="btnRow">
           <button id="saveProductButton" onclick="saveProduct()">
@@ -2320,10 +2320,10 @@ html,body{max-width:100%;overflow-x:hidden}
         <div class="supportRewardConfigGrid">
           <div class="supportRewardCard">
             <h3>⭐ Yeni Abonelik</h3>
-            <label class="supportRewardToggle">
+            <div class="supportRewardToggle">
               <input id="srSubscriptionEnabled" type="checkbox" checked onchange="updateSupportRewardPreviews()">
-              <span>Ödül aktif</span>
-            </label>
+              <label for="srSubscriptionEnabled" class="checklineText">Ödül aktif</label>
+            </div>
             <div class="field">
               <label class="title">Abonelik başına puan</label>
               <input id="srSubscriptionPoints" type="number" min="0" step="1" value="20000" oninput="updateSupportRewardPreviews()">
@@ -2333,10 +2333,10 @@ html,body{max-width:100%;overflow-x:hidden}
 
           <div class="supportRewardCard">
             <h3>🔁 Abonelik Yenileme</h3>
-            <label class="supportRewardToggle">
+            <div class="supportRewardToggle">
               <input id="srRenewalEnabled" type="checkbox" checked onchange="updateSupportRewardPreviews()">
-              <span>Ödül aktif</span>
-            </label>
+              <label for="srRenewalEnabled" class="checklineText">Ödül aktif</label>
+            </div>
             <div class="field">
               <label class="title">Yenileme başına puan</label>
               <input id="srRenewalPoints" type="number" min="0" step="1" value="20000" oninput="updateSupportRewardPreviews()">
@@ -2346,10 +2346,10 @@ html,body{max-width:100%;overflow-x:hidden}
 
           <div class="supportRewardCard">
             <h3>🎁 Hediye Abonelik</h3>
-            <label class="supportRewardToggle">
+            <div class="supportRewardToggle">
               <input id="srGiftEnabled" type="checkbox" checked onchange="updateSupportRewardPreviews()">
-              <span>Ödül aktif</span>
-            </label>
+              <label for="srGiftEnabled" class="checklineText">Ödül aktif</label>
+            </div>
             <div class="field">
               <label class="title">1 Gift başına puan</label>
               <input id="srGiftPointsEach" type="number" min="0" step="1" value="15000" oninput="updateSupportRewardPreviews()">
@@ -2359,10 +2359,10 @@ html,body{max-width:100%;overflow-x:hidden}
 
           <div class="supportRewardCard">
             <h3>💚 KICKs</h3>
-            <label class="supportRewardToggle">
+            <div class="supportRewardToggle">
               <input id="srKicksEnabled" type="checkbox" checked onchange="updateSupportRewardPreviews()">
-              <span>Ödül aktif</span>
-            </label>
+              <label for="srKicksEnabled" class="checklineText">Ödül aktif</label>
+            </div>
             <div class="grid2">
               <div class="field">
                 <label class="title">1 KICK karşılığı puan</label>
@@ -2378,10 +2378,10 @@ html,body{max-width:100%;overflow-x:hidden}
 
           <div class="supportRewardCard" style="grid-column:1/-1;">
             <h3>💸 BynoGame Bağışı</h3>
-            <label class="supportRewardToggle">
+            <div class="supportRewardToggle">
               <input id="srDonationEnabled" type="checkbox" checked onchange="updateSupportRewardPreviews()">
-              <span>Ödül aktif</span>
-            </label>
+              <label for="srDonationEnabled" class="checklineText">Ödül aktif</label>
+            </div>
             <div class="field" style="max-width:360px;">
               <label class="title">1 TL bağış karşılığı puan</label>
               <input id="srDonationPointsPerTl" type="number" min="0" step="1" value="100" oninput="updateSupportRewardPreviews()">
@@ -2598,10 +2598,10 @@ html,body{max-width:100%;overflow-x:hidden}
 
     </div>
 
-    <label class="checkline" style="margin:0 0 14px;">
-      <input id="showArchivedOrders" type="checkbox" onchange="loadAdminOrders()">
-      <span>🗃️ Arşivlenen / gizlenen geçmiş işlemleri göster</span>
-    </label>
+    <div class="checkline" style="margin:0 0 14px;">
+              <input id="showArchivedOrders" type="checkbox" onchange="loadAdminOrders()">
+              <label for="showArchivedOrders" class="checklineText">🗃️ Arşivlenen / gizlenen geçmiş işlemleri göster</label>
+            </div>
 
     <div class="tableWrap">
 
@@ -3108,10 +3108,10 @@ html,body{max-width:100%;overflow-x:hidden}
         <div class="field">
           <label class="title">Canlı Yayın URL</label>
           <input id="tcStreamUrl" type="url" maxlength="700" value="https://kick.com/weizend">
-          <label class="checkline" style="margin-top:12px;padding:12px;border:1px solid #593333;border-radius:10px;background:#1b1010">
-            <input id="tcBroadcastEnabled" type="checkbox">
-            <span><b>🔴 Canlı yayınlanacak</b> · Sadece bu turnuva için aç (varsayılan kapalı)</span>
-          </label>
+          <div class="checkline" style="margin-top:12px;padding:12px;border:1px solid #593333;border-radius:10px;background:#1b1010">
+              <input id="tcBroadcastEnabled" type="checkbox">
+              <label for="tcBroadcastEnabled" class="checklineText"><b>🔴 Canlı yayınlanacak</b> · Sadece bu turnuva için aç (varsayılan kapalı)</label>
+            </div>
           <div class="muted" style="margin-top:6px;">Canlı izle butonunun açacağı yayın bağlantısı.</div>
         </div>
 
@@ -3136,10 +3136,10 @@ html,body{max-width:100%;overflow-x:hidden}
           </div>
 
         </div>
-        <label class="checkline">
-          <input id="tcThirdPlaceEnabled" type="checkbox">
-          <span>Yarı final kaybedenleri için 3.'lük maçı oluştur</span>
-        </label>
+        <div class="checkline">
+              <input id="tcThirdPlaceEnabled" type="checkbox">
+              <label for="tcThirdPlaceEnabled" class="checklineText">Yarı final kaybedenleri için 3.'lük maçı oluştur</label>
+            </div>
 
         <h3 class="subTitle">Kurallar</h3>
         <div class="field">
@@ -3157,15 +3157,15 @@ html,body{max-width:100%;overflow-x:hidden}
         </div>
 
         <div class="grid2">
-          <label class="checkline">
-            <input id="tcActive" type="checkbox" checked>
-            <span>Turnuva aktif olsun ve markette görünsün</span>
-          </label>
+          <div class="checkline">
+              <input id="tcActive" type="checkbox" checked>
+              <label for="tcActive" class="checklineText">Turnuva aktif olsun ve markette görünsün</label>
+            </div>
 
-          <label class="checkline">
-            <input id="tcRegistrationOpen" type="checkbox">
-            <span>Kayıt sistemini etkinleştir (açılış / kapanış tarihleri uygulanır)</span>
-          </label>
+          <div class="checkline">
+              <input id="tcRegistrationOpen" type="checkbox">
+              <label for="tcRegistrationOpen" class="checklineText">Kayıt sistemini etkinleştir (açılış / kapanış tarihleri uygulanır)</label>
+            </div>
         </div>
 
         <button id="createTournamentButton" onclick="createTournament()">🚀 Turnuvayı Başlat</button>
@@ -3317,10 +3317,10 @@ html,body{max-width:100%;overflow-x:hidden}
         <div class="field">
           <label class="title">Canlı Yayın URL</label>
           <input id="tStreamUrl" type="url" maxlength="700" value="https://kick.com/weizend">
-          <label class="checkline" style="margin-top:12px;padding:12px;border:1px solid #593333;border-radius:10px;background:#1b1010">
-            <input id="tBroadcastEnabled" type="checkbox">
-            <span><b>🔴 Canlı yayınlanacak</b> · Sadece bu turnuva için aç (varsayılan kapalı)</span>
-          </label>
+          <div class="checkline" style="margin-top:12px;padding:12px;border:1px solid #593333;border-radius:10px;background:#1b1010">
+              <input id="tBroadcastEnabled" type="checkbox">
+              <label for="tBroadcastEnabled" class="checklineText"><b>🔴 Canlı yayınlanacak</b> · Sadece bu turnuva için aç (varsayılan kapalı)</label>
+            </div>
         </div>
 
 
@@ -3342,10 +3342,10 @@ html,body{max-width:100%;overflow-x:hidden}
           </div>
 
         </div>
-        <label class="checkline">
-          <input id="tThirdPlaceEnabled" type="checkbox">
-          <span>Yarı final kaybedenleri için 3.'lük maçı oluştur</span>
-        </label>
+        <div class="checkline">
+              <input id="tThirdPlaceEnabled" type="checkbox">
+              <label for="tThirdPlaceEnabled" class="checklineText">Yarı final kaybedenleri için 3.'lük maçı oluştur</label>
+            </div>
 
         <h3 class="subTitle">Kurallar</h3>
         <div class="field">
@@ -3362,10 +3362,10 @@ html,body{max-width:100%;overflow-x:hidden}
           <div class="field"><label class="title">🎯 En İyi Tahmin Ödülü</label><input id="tPredictionPrize" type="text" maxlength="180" placeholder="Örn: 375 VP"></div>
         </div>
 
-        <label class="checkline">
-          <input id="tRegistrationOpen" type="checkbox">
-          <span>Kayıt sistemi aktif (açılış / kapanış tarihleri uygulanır)</span>
-        </label>
+        <div class="checkline">
+              <input id="tRegistrationOpen" type="checkbox">
+              <label for="tRegistrationOpen" class="checklineText">Kayıt sistemi aktif (açılış / kapanış tarihleri uygulanır)</label>
+            </div>
 
         <h3 class="subTitle">⚙️ Yönetim İşlemleri</h3>
 
