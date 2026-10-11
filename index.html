@@ -4212,6 +4212,42 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
 .wz-v272-roster-note{border:1px solid #614625;border-radius:9px;background:#17120d;color:#f3d3a7;font-size:12px;line-height:1.5;padding:9px 11px;margin:4px 0 9px}
 .wz-v272-roster-note b{color:#fff}
 </style>
+<style id="wz-v30-1-broadcast-position-fix">
+/* V30.1.1: Yayın etiketi durum rozetinin hemen altında görünür; ödüllerin üzerine taşmaz. */
+.wz-turn-card-status-stack{
+  display:flex;
+  flex:0 0 auto;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:6px;
+  position:relative;
+  z-index:4;
+  max-width:52%;
+}
+.wz-turn-card-status-stack > .wz-turn-card-status{
+  align-self:flex-end;
+}
+.wz-turn-card-status-stack > .wz-turn-broadcast-upcoming{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  max-width:100%;
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid rgba(246,87,87,.55);
+  background:rgba(42,8,12,.94);
+  color:#ffb6ba;
+  font-size:10px;
+  font-weight:900;
+  line-height:1.2;
+  text-align:center;
+  box-shadow:0 5px 16px rgba(0,0,0,.32);
+}
+@media(max-width:480px){
+  .wz-turn-card-status-stack{max-width:52%;gap:5px;}
+  .wz-turn-card-status-stack > .wz-turn-broadcast-upcoming{font-size:9px;padding:5px 8px;}
+}
+</style>
 </head>
 <body>
 <script id="wz-v58-prepaint-view">
@@ -14605,9 +14641,11 @@ return;
               <div class="wz-turn-card-sub">${esc(mapDisplayName(t,rule))} • ${esc(matchFormat(t,rule))}</div>
             </div>
           </div>
-          <span class="wz-turn-card-status ${tournamentCategory(item)}${wzV272RosterWaiting(item)?' roster-waiting':''}">${esc(tournamentCategoryLabel(item))}</span>
+          <div class="wz-turn-card-status-stack">
+            <span class="wz-turn-card-status ${tournamentCategory(item)}${wzV272RosterWaiting(item)?' roster-waiting':''}">${esc(tournamentCategoryLabel(item))}</span>
+            ${isTournamentBroadcast(item) && registrationPhase(item)!=='live' && registrationPhase(item)!=='completed' ? '<span class="wz-turn-broadcast-upcoming">🔴 CANLI YAYINLANACAK</span>' : ''}
+          </div>
         </div>
-        ${isTournamentBroadcast(item) && registrationPhase(item)!=='live' && registrationPhase(item)!=='completed' ? '<div class="wz-turn-broadcast-upcoming" style="padding:5px 11px;color:#ff9b9b;font-weight:800;font-size:11px">🔴 CANLI YAYINLANACAK</div>' : ''}
 
         ${wzV95CoverTimerHtml(item)}
         <div class="wz-turn-card-promo">
