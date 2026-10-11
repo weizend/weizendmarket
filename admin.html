@@ -7865,7 +7865,17 @@ function tournamentEntryModeText(mode){
   return map[mode] || mode || '-';
 }
 
-function tournamentLifecycleText(status){
+function tournamentLifecycleText(status, tournament){
+  // Kadro hazırlığını kontenjandan ayrı takip et. Backend'in
+  // registration_complete durumu yeni TAKIM yeri kalmadığını belirtir.
+  // Bütün takım oyuncuları hazır olmadığında bu etiketi yanıltıcı gösterme.
+  if(String(status || '').toLowerCase() === 'registration_complete' && tournament){
+    const registered = Number(tournament.registeredCount);
+    const ready = Number(tournament.completedCount);
+    if(Number.isFinite(registered) && Number.isFinite(ready) && registered > 0 && ready < registered){
+      return `⏳ TAKIM KADROLARI BEKLENİYOR (${ready}/${registered} HAZIR)`;
+    }
+  }
   const map = {
     template:'📋 ŞABLON',
     passive:'⚫ PASİF',
@@ -8646,7 +8656,7 @@ function renderTournamentOptions(){
         const format = Number(t.teamSize || 1) <= 1
           ? '1v1'
           : `${Number(t.teamSize)}v${Number(t.teamSize)}`;
-        return `<option value="${esc(t.id)}">${esc(t.name)} · ${format} · ${esc(tournamentLifecycleText(t.lifecycleStatus))}</option>`;
+        return `<option value="${esc(t.id)}">${esc(t.name)} · ${format} · ${esc(tournamentLifecycleText(t.lifecycleStatus,t))}</option>`;
       }).join('')
     : '<option value="">Yönetilecek mevcut turnuva bulunamadı</option>';
 
@@ -9076,7 +9086,7 @@ async function loadTournamentConfig(){
         <span class="tournamentPill">${esc(rule.mapName || catalogItem.mapName || 'Harita açıklanmadı')}</span>
         <span class="tournamentPill">Kayıt Açılışı: ${rule.comingSoon === true ? 'YAKINDA' : esc(dateText(rule.registrationOpensAt || catalogItem.registrationOpensAt))}</span>
         <span class="tournamentPill">Başlangıç: ${rule.comingSoon === true ? 'YAKINDA' : esc(dateText(t.eventDate))}</span>
-        <span class="tournamentPill ${isTemplate ? 'template' : ''}">${esc(tournamentLifecycleText(lifecycle))}</span>
+        <span class="tournamentPill ${isTemplate ? 'template' : ''}">${esc(tournamentLifecycleText(lifecycle,catalogItem))}</span>
       `;
     }
 
@@ -9573,7 +9583,9 @@ function updateTournamentLifecycleControls(lifecycleValue){
   const toggle = document.getElementById('tLifecycleToggleButton');
 
   if(stateText){
-    stateText.textContent = tournamentLifecycleText(lifecycle);
+    const selectedId = document.getElementById('tournamentSelect')?.value || '';
+    const selectedSummary = tournamentCatalogCache.find(t => String(t?.id || '') === String(selectedId));
+    stateText.textContent = tournamentLifecycleText(lifecycle, selectedSummary);
   }
 
   if(!toggle) return;
