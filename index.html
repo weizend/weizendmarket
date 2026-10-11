@@ -14089,7 +14089,8 @@ return;
       Number(t.teamSize||1)>1 ? `${Number(t.teamSize||1)}v${Number(t.teamSize||1)}` : '1v1',
       mapDisplayName(t,rule),
       matchFormat(t,rule),
-      entryText(item)
+      entryText(item),
+      ...(Array.isArray(t.registeredTeamNames)?t.registeredTeamNames:[])
     ].filter(Boolean).join(' '));
   }
   function tournamentDateTs(value){
@@ -14159,21 +14160,13 @@ return;
     return ia-ib;
   }
   function allTournamentSort(a,b,sourceIndex){
-    const phaseA=registrationPhase(a), phaseB=registrationPhase(b);
-    // Önce yeni katılıma hazırlanabilen turnuvalar, ardından başlayanlar,
-    // en son tamamlananlar. Her grupta kalan kontenjanı en az olan önde.
-    const stage = phase => phase==='completed' ? 2 : phase==='live' ? 1 : 0;
-    const stageDiff=stage(phaseA)-stage(phaseB);
-    if(stageDiff) return stageDiff;
-    const vacancies = item => {
-      const t=item?.tournament||{};
-      const capacity=Number(t.capacity), registered=Number(t.registeredCount);
-      return Number.isFinite(capacity) && capacity>0 && Number.isFinite(registered)
-        ? Math.max(0,capacity-registered) : Number.POSITIVE_INFINITY;
-    };
-    const va=vacancies(a), vb=vacancies(b);
-    if(va!==vb) return va-vb;
-    return compareTournamentItems(a,b,sourceIndex);
+    // V30.3: Newest tournament first, even when an older tournament is nearly full.
+    // Catalog is already ordered by t.created_at DESC on the Worker.
+    const ia=sourceIndex.get(String(a?.tournament?.id||'')) ?? Number.MAX_SAFE_INTEGER;
+    const ib=sourceIndex.get(String(b?.tournament?.id||'')) ?? Number.MAX_SAFE_INTEGER;
+    const ta=tournamentDateTs(a?.tournament?.createdAt),tb=tournamentDateTs(b?.tournament?.createdAt);
+    if(ta!==null && tb!==null && ta!==tb)return tb-ta;
+    return ia-ib;
   }
   function filtered(){
     const q=normalizeTournamentSearch(state.search);
@@ -14185,19 +14178,19 @@ return;
       return tournamentSearchText(item).includes(q);
     });
 
-    return list.sort((a,b)=>state.filter==='all' ? allTournamentSort(a,b,sourceIndex) : compareTournamentItems(a,b,sourceIndex));
+    return list.sort((a,b)=>allTournamentSort(a,b,sourceIndex));
   }
   function activeList(){
     const sourceIndex=tournamentSourceIndex();
     return visibleCatalog()
       .filter(item=>tournamentCategory(item)==='active')
-      .sort((a,b)=>compareTournamentItems(a,b,sourceIndex));
+      .sort((a,b)=>allTournamentSort(a,b,sourceIndex));
   }
   function completedList(){
     const sourceIndex=tournamentSourceIndex();
     return visibleCatalog()
       .filter(item=>tournamentCategory(item)==='done')
-      .sort((a,b)=>compareTournamentItems(a,b,sourceIndex));
+      .sort((a,b)=>allTournamentSort(a,b,sourceIndex));
   }
 
   async function ensureDetail(id){
@@ -14375,7 +14368,7 @@ return;
         <input id="wzTournamentSearchInput" class="wz-turn-search-input" type="text"
           inputmode="search" enterkeyhint="search"
           autocomplete="off" value="${value}"
-          placeholder="Turnuva, oyun, format veya harita ara..."
+          placeholder="Turnuva, takım adı, oyun veya format ara..."
           oninput="wzTurnSetSearch(this.value)">
         <button id="wzTournamentSearchClear" type="button" class="wz-turn-search-clear"
           onclick="wzTurnClearSearch()" title="Aramayı temizle"
