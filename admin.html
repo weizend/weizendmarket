@@ -3468,7 +3468,7 @@ html,body{max-width:100%;overflow-x:hidden}
 
       <div class="card" id="arenaCaptainLobbyAdminCard">
         <div class="sectionHeaderRow"><div><h2>🏆 WEİZEND ARENA — Lobi / Hakem Merkezi</h2>
-        <p class="muted">Maçı sen çağırırsın; A/B kaptanı oyun içinden lobi kurar. 15 dakika sonra gelen AFK şikâyetini yalnızca yönetici onaylar. Hükmen sonuç, normal fikstür sonuç sistemine işlenir.</p></div>
+        <p class="muted">AFK turnuvalarda oyuncular maç lobilerine davet edilir; canlı yayın turnuvalarında lobi açılmaz, katılımcılar başlangıç saati hakkında bilgilendirilir. Fikstür ve tahminler her iki türde de WEİZEND ARENA üzerinden takip edilir.</p></div>
         <button type="button" id="arenaLobbiesRefreshButton" class="secondary smallButton" onclick="loadArenaLobbiesAdmin()">🔄 Lobileri Yenile</button></div>
         <div id="arenaLobbiesRefreshStatus" class="muted" role="status" aria-live="polite" style="margin:7px 0 12px">Henüz manuel yenileme yapılmadı.</div>
         <div id="arenaLobbiesAdmin" class="tournamentEntriesView">Bir turnuva seçildiğinde maç lobileri görünecek.</div>
@@ -10665,17 +10665,48 @@ async function v30AdminFetch(tid){
  if(!r.ok||!d?.success)throw Error(d?.error||`HTTP ${r.status}`);
  return d;
 }
+function v303AdminStartButtons(d){
+  const mode=d.runMode||(d.startedAt?(d.broadcastEnabled?'live':'afk'):null);
+  const liveRunning=!!d.startedAt && mode==='live';
+  const afkRunning=!!d.startedAt && mode==='afk';
+  return `<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0">
+    <button type="button" class="smallBtn ${liveRunning?'success':'secondary'}"
+      onclick="v30AdminControl('start_live')" ${!d.enabled||afkRunning||liveRunning?'disabled':''}>
+      ${liveRunning?'🔴 CANLI DEVAM EDİYOR':'📺 CANLI BAŞLAT'}</button>
+    <button type="button" class="smallBtn ${afkRunning?'success':'warn'}"
+      onclick="v30AdminControl('start_afk')" ${!d.enabled||afkRunning?'disabled':''}>
+      ${afkRunning?'🎮 AFK DEVAM EDİYOR':liveRunning?'🎮 AFK BAŞLAT (GEÇİŞ)':'🎮 AFK BAŞLAT'}</button>
+  </div><p class="muted">${d.startedAt
+    ?'Turnuva başlatıldı: '+esc(new Date(d.startedAt).toLocaleString('tr-TR'))+' · '+(mode==='live'?'CANLI YAYIN':'AFK')
+    :'Başlangıç saatinde seçili yayın ayarı uygulanır. İstersen şimdiden CANLI veya AFK olarak başlat.'}</p>`;
+}
 function v30AdminRender(d,tid){
  const host=document.getElementById('arenaLobbiesAdmin');if(!host)return;
  const status=document.getElementById('arenaLobbiesRefreshStatus');
  const matches=(d.matches||[]).filter(m=>m.participant_a_id&&m.participant_b_id);
+ if(d.broadcastEnabled){
+   const names=new Map((currentTournamentBracket?.matches||[]).map(m=>[String(m.id),m]));
+   const entries=matches.map(m=>{
+     const bracket=names.get(String(m.id))||{};
+     const a=bracket.participantAName||m.participant_a_id||'Bekleniyor';
+     const b=bracket.participantBName||m.participant_b_id||'Bekleniyor';
+     const stage=String(m.status||'ready')==='completed'?'✅ Tamamlandı':'📺 Fikstür açık';
+     return `<div class="tournamentTeamCard" style="margin:7px 0">🏆 ${Number(m.round_number)}. Tur · M${Number(m.match_number)} · <strong>${esc(String(a))} vs ${esc(String(b))}</strong><div class="muted">${stage}</div></div>`;
+   }).join('');
+   const startText=d.startedAt?'Turnuva başlatıldı: '+esc(new Date(d.startedAt).toLocaleString('tr-TR')):'Turnuva başlangıç saati beklenecek.';
+   const actions=`<div style="margin:10px 0;padding:12px;border:1px solid #6b4a22;border-radius:10px;background:#1b1410"><strong>📺 Canlı Yayın Turnuvası</strong><p class="muted">Oyunculara AFK lobi mesajı gönderilmeyecek. Kayıtlar tamamlanınca turnuva saati hatırlatılacak; başlangıçta da ayrı Turnuva Başladı mesajı gidecek. Fikstür ve tahminler WEİZEND ARENA'da açık kalacak. Skorları mevcut Fikstür / Maç Sonucu yönetiminden gir.</p></div>`;
+   host.innerHTML=actions+`<div class="inlineActions"><button type="button" class="smallBtn ${d.enabled?'success':'warn'}" onclick="v30AdminControl('enable')" ${d.enabled?'disabled':''}>${d.enabled?'✅ V30 Fikstür Otomasyonu Etkin':'⚙️ V30 Fikstür Otomasyonunu Etkinleştir'}</button>${v303AdminStartButtons(d)}</div><p class="muted">${startText}</p>`+ (entries||'<div class="tournamentEmpty">Fikstür henüz oluşmadı. Kayıtlar ve kadrolar tamamlanınca otomatik oluşturulacak.</div>');
+   if(status)status.textContent=`✅ Canlı yayın turnuvası · ${matches.length} fikstür maçı · oyuncu lobileri kapalı`;
+   return;
+ }
+
  const alerts=matches.filter(m=>m.v30?.phase==='blocked'||(m.v30?.phase==='finalizing'));
  const map=new Map((currentTournamentBracket?.matches||[]).map(m=>[String(m.id),m]));
  const teamName=(m,side)=>map.get(String(m.id))?.[side==='a'?'participantAName':'participantBName']||(side==='a'?m.participant_a_id:m.participant_b_id);
  const phaseLabel={captains:'Kaptanlar bekleniyor',code:'Davet kodu',ready:'Oyuncular hazır veriyor',proof:'Hızlıresim kanıtı',review:'Kadro onayları',start:'Maç başlatma onayı',playing:'🟢 Oynanıyor',result_pending:'⏱️ Rakip sonuç bekleniyor',blocked:'🚨 HAKEM MÜDAHALESİ',finalizing:'⚠️ Sonuç kontrolü',completed:'✅ Tamamlandı'};
  if(status)status.textContent=`✅ V30 Hakem Merkezi güncellendi · ${matches.length} maç · ${alerts.length} müdahale · ${new Date().toLocaleTimeString('tr-TR')}`;
  const sum=`<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0"><div class="tournamentTeamCard">🏆 <strong>${matches.length}</strong> Maç</div><div class="tournamentTeamCard">🟢 <strong>${matches.filter(m=>m.v30?.phase==='playing').length}</strong> Oynanan</div><div class="tournamentTeamCard" style="border-color:${alerts.length?'#a71919':'#333'}">${alerts.length?'🚨':'✅'} <strong>${alerts.length}</strong> Hakem Bekleyen</div></div>`;
- const adminToolbar=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"><button type="button" class="smallBtn ${d.enabled?'success':'warn'}" onclick="v30AdminControl('enable')" ${d.enabled?'disabled':''}>${d.enabled?'✅ V30 Etkin':'⚙️ V30 Sistemini Etkinleştir'}</button><button type="button" class="smallBtn" onclick="v30AdminControl('start_now')" ${!d.enabled||d.startedAt?'disabled':''}>🚀 Şimdi Başlat</button></div><p class="muted">${d.startedAt?'✅ Turnuva başlatıldı: '+esc(new Date(d.startedAt).toLocaleString('tr-TR')):'⏳ Planlanan turnuva saati beklenecek. İstersen Şimdi Başlat.'}</p>${d.fixtureError?`<p class="muted">⏳ Fikstür bekleniyor: ${esc(d.fixtureError)}</p>`:''}`;
+ const adminToolbar=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"><button type="button" class="smallBtn ${d.enabled?'success':'warn'}" onclick="v30AdminControl('enable')" ${d.enabled?'disabled':''}>${d.enabled?'✅ V30 Etkin':'⚙️ V30 Sistemini Etkinleştir'}</button>${v303AdminStartButtons(d)}</div><p class="muted">${d.startedAt?'✅ Turnuva başlatıldı: '+esc(new Date(d.startedAt).toLocaleString('tr-TR')):'⏳ Planlanan turnuva saati beklenecek. İstersen Şimdi Başlat.'}</p>${d.fixtureError?`<p class="muted">⏳ Fikstür bekleniyor: ${esc(d.fixtureError)}</p>`:''}`;
  const cards=matches.map(m=>{
   const v=m.v30||{},r=m.room||{},pending=(m.disputes||[]).filter(x=>x.status==='pending');
   const blocked=v.phase==='blocked'||v.phase==='finalizing';
@@ -10694,7 +10725,8 @@ function v30AdminToggle(mid){const id=decodeURIComponent(mid);v30AdminOpenMatch=
 async function v30AdminControl(action){
  const tid=document.getElementById('tournamentSelect')?.value||'';
  if(action==='enable'&&!confirm('V30 bu turnuvada etkinleştirilecek; mevcut başlamış V28 maçı varsa geçiş reddedilir. Yedek aldın mı?'))return;
- if(action==='start_now'&&!confirm('Turnuva erken başlatılacak ve Cron oyunculara gerçek davet gönderecek. Takım kadroları ve ödemeler eksiksiz mi?'))return;
+ if(action==='start_live' && !confirm('CANLI başlatılsın mı? Kaptan lobileri kapanır; organizatör VALORANT lobisini kurar ve katılımcılara Turnuva Başladı bildirimi gider.'))return;
+ if(action==='start_afk' && !confirm('AFK başlatılsın mı? Oyunculara kaptan lobisi davetleri gönderilir. Turnuva canlı başlamışsa CANLI moddan AFK moda geçer.'))return;
  try{const {r,d}=await api('/admin/tournament/v30/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,tournamentId:tid})});if(!r.ok||!d?.success)throw Error(d?.error||`HTTP ${r.status}`);
   await loadArenaLobbiesAdmin();
  }catch(e){alert('V30 işlemi yapılamadı: '+e.message);}
@@ -10726,6 +10758,7 @@ async function loadArenaLobbiesAdmin(forcedId){
   const v30=await v30AdminFetch(tid);
   if(requestNo!==arenaLobbyRefreshRequestNo||String(document.getElementById('tournamentSelect')?.value||'')!==String(tid))return;
   if(v30.enabled){v30AdminRender(v30,tid);v30AdminEnablePoll();return;}
+  if(v30.broadcastEnabled){v30AdminRender(v30,tid);v30AdminEnablePoll();return;}
   // If not enabled, offer opt-in controls above the working V28 legacy view.
   const v30Offer=`<div style="margin:10px 0;padding:12px;border:1px solid #503928;border-radius:10px"><b>🏆 WEİZEND ARENA V30</b><p class="muted">Eski maçlar bu sürüme zorla taşınmaz. Yeni aşamalı kaptan sistemi yalnızca seçili turnuvada etkinleştirilir.</p><button class="smallBtn warn" onclick="v30AdminControl('enable')">⚙️ Seçili Turnuvada V30 Etkinleştir</button></div>`;
 
