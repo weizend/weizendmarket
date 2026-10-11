@@ -154,6 +154,13 @@ button.danger{
   margin:0;
 }
 
+.checklineText{
+  display:inline-flex;
+  align-items:center;
+  cursor:pointer;
+  user-select:none;
+}
+
 .muted{
   color:var(--muted);
   font-size:.88rem;
@@ -1218,6 +1225,13 @@ body.dmModalOpen{overflow:hidden}
     width:20px!important;
     height:20px!important;
     flex:0 0 20px!important;
+  }
+
+  .checklineText{
+    display:inline-flex!important;
+    align-items:center!important;
+    cursor:pointer!important;
+    user-select:none!important;
   }
 
   /* Tablolar */
@@ -3044,10 +3058,10 @@ html,body{max-width:100%;overflow-x:hidden}
             <input id="tcEventDate" type="datetime-local">
           </div>
         </div>
-        <label class="checkline">
+        <div class="checkline">
           <input id="tcComingSoon" type="checkbox" onchange="updateCreateTournamentDateField()">
-          <span>Tarihler yerine YAKINDA göster</span>
-        </label>
+          <label for="tcComingSoon" class="checklineText">Tarihler yerine YAKINDA göster</label>
+        </div>
 
         <div class="grid2">
           <div class="field">
@@ -3229,10 +3243,10 @@ html,body{max-width:100%;overflow-x:hidden}
             <label class="title">Turnuva Başlangıç Tarihi</label>
             <input id="tEventDate" type="datetime-local">
           </div>
-          <label class="checkline" style="align-self:center;">
+          <div class="checkline" style="align-self:center;">
             <input id="tComingSoon" type="checkbox" onchange="updateTournamentDateField()">
-            <span>Tarihler yerine YAKINDA göster</span>
-          </label>
+            <label for="tComingSoon" class="checklineText">Tarihler yerine YAKINDA göster</label>
+          </div>
         </div>
 
         <h3 class="subTitle">Katılım Sistemi</h3>
