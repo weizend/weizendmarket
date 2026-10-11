@@ -10634,12 +10634,14 @@ async function loadArenaLobbiesAdmin(forcedId){
   const roomMap=new Map((d.rooms||[]).map(x=>[String(x.match_id),x]));
   const matches=(d.matches||[]).filter(m=>['ready','completed'].includes(String(m.status))&&m.participant_a_id&&m.participant_b_id);
   const reports=d.reports||[];
+  const reviews=d.reviews||[];
   if(!matches.length){host.innerHTML='<div class="tournamentEmpty">Henüz kaptanların lobi kurabileceği maç yok. Fikstür yayımlandığında burada görünecek.</div>';return;}
   host.innerHTML=matches.map(m=>{
    const l=lob.get(String(m.id))||{},room=roomMap.get(String(m.id))||{},n=matchNames.get(String(m.id))||{};
    const mid=encodeURIComponent(m.id);
    const closed=m.status==='completed';
    const reportList=reports.filter(x=>String(x.match_id)===String(m.id));
+   const reviewList=reviews.filter(x=>String(x.match_id)===String(m.id));
    const subtitle=`${Number(m.round_number)||'?'} . Tur · M${Number(m.match_number)||'?'}`;
    return `<div class="tournamentTeamCard" style="margin:10px 0">
      <div class="tournamentTeamHead"><div><strong>${esc(subtitle)} · ${esc(n.participantAName||'A Takımı')} vs ${esc(n.participantBName||'B Takımı')}</strong>
@@ -10647,10 +10649,22 @@ async function loadArenaLobbiesAdmin(forcedId){
        <div class="muted">V28: ${room.started_at?'🟢 MAÇ BAŞLADI':room.lobby_code?(room.proof_a&&room.proof_b?'Görseller hazır; oyuncular bekleniyor':'Kaptan kanıtları bekleniyor'):'VALORANT kodu bekleniyor'} · ${Number(room.ready_count||0)} oyuncu hazır</div></div>
        <span class="badge ${closed?'ok':'warn'}">${closed?'Sonuçlandı':'Devam ediyor'}</span></div>
      ${!closed?`<div class="inlineActions" style="margin:10px 0">
-       <button class="smallBtn" onclick="arenaAdminLobbyAction('${esc(mid)}','call')" ${l.called_at?'disabled':''}>⏱️ ${l.called_at?'Çağrıldı':'Maçı Çağır (10 dk)'}</button>
+       <button class="smallBtn" onclick="arenaAdminLobbyAction('${esc(mid)}','call')" ${l.called_at?'disabled':''}>⏱️ ${l.called_at?'Çağrıldı':'Maçı Çağır (15 dk)'}</button>
        <button class="smallBtn secondary" onclick="arenaAdminLobbyAction('${esc(mid)}','host','a')">A Kaptanı Lobi Kursun</button>
        <button class="smallBtn secondary" onclick="arenaAdminLobbyAction('${esc(mid)}','host','b')">B Kaptanı Lobi Kursun</button></div>`:''}
      ${l.lobby_note?`<p class="muted">Kaptan notu: ${esc(l.lobby_note)}</p>`:''}
+     ${reviewList.map(x=>`<div style="padding:12px;background:#161315;border:1px solid #78413e;border-radius:10px;margin-top:8px">
+  <strong>${x.status==='pending'?'⚠️ HAKEM İNCELEMESİ BEKLİYOR':x.status==='processing'?'⏳ Karar işleniyor':'📋 İnceleme tamamlandı'} · ${x.kind==='roster'?'Kadro itirazı':'Sonuç bildirimi'}</strong>
+  <div class="muted">${esc(x.reporter_username)} · ${esc(x.reason)} · ${esc(x.created_at)}</div>
+  ${x.kind==='result'?`<div>Bildirim skoru: A ${Number(x.score_a)} - ${Number(x.score_b)} B</div>`:''}
+  <p><a href="${esc(x.proof_url)}" target="_blank" rel="noopener noreferrer">🖼️ Hızlıresim kanıtını aç ↗</a></p>
+  ${x.review_note?`<div class="muted">Hakem notu: ${esc(x.review_note)}</div>`:''}
+  ${x.status==='pending'&&!closed?`<div class="inlineActions" style="margin:10px 0">
+    ${x.kind==='roster'?`<button class="smallBtn secondary" onclick="arenaAdminReviewDecision('${esc(encodeURIComponent(x.id))}','dismiss')">✅ İtirazı Reddet / Başlat</button>
+    <button class="smallBtn warn" onclick="arenaAdminReviewDecision('${esc(encodeURIComponent(x.id))}','forfeit')">🚫 Diskalifiye Et</button>`
+    :`<button class="smallBtn" onclick="arenaAdminReviewDecision('${esc(encodeURIComponent(x.id))}','accept',${Number(x.score_a)},${Number(x.score_b)})">🏁 Skoru Onayla</button>
+    <button class="smallBtn secondary" onclick="arenaAdminReviewDecision('${esc(encodeURIComponent(x.id))}','reject')">❌ Reddet</button>`}</div>`:''}
+</div>`).join('')}
      ${reportList.map(x=>`<div style="padding:10px;background:#161315;border:1px solid #433;border-radius:10px;margin-top:8px">
         <strong>🚩 AFK bildirimi: ${esc(x.reporter_username)} → ${x.accused_side==='a'?'A Takımı':'B Takımı'}</strong>
         <div class="muted">${esc(x.reason)} · ${esc(x.status)} · ${esc(x.created_at)}</div>
@@ -10666,12 +10680,40 @@ async function loadArenaLobbiesAdmin(forcedId){
 async function arenaAdminLobbyAction(mid,action,side){
  const matchId=decodeURIComponent(mid);
  if(action==='host'&&!confirm('Lobi sorumlusu değiştirilecek ve mevcut hazır işaretleri sıfırlanacak. Devam?'))return;
- if(action==='call'&&!confirm('AFK için 10 dakikalık resmi maç çağrısı başlatılsın mı?'))return;
+ if(action==='call'&&!confirm('AFK için 15 dakikalık resmi maç çağrısı başlatılsın mı?'))return;
  try{const {r,d}=await api('/admin/tournament/lobby/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({matchId,action,side})});
   if(!r.ok||!d?.success)throw Error(d?.error||`HTTP ${r.status}`);
   await loadArenaLobbiesAdmin();
  }catch(e){alert('Lobi işlemi yapılamadı: '+(e.message||e));}
 }
+async function arenaAdminReviewDecision(encodedId,decision,scoreA,scoreB){
+ const reviewId=decodeURIComponent(encodedId);
+ if(!confirm('Bu karar gerçek maç durumunu değiştirebilir. Görsel kanıtı kontrol ettin mi?'))return;
+ const note=prompt('Hakem karar gerekçesi (en az 8 karakter):');
+ if(note===null)return;
+ if(note.trim().length<8){alert('En az 8 karakter gerekçe gerekli.');return;}
+ const body={reviewId,decision,note:note.trim()};
+ if(decision==='forfeit'){
+  const who=prompt('Diskalifiye edilecek takım: a veya b yaz:');
+  if(!who)return;
+  if(!['a','b'].includes(who.trim().toLowerCase())){alert('Yalnızca a veya b gir.');return;}
+  body.forfeitSide=who.trim().toLowerCase();
+ }
+ if(decision==='accept'){
+  const score=prompt('Onaylanacak skor, A-B şeklinde (örn 13-8):',`${scoreA}-${scoreB}`);
+  if(score===null)return;
+  const m=/^(\d{1,2})\s*-\s*(\d{1,2})$/.exec(score.trim());
+  if(!m||m[1]===m[2]){alert('Geçerli, eşit olmayan skor gir.');return;}
+  body.scoreA=Number(m[1]);body.scoreB=Number(m[2]);
+ }
+ try{
+  const {r,d}=await api('/admin/tournament/lobby/review-resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!r.ok||!d?.success)throw Error(d?.error||`HTTP ${r.status}`);
+  await loadTournamentBracket(true);await loadArenaLobbiesAdmin();
+  alert('Hakem kararı kaydedildi.');
+ }catch(e){alert('Hakem kararı uygulanamadı: '+(e.message||e));}
+}
+
 async function arenaAdminAfkDecision(encodedId,decision){
  const reportId=decodeURIComponent(encodedId);
  const approve=decision==='approve';
