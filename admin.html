@@ -3455,7 +3455,8 @@ html,body{max-width:100%;overflow-x:hidden}
       <div class="card" id="arenaCaptainLobbyAdminCard">
         <div class="sectionHeaderRow"><div><h2>🎮 Kaptan Lobileri ve AFK Kontrolü</h2>
         <p class="muted">Maçı sen çağırırsın; A/B kaptanı oyun içinden lobi kurar. 15 dakika sonra gelen AFK şikâyetini yalnızca yönetici onaylar. Hükmen sonuç, normal fikstür sonuç sistemine işlenir.</p></div>
-        <button class="secondary smallButton" onclick="loadArenaLobbiesAdmin()">🔄 Lobileri Yenile</button></div>
+        <button type="button" id="arenaLobbiesRefreshButton" class="secondary smallButton" onclick="loadArenaLobbiesAdmin()">🔄 Lobileri Yenile</button></div>
+        <div id="arenaLobbiesRefreshStatus" class="muted" role="status" aria-live="polite" style="margin:7px 0 12px">Henüz manuel yenileme yapılmadı.</div>
         <div id="arenaLobbiesAdmin" class="tournamentEntriesView">Bir turnuva seçildiğinde maç lobileri görünecek.</div>
       </div>
 
@@ -10621,14 +10622,32 @@ async function loadTournamentBracket(silent=false){
 }
 
 
-/* WEİZEND ARENA V27 — Kaptan lobileri ve AFK hakem paneli */
+/* WEİZEND ARENA — Kaptan lobileri: yenilemede yükleme/başarı/hata bilgisi göster. */
+const arenaLobbyLastSnapshotByTournament = new Map();
+let arenaLobbyRefreshRequestNo = 0;
 async function loadArenaLobbiesAdmin(forcedId){
  const tid=forcedId||document.getElementById('tournamentSelect')?.value||'';
  const host=document.getElementById('arenaLobbiesAdmin');if(!host)return;
- if(!tid){host.textContent='Önce turnuva seç.';return;}
+ const status=document.getElementById('arenaLobbiesRefreshStatus');
+ const button=document.getElementById('arenaLobbiesRefreshButton');
+ const isManual=!forcedId;
+ const requestNo=++arenaLobbyRefreshRequestNo;
+ if(!tid){host.textContent='Önce turnuva seç.';if(status)status.textContent='Önce turnuva seç.';return;}
+ if(isManual&&button){button.disabled=true;button.textContent='⏳ Yenileniyor...';}
+ if(isManual&&status)status.textContent='⏳ Seçili turnuvanın lobi kayıtları Worker üzerinden kontrol ediliyor...';
  try{
-  const {r,d}=await api(`/admin/tournament/lobbies?id=${encodeURIComponent(tid)}`);
+  const {r,d}=await api(`/admin/tournament/lobbies?id=${encodeURIComponent(tid)}&_=${Date.now()}`);
   if(!r.ok||!d?.success)throw Error(d?.error||`HTTP ${r.status}`);
+  // Daha sonra seçilmiş turnuvanın bilgilerini önceki isteğin sonucuyla ezme.
+  if(requestNo!==arenaLobbyRefreshRequestNo || String(document.getElementById('tournamentSelect')?.value||'')!==String(tid))return;
+  const snapshot=JSON.stringify([d.matches||[],d.lobbies||[],d.rooms||[],d.reports||[],d.reviews||[]]);
+  const oldSnapshot=arenaLobbyLastSnapshotByTournament.get(String(tid));
+  arenaLobbyLastSnapshotByTournament.set(String(tid),snapshot);
+  if(status){
+    const now=new Date().toLocaleTimeString('tr-TR');
+    status.textContent=`✅ ${now} — Worker’dan lobi verileri yeniden alındı (${(d.matches||[]).length} maç). `+
+      (oldSnapshot===undefined?'İlk kontrol tamamlandı.':oldSnapshot===snapshot?'Önceki kontrolle aynı; D1 kayıtları değişmedi.':'Lobi bilgilerinde değişiklik var.');
+  }
   const matchNames=new Map((currentTournamentBracket?.matches||[]).map(m=>[String(m.id),m]));
   const lob=new Map((d.lobbies||[]).map(x=>[String(x.match_id),x]));
   const roomMap=new Map((d.rooms||[]).map(x=>[String(x.match_id),x]));
@@ -10647,7 +10666,7 @@ async function loadArenaLobbiesAdmin(forcedId){
      <div class="tournamentTeamHead"><div><strong>${esc(subtitle)} · ${esc(n.participantAName||'A Takımı')} vs ${esc(n.participantBName||'B Takımı')}</strong>
        <div class="muted">Sorumlu: ${l.host_side==='b'?'B kaptanı':'A kaptanı'} · ${l.called_at?'Çağrı: '+esc(new Date(l.called_at).toLocaleString('tr-TR')):'Henüz çağrılmadı'} · ${l.lobby_open_at?'Lobi kuruldu':'Lobi bekleniyor'}</div>
        <div class="muted">V28: ${room.started_at?'🟢 MAÇ BAŞLADI':room.lobby_code?(room.proof_a&&room.proof_b?'Görseller hazır; oyuncular bekleniyor':'Kaptan kanıtları bekleniyor'):'VALORANT kodu bekleniyor'} · ${Number(room.ready_count||0)} oyuncu hazır</div></div>
-       <span class="badge ${closed?'ok':'warn'}">${closed?'Sonuçlandı':'Devam ediyor'}</span></div>
+       <span class="badge ${closed?'ok':'warn'}">${closed?'Sonuçlandı':room.started_at?'Maç başladı':'Lobi hazırlığında'}</span></div>
      ${!closed?`<div class="inlineActions" style="margin:10px 0">
        <button class="smallBtn" onclick="arenaAdminLobbyAction('${esc(mid)}','call')" ${l.called_at?'disabled':''}>⏱️ ${l.called_at?'Çağrıldı':'Maçı Çağır (15 dk)'}</button>
        <button class="smallBtn secondary" onclick="arenaAdminLobbyAction('${esc(mid)}','host','a')">A Kaptanı Lobi Kursun</button>
@@ -10675,7 +10694,15 @@ async function loadArenaLobbiesAdmin(forcedId){
         </div>`:''}
       </div>`).join('')}</div>`;
   }).join('');
- }catch(e){host.textContent='⚠️ Lobi listesi alınamadı: '+(e.message||e)+' — D1 V27 tabloları kurulmuş mu?';}
+ }catch(e){
+  if(requestNo===arenaLobbyRefreshRequestNo){
+    const msg='⚠️ Lobi verileri alınamadı: '+(e.message||e);
+    if(status)status.textContent=msg;
+    host.textContent=msg+' — Eski kayıtlar değiştirilmedi.';
+  }
+ }finally{
+  if(isManual&&button){button.disabled=false;button.textContent='🔄 Lobileri Yenile';}
+ }
 }
 async function arenaAdminLobbyAction(mid,action,side){
  const matchId=decodeURIComponent(mid);
