@@ -115,7 +115,7 @@ body.arena-dialog-open{overflow:hidden}
 </div></header>
 <main>
 <section class="hero"><div class="eyebrow">🏆 WEİZEND ARENA</div><h1 id="tournamentTitle">Turnuva bilgileri hazırlanıyor</h1><p id="tournamentSubtitle">Katılımcılar, fikstür, maç sonuçları ve tahminler tek yerde.</p><div class="stats" id="stats"></div></section>
-<div id="alert" class="notice" role="status" hidden></div>
+<div id="alert" class="notice" role="status" hidden></div><button class="btn" type="button" id="v30ActiveMatch" style="display:none;margin:0 0 12px">🎮 Aktif Maçıma Dön</button>
 <div class="grid" id="content">
 <section class="panel"><div class="toolbar"><h2>🏆 Turnuva Fikstürü</h2><button class="btn secondary" type="button" id="refreshBtn">↻ Yenile</button></div><p class="hint">Bir maça tıklayarak eşleşmeyi ve tahmin seçeneklerini incele.</p><div id="bracket" class="bracket-viewport"><div class="empty">Fikstür bilgileri alınıyor...</div></div></section>
 <aside class="panel"><h2>🎮 Maç Bilgisi</h2><div id="matchInfo" class="match-focus">Maç seçilmesi bekleniyor.</div><div id="picksBox"><h3>🎯 Tahminim</h3><p id="authText" class="hint">Kick hesabı kontrol ediliyor...</p><div class="choices"><button class="choose" id="pickA" disabled>Oyuncu A</button><button class="choose" id="pickB" disabled>Oyuncu B</button></div><p id="pickProgress" class="pick-status">Tahmin durumu yükleniyor...</p><button id="confirmPicks" type="button" class="btn" style="width:100%;margin:7px 0 9px;display:none" disabled>Tahminleri Onayla</button><button id="editPicks" type="button" class="btn secondary" style="width:100%;margin:7px 0 9px;display:none">Tahminleri Düzenle</button><p class="small">Seçimler taslak olarak kaydedilir. Yalnızca tamamını onayladığın kupon sıralamaya girer.</p></div><hr style="border:0;border-top:1px solid #333;margin:16px 0"><h3>👥 Takımlar / Oyuncular</h3><div id="participants" class="members"><div class="small">Katılımcılar yükleniyor...</div></div><hr style="border:0;border-top:1px solid #333;margin:16px 0"><h3>🏅 Tahmin Sıralaması</h3><div id="predictionBoard" class="small">Sıralama yükleniyor...</div></aside>
@@ -151,6 +151,7 @@ document.querySelectorAll('[data-wz-market-view]').forEach(link=>{
 
 function token(){try{return localStorage.getItem(TOKEN_KEY)||''}catch{return ''}}
 function toast(message,kind=''){$('alert').hidden=false;$('alert').textContent=message;$('alert').className='notice '+kind;}
+function lobbyToast(message,kind=''){const inline=$('v30InlineStatus');if(!roomDialog.hidden&&lobbyCache?.v30&&inline){inline.hidden=false;inline.textContent=message;inline.className='notice '+kind;inline.scrollIntoView({block:'nearest'});}else toast(message,kind);}
 function hideToast(){$('alert').hidden=true;}
 async function api(path,auth=false,data=null){const c=new AbortController(),timer=setTimeout(()=>c.abort(),16000);try{
  const h={'Accept':'application/json'};if(data!==null)h['Content-Type']='application/json';if(auth){const t=token();if(!t)throw Error('Kick oturumu bulunamadı. Siteye giriş yapıp yeniden dene.');h.Authorization='Bearer '+t;}
@@ -247,6 +248,17 @@ let lobbyCache=null,lobbySelected='',lobbySeq=0,lobbySaving=false;
 const roomDialog=$('roomDialog');
 function updateRoomCountdown(){
  const el=$('roomCountdown');if(!el)return;
+ if(lobbyCache?.v30&&lobbyCache.phase==='result_pending'&&lobbyCache.resultDeadline){
+   const remaining=Math.max(0,Date.parse(lobbyCache.resultDeadline)-Date.now());
+   const mm=String(Math.floor(remaining/60000)).padStart(2,'0');
+   const ss=String(Math.floor((remaining%60000)/1000)).padStart(2,'0');
+   el.textContent=remaining>0?'⏱️ Rakibin sonuç göndermesi için kalan: '+mm+':'+ss:'⏳ Yanıt süresi doldu; otomatik sonuç kontrolü bekleniyor.';
+   return;
+ }
+ if(lobbyCache?.v30&&['playing','blocked','completed','finalizing'].includes(lobbyCache.phase)){
+   el.textContent=lobbyCache.phase==='playing'?'🟢 Maç oynanıyor. Kural ihlali varsa kaptan itiraz edebilir.':'Hakem / sonuç durumu sunucudan kontrol ediliyor.';
+   return;
+ }
  const call=Date.parse(String(lobbyCache?.calledAt||''));
  if(!Number.isFinite(call)){el.textContent='⏳ Maç çağrısı bekleniyor.';return;}
  const remaining=Math.max(0,15*60*1000-(Date.now()-call));
@@ -256,18 +268,86 @@ function updateRoomCountdown(){
 }
 setInterval(()=>{if(!roomDialog.hidden)updateRoomCountdown()},1000);
 function openInvitationRoom(){
- roomDialog.hidden=false;document.body.classList.add('arena-dialog-open');loadLobby();
+ roomDialog.hidden=false;document.body.classList.add('arena-dialog-open');try{sessionStorage.setItem('wz_v30_active_match_'+tid,state.selected);}catch{};loadLobby();
 }
 function closeInvitationRoom(){
  roomDialog.hidden=true;document.body.classList.remove('arena-dialog-open');
+ if(v30RoomInterval){clearInterval(v30RoomInterval);v30RoomInterval=null;}
  lobbySeq++;lobbyCache=null;
  const params=new URLSearchParams(location.search);params.delete('room');params.delete('match');
  history.replaceState(null,'',location.pathname+'?'+params.toString());
 }
-$('roomExit').addEventListener('click',closeInvitationRoom);
-roomDialog.addEventListener('click',e=>{if(e.target===roomDialog)closeInvitationRoom();});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!roomDialog.hidden)closeInvitationRoom();});
+$('roomExit').addEventListener('click',()=>{if(lobbyCache?.v30&&['playing','ready','proof','review','start'].includes(lobbyCache.phase)&&!confirm('Aktif maça daha sonra Aktif Maçıma Dön üzerinden ulaşabilirsin. Fikstüre dönülsün mü?'))return;closeInvitationRoom();});
+roomDialog.addEventListener('click',e=>{if(e.target===roomDialog&&!lobbyCache?.v30)closeInvitationRoom();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!roomDialog.hidden&&!lobbyCache?.v30)closeInvitationRoom();});
 function lobbyMarkup(text){const el=$('lobbyContent');if(el)el.textContent=text;}
+// V30 isolated UI. The previous V28 view remains for non-enabled tournaments.
+let v30RoomSnapshot='',v30RoomInterval=null,v30PollingBusy=false;
+function v30RoomHtml(s,m){
+  const p=s.players||{},a=p.a||{expected:0,ready:0,members:[]},b=p.b||{expected:0,ready:0,members:[]};
+  const cap=s.isCaptain,side=s.side,host=s.hostSide||'a';
+  const myJoin=side==='a'?s.captainAJoined:s.captainBJoined;
+  const myConsent=side==='a'?s.consentA:s.consentB;
+  const myStart=side==='a'?s.startA:s.startB;
+  const myProof=side==='a'?s.proofA:s.proofB;
+  const players=([a,b].map((group,i)=>`<div class="lobby-tile"><b>${esc(displayName(m,i===0?'a':'b'))} · ${group.ready}/${group.expected} hazır</b>${(group.members||[]).map(x=>`<div class="room-player"><span>${esc(x.gameId)}</span><span>${x.ready?'✅ Hazır':'⏳ Bekleniyor'}</span></div>`).join('')}</div>`)).join('');
+  const status={captains:'İki kaptanın katılımı bekleniyor',code:'VALORANT davet kodu',ready:'Oyuncuların hazır onayı',proof:'İki kaptanın ekran görüntüsü',review:'Kaptanların kadro kontrolü',start:'Maç başlatma onayı',playing:'MAÇ OYNANIYOR',result_pending:'Rakibin sonuç bildirmesi bekleniyor',blocked:'HAKEM İNCELEMESİ',finalizing:'Sonuç işleniyor',completed:'MAÇ TAMAMLANDI'};
+  const dis=(s.disputes||[]).filter(d=>d.status==='pending');
+  const blocked=s.phase==='blocked';
+  const waitLine='<p class="hint">Diğer kaptanın onayı bekleniyor. İşlemler sunucuda saklanır; sayfayı yenilemen gerekmez.</p>';
+  let controls='';
+  if(s.phase==='captains')controls=`<div class="room-step"><h3>1. İki kaptan lobiye katılır</h3><p>${s.captainAJoined?'✅':'⏳'} ${esc(displayName(m,'a'))} kaptanı · ${s.captainBJoined?'✅':'⏳'} ${esc(displayName(m,'b'))} kaptanı</p>${cap&&!myJoin?'<button class="btn" id="v30Join">🎮 Lobiye Katıl</button>':waitLine}</div>`;
+  if(s.phase==='code')controls=`<div class="room-step"><h3>2. VALORANT lobi davet kodu</h3><p class="hint">İki kaptan katıldı. Sorumlu kaptan oyun lobisini kurup davet kodunu girsin.</p>${cap&&side===host?'<input id="v30Code" maxlength="64" placeholder="VALORANT davet kodu" autocomplete="off"><button class="btn" id="v30CodeSave">🔑 Davet Kodunu Kaydet</button>':waitLine}</div>`;
+  if(s.phase==='ready')controls=`<div class="room-step"><h3>3. Her oyuncu VALORANT lobisine katılır ve Hazırım der</h3><div class="lobby-note">🔑 VALORANT davet kodu: <strong>${esc(s.lobbyCode)}</strong></div><div class="lobby-grid">${players}</div><button class="btn ${s.myReady?'secondary':''}" id="v30Ready">${s.myReady?'↩ Hazır Değilim':'✅ Hazırım'}</button><p class="hint">Dört oyuncu hazır olunca kaptan kanıtı aşaması açılır.</p></div>`;
+  if(s.phase==='proof')controls=`<div class="room-step"><h3>4. İki kaptan lobi kanıtını yükler</h3><div class="lobby-grid">${players}</div><p>${s.proofA?'✅':'⏳'} A Takımı kanıtı · ${s.proofB?'✅':'⏳'} B Takımı kanıtı</p>${cap?`<a href="https://hizliresim.com" target="_blank" rel="noopener noreferrer">Hızlıresim'e git ↗</a><p class="hint">VALORANT içindeki oyun isimlerinin göründüğü ekran görüntüsünü paylaş.</p><input id="v30Proof" type="url" maxlength="500" placeholder="https://hizliresim.com/..." value="${esc(myProof||'')}"><button class="btn" id="v30ProofSave">📸 Kanıtı Kaydet</button>`:waitLine}</div>`;
+  if(s.phase==='review')controls=`<div class="room-step"><h3>5. Kadroyu Kontrol Et</h3><p><a href="${esc(s.proofA)}" rel="noopener noreferrer" target="_blank">A takımının kanıtını aç ↗</a> · <a href="${esc(s.proofB)}" rel="noopener noreferrer" target="_blank">B takımının kanıtını aç ↗</a></p><p class="hint">Oyuncuların VALORANT isimleri kayıtlı kadroyla uyuşuyorsa Devam Et'e bas. İtirazın varsa gerekçe ve görsel ekle.</p><div class="lobby-grid">${players}</div>${cap&&!myConsent?'<button class="btn" id="v30Consent">✅ Devam Et</button>':waitLine}${cap?'<button class="btn secondary" id="v30DisputeShow" style="margin-left:8px">🚩 İtiraz Et</button>':''}<p>${s.consentA?'✅':'⏳'} A Kaptanı onayı · ${s.consentB?'✅':'⏳'} B Kaptanı onayı</p></div>`;
+  if(s.phase==='start')controls=`<div class="room-step"><h3>6. Kurallar ve Maçı Başlat</h3><div class="lobby-note">⚠️ Kayıt dışı oyuncu, hile, yanlış hesap, kural dışı kadro veya usulsüz sonuç bildirimi yasaktır. İhlalde Hızlıresim kanıtı zorunludur. Maç sonucunu kaptanlar bildirir.</div><p>${s.startA?'✅':'⏳'} A Kaptanı · ${s.startB?'✅':'⏳'} B Kaptanı</p>${cap&&!myStart?'<label class="checkline"><input type="checkbox" id="v30Rules"> Kuralları okudum ve kabul ediyorum.</label><button class="btn" id="v30Start">🚀 Maçı Başlat</button>':waitLine}</div>`;
+  if(['playing','result_pending'].includes(s.phase)){
+    const own=(s.resultSubmissions||[]).find(x=>x.team_side===side);
+    const first=s.firstResultSide;
+    const waiting=s.phase==='result_pending'?`<div class="lobby-warning">⏳ İlk skor bildirildi. Rakip takım için 10 dakika son süre: <strong>${esc(s.resultDeadline||'')}</strong>. Süre dolarsa itiraz yoksa ilk bildiren kazanır.</div>`:'';
+    controls=`<div class="room-step"><h3>🟢 MAÇ OYNANIYOR</h3>${waiting}<p>İhlal varsa İtiraz Et, oyun bittiyse Maçı Tamamla seç.</p>${cap?`<button class="btn secondary" id="v30DisputeShow">🚩 İtiraz Et</button> ${own?'<span>✅ Takımın sonuç bildirdi.</span>':'<button class="btn" id="v30ResultShow">🏁 Maçı Tamamla</button>'}`:''}</div>`;
+  }
+  if(blocked)controls=`<div class="room-step"><h3>🚨 Hakem kararı bekleniyor</h3><p class="lobby-warning">İtiraz veya çelişkili skor bulundu. Başlatma ve sonuç işlemleri durduruldu.</p>${dis.map(d=>`<p>${esc(d.reason)} · <a href="${esc(d.proof_url)}" target="_blank" rel="noopener noreferrer">Kanıtı Aç ↗</a></p>`).join('')}</div>`;
+  if(s.phase==='finalizing')controls='<div class="room-step"><h3>⏳ Maç sonucu fikstüre işleniyor</h3></div>';
+  if(s.phase==='completed'||s.matchStatus==='completed')controls='<div class="room-step"><h3>🏆 Maç tamamlandı</h3><p>Eski lobiye işlem yapılamaz. Yeni tur için sistem mesajını bekle.</p></div>';
+  const submission=(s.resultSubmissions||[]).map(x=>`<p class="lobby-note">🏁 ${x.team_side.toUpperCase()} takımı sonucu: ${x.score_a}-${x.score_b} · <a href="${esc(x.proof_url)}" target="_blank" rel="noopener noreferrer">Kanıt ↗</a></p>`).join('');
+  return `<div class="lobby-note">🎮 ${esc(displayName(m,'a'))} vs ${esc(displayName(m,'b'))} · <strong>${esc(status[s.phase]||s.phase)}</strong></div><div class="room-progress" id="roomCountdown"></div><div id="v30InlineStatus" class="notice" hidden></div>${controls}${submission}<div class="room-step" id="v30DisputeForm" hidden><h3>🚩 İtiraz Et</h3><textarea id="v30DisputeReason" placeholder="Kural ihlalini açıkla (en az 12 karakter)..." maxlength="800"></textarea><input id="v30DisputeProof" type="url" maxlength="500" placeholder="https://hizliresim.com/..."><button id="v30DisputeSend" class="btn">Hakeme Gönder</button></div><div class="room-step" id="v30ResultForm" hidden><h3>🏁 Skor ve Ekran Görüntüsü</h3><div class="lobby-grid"><label>A Skoru<input id="v30ScoreA" type="number" min="0" max="99"></label><label>B Skoru<input id="v30ScoreB" type="number" min="0" max="99"></label></div><input id="v30ResultProof" type="url" maxlength="500" placeholder="https://hizliresim.com/..."><label class="checkline"><input type="checkbox" id="v30Confirmed"> Sonuçları ve kanıtı kontrol ettim; bilgiler doğrudur.</label><button id="v30ResultSend" class="btn">📨 Sonucu Gönder</button></div>`;
+}
+function v30RenderLobby(s,m){
+  const el=$('lobbyContent');if(!el)return;
+  el.innerHTML=v30RoomHtml(s,m);
+  const on=(id,fn)=>$(id)?.addEventListener('click',fn);
+  on('v30Join',()=>lobbyAction('join'));
+  on('v30CodeSave',()=>lobbyAction('code',{code:$('v30Code')?.value||''}));
+  on('v30Ready',()=>lobbyAction(s.myReady?'unready':'ready'));
+  on('v30ProofSave',()=>lobbyAction('proof',{proof:$('v30Proof')?.value||''}));
+  on('v30Consent',()=>lobbyAction('consent'));
+  on('v30Start',()=>lobbyAction('start',{rulesAccepted:!!$('v30Rules')?.checked}));
+  on('v30DisputeShow',()=>{const form=$('v30DisputeForm');form.hidden=!form.hidden;if(!form.hidden)form.scrollIntoView({block:'nearest'});});
+  on('v30ResultShow',()=>{const form=$('v30ResultForm');form.hidden=!form.hidden;if(!form.hidden)form.scrollIntoView({block:'nearest'});});
+  on('v30DisputeSend',()=>lobbyReview('dispute',{reason:$('v30DisputeReason')?.value||'',proof:$('v30DisputeProof')?.value||''}));
+  on('v30ResultSend',()=>lobbyReview('result',{scoreA:$('v30ScoreA')?.value,scoreB:$('v30ScoreB')?.value,proof:$('v30ResultProof')?.value,confirmed:!!$('v30Confirmed')?.checked}));
+  updateRoomCountdown();
+}
+function v30StartPolling(){
+  if(v30RoomInterval)return;
+  v30RoomInterval=setInterval(async()=>{
+    if(roomDialog.hidden||!lobbyCache?.v30||lobbySaving||v30PollingBusy||document.hidden)return;
+    // Avoid destroying in-progress text entry. Changes are applied on blur or after submission.
+    const tag=String(document.activeElement?.tagName||'').toUpperCase();
+    if(['INPUT','TEXTAREA','SELECT'].includes(tag))return;
+    const m=activeMatch();if(!m)return;
+    v30PollingBusy=true;
+    try{
+      const data=await api('/tournament/lobby?matchId='+encodeURIComponent(m.id),true);
+      if(roomDialog.hidden||lobbySaving)return;
+      const next=JSON.stringify(data);
+      if(next!==v30RoomSnapshot){v30RoomSnapshot=next;lobbyCache=data;renderLobby();if(data.matchStatus==='completed')await refresh();}
+    }catch(e){const status=$('v30InlineStatus');if(status){status.hidden=false;status.textContent='Bağlantı kontrolü: '+e.message;}}finally{v30PollingBusy=false;}
+  },9000);
+}
+
 function renderLobby(){
  const el=$('lobbyContent');if(!el)return;
  const m=activeMatch();
@@ -275,6 +355,7 @@ function renderLobby(){
  if(!token()){lobbyMarkup('Maç lobisine giriş için Market üzerinden Kick hesabına giriş yap.');return;}
  if(lobbySelected!==m.id||!lobbyCache){lobbyMarkup('Kayıtlı oyuncu ve maç lobisi kontrol ediliyor...');return;}
  const s=lobbyCache,hostMe=s.isCaptain&&s.side===s.hostSide;
+ if(s.v30){v30RenderLobby(s,m);v30StartPolling();$('v30ActiveMatch').style.display='inline-block';return;}
  const started=!!s.startedAt,done=s.matchStatus==='completed';
   if(done){lobbyMarkup('🏁 Bu karşılaşma tamamlandı. Eski maç lobisi devre dışı. Yeni maçın için gelecek sistem mesajını bekle.');return;}
  const pa=s.players?.a||{ready:0,joined:0,expected:0,members:[]},pb=s.players?.b||{ready:0,joined:0,expected:0,members:[]};
@@ -327,27 +408,36 @@ async function loadLobby(){
  const m=activeMatch(),seq=++lobbySeq;lobbyCache=null;lobbySelected=m?.id||'';renderLobby();
  if(!m||!m.participantAId||!m.participantBId||!token()||!['ready','completed'].includes(m.status))return;
  try{const result=await api('/tournament/lobby?matchId='+encodeURIComponent(m.id),true);
-  if(seq!==lobbySeq)return;lobbyCache=result;renderLobby();renderMatch();
- }catch(e){if(seq!==lobbySeq)return;lobbyMarkup('Maç lobisine erişilemiyor: '+e.message);}
+  if(seq!==lobbySeq)return;lobbyCache=result;v30RoomSnapshot=JSON.stringify(result);renderLobby();renderMatch();
+  // Clicking the invitation is the captain's join confirmation; no second click required.
+  if(result?.v30&&result.phase==='captains'&&result.isCaptain&&!(result.side==='a'?result.captainAJoined:result.captainBJoined)){
+    try{await api('/tournament/lobby/update',true,{matchId:m.id,action:'join'});
+      if(seq===lobbySeq){const updated=await api('/tournament/lobby?matchId='+encodeURIComponent(m.id),true);if(seq===lobbySeq){lobbyCache=updated;v30RoomSnapshot=JSON.stringify(updated);renderLobby();}}
+    }catch(e){toast('Kaptan katılımı kaydedilemedi: '+e.message,'error');}
+  }
+ }catch(e){if(seq!==lobbySeq)return;
+ if(/tamamlandı|kapatıldı/i.test(String(e.message||''))){try{sessionStorage.removeItem('wz_v30_active_match_'+tid);}catch{}$('v30ActiveMatch').style.display='none';}
+ lobbyMarkup('Maç lobisine erişilemiyor: '+e.message);}
 }
 async function lobbyAction(action,data={}){
  const m=activeMatch();if(!m||lobbySaving)return;
  if(action==='afk_report'&&!confirm('AFK başvurusu hakeme iletilecek. Hükmen galibiyet otomatik olmaz. Gönderilsin mi?'))return;
  lobbySaving=true;
- try{await api('/tournament/lobby/update',true,{matchId:m.id,action,...data});await loadLobby();toast('✓ İşlem kaydedildi.','ok');
- }catch(e){toast('İşlem başarısız: '+e.message,'error');}
+ try{await api('/tournament/lobby/update',true,{matchId:m.id,action,...data});await loadLobby();lobbyToast('✓ İşlem kaydedildi.','ok');
+ }catch(e){lobbyToast('İşlem başarısız: '+e.message,'error');}
  finally{lobbySaving=false;}
 }
 async function lobbyReview(kind,data){
  const m=activeMatch();if(!m||lobbySaving)return;
- const question=kind==='roster'?'Kadro itirazını hakeme göndermek istiyor musun? İnceleme tamamlanana kadar maç başlamayacak.':'Maç sonucunu ve Hızlıresim kanıtını hakeme göndermek istiyor musun?';
+ const question=(kind==='roster'||kind==='dispute')?'Bu itiraz hakeme gönderilecek ve maç işlemleri durdurulacak. Onaylıyor musun?':'Skoru ve görsel kanıtını kontrol ettin mi? Gönderilince değiştirilemez.';
  if(!confirm(question))return;
  lobbySaving=true;
- try{await api('/tournament/lobby/review',true,{matchId:m.id,kind,...data});await loadLobby();toast('✓ Hakem incelemesine gönderildi.','ok');}
- catch(e){toast('Gönderilemedi: '+e.message,'error');}
+ try{await api('/tournament/lobby/review',true,{matchId:m.id,kind,...data});await loadLobby();lobbyToast('✓ Bildirimin kaydedildi.','ok');}
+ catch(e){lobbyToast('Gönderilemedi: '+e.message,'error');}
  finally{lobbySaving=false;}
 }
 $('lobbyRefresh').addEventListener('click',loadLobby);
+$('v30ActiveMatch').addEventListener('click',()=>{const id=sessionStorage.getItem('wz_v30_active_match_'+tid)||lobbySelected;if(id){const found=(state.detail?.matches||[]).find(m=>m.id===id);if(found){state.selected=id;renderBracket();renderMatch();openInvitationRoom();}else toast('Aktif maçın henüz fikstürde görünmüyor.','error');}});
 
 function renderAll(){renderLobby();renderHero();renderBracket();renderParticipants();renderMatch();renderBoard();}
 function cachePublic(){try{sessionStorage.setItem(cacheKey,JSON.stringify({at:Date.now(),detail:state.detail}));}catch{}}
@@ -410,9 +500,8 @@ $('confirmPicks').onclick=()=>confirmCoupon();
 $('editPicks').onclick=()=>{state.editMode=true;renderMatch();};
 if(!tid||tid.length>120||!/^[a-zA-Z0-9_:-]+$/.test(tid)){
  $('tournamentTitle').textContent='Turnuva seçilmedi';$('bracket').innerHTML='<div class="empty">Bir turnuvanın Arena bağlantısını aç. <a href="'+href+'">Siteye dön</a>.</div>';$('pickProgress').textContent='Turnuva bekleniyor.';$('authText').textContent='';$('participants').textContent='';$('predictionBoard').textContent='';$('refreshBtn').disabled=true;
-}else{restorePublic();refresh(true)}
+}else{restorePublic();try{if(sessionStorage.getItem('wz_v30_active_match_'+tid))$('v30ActiveMatch').style.display='inline-block';}catch{}refresh(true)}
 })();
 </script>
 </body>
 </html>
-
