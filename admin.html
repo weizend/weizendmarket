@@ -3094,6 +3094,10 @@ html,body{max-width:100%;overflow-x:hidden}
         <div class="field">
           <label class="title">Canlı Yayın URL</label>
           <input id="tcStreamUrl" type="url" maxlength="700" value="https://kick.com/weizend">
+          <label class="checkline" style="margin-top:12px;padding:12px;border:1px solid #593333;border-radius:10px;background:#1b1010">
+            <input id="tcBroadcastEnabled" type="checkbox">
+            <span><b>🔴 Canlı yayınlanacak</b> · Sadece bu turnuva için aç (varsayılan kapalı)</span>
+          </label>
           <div class="muted" style="margin-top:6px;">Canlı izle butonunun açacağı yayın bağlantısı.</div>
         </div>
 
@@ -3299,6 +3303,10 @@ html,body{max-width:100%;overflow-x:hidden}
         <div class="field">
           <label class="title">Canlı Yayın URL</label>
           <input id="tStreamUrl" type="url" maxlength="700" value="https://kick.com/weizend">
+          <label class="checkline" style="margin-top:12px;padding:12px;border:1px solid #593333;border-radius:10px;background:#1b1010">
+            <input id="tBroadcastEnabled" type="checkbox">
+            <span><b>🔴 Canlı yayınlanacak</b> · Sadece bu turnuva için aç (varsayılan kapalı)</span>
+          </label>
         </div>
 
 
@@ -8176,6 +8184,7 @@ async function loadCreateTournamentTemplate(encodedId){
       rule.logoImageUrl || item.logoImageUrl || '';
     document.getElementById('tcStreamUrl').value =
       rule.streamUrl || item.streamUrl || 'https://kick.com/weizend';
+    document.getElementById('tcBroadcastEnabled').checked = rule.broadcastEnabled === true || item.broadcastEnabled === true;
 
     document.getElementById('tcBestOf').value =
       String(rule.bestOf || item.bestOf || 'BO1').toUpperCase();
@@ -8301,6 +8310,7 @@ async function saveCreateTournamentTemplate(){
   const heroImageUrl = document.getElementById('tcHeroImageUrl')?.value.trim() || '';
   const logoImageUrl = document.getElementById('tcLogoImageUrl')?.value.trim() || '';
   const streamUrl = document.getElementById('tcStreamUrl')?.value.trim() || 'https://kick.com/weizend';
+  const broadcastEnabled = document.getElementById('tcBroadcastEnabled')?.checked === true;
 
   const bestOf = document.getElementById('tcBestOf')?.value || 'BO1';
   const mapName = document.getElementById('tcMapName')?.value.trim() || '';
@@ -8375,6 +8385,7 @@ async function saveCreateTournamentTemplate(){
         heroImageUrl,
         logoImageUrl,
         streamUrl,
+        broadcastEnabled,
         bestOf,
         mapName,
         mapType,
@@ -8439,6 +8450,7 @@ async function createTournament(){
   const heroImageUrl = document.getElementById('tcHeroImageUrl')?.value.trim() || '';
   const logoImageUrl = document.getElementById('tcLogoImageUrl')?.value.trim() || '';
   const streamUrl = document.getElementById('tcStreamUrl')?.value.trim() || 'https://kick.com/weizend';
+  const broadcastEnabled = document.getElementById('tcBroadcastEnabled')?.checked === true;
   const bestOf = document.getElementById('tcBestOf')?.value || 'BO1';
   const mapName = document.getElementById('tcMapName')?.value.trim() || '';
   const mapType = 'standard';
@@ -8514,6 +8526,7 @@ async function createTournament(){
         heroImageUrl,
         logoImageUrl,
         streamUrl,
+        broadcastEnabled,
         bestOf,
         mapName,
         mapType,
@@ -8546,6 +8559,7 @@ async function createTournament(){
     document.getElementById('tcHeroImageUrl').value = '';
     document.getElementById('tcLogoImageUrl').value = '';
     document.getElementById('tcStreamUrl').value = 'https://kick.com/weizend';
+    document.getElementById('tcBroadcastEnabled').checked = false;
     document.getElementById('tcBestOf').value = 'BO1';
     document.getElementById('tcMapName').value = '';
     document.getElementById('tcMapImageUrl').value = '';
@@ -8812,7 +8826,7 @@ function setTournamentTemplateMode(isTemplate){
   const fieldIds = [
     'tName','tTeamSize','tCapacity','tRegistrationOpensAt','tRegistrationClosesAt','tEventDate',
     'tComingSoon','tEntryMode','tFee','tGameName','tGameIdLabel','tAboutText','tCardImageUrl','tHeroImageUrl',
-    'tLogoImageUrl','tStreamUrl','tBestOf','tMapName','tMapImageUrl','tThirdPlaceEnabled',
+    'tLogoImageUrl','tStreamUrl','tBroadcastEnabled','tBestOf','tMapName','tMapImageUrl','tThirdPlaceEnabled',
     'tRulesText','tPrizeFirst','tPrizeSecond','tPrizeThird','tPredictionPrize','tRegistrationOpen'
   ];
 
@@ -8881,6 +8895,7 @@ function copyTournamentTemplateToCreate(){
   copyValue('tHeroImageUrl','tcHeroImageUrl');
   copyValue('tLogoImageUrl','tcLogoImageUrl');
   copyValue('tStreamUrl','tcStreamUrl');
+  copyChecked('tBroadcastEnabled','tcBroadcastEnabled');
   copyValue('tBestOf','tcBestOf');
   copyValue('tMapName','tcMapName');
   copyValue('tMapImageUrl','tcMapImageUrl');
@@ -9058,6 +9073,7 @@ async function loadTournamentConfig(){
     document.getElementById('tHeroImageUrl').value = rule.heroImageUrl || catalogItem.heroImageUrl || '';
     document.getElementById('tLogoImageUrl').value = rule.logoImageUrl || catalogItem.logoImageUrl || '';
     document.getElementById('tStreamUrl').value = rule.streamUrl || catalogItem.streamUrl || 'https://kick.com/weizend';
+    document.getElementById('tBroadcastEnabled').checked = rule.broadcastEnabled === true || catalogItem.broadcastEnabled === true;
 
     document.getElementById('tBestOf').value =
       String(rule.bestOf || catalogItem.bestOf || 'BO1').toUpperCase();
@@ -9269,6 +9285,7 @@ async function saveTournamentConfig(){
   const heroImageUrl = document.getElementById('tHeroImageUrl')?.value.trim() || '';
   const logoImageUrl = document.getElementById('tLogoImageUrl')?.value.trim() || '';
   const streamUrl = document.getElementById('tStreamUrl')?.value.trim() || 'https://kick.com/weizend';
+  const broadcastEnabled = document.getElementById('tBroadcastEnabled')?.checked === true;
   const bestOf = document.getElementById('tBestOf')?.value || 'BO1';
   const mapName = document.getElementById('tMapName')?.value.trim() || '';
   const mapType = 'standard';
@@ -9338,6 +9355,7 @@ async function saveTournamentConfig(){
         heroImageUrl,
         logoImageUrl,
         streamUrl,
+        broadcastEnabled,
         bestOf,
         mapName,
         mapType,
