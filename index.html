@@ -10427,21 +10427,30 @@ return;
 
 
     async function tv2FetchPublicDetail(tournamentId) {
-        const response = await fetch(
-            `${MARKET_WORKER}/tournament/public?id=${encodeURIComponent(tournamentId)}&_=${Date.now()}`,
-            {
-                headers:{'Accept':'application/json'},
-                cache:'no-store'
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 18000);
+        try {
+            const response = await fetch(
+                `${MARKET_WORKER}/tournament/public?id=${encodeURIComponent(tournamentId)}&_=${Date.now()}`,
+                {
+                    headers:{'Accept':'application/json'},
+                    cache:'no-store',
+                    signal:controller.signal
+                }
+            );
+            const data = await response.json();
+            if(!response.ok || !data?.success){
+                throw new Error(data?.error || `HTTP ${response.status}`);
             }
-        );
-
-        const data = await response.json();
-
-        if(!response.ok || !data?.success){
-            throw new Error(data?.error || `HTTP ${response.status}`);
+            return data;
+        } catch(error) {
+            if (error?.name === 'AbortError') {
+                throw new Error('Turnuva detayları 18 saniyede yanıt vermedi. Biraz bekleyip yeniden deneyin.');
+            }
+            throw error;
+        } finally {
+            clearTimeout(timer);
         }
-
-        return data;
     }
 
     async function tv2OpenPublic(tournamentId) {
@@ -11582,9 +11591,7 @@ return;
         const id = tv2State.tournamentId;
         try {
             const [detail, me] = await Promise.all([
-                fetch(`${MARKET_WORKER}/tournament/public?id=${encodeURIComponent(id)}&_=${Date.now()}`,{
-                    headers:{'Accept':'application/json'},cache:'no-store'
-                }).then(async r=>{const d=await r.json(); if(!r.ok||!d?.success) throw new Error(d?.error||`HTTP ${r.status}`); return d;}),
+                tv2FetchPublicDetail(id),
                 tv2AuthFetch(`/tournament/me?id=${encodeURIComponent(id)}&_=${Date.now()}`)
             ]);
             tv2State.soloData = {detail,me};
