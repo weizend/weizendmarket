@@ -581,6 +581,8 @@ body.wz-initializing *{
         .inbox-message-text { overflow-wrap:anywhere; word-break:break-word; max-width:100%; }
         .inbox-message-text a { color:#ff6b6b; font-weight:800; text-decoration:underline; text-underline-offset:3px; }
         .inbox-message-text a:hover { color:#fff; }
+        .wz-arena-inbox-join{display:block;margin:14px 0 4px;padding:13px 15px;border-radius:10px;background:#d71920;color:white!important;text-align:center;text-decoration:none!important;font-weight:900}
+        .wz-arena-inbox-join:hover{background:#f0272d}
         .inbox-message-delete { position:absolute; top:8px; right:8px; width:30px; height:30px; padding:0; border-radius:50%; border:1px solid #303030; background:#151515; color:#858585; display:flex; align-items:center; justify-content:center; opacity:0; transition:.15s; cursor:pointer; }
         .inbox-message:hover .inbox-message-delete,.inbox-message-delete:focus { opacity:1; }
         .inbox-message-delete:hover { background:#5a1717; border-color:#812b2b; color:#fff; }
@@ -1982,6 +1984,13 @@ body.wz-view-tournament #wzMobileTournamentHero{display:none!important}
 }
 .wz-turn-register[disabled],.wz-turn-register.is-disabled{
   background:linear-gradient(180deg,#5d6168,#3d424a);color:#d8dbe2;box-shadow:none;cursor:not-allowed;opacity:.95
+}
+/* WEİZEND V27.3 — Detay sayfasında iki ayrı turnuva katılım eylemi. */
+.wz-turn-registration-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 12px 14px}
+.wz-turn-registration-actions .wz-turn-register{width:100%;margin:0;min-width:0;padding:10px 8px;line-height:1.3;white-space:normal}
+@media(max-width:450px){
+  .wz-turn-registration-actions{gap:8px}
+  .wz-turn-registration-actions .wz-turn-register{font-size:.80rem;border-radius:12px;min-height:48px}
 }
 .wz-turn-tabs{
   display:flex;gap:4px;overflow:auto;padding:0 12px 12px;scrollbar-width:none
@@ -7295,12 +7304,20 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
             }
         }
 
-        function inboxMessageBodyHtml(value) {
+        function inboxMessageBodyHtml(value,senderType='') {
             const safe = escapeHtml(String(value || '—'));
-            return safe.replace(
+            let html = safe.replace(
                 /https:\/\/instagram\.com\/weizend\/?/gi,
                 '<a href="https://instagram.com/weizend" target="_blank" rel="noopener noreferrer">instagram.com/weizend</a>'
             );
+            // Worker'ın ürettiği özel işaret sadece sistem mesajında butona dönüşür.
+            // Turnuva/maç kimliği sabit ve dar karakter setiyle sınırlandırılır.
+            if(senderType==='system') html=html.replace(
+                /\[\[WEIZEND_ARENA_LOBBY\|([A-Za-z0-9_-]{1,150})\|([A-Za-z0-9_-]{1,150})\]\]/g,
+                (_,t,m)=>'<a class="wz-arena-inbox-join" href="https://weizend.github.io/weizendmarket/arena.html?tournament='+
+                    encodeURIComponent(t)+'&amp;match='+encodeURIComponent(m)+'&amp;room=1">🎮 LOBİYE KATIL</a>'
+            );
+            return html;
         }
 
         // Vaktiyle bazı OTOMATİK bildirimler D1'e 'admin' olarak kaydedilmişti.
@@ -7363,7 +7380,7 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
 
                 bubble.innerHTML = `
                     <div class="inbox-message-sender">${escapeHtml(senderName)}</div>
-                    <div class="inbox-message-text">${inboxMessageBodyHtml(body || '—')}</div>
+                    <div class="inbox-message-text">${inboxMessageBodyHtml(body || '—',senderType)}</div>
                     <div class="inbox-message-date">${escapeHtml(inboxDateText(item.created_at || item.createdAt))}</div>
                     ${supportHtml}
                     <button class="inbox-message-delete" title="Bu mesajı yalnızca benden sil" aria-label="Bu mesajı yalnızca benden sil"
@@ -10008,6 +10025,7 @@ return;
         const map = {
             completed:'🏁 TAMAMLANDI',
             in_progress:'🎮 TURNUVA BAŞLADI',
+            start_waiting:'⏳ TURNUVA SAATİ BEKLENİYOR',
             registration_complete:'✅ KAYITLAR TAMAMLANDI',
             registration_open:'🟢 KAYITLAR AÇIK',
             registration_closed:'🔴 KAYITLAR KAPALI'
@@ -12106,7 +12124,10 @@ return;
         const team = me.team || null;
         const joinDraft = me.joinDraft || tv2State.joinDraft || null;
         const closed = tv2RegistrationClosed({tournament:t,rule});
-        const inviteJoinClosed = tv3InviteJoinClosed({tournament:t,rule});
+        const filled = Number(t.capacity||0)>0 && Number(t.registeredCount||0)>=Number(t.capacity||0);
+        const createClosed = closed || filled;
+        const inviteJoinClosed = tv3InviteJoinClosed({tournament:t,rule}) ||
+          Number(t.registeredCount||0)<=Number(t.completedCount||0);
         const comingSoon = rule?.comingSoon === true || t?.comingSoon === true;
         const teamSize = Math.max(1, Number(t.teamSize || 1));
 
@@ -12140,8 +12161,8 @@ return;
                             : 'Kaptan takımı kendi hesabıyla başlatır. Her oyuncu kendi katılım şartını tamamlar. Takım arkadaşları davet koduyla katılır. Kaptanın şartı doğrulanınca davet kodları oluşur.'}
                     </div>
                     <div class="tv2-actions">
-                        <button class="tv2-btn" ${closed?'disabled':''} onclick="tv2ShowCreateForm()">${teamSize <= 1 ? '🎮 KAYIT OL' : '👑 TAKIM OLUŞTUR'}</button>
-                        ${teamSize > 1 ? `<button class="tv2-btn secondary" ${inviteJoinClosed?'disabled':''} onclick="tv2ShowJoinForm()">🔑 DAVET KODUYLA KATIL</button>` : ''}
+                        <button class="tv2-btn ${createClosed?'secondary':''}" ${createClosed?'disabled':''} onclick="tv2ShowCreateForm()">${teamSize <= 1 ? '🎮 KAYIT OL' : '👑 TAKIM KUR'}</button>
+                        ${teamSize > 1 ? `<button class="tv2-btn ${inviteJoinClosed?'secondary':''}" ${inviteJoinClosed?'disabled':''} onclick="tv2ShowJoinForm()">🔑 TAKIMA KATIL</button>` : ''}
                     </div>
                     <div id="tv2InlineForm"></div>
                 </div>
@@ -13495,9 +13516,11 @@ return;
     // Tamamlandı admin/lifecycle tarafından kesin durumdur.
     if(l==='completed') return 'completed';
 
-    // Turnuva başlangıç saati geçtiyse lifecycle güncellenmesini beklemeden CANLI göster.
-    // Böylece dış kart, detay zaman çizelgesiyle aynı durumu kullanır.
-    if(l==='in_progress' || (Number.isFinite(startTs) && now>=startTs)) return 'live';
+    // V29: 'CANLI' için hem gerçek fikstür hem planlı başlangıç zamanı gerekir.
+    // Dolan kontenjan veya kura çekimi tek başına maçı başlatmaz.
+    const hasBracket=Number(item?.tournament?.matchCount||0)>0 || l==='in_progress';
+    if(hasBracket && Number.isFinite(startTs) && now>=startTs) return 'live';
+    if(l==='start_waiting' || (hasBracket && (!Number.isFinite(startTs)||now<startTs))) return 'waiting_start';
 
     // Manuel "Yakında" modu tarih/saatten bağımsızdır ama başlamış turnuvayı ezmez.
     if(comingSoon(item)) return 'soon';
@@ -13526,7 +13549,7 @@ return;
     const p=registrationPhase(item);
     if(p==='completed') return 'done';
     if(p==='live') return 'live';
-    if(['soon','scheduled'].includes(p)) return 'soon';
+    if(['soon','scheduled','waiting_start'].includes(p)) return 'soon';
     return 'open';
   }
   function formatBadgeDate(value){
@@ -13541,6 +13564,7 @@ return;
     if(p==='soon') return 'YAKINDA';
     if(p==='completed') return 'TAMAMLANDI';
     if(p==='live') return 'CANLI';
+    if(p==='waiting_start') return 'TURNUVA SAATİ BEKLENİYOR';
     if(p==='full'){
       const t=item?.tournament||{};
       if(Number(t.teamSize||1)>1 && Number(t.completedCount)<Number(t.registeredCount)) return 'KADROLAR BEKLENİYOR';
@@ -13613,6 +13637,25 @@ return;
     return {
       enabled:registrationIsOpen(item)||invitation,
       label:invitation?'🔑 DAVET KODUYLA KATIL':'KAYIT OL'
+    };
+  }
+  // V27.3: takım kurma ve mevcut takım davetine katılma ayrı izinlerdir.
+  // Görünümdeki butonlar sadece yönlendirir; asıl Kick UID, tek kullanımlık
+  // davet kodu, zaman ve kontenjan kontrolleri Worker üzerinde kalır.
+  function wzV273TeamActions(item){
+    const t=item?.tournament||{};
+    const teamMode=Number(t.teamSize||1)>1;
+    const registered=Math.max(0,Number(t.registeredCount||0));
+    const ready=Math.max(0,Number(t.completedCount||0));
+    const capacity=Math.max(0,Number(t.capacity||0));
+    const hasTeamVacancy=capacity<=0 || registered<capacity;
+    const incompleteTeam=registered>ready;
+    return {
+      teamMode,
+      createEnabled:teamMode && hasTeamVacancy && registrationIsOpen(item) &&
+        (typeof tv2RegistrationClosed!=='function' || !tv2RegistrationClosed(item)),
+      joinEnabled:teamMode && incompleteTeam &&
+        typeof tv3InviteJoinClosed==='function' && !tv3InviteJoinClosed(item)
     };
   }
   function modeText(t){
@@ -13877,6 +13920,16 @@ return;
       registerBtn.disabled=!action.enabled;
       registerBtn.classList.toggle('is-disabled',!action.enabled);
       registerBtn.textContent=action.label;
+    }
+    const teamActions=wzV273TeamActions(item);
+    for(const [id,enabled] of [
+      ['wzTurnCreateTeamBtn',teamActions.createEnabled],
+      ['wzTurnJoinTeamBtn',teamActions.joinEnabled]
+    ]){
+      const btn=document.getElementById(id);
+      if(!btn) continue;
+      btn.disabled=!enabled;
+      btn.classList.toggle('is-disabled',!enabled);
     }
   }
   function heroStatusLabel(item){
@@ -15240,6 +15293,7 @@ return;
     const stream=safeHttpUrl(rule?.streamUrl || t?.streamUrl || 'https://kick.com/weizend');
     const openAt=registrationOpenAt(item); const closeAt=registrationCloseAt(item);
     const registrationAction=wzV272RegistrationAction(item);
+    const teamActions=wzV273TeamActions(item);
     return `<div class="wz-turn-detail-page"
       role="dialog"
       aria-modal="true"
@@ -15251,8 +15305,15 @@ return;
             <button type="button" class="wz-turn-cover-back" onclick="wzTurnBack()" aria-label="Turnuva detaylarını kapat">×</button>
           </div>
           ${renderTournamentTimeline(item)}
-          <button id="wzTurnRegisterBtn" type="button" class="wz-turn-register ${registrationAction.enabled?'':'is-disabled'}"
-            onclick="wzTournamentRegistration('${esc(id)}')" ${registrationAction.enabled ? '' : 'disabled'}>${esc(registrationAction.label)}</button>
+          ${teamActions.teamMode ? `
+            <div class="wz-turn-registration-actions" role="group" aria-label="Takım katılım işlemleri">
+              <button id="wzTurnCreateTeamBtn" type="button" class="wz-turn-register ${teamActions.createEnabled?'':'is-disabled'}"
+                onclick="wzTournamentRegistrationChoice('${esc(id)}','create')" ${teamActions.createEnabled ? '' : 'disabled'}>👑 TAKIM KUR</button>
+              <button id="wzTurnJoinTeamBtn" type="button" class="wz-turn-register ${teamActions.joinEnabled?'':'is-disabled'}"
+                onclick="wzTournamentRegistrationChoice('${esc(id)}','join')" ${teamActions.joinEnabled ? '' : 'disabled'}>🔑 TAKIMA KATIL</button>
+            </div>` : `
+            <button id="wzTurnRegisterBtn" type="button" class="wz-turn-register ${registrationAction.enabled?'':'is-disabled'}"
+              onclick="wzTournamentRegistration('${esc(id)}')" ${registrationAction.enabled ? '' : 'disabled'}>${esc(registrationAction.label)}</button>`}
           <div class="wz-turn-tabs-label">Turnuva Detayları</div>
           <nav class="wz-turn-tabs" aria-label="Turnuva detay bölümleri">${tabButtons.map(([id2,icon,name])=>`<button type="button" class="wz-turn-tab ${state.tab===id2?'active':''} ${id2==='arena'?'wz-arena-intro-tab':''}" onclick="wzTurnSetTab('${id2}')" aria-pressed="${state.tab===id2?'true':'false'}"><span class="wz-turn-tab-icon" aria-hidden="true">${icon}</span><span>${name}</span></button>`).join('')}</nav>
           <div class="wz-turn-panel">${panel}</div>
@@ -15563,6 +15624,42 @@ return;
       if(typeof marketAuthenticated!=='undefined' && marketAuthenticated && typeof tv2Open==='function'){ tv2Open(id); return; }
       if(typeof tv2OpenPublic==='function'){ tv2OpenPublic(id); return; }
     }catch(_){ }
+  };
+
+  // Seçilen işlem, kimlik kontrolünden sonra doğrudan ilgili gerçek V3 formunu açar.
+  window.wzTournamentRegistrationChoice=async function(id,choice){
+    if(choice!=='create' && choice!=='join') return;
+    const item=getItem(id);
+    if(!item) return;
+    const allowed=wzV273TeamActions(item);
+    if(!allowed.teamMode || !allowed[choice==='create'?'createEnabled':'joinEnabled']) return;
+    try{
+      if(typeof marketAuthenticated==='undefined' || !marketAuthenticated ||
+         typeof tv2Open!=='function'){
+        if(typeof tv2OpenPublic==='function') await tv2OpenPublic(id);
+        return;
+      }
+      await tv2Open(id);
+      if(String(tv2State.tournamentId)!==String(id) || !tv2State.me) return;
+      if(tv2State.me.team || tv2State.me.joinDraft) return;
+      const liveItem={
+        tournament:tv2State.publicData?.tournament||item.tournament,
+        rule:tv2State.me?.rule||tv2State.publicData?.rule||item.rule
+      };
+      const t=liveItem.tournament||{};
+      if(choice==='create'){
+        const cap=Number(t.capacity||0), count=Number(t.registeredCount||0);
+        if(tv2RegistrationClosed(liveItem) || (cap>0 && count>=cap)) return;
+        tv2ShowCreateForm();
+      }else{
+        if(tv3InviteJoinClosed(liveItem) ||
+           Number(t.registeredCount||0)<=Number(t.completedCount||0)) return;
+        tv2ShowJoinForm();
+      }
+    }catch(error){
+      if(typeof showStatusToast==='function')
+        showStatusToast('⚠️ Katılım ekranı açılamadı: '+String(error?.message||error),3600);
+    }
   };
 
   window.wzRetryTournamentCatalog=function(){
