@@ -581,8 +581,6 @@ body.wz-initializing *{
         .inbox-message-text { overflow-wrap:anywhere; word-break:break-word; max-width:100%; }
         .inbox-message-text a { color:#ff6b6b; font-weight:800; text-decoration:underline; text-underline-offset:3px; }
         .inbox-message-text a:hover { color:#fff; }
-        .wz-arena-inbox-join{display:block;margin:14px 0 4px;padding:13px 15px;border-radius:10px;background:#d71920;color:white!important;text-align:center;text-decoration:none!important;font-weight:900}
-        .wz-arena-inbox-join:hover{background:#f0272d}
         .inbox-message-delete { position:absolute; top:8px; right:8px; width:30px; height:30px; padding:0; border-radius:50%; border:1px solid #303030; background:#151515; color:#858585; display:flex; align-items:center; justify-content:center; opacity:0; transition:.15s; cursor:pointer; }
         .inbox-message:hover .inbox-message-delete,.inbox-message-delete:focus { opacity:1; }
         .inbox-message-delete:hover { background:#5a1717; border-color:#812b2b; color:#fff; }
@@ -7304,20 +7302,12 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
             }
         }
 
-        function inboxMessageBodyHtml(value,senderType='') {
+        function inboxMessageBodyHtml(value) {
             const safe = escapeHtml(String(value || '—'));
-            let html = safe.replace(
+            return safe.replace(
                 /https:\/\/instagram\.com\/weizend\/?/gi,
                 '<a href="https://instagram.com/weizend" target="_blank" rel="noopener noreferrer">instagram.com/weizend</a>'
             );
-            // Worker'ın ürettiği özel işaret sadece sistem mesajında butona dönüşür.
-            // Turnuva/maç kimliği sabit ve dar karakter setiyle sınırlandırılır.
-            if(senderType==='system') html=html.replace(
-                /\[\[WEIZEND_ARENA_LOBBY\|([A-Za-z0-9_-]{1,150})\|([A-Za-z0-9_-]{1,150})\]\]/g,
-                (_,t,m)=>'<a class="wz-arena-inbox-join" href="https://weizend.github.io/weizendmarket/arena.html?tournament='+
-                    encodeURIComponent(t)+'&amp;match='+encodeURIComponent(m)+'&amp;room=1">🎮 LOBİYE KATIL</a>'
-            );
-            return html;
         }
 
         // Vaktiyle bazı OTOMATİK bildirimler D1'e 'admin' olarak kaydedilmişti.
@@ -7380,7 +7370,7 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
 
                 bubble.innerHTML = `
                     <div class="inbox-message-sender">${escapeHtml(senderName)}</div>
-                    <div class="inbox-message-text">${inboxMessageBodyHtml(body || '—',senderType)}</div>
+                    <div class="inbox-message-text">${inboxMessageBodyHtml(body || '—')}</div>
                     <div class="inbox-message-date">${escapeHtml(inboxDateText(item.created_at || item.createdAt))}</div>
                     ${supportHtml}
                     <button class="inbox-message-delete" title="Bu mesajı yalnızca benden sil" aria-label="Bu mesajı yalnızca benden sil"
@@ -10025,7 +10015,6 @@ return;
         const map = {
             completed:'🏁 TAMAMLANDI',
             in_progress:'🎮 TURNUVA BAŞLADI',
-            start_waiting:'⏳ TURNUVA SAATİ BEKLENİYOR',
             registration_complete:'✅ KAYITLAR TAMAMLANDI',
             registration_open:'🟢 KAYITLAR AÇIK',
             registration_closed:'🔴 KAYITLAR KAPALI'
@@ -13516,11 +13505,9 @@ return;
     // Tamamlandı admin/lifecycle tarafından kesin durumdur.
     if(l==='completed') return 'completed';
 
-    // V29: 'CANLI' için hem gerçek fikstür hem planlı başlangıç zamanı gerekir.
-    // Dolan kontenjan veya kura çekimi tek başına maçı başlatmaz.
-    const hasBracket=Number(item?.tournament?.matchCount||0)>0 || l==='in_progress';
-    if(hasBracket && Number.isFinite(startTs) && now>=startTs) return 'live';
-    if(l==='start_waiting' || (hasBracket && (!Number.isFinite(startTs)||now<startTs))) return 'waiting_start';
+    // Turnuva başlangıç saati geçtiyse lifecycle güncellenmesini beklemeden CANLI göster.
+    // Böylece dış kart, detay zaman çizelgesiyle aynı durumu kullanır.
+    if(l==='in_progress' || (Number.isFinite(startTs) && now>=startTs)) return 'live';
 
     // Manuel "Yakında" modu tarih/saatten bağımsızdır ama başlamış turnuvayı ezmez.
     if(comingSoon(item)) return 'soon';
@@ -13549,7 +13536,7 @@ return;
     const p=registrationPhase(item);
     if(p==='completed') return 'done';
     if(p==='live') return 'live';
-    if(['soon','scheduled','waiting_start'].includes(p)) return 'soon';
+    if(['soon','scheduled'].includes(p)) return 'soon';
     return 'open';
   }
   function formatBadgeDate(value){
@@ -13564,7 +13551,6 @@ return;
     if(p==='soon') return 'YAKINDA';
     if(p==='completed') return 'TAMAMLANDI';
     if(p==='live') return 'CANLI';
-    if(p==='waiting_start') return 'TURNUVA SAATİ BEKLENİYOR';
     if(p==='full'){
       const t=item?.tournament||{};
       if(Number(t.teamSize||1)>1 && Number(t.completedCount)<Number(t.registeredCount)) return 'KADROLAR BEKLENİYOR';
