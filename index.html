@@ -10180,6 +10180,7 @@ return;
                         aboutText:tournament.aboutText || '',
                         heroImageUrl:tournament.heroImageUrl || '',
                         streamUrl:tournament.streamUrl || 'https://kick.com/weizend',
+                        broadcastEnabled:tournament.broadcastEnabled === true,
                         bestOf:tournament.bestOf || 'BO1',
                         matchFormat:tournament.matchFormat || tournament.bestOf || 'BO1',
                         mapName:tournament.mapName || null,
@@ -13534,6 +13535,9 @@ return;
     wzKeepHydratedTournamentShell=false;
     window.__WZ_TOURNAMENT_SHELL_HYDRATED__=false;
   }
+  function isTournamentBroadcast(item){
+    return item?.rule?.broadcastEnabled === true || (item?.rule?.broadcastEnabled == null && item?.tournament?.broadcastEnabled === true);
+  }
   function lifecycle(item){
     const t=item?.tournament||{};
     return String(t.lifecycleStatus || (t.registrationOpen?'registration_open':'registration_closed'));
@@ -13553,7 +13557,7 @@ return;
     // V28.4.3: Fikstür tek başına CANLI anlamına gelmez.
     // Worker sunucu saatine göre in_progress döndürmüş OLMALI ve yerel sayaç
     // da başlangıca ulaşmış olmalı; erken CANLI göstermemek için iki koşul var.
-    if(l==='in_progress' && Number.isFinite(startTs) && now>=startTs) return 'live';
+    if(l==='in_progress') return 'live';
 
     // Manuel "Yakında" modu tarih/saatten bağımsızdır ama başlamış turnuvayı ezmez.
     if(comingSoon(item)) return 'soon';
@@ -13596,7 +13600,7 @@ return;
     const p=registrationPhase(item);
     if(p==='soon') return 'YAKINDA';
     if(p==='completed') return 'TAMAMLANDI';
-    if(p==='live') return 'CANLI';
+    if(p==='live') return isTournamentBroadcast(item) ? 'CANLI' : 'MAÇLAR BAŞLADI';
     if(p==='full'){
       const t=item?.tournament||{};
       if(Number(t.teamSize||1)>1 && Number(t.completedCount)<Number(t.registeredCount)) return 'KADROLAR BEKLENİYOR';
@@ -13626,7 +13630,7 @@ return;
     const count=registrationCapacityText(item);
 
     if(p==='completed') return {label:'TURNUVA TAMAMLANDI',time:'',count};
-    if(p==='live') return {label:'TURNUVA BAŞLADI',time:'',count};
+    if(p==='live') return {label:isTournamentBroadcast(item)?'CANLI':'MAÇLAR BAŞLADI',time:'',count};
     if(p==='soon') return {label:'YAKINDA',time:'',count};
     if(p==='passive') return {label:'KAYIT KAPALI',time:'',count};
     if(p==='full'){
@@ -13815,8 +13819,9 @@ return;
       };
     }
 
-    // Turnuva başladı.
-    if(Number.isFinite(startTs) && now>=startTs){
+    // Yalnızca Worker'dan doğrulanmış maç başlangıcında oynanıyor göster.
+    // Fikstürsüz, tarihi geçen turnuvayı yanlışlıkla başladı sayma.
+    if(phase==='live'){
       const closedTitle=full
         ? (teamMode?'TAKIMLAR DOLDU':'KONTENJAN DOLDU')
         : 'KAYITLAR KAPANDI';
@@ -13834,10 +13839,10 @@ return;
           {
             key:'start',
             cls:'is-live',
-            title:'MAÇLAR OYNANIYOR',
+            title:'MAÇLAR BAŞLADI',
             date:formatDate(startAt),
-            state:'CANLI İZLE',
-            actionUrl:safeHttpUrl(item?.rule?.streamUrl || t?.streamUrl || 'https://kick.com/weizend')
+            state:isTournamentBroadcast(item)?'🔴 CANLI':'MAÇLAR BAŞLADI',
+            actionUrl:isTournamentBroadcast(item)?safeHttpUrl(item?.rule?.streamUrl || t?.streamUrl || 'https://kick.com/weizend'):null
           }
         ]
       };
@@ -14027,7 +14032,7 @@ return;
   function tournamentCategoryLabel(item){
     const c=tournamentCategory(item);
     if(c==='done') return 'TAMAMLANDI';
-    if(c==='live') return 'CANLI';
+    if(c==='live') return isTournamentBroadcast(item) ? 'CANLI' : 'MAÇLAR BAŞLADI';
     if(registrationPhase(item)==='full') return 'KAYITLAR DOLDU';
     if(c==='soon') return 'YAKINDA';
     if(wzV272RosterWaiting(item)) return 'KADROLAR BEKLENİYOR';
@@ -14117,6 +14122,23 @@ return;
     const ib=sourceIndex.get(String(b?.tournament?.id||'')) ?? Number.MAX_SAFE_INTEGER;
     return ia-ib;
   }
+  function allTournamentSort(a,b,sourceIndex){
+    const phaseA=registrationPhase(a), phaseB=registrationPhase(b);
+    // Önce yeni katılıma hazırlanabilen turnuvalar, ardından başlayanlar,
+    // en son tamamlananlar. Her grupta kalan kontenjanı en az olan önde.
+    const stage = phase => phase==='completed' ? 2 : phase==='live' ? 1 : 0;
+    const stageDiff=stage(phaseA)-stage(phaseB);
+    if(stageDiff) return stageDiff;
+    const vacancies = item => {
+      const t=item?.tournament||{};
+      const capacity=Number(t.capacity), registered=Number(t.registeredCount);
+      return Number.isFinite(capacity) && capacity>0 && Number.isFinite(registered)
+        ? Math.max(0,capacity-registered) : Number.POSITIVE_INFINITY;
+    };
+    const va=vacancies(a), vb=vacancies(b);
+    if(va!==vb) return va-vb;
+    return compareTournamentItems(a,b,sourceIndex);
+  }
   function filtered(){
     const q=normalizeTournamentSearch(state.search);
     const sourceIndex=tournamentSourceIndex();
@@ -14127,7 +14149,7 @@ return;
       return tournamentSearchText(item).includes(q);
     });
 
-    return list.sort((a,b)=>compareTournamentItems(a,b,sourceIndex));
+    return list.sort((a,b)=>state.filter==='all' ? allTournamentSort(a,b,sourceIndex) : compareTournamentItems(a,b,sourceIndex));
   }
   function activeList(){
     const sourceIndex=tournamentSourceIndex();
@@ -14328,7 +14350,7 @@ return;
   function renderFilters(){
     const defs=[
       ['all','Tümü'],
-      ['live','Canlı'],
+      ['live','Başlayan'],
       ['active','Aktif'],
       ['soon','Yakında'],
       ['closed','Kayıt Kapandı'],
@@ -14516,7 +14538,7 @@ return;
     const capacity=Math.max(0,Number(t.capacity||0));
     const used=Math.max(0,Number(t.registeredCount||0));
     if(phase==='completed')return {label:'🏁 TURNUVA TAMAMLANDI',target:null};
-    if(phase==='live')return {label:'🎮 TURNUVA BAŞLADI',target:null};
+    if(phase==='live')return {label:isTournamentBroadcast(item)?'🔴 CANLI':'🎮 MAÇLAR BAŞLADI',target:null};
     if(phase==='scheduled'||(Number.isFinite(o)&&now<o))return {label:'KAYIT AÇILIŞINA KALAN',target:Number.isFinite(o)?o:null};
     if(phase==='open' && !(capacity>0&&used>=capacity)){
       return Number.isFinite(c)&&c>now
@@ -14585,6 +14607,7 @@ return;
           </div>
           <span class="wz-turn-card-status ${tournamentCategory(item)}${wzV272RosterWaiting(item)?' roster-waiting':''}">${esc(tournamentCategoryLabel(item))}</span>
         </div>
+        ${isTournamentBroadcast(item) && registrationPhase(item)!=='live' && registrationPhase(item)!=='completed' ? '<div class="wz-turn-broadcast-upcoming" style="padding:5px 11px;color:#ff9b9b;font-weight:800;font-size:11px">🔴 CANLI YAYINLANACAK</div>' : ''}
 
         ${wzV95CoverTimerHtml(item)}
         <div class="wz-turn-card-promo">
@@ -14615,7 +14638,7 @@ return;
         <div data-wz-entry-tournament="${esc(id)}">${wzV95RegistrationNotice(id)}</div>
         ${wzV272RosterWaiting(item)?`<div class="wz-v272-roster-note">👥 Yeni takım kontenjanı dolu; eksik oyuncu geçerli davet koduyla <b>Detayları Gör → Davet Koduyla Katıl</b> adımından ilerleyebilir. Kayıt süresi ve diğer şartlar geçerlidir.</div>`:''}
         <div class="wz-turn-card-actions">
-          <button type="button" class="wz-turn-mainbtn" onclick="wzTurnOpen('${esc(id)}')">Detayları Gör</button>
+          <button type="button" class="wz-turn-mainbtn" onclick="wzTurnOpen('${esc(id)}')">${Number(t.teamSize||1)<=1 ? 'KAYIT OL' : 'Detayları Gör'}</button>
         </div>
       </div>
     </article>`;
@@ -14749,7 +14772,7 @@ return;
   }
   function renderOverview(detail,item){
     const t=detail?.tournament||item?.tournament||{}; const rule=item?.rule||{};
-    const fallbackAbout=`${t.name || 'Bu turnuva'}, ${modeText(t)} formatında düzenlenen bir ${gameName(t,rule)} turnuvasıdır. Kayıt takvimi, maç formatı, harita ve canlı yayın bilgileri aşağıda açıkça gösterilir.`;
+    const fallbackAbout=`${t.name || 'Bu turnuva'}, ${modeText(t)} formatında düzenlenen bir ${gameName(t,rule)} turnuvasıdır. Kayıt takvimi, maç formatı, harita ve katılım bilgileri aşağıda gösterilir.`;
     const about=String(rule?.aboutText || t?.aboutText || fallbackAbout).trim() || fallbackAbout;
     const stream=safeHttpUrl(rule?.streamUrl || t?.streamUrl || 'https://kick.com/weizend');
     const openAt=registrationOpenAt(item); const closeAt=registrationCloseAt(item);
@@ -14757,7 +14780,7 @@ return;
     return `<div class="wz-turn-box">
       <h3>Turnuva Hakkında</h3>
       <div class="wz-turn-about">${esc(about)}</div>
-      <div class="wz-turn-stream-note"><div><strong>🔴 CANLI YAYIN</strong><span>Tüm maçlar kick.com/weizend kanalında canlı yayınlanır.</span></div>${stream?`<a href="${esc(stream)}" target="_blank" rel="noopener noreferrer">KANALA GİT</a>`:''}</div>
+      ${isTournamentBroadcast(item)?`<div class="wz-turn-stream-note"><div><strong>🔴 ${registrationPhase(item)==='completed'?'CANLI YAYINLANDI':registrationPhase(item)==='live'?'CANLI':'CANLI YAYINLANACAK'}</strong><span>Bu turnuva Kick üzerinden canlı yayınlanacak.</span></div>${stream?`<a href="${esc(stream)}" target="_blank" rel="noopener noreferrer">KANALA GİT</a>`:''}</div>`:''}
       <div class="wz-turn-detailrows">
         <div class="wz-turn-detailrow"><span>Oyun</span><b>${esc(gameName(t,rule))}</b></div>
         <div class="wz-turn-detailrow"><span>Format</span><b>${esc(modeText(t))} ${Number(t.teamSize||1)>1?'(Takımlı)':'(Solo)'}</b></div>
