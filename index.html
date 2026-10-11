@@ -2065,6 +2065,12 @@ body.wz-view-tournament #wzMobileTournamentHero{display:none!important}
 .wz-turn-prize.pos1{background:linear-gradient(180deg,#2c2012,#17120d);border-color:#60411a}
 .wz-turn-prize.pos2{background:linear-gradient(180deg,#1c1f26,#11141b);border-color:#373c46}
 .wz-turn-prize.pos3{background:linear-gradient(180deg,#2b1914,#151016);border-color:#5d2f20}
+.wz-turn-pickem-award{margin-top:14px;padding-top:14px;border-top:1px solid #272c37}
+.wz-turn-pickem-award .wz-turn-prize{background:linear-gradient(120deg,#141f27,#12141c);border-color:#355669}
+.wz-turn-pickem-award .wz-turn-prize b{font-size:.88rem}
+.wz-turn-prize strong{text-align:right;overflow-wrap:anywhere}
+@media(max-width:520px){.wz-turn-prize{grid-template-columns:38px minmax(0,1fr) minmax(75px,auto);gap:7px;padding:10px}.wz-turn-prize strong{font-size:.83rem}}
+
 .wz-turn-prize .icon{font-size:1.5rem;text-align:center}
 .wz-turn-prize b{font-size:1.05rem}
 .wz-turn-prize span{display:block;color:#afb3bb;font-size:.75rem;margin-top:2px}
@@ -14305,26 +14311,37 @@ return;
     if(t.includes('PUBG')) return 'P';
     return 'W';
   }
-  function extractPrizes(detail,item){
-    const t=detail?.tournament||item?.tournament||{};
-    const r=item?.rule||{};
-    const get=(keys)=>{ for(const k of keys){ if(t?.[k] || r?.[k]) return String(t?.[k] || r?.[k]); } return ''; };
-
-    const prizes=[
-      {place:'1.', label:'Şampiyon', icon:'🏆', className:'pos1', value:get(['firstPrize','prize1','prizeFirst','first_place_prize']) || 'Açıklanmadı'},
-      {place:'2.', label:'Finalist', icon:'🥈', className:'pos2', value:get(['secondPrize','prize2','prizeSecond','second_place_prize']) || 'Açıklanmadı'}
-    ];
-
-    if(thirdPlaceIsEnabled(item,detail)){
-      prizes.push({
-        place:'3.',
-        label:'Üçüncü',
-        icon:'🥉',
-        className:'pos3',
-        value:get(['thirdPrize','prize3','prizeThird','third_place_prize']) || 'Açıklanmadı'
-      });
+  // V30.3.3: Katalog güncel, detay yanıtı ise önceki oturumdan cache'lenmiş olabilir.
+  // Ödüller konusunda Admin'den kaydedilmiş katalogdaki alanlar birincil kaynaktır.
+  // Boş değer de Admin'in bilinçli temizlediği bir değer olabilir: eski detayla doldurma.
+  function wzCurrentTournamentPrize(item,detail,key,oldAliases=[]){
+    const rule=item?.rule||{};
+    const catalog=item?.tournament||{};
+    const snapshot=detail?.tournament||{};
+    if(Object.prototype.hasOwnProperty.call(rule,key))
+      return String(rule[key]??'').trim();
+    if(Object.prototype.hasOwnProperty.call(catalog,key))
+      return String(catalog[key]??'').trim();
+    if(Object.prototype.hasOwnProperty.call(snapshot,key))
+      return String(snapshot[key]??'').trim();
+    for(const name of oldAliases){
+      for(const data of [rule,catalog,snapshot]){
+        if(data[name]!==undefined && data[name]!==null && String(data[name]).trim())
+          return String(data[name]).trim();
+      }
     }
-
+    return '';
+  }
+  function extractPrizes(detail,item){
+    const first=wzCurrentTournamentPrize(item,detail,'firstPrize',['prize1','prizeFirst','first_place_prize']);
+    const second=wzCurrentTournamentPrize(item,detail,'secondPrize',['prize2','prizeSecond','second_place_prize']);
+    const third=wzCurrentTournamentPrize(item,detail,'thirdPrize',['prize3','prizeThird','third_place_prize']);
+    const prizes=[
+      {place:'1.',label:'Şampiyon',icon:'🏆',className:'pos1',value:first||'Açıklanmadı'},
+      {place:'2.',label:'Finalist',icon:'🥈',className:'pos2',value:second||'Açıklanmadı'}
+    ];
+    if(thirdPlaceIsEnabled(item,detail))
+      prizes.push({place:'3.',label:'Üçüncü',icon:'🥉',className:'pos3',value:third||'Açıklanmadı'});
     return prizes;
   }
   function defaultRules(item){
@@ -14669,7 +14686,7 @@ return;
         <div data-wz-entry-tournament="${esc(id)}">${wzV95RegistrationNotice(id)}</div>
         ${wzV272RosterWaiting(item)?`<div class="wz-v272-roster-note">👥 Yeni takım kontenjanı dolu; eksik oyuncu geçerli davet koduyla <b>Detayları Gör → Davet Koduyla Katıl</b> adımından ilerleyebilir. Kayıt süresi ve diğer şartlar geçerlidir.</div>`:''}
         <div class="wz-turn-card-actions">
-          <button type="button" class="wz-turn-mainbtn" onclick="wzTurnOpen('${esc(id)}')">${Number(t.teamSize||1)<=1 ? 'KAYIT OL' : 'Detayları Gör'}</button>
+          <button type="button" class="wz-turn-mainbtn" onclick="wzTurnOpen('${esc(id)}')">Detayları Gör</button>
         </div>
       </div>
     </article>`;
@@ -14784,6 +14801,7 @@ return;
   }
   function renderPrizes(detail,item){
     const prizes=extractPrizes(detail,item);
+    const pickemAward=predictionPrize(item,detail);
     const fin=finalInfo(detail);
     const rankings=[
       {name: fin.champion || 'Henüz yok', pts: fin.champion ? '320 Puan' : '—'},
@@ -14798,6 +14816,7 @@ return;
     }
 
     return `<div class="wz-turn-box"><h3>Ödüller</h3><div class="wz-turn-prizes">${prizes.map(p=>`<div class="wz-turn-prize ${p.className}"><div class="icon">${p.icon}</div><div><b>${p.place}</b><span>${p.label}</span></div><strong>${esc(p.value)}</strong></div>`).join('')}</div>
+      <div class="wz-turn-pickem-award"><div class="wz-turn-prize"><div class="icon">🎯</div><div><b>En İyi Tahmin Ödülü</b><span>WEİZEND ARENA fikstür tahmini ödülü</span></div><strong>${esc(pickemAward)}</strong></div></div>
       <div class="wz-turn-ranking"><h4>Sıralama</h4>${rankings.map((r,i)=>`<div class="wz-turn-rankrow"><div class="wz-turn-rankbadge">${i+1}</div><div>${esc(r.name)}</div><div>${esc(r.pts)}</div></div>`).join('')}</div>
     </div>`;
   }
@@ -14929,15 +14948,7 @@ return;
 
 
   function predictionPrize(item,detail){
-    const t=detail?.tournament||item?.tournament||{};
-    const r=item?.rule||{};
-    return String(
-      r.predictionPrize ||
-      r.pickemPrize ||
-      t.predictionPrize ||
-      t.pickemPrize ||
-      'Belirlenmedi'
-    );
+    return wzCurrentTournamentPrize(item,detail,'predictionPrize',['pickemPrize']) || 'Belirlenmedi';
   }
 
   function predictionLoggedIn(){
