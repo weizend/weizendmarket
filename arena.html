@@ -53,6 +53,19 @@ main{max-width:1232px;padding:27px 16px 60px}
   overflow:hidden;
   flex-shrink:0;
 }
+
+/* WEİZEND ARENA V27 - kaptan lobisi ve hazır kontrol */
+.lobby-panel{margin-top:15px}
+.lobby-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:10px 0}
+.lobby-tile{background:#101014;border:1px solid #34343a;border-radius:11px;padding:12px;min-width:0}
+.lobby-tile b{display:block;margin-bottom:5px}
+.lobby-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.lobby-actions .btn{width:auto;min-width:120px}
+.lobby-panel textarea{display:block;width:100%;max-width:650px;min-height:70px;background:#0b0b0e;color:#fff;border:1px solid #404048;border-radius:10px;padding:11px;font:inherit;resize:vertical}
+.lobby-note{white-space:pre-wrap;overflow-wrap:anywhere;background:#18191f;padding:12px;border-radius:11px;border:1px solid #35343a;margin:8px 0}
+.lobby-warning{color:#ffcb83;font-size:.87rem;margin:7px 0}
+@media(max-width:650px){.lobby-grid{grid-template-columns:1fr}.lobby-actions .btn{width:100%}}
+
 </style>
 </head>
 <body>
@@ -68,6 +81,9 @@ main{max-width:1232px;padding:27px 16px 60px}
 <section class="panel"><div class="toolbar"><h2>🏆 Turnuva Fikstürü</h2><button class="btn secondary" type="button" id="refreshBtn">↻ Yenile</button></div><p class="hint">Bir maça tıklayarak eşleşmeyi ve tahmin seçeneklerini incele.</p><div id="bracket" class="bracket-viewport"><div class="empty">Fikstür bilgileri alınıyor...</div></div></section>
 <aside class="panel"><h2>🎮 Maç Bilgisi</h2><div id="matchInfo" class="match-focus">Maç seçilmesi bekleniyor.</div><div id="picksBox"><h3>🎯 Tahminim</h3><p id="authText" class="hint">Kick hesabı kontrol ediliyor...</p><div class="choices"><button class="choose" id="pickA" disabled>Oyuncu A</button><button class="choose" id="pickB" disabled>Oyuncu B</button></div><p id="pickProgress" class="pick-status">Tahmin durumu yükleniyor...</p><button id="confirmPicks" type="button" class="btn" style="width:100%;margin:7px 0 9px;display:none" disabled>Tahminleri Onayla</button><button id="editPicks" type="button" class="btn secondary" style="width:100%;margin:7px 0 9px;display:none">Tahminleri Düzenle</button><p class="small">Seçimler taslak olarak kaydedilir. Yalnızca tamamını onayladığın kupon sıralamaya girer.</p></div><hr style="border:0;border-top:1px solid #333;margin:16px 0"><h3>👥 Takımlar / Oyuncular</h3><div id="participants" class="members"><div class="small">Katılımcılar yükleniyor...</div></div><hr style="border:0;border-top:1px solid #333;margin:16px 0"><h3>🏅 Tahmin Sıralaması</h3><div id="predictionBoard" class="small">Sıralama yükleniyor...</div></aside>
 </div>
+<section class="panel lobby-panel" id="lobbyPanel"><div class="toolbar"><h2>🎮 Kaptan Lobisi ve Hazır Kontrolü</h2><button type="button" class="btn secondary" id="lobbyRefresh">↻ Yenile</button></div>
+<p class="hint">Lobiler VALORANT oyunu içinden kaptanlar tarafından kurulur. Arena yalnızca maç organizasyonunu yönetir.</p>
+<div id="lobbyContent" aria-live="polite">Fikstürden bir maç seç.</div></section>
 <div class="footer">WEİZEND ARENA • Turnuva Merkezi</div>
 </main>
 <script>
@@ -134,7 +150,7 @@ function renderBracket(){const matches=state.detail?.matches||[];if(!matches.len
  const a=m.winnerId&&String(m.winnerId)===String(aId),b=m.winnerId&&String(m.winnerId)===String(bId);
  return `<button class="match ${state.selected===m.id?'active':''}" type="button" data-mid="${esc(m.id)}"><div class="match-head"><span>M${Number(m.matchNumber)||'?'} · ${Number(m.roundNumber)||'?'}. tur</span><span>${m.status==='completed'?'SONUÇLANDI':'BEKLİYOR'}</span></div><div class="side ${a?'winner':s1?'predicted':''}"><strong>${esc(displayName(m,'a'))}</strong><span>${a?'✓':s1?'★':''}</span></div><div class="side ${b?'winner':s2?'predicted':''}"><strong>${esc(displayName(m,'b'))}</strong><span>${b?'✓':s2?'★':''}</span></div></button>`;
  }).join('')+'</div></section>').join('')+'</div>';
- document.querySelectorAll('[data-mid]').forEach(btn=>btn.addEventListener('click',()=>{state.selected=btn.dataset.mid;renderBracket();renderMatch();}));}
+ document.querySelectorAll('[data-mid]').forEach(btn=>btn.addEventListener('click',()=>{state.selected=btn.dataset.mid;renderBracket();renderMatch();loadLobby();}));}
 function renderCouponControls(){
  const sub=state.pred?.submission||{},expected=Number(sub.expectedCount||0),selected=Number(sub.selectedCount||0);
  const submitted=sub.submitted===true,open=state.pred?.prediction?.open===true;
@@ -177,7 +193,56 @@ function renderBoard(){if(!state.pred){$('predictionBoard').textContent='Tahmin 
  const list=state.pred.leaderboard||[];if(!list.length){$('predictionBoard').textContent='Henüz tahmin yapan yok.';return;}
  $('predictionBoard').innerHTML=`<table class="leaderboard"><thead><tr><th>#</th><th>Kick Kullanıcısı</th><th>Puan</th><th>Doğru</th></tr></thead><tbody>`+list.slice(0,50).map(x=>`<tr><td>${Number(x.rank)||0}</td><td>${esc(x.username)}</td><td class="count">${Number(x.score)||0}</td><td class="count">${Number(x.correctCount)||0}</td></tr>`).join('')+'</tbody></table>';
 }
-function renderAll(){renderHero();renderBracket();renderParticipants();renderMatch();renderBoard();}
+
+// V27: Kaptan yetkisi her istekte sunucu tarafında Kick UID ile doğrulanır.
+let lobbyCache=null,lobbySelected='',lobbySeq=0,lobbySaving=false;
+function lobbyMarkup(text){const x=$('lobbyContent');if(x)x.textContent=text;}
+function renderLobby(){
+ const host=$('lobbyContent');if(!host)return;
+ const m=activeMatch();
+ if(!m||!m.participantAId||!m.participantBId){lobbyMarkup('Eşleşmeler belirlendiğinde kaptan hazır kontrolleri açılacak.');return;}
+ if(!token()){lobbyMarkup('Kaptan işlemleri için önce WEİZEND MARKET üzerinden Kick hesabına giriş yap.');return;}
+ if(lobbySelected!==m.id||!lobbyCache){lobbyMarkup('Kaptan yetkisi ve lobi durumu kontrol ediliyor...');return;}
+ const s=lobbyCache,hostMe=s.side===s.hostSide,completed=s.matchStatus==='completed';
+ const report=(s.reports||[]).map(r=>`<div class="lobby-note">🚩 ${esc(r.reason)}<br><small>${r.status==='pending'?'Hakem incelemesi bekleniyor':r.status==='approved'?'Hükmen sonuç onaylandı':'Şikâyet reddedildi'}${r.admin_note?' · '+esc(r.admin_note):''}</small></div>`).join('');
+ host.innerHTML=`<div class="lobby-grid">
+ <div class="lobby-tile"><b>${esc(displayName(m,'a'))} — ${s.hostSide==='a'?'🎮 Lobi Sorumlusu':'Rakip'}</b> ${s.readyA?'✅ Kaptan hazır':'⏳ Hazır değil'}</div>
+ <div class="lobby-tile"><b>${esc(displayName(m,'b'))} — ${s.hostSide==='b'?'🎮 Lobi Sorumlusu':'Rakip'}</b> ${s.readyB?'✅ Kaptan hazır':'⏳ Hazır değil'}</div></div>
+ <p class="hint">Senin tarafın: <strong>${s.side==='a'?'A':'B'}</strong>. Oyuncular VALORANT içinden Riot ID ile davet edilir. Site oyun içi lobi açmaz.</p>
+ ${s.calledAt?`<p class="lobby-warning">⏱️ Hakem maç çağrısı: ${esc(new Date(s.calledAt).toLocaleString('tr-TR'))} — 10 dakika sonra AFK bildirimi yapılabilir.</p>`:'<p class="hint">AFK süresini yönetici maç çağrısıyla başlatır.</p>'}
+ ${s.note?`<div class="lobby-note">📣 Lobi sorumlusunun notu: ${esc(s.note)}</div>`:'<p class="hint">Lobi oluşturma bilgisi henüz girilmedi.</p>'}
+ ${!completed&&hostMe?`<label class="hint">Rakip kaptana VALORANT lobi notun:</label><textarea id="captainLobbyNote" maxlength="220" placeholder="Özel oyun lobisini açtım. Oyun içinden Riot ID ile davet edeceğim. Şifre paylaşmayın.">${esc(s.note||'')}</textarea><div class="lobby-actions"><button type="button" class="btn" id="lobbyOpenBtn">🎮 Lobiyi Açtım</button></div>`:''}
+ ${!completed?`<div class="lobby-actions"><button type="button" class="btn ${s[s.side==='a'?'readyA':'readyB']?'secondary':''}" id="lobbyReadyBtn" ${!s.lobbyOpen?'disabled':''}>${s[s.side==='a'?'readyA':'readyB']?'↩ Hazır Değilim':'✅ Hazırım'}</button></div>`:''}
+ ${s.readyA&&s.readyB?'<p style="color:#72e9a0">✅ İki kaptan da hazır! Maç başlayabilir.</p>':''}
+ ${!completed&&s.canReportAfk&&!((s.reports||[]).length)?`<label class="hint">AFK bildirimi (hakem inceleyecek):</label><textarea id="captainAfkReason" maxlength="800" placeholder="Rakip takım maç çağrısına katılmadı, denediğimiz saat ve iletişim bilgisi..."></textarea><div class="lobby-actions"><button type="button" class="btn secondary" id="lobbyAfkBtn">🚩 AFK Bildirimi Gönder</button></div>`:''}
+ ${report}`;
+ $('lobbyOpenBtn')?.addEventListener('click',()=>lobbyAction('open',{note:$('captainLobbyNote')?.value||''}));
+ $('lobbyReadyBtn')?.addEventListener('click',()=>lobbyAction(s[s.side==='a'?'readyA':'readyB']?'unready':'ready'));
+ $('lobbyAfkBtn')?.addEventListener('click',()=>lobbyAction('afk_report',{reason:$('captainAfkReason')?.value||''}));
+}
+async function loadLobby(){
+ const m=activeMatch();const current=++lobbySeq;
+ lobbyCache=null;lobbySelected=m?.id||'';renderLobby();
+ if(!m||!m.participantAId||!m.participantBId||!token()||!['ready','completed'].includes(m.status))return;
+ try{const payload=await api('/tournament/lobby?matchId='+encodeURIComponent(m.id),true);
+  if(current!==lobbySeq)return;
+  lobbyCache=payload;renderLobby();
+ }catch(e){if(current!==lobbySeq)return;
+  lobbyMarkup(e.message?.includes('yetkili takım kaptanı')?'Bu maçta kaptan değilsin. Maç lobisini yalnızca iki takımın kaptanları yönetebilir.':'Lobi bilgisi açılamadı: '+e.message);
+ }
+}
+async function lobbyAction(action,data={}){
+ const m=activeMatch();if(!m||lobbySaving)return;
+ if(action==='afk_report'&&!confirm('AFK şikâyetin hakem tarafından incelenecek. Otomatik galibiyet verilmez. Gönderilsin mi?'))return;
+ lobbySaving=true;
+ try{await api('/tournament/lobby/update',true,{matchId:m.id,action,...data});
+  await loadLobby();toast('✓ Lobi işlemi kaydedildi.','ok');
+ }catch(e){toast('Lobi işlemi başarısız: '+e.message,'error');}
+ finally{lobbySaving=false;}
+}
+$('lobbyRefresh').addEventListener('click',loadLobby);
+
+function renderAll(){renderLobby();renderHero();renderBracket();renderParticipants();renderMatch();renderBoard();}
 function cachePublic(){try{sessionStorage.setItem(cacheKey,JSON.stringify({at:Date.now(),detail:state.detail}));}catch{}}
 function restorePublic(){try{const v=JSON.parse(sessionStorage.getItem(cacheKey)||'null');if(!v||Date.now()-Number(v.at)>12*3600*1000||v.detail?.tournament?.id!==tid)return;state.detail=v.detail;state.t=v.detail.tournament;state.selected=v.detail.matches?.[0]?.id||null;renderAll();}catch{}}
 async function refresh(initial=false){if(state.loading)return;state.loading=true;state.authState=token()?'checking':'guest';state.authError='';renderAuthStatus();$('refreshBtn').disabled=true;
@@ -192,7 +257,7 @@ async function refresh(initial=false){if(state.loading)return;state.loading=true
      try{
        const own=await api('/tournament/predictions/me?id='+encodeURIComponent(tid),true);
        state.pred=own;state.authed=true;state.authState='ok';state.authError='';
-       renderAll();
+       renderAll();loadLobby();
      }catch(e){
        state.authed=false;state.authState='error';state.authError=e.message||'Oturum kontrolü başarısız.';
        renderAuthStatus();renderCouponControls();
