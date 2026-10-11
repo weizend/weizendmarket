@@ -3440,6 +3440,9 @@ html,body{max-width:100%;overflow-x:hidden}
             <button id="tDrawButton"
               class="warn smallButton"
               onclick="drawTournament()">🎲 Fikstürü Oluştur</button>
+            <button class="secondary smallButton" type="button" onclick="arenaV29EnableFromAdmin(true)">🔔 Bu Turnuvada Bildirimleri Etkinleştir</button>
+            <button class="secondary smallButton" type="button" onclick="arenaV29EnableFromAdmin(false)">🔕 Bildirimleri Kapat</button>
+            <button class="secondary smallButton" type="button" onclick="arenaV29DispatchFromAdmin()">📨 Başlangıç Bildirimlerini Kontrol Et</button>
             <button class="secondary smallButton"
               onclick="loadTournamentBracket()">🔄 Yenile</button>
           </div>
@@ -10631,11 +10634,12 @@ async function loadArenaLobbiesAdmin(forcedId){
   if(!r.ok||!d?.success)throw Error(d?.error||`HTTP ${r.status}`);
   const matchNames=new Map((currentTournamentBracket?.matches||[]).map(m=>[String(m.id),m]));
   const lob=new Map((d.lobbies||[]).map(x=>[String(x.match_id),x]));
+  const roomMap=new Map((d.rooms||[]).map(x=>[String(x.match_id),x]));
   const matches=(d.matches||[]).filter(m=>['ready','completed'].includes(String(m.status))&&m.participant_a_id&&m.participant_b_id);
   const reports=d.reports||[];
   if(!matches.length){host.innerHTML='<div class="tournamentEmpty">Henüz kaptanların lobi kurabileceği maç yok. Fikstür yayımlandığında burada görünecek.</div>';return;}
   host.innerHTML=matches.map(m=>{
-   const l=lob.get(String(m.id))||{},n=matchNames.get(String(m.id))||{};
+   const l=lob.get(String(m.id))||{},room=roomMap.get(String(m.id))||{},n=matchNames.get(String(m.id))||{};
    const mid=encodeURIComponent(m.id);
    const closed=m.status==='completed';
    const reportList=reports.filter(x=>String(x.match_id)===String(m.id));
@@ -10643,7 +10647,7 @@ async function loadArenaLobbiesAdmin(forcedId){
    return `<div class="tournamentTeamCard" style="margin:10px 0">
      <div class="tournamentTeamHead"><div><strong>${esc(subtitle)} · ${esc(n.participantAName||'A Takımı')} vs ${esc(n.participantBName||'B Takımı')}</strong>
        <div class="muted">Sorumlu: ${l.host_side==='b'?'B kaptanı':'A kaptanı'} · ${l.called_at?'Çağrı: '+esc(new Date(l.called_at).toLocaleString('tr-TR')):'Henüz çağrılmadı'} · ${l.lobby_open_at?'Lobi kuruldu':'Lobi bekleniyor'}</div>
-       <div class="muted">Hazır: A ${l.ready_a_at?'✅':'⏳'} / B ${l.ready_b_at?'✅':'⏳'}</div></div>
+       <div class="muted">V28: ${room.started_at?'🟢 MAÇ BAŞLADI':room.lobby_code?(room.proof_a&&room.proof_b?'Görseller hazır; oyuncular bekleniyor':'Kaptan kanıtları bekleniyor'):'VALORANT kodu bekleniyor'} · ${Number(room.ready_count||0)} oyuncu hazır</div></div>
        <span class="badge ${closed?'ok':'warn'}">${closed?'Sonuçlandı':'Devam ediyor'}</span></div>
      ${!closed?`<div class="inlineActions" style="margin:10px 0">
        <button class="smallBtn" onclick="arenaAdminLobbyAction('${esc(mid)}','call')" ${l.called_at?'disabled':''}>⏱️ ${l.called_at?'Çağrıldı':'Maçı Çağır (10 dk)'}</button>
@@ -11415,5 +11419,33 @@ async function invalidateAllUserSessions(){
     </div>
   </div>
 </div>
+
+<script>
+// WEİZEND V29 - Yetkili admin başlangıç bildirimlerinin teslimini kontrol eder.
+async function arenaV29EnableFromAdmin(enabled){
+  const tournamentId=document.getElementById('tournamentSelect')?.value||'';
+  if(!tournamentId){alert('Önce bir turnuva seç.');return;}
+  const text=enabled?'Bu turnuva için otomatik başlangıç bildirimlerini AÇMAK istiyor musun? Başlangıç zamanı geçince gerçek oyunculara mesaj gider.':'Bu turnuva için otomatik başlangıç bildirimlerini KAPATMAK istiyor musun?';
+  if(!confirm(text))return;
+  try{
+    const {r,d}=await api('/admin/tournament/v29/enable',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tournamentId,enabled,confirmed:true})});
+    if(!r.ok||!d?.success)throw new Error(d?.error||'HTTP '+r.status);
+    showStatus('tournamentBracketStatus',d.enabled?'✅ Bu turnuvada planlı bildirimler etkin.':'✅ Bu turnuvada bildirimler kapalı.',true);
+  }catch(e){showStatus('tournamentBracketStatus','❌ '+String(e?.message||e),false);}
+}
+
+async function arenaV29DispatchFromAdmin(){
+  const tournamentId=document.getElementById('tournamentSelect')?.value||'';
+  if(!tournamentId){alert('Önce bir turnuva seç.');return;}
+  if(!confirm('Planlı turnuva saati GELDİYSE, hazır eşleşmelerin oyuncularına başlangıç bildirimi gönderilir. Kontrol edilsin mi?'))return;
+  try{
+    showStatus('tournamentBracketStatus','⏳ Başlangıç zamanı ve lobi bildirimleri kontrol ediliyor...',true);
+    const {r,d}=await api('/admin/tournament/v29/dispatch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tournamentId})});
+    if(!r.ok||!d?.success)throw new Error(d?.error||'HTTP '+r.status);
+    showStatus('tournamentBracketStatus',`✅ Kontrol: ${d.checked||0} eşleşme · ${d.sent||0} gönderildi · ${d.opened||0} lobi çağrıldı · ${d.failed||0} hata.`,true);
+  }catch(e){showStatus('tournamentBracketStatus','❌ '+String(e?.message||e),false);}
+}
+</script>
+
 </body>
 </html>
