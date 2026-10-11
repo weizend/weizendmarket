@@ -120,7 +120,7 @@ async function api(path,auth=false,data=null){const c=new AbortController(),time
 function rounds(matches){const map=new Map();for(const m of matches){const kind=clean(m.matchKind||'main'),r=Number(m.roundNumber||0),k=kind+':'+r;if(!map.has(k))map.set(k,{kind,round:r,matches:[]});map.get(k).matches.push(m);}return [...map.values()].sort((a,b)=>a.round-b.round|| (a.kind==='main'?-1:1)).map(r=>({...r,matches:r.matches.sort((a,b)=>Number(a.matchNumber)-Number(b.matchNumber))}));}
 function keys(matches){return new Map(matches.map(m=>[(m.matchKind||'main')+':'+Number(m.roundNumber||0)+':'+Number(m.matchNumber||0),m]));}
 function predMap(){return new Map((state.pred?.myPicks||[]).filter(p=>p.matchId&&p.winnerId).map(p=>[String(p.matchId),String(p.winnerId)]));}
-function nameFor(id){if(!id)return'Bekleniyor';const d=state.detail||{};for(const m of d.matches||[]){if(String(m.participantAId)===String(id)&&m.participantAName)return m.participantAName;if(String(m.participantBId)===String(id)&&m.participantBName)return m.participantBName;if(String(m.winnerId)===String(id)&&m.winnerName)return m.winnerName;}for(const p of d.participants||[])if(String(p.id)===String(id))return p.username||p.name||'Oyuncu';for(const t of d.teams||[])if(String(t.id)===String(id))return t.name||'Takım';return'Bekleniyor';}
+function nameFor(id){if(!id)return'Bekleniyor';const d=state.detail||{};if(Number(d.tournament?.teamSize||state.t?.teamSize||1)<=1){const p=(d.participants||[]).find(x=>String(x.id)===String(id));if(p)return arenaPlayerGameName(p);}for(const m of d.matches||[]){if(String(m.participantAId)===String(id)&&m.participantAName)return m.participantAName;if(String(m.participantBId)===String(id)&&m.participantBName)return m.participantBName;if(String(m.winnerId)===String(id)&&m.winnerName)return m.winnerName;}for(const p of d.participants||[])if(String(p.id)===String(id))return p.gameId||p.riotId||'Oyun içi ad bekleniyor';for(const t of d.teams||[])if(String(t.id)===String(id))return t.name||'Takım';return'Bekleniyor';}
 // Mirror the Market's projected bracket rules to render available selections.
 // The server independently validates every posted winnerId.
 function optionsFor(target){const all=state.detail?.matches||[],lookup=keys(all),picks=predMap();const maxRound=Math.max(0,...all.filter(m=>(m.matchKind||'main')==='main').map(m=>Number(m.roundNumber||0)));
@@ -140,8 +140,10 @@ function projectedSlot(m,which){
  return predecessor.winnerId||predMap().get(String(predecessor.id))||null;
 }
 function displayName(m,which){const given=which==='a'?m.participantAName:m.participantBName;
+ const from=projectedSlot(m,which);
+ if(from&&Number(state.detail?.tournament?.teamSize||state.t?.teamSize||1)<=1){const player=(state.detail?.participants||[]).find(p=>String(p.id)===String(from));if(player)return arenaPlayerGameName(player);}
  if(given&&given!=='Bekleniyor')return given;
- const from=projectedSlot(m,which);if(from)return nameFor(from);
+ if(from)return nameFor(from);
  const r=Number(m.roundNumber||0);if(r>1&&(m.matchKind||'main')==='main')return 'Önceki tur galibi';
  return'Bekleniyor';}
 function renderBracket(){const matches=state.detail?.matches||[];if(!matches.length){$('bracket').innerHTML='<div class="empty">Henüz fikstür yayımlanmadı. Katılımlar tamamlanıp eşleşmeler oluşturulduğunda burada görünecek.</div>';return;}
@@ -186,9 +188,15 @@ function renderMatch(){renderAuthStatus();const m=activeMatch();if(!m){$('matchI
  renderCouponControls();
  renderAuthStatus();
 }
+// Seyirci Arena ekranı oyuncuları Kick adlarıyla değil oyun içi Riot ID ile gösterir.
+// Gerçek katılım yetkisi ve kaptan doğrulaması Worker tarafında Kick UID ile sürer.
+function arenaPlayerGameName(p){
+  const game=String(p?.gameId||p?.riotId||'').trim();
+  return game || 'Oyun içi ad bekleniyor';
+}
 function renderParticipants(){const d=state.detail||{},teams=d.teams||[],people=d.participants||[];
- if(!teams.length&&!people.length){$('participants').innerHTML='<div class="small">Henüz kayıtlı katılımcı bulunmuyor.</div>';return;}
- $('participants').innerHTML=teams.length?teams.map(t=>`<div class="member"><strong>${esc(t.name||'Takım')}</strong><small>${esc((t.members||[]).map(p=>p.username||p.plannedUsername||'Oyuncu').join(' • ')||'Kadro bekleniyor')}</small></div>`).join(''):people.map(p=>`<div class="member"><strong>${esc(p.username||p.name||'Oyuncu')}</strong></div>`).join('');}
+ if(!teams.length&&!people.length){$('participants').innerHTML='<div class="small">Henüz kayıtlı katılımcı bulunmuyor. Yalnızca tamamlanmış takımlar gösterilir.</div>';return;}
+ $('participants').innerHTML=teams.length?teams.map(t=>`<div class="member"><strong>${esc(t.name||'Takım')}</strong><small>${esc((t.members||[]).map(arenaPlayerGameName).join(' • ')||'Kadro bekleniyor')}</small></div>`).join(''):people.map(p=>`<div class="member"><strong>${esc(arenaPlayerGameName(p))}</strong></div>`).join('');}
 function renderBoard(){if(!state.pred){$('predictionBoard').textContent='Tahmin sıralaması yükleniyor...';return;}
  const list=state.pred.leaderboard||[];if(!list.length){$('predictionBoard').textContent='Henüz tahmin yapan yok.';return;}
  $('predictionBoard').innerHTML=`<table class="leaderboard"><thead><tr><th>#</th><th>Kick Kullanıcısı</th><th>Puan</th><th>Doğru</th></tr></thead><tbody>`+list.slice(0,50).map(x=>`<tr><td>${Number(x.rank)||0}</td><td>${esc(x.username)}</td><td class="count">${Number(x.score)||0}</td><td class="count">${Number(x.correctCount)||0}</td></tr>`).join('')+'</tbody></table>';
