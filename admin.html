@@ -3106,7 +3106,7 @@ html,body{max-width:100%;overflow-x:hidden}
           <input id="tcStreamUrl" type="url" maxlength="700" value="https://kick.com/weizend">
           <div class="checkline" style="margin-top:12px;padding:12px;border:1px solid #593333;border-radius:10px;background:#1b1010">
               <input id="tcBroadcastEnabled" type="checkbox">
-              <label for="tcBroadcastEnabled" class="checklineText"><b>🔴 Canlı yayınlanacak</b> · Sadece bu turnuva için aç (varsayılan kapalı)</label>
+              <label for="tcBroadcastEnabled" class="checklineText"><b>🔴 Canlı yayınlanacak</b> · Başlangıç zamanı geldiğinde CANLI, kapalıysa AFK (varsayılan)</label>
             </div>
           <div class="muted" style="margin-top:6px;">Canlı izle butonunun açacağı yayın bağlantısı.</div>
         </div>
@@ -3311,7 +3311,7 @@ html,body{max-width:100%;overflow-x:hidden}
           <input id="tStreamUrl" type="url" maxlength="700" value="https://kick.com/weizend">
           <div class="checkline" style="margin-top:12px;padding:12px;border:1px solid #593333;border-radius:10px;background:#1b1010">
               <input id="tBroadcastEnabled" type="checkbox">
-              <label for="tBroadcastEnabled" class="checklineText"><b>🔴 Canlı yayınlanacak</b> · Sadece bu turnuva için aç (varsayılan kapalı)</label>
+              <label for="tBroadcastEnabled" class="checklineText"><b>🔴 Canlı yayınlanacak</b> · Başlangıç zamanı geldiğinde CANLI, kapalıysa AFK</label>
             </div>
         </div>
 
@@ -10678,7 +10678,7 @@ function v303AdminStartButtons(d){
       ${afkRunning?'🎮 AFK DEVAM EDİYOR':liveRunning?'🎮 AFK BAŞLAT (GEÇİŞ)':'🎮 AFK BAŞLAT'}</button>
   </div><p class="muted">${d.startedAt
     ?'Turnuva başlatıldı: '+esc(new Date(d.startedAt).toLocaleString('tr-TR'))+' · '+(mode==='live'?'CANLI YAYIN':'AFK')
-    :'Başlangıç saatinde seçili yayın ayarı uygulanır. İstersen şimdiden CANLI veya AFK olarak başlat.'}</p>`;
+    :'Başlangıç saatinde seçili yayın ayarı uygulanır. Tarihi beklemek istiyorsan bu düğmelere basma. Düğmeler turnuvayı hemen başlatır.'}</p>`;
 }
 function v30AdminRender(d,tid){
  const host=document.getElementById('arenaLobbiesAdmin');if(!host)return;
@@ -10725,9 +10725,18 @@ function v30AdminToggle(mid){const id=decodeURIComponent(mid);v30AdminOpenMatch=
 async function v30AdminControl(action){
  const tid=document.getElementById('tournamentSelect')?.value||'';
  if(action==='enable'&&!confirm('V30 bu turnuvada etkinleştirilecek; mevcut başlamış V28 maçı varsa geçiş reddedilir. Yedek aldın mı?'))return;
- if(action==='start_live' && !confirm('CANLI başlatılsın mı? Kaptan lobileri kapanır; organizatör VALORANT lobisini kurar ve katılımcılara Turnuva Başladı bildirimi gider.'))return;
- if(action==='start_afk' && !confirm('AFK başlatılsın mı? Oyunculara kaptan lobisi davetleri gönderilir. Turnuva canlı başlamışsa CANLI moddan AFK moda geçer.'))return;
- try{const {r,d}=await api('/admin/tournament/v30/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,tournamentId:tid})});if(!r.ok||!d?.success)throw Error(d?.error||`HTTP ${r.status}`);
+ if(action==='start_live' && !confirm('CANLI turnuvayı ŞİMDİ BAŞLATACAKSIN. Planlanan tarihi beklemez; katılımcılara Turnuva Başladı bildirimi gönderilir. Emin misin?'))return;
+ if(action==='start_afk' && !confirm('AFK turnuvayı ŞİMDİ BAŞLATACAKSIN. Planlanan tarihi beklemez; katılımcılara lobi davetleri gönderilir. Bütün takım ve ödemelerin hazır olduğundan emin misin?'))return;
+ try{
+  let confirmedNoLiveMatches=false;
+  if(action==='start_afk'){
+    const current=await v30AdminFetch(tid);
+    if(current?.startedAt && current?.runMode==='live'){
+      if(!confirm('UYARI: Bu CANLI turnuva zaten başladı! Yayında devam eden hiçbir maç olmadığını ve AFK lobi davetlerine geçmek istediğini onaylıyor musun?'))return;
+      confirmedNoLiveMatches=true;
+    }
+  }
+  const {r,d}=await api('/admin/tournament/v30/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,tournamentId:tid,confirmedNoLiveMatches})});if(!r.ok||!d?.success)throw Error(d?.error||`HTTP ${r.status}`);
   await loadArenaLobbiesAdmin();
  }catch(e){alert('V30 işlemi yapılamadı: '+e.message);}
 }
