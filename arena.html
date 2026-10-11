@@ -299,15 +299,28 @@ function renderLobby(){
  const step4=`<div class="room-step"><h3>4. Her oyuncu kendisi Hazırım der</h3><div class="lobby-grid">${rosterHtml(pa,'a')}${rosterHtml(pb,'b')}</div>
  ${!done&&!started?`<div class="lobby-actions"><button type="button" class="btn ${s.myReady?'secondary':''}" id="lobbyReadyBtn" ${!proofReady||!codeReady?'disabled':''}>${s.myReady?'↩ Hazır Değilim':'✅ Hazırım'}</button></div>`:''}
  ${started?'<p style="color:#70eb9d;font-weight:900">🟢 MAÇ BAŞLADI — Bütün oyuncular hazır, kaptan kanıtları tamamlandı.</p>':`<p class="room-progress">${pa.ready+pb.ready}/${pa.expected+pb.expected} oyuncu hazır. ${proofReady?'Kanıtlar tamam.':'Her iki kaptanın kanıtı bekleniyor.'} Herkes hazır olduğunda maç durumu otomatik BAŞLADI olur.</p>`}
- <small>Site VALORANT oyununu uzaktan başlatamaz. Başladı kaydı Arena'da tutulur; sonucu hakem girer.</small></div>`;
+ <small>Site VALORANT oyununu uzaktan başlatamaz. Başladı kaydı Arena'da tutulur; kaptan skor kanıtı gönderir, kazananı hakem onaylar.</small></div>`;
+ const reviews=(s.myReviews||[]).map(x=>`<p class="lobby-note">${x.kind==='roster'?'🚩 Kadro itirazı':'🏁 Sonuç bildirimi'} · ${esc(x.status)}${x.review_note?' · '+esc(x.review_note):''}</p>`).join('');
+ const objection=!started&&s.isCaptain?`<div class="room-step"><h3>🚩 Kadro uyuşmazlığı bildir</h3>
+  <p class="hint">Rakip oyuncuların Riot ID'leri eşleşmiyorsa gerekçeni ve Hızlıresim kanıtını gönder. Hakem incelemesi sırasında maç başlamaz.</p>
+  <textarea id="rosterObjectionReason" maxlength="800" placeholder="Oyuncu adı uyuşmuyor; kayıtlı Riot ID ile farkı açıkla."></textarea>
+  <input id="rosterObjectionProof" type="url" maxlength="500" placeholder="https://hizliresim.com/..."><button class="btn secondary" type="button" id="rosterObjectionSubmit">🚩 İtiraz Et</button></div>`:'';
+ const resultBox=started&&s.isCaptain?`<div class="room-step"><h3>🏁 Maç sonucunu hakeme gönder</h3>
+  <p class="hint">Sadece kaptanlar sonuç bildirir. Hakem onaylamadan kazanan ve sonraki tur kesinleşmez.</p>
+  <div class="lobby-grid"><label>A Takımı Skor<input id="captainScoreA" type="number" min="0" max="99"></label><label>B Takımı Skor<input id="captainScoreB" type="number" min="0" max="99"></label></div>
+  <textarea id="captainResultReason" maxlength="800" placeholder="Örn: 13-8, maç tamamlandı ve skor tablosunun ekran görüntüsü alındı."></textarea>
+  <input id="captainResultProof" type="url" maxlength="500" placeholder="https://hizliresim.com/..."><button class="btn" type="button" id="captainResultSubmit">🏁 Sonuç Bildir</button></div>`:'';
+ const disputeWarning=s.rosterDisputePending?'<p class="lobby-warning" role="status">⚠️ Kadro itirazı hakemde. Karar verilene kadar maç başlangıcı kilitli.</p>':'';
  const reports=(s.reports||[]).map(r=>`<p class="lobby-note">🚩 ${esc(r.reason)} · ${esc(r.status)}</p>`).join('');
  const afk=!started&&!done&&s.isCaptain&&s.canReportAfk&&!s.reports?.length?`<div class="room-step"><h3>🚩 AFK Başvurusu</h3><textarea id="captainAfkReason" maxlength="800" placeholder="Rakip oyuncu gelmedi, saat ve açıklama..."></textarea><button class="btn secondary" id="lobbyAfkBtn" type="button">Hakeme Bildir</button></div>`:'';
- el.innerHTML=`<div class="room-progress" id="roomCountdown"></div><div class="lobby-grid"><div class="lobby-tile"><b>${esc(displayName(m,'a'))}</b><small>${pa.ready}/${pa.expected} hazır</small></div><div class="lobby-tile"><b>${esc(displayName(m,'b'))}</b><small>${pb.ready}/${pb.expected} hazır</small></div></div>${step1}${step2}${step3}${step4}${afk}${reports}`;
+ el.innerHTML=`<div class="room-progress" id="roomCountdown"></div><div class="lobby-grid"><div class="lobby-tile"><b>${esc(displayName(m,'a'))}</b><small>${pa.ready}/${pa.expected} hazır</small></div><div class="lobby-tile"><b>${esc(displayName(m,'b'))}</b><small>${pb.ready}/${pb.expected} hazır</small></div></div>${step1}${step2}${step3}${disputeWarning}${step4}${objection}${resultBox}${afk}${reviews}${reports}`;
  $('lobbyOpenBtn')?.addEventListener('click',()=>lobbyAction('open',{note:$('captainLobbyNote')?.value||''}));
  $('lobbyCodeBtn')?.addEventListener('click',()=>lobbyAction('code',{code:$('arenaLobbyCode')?.value||''}));
  $('lobbyProofBtn')?.addEventListener('click',()=>lobbyAction('proof',{proof:$('captainProof')?.value||''}));
  $('lobbyReadyBtn')?.addEventListener('click',()=>lobbyAction(s.myReady?'unready':'ready'));
  $('lobbyAfkBtn')?.addEventListener('click',()=>lobbyAction('afk_report',{reason:$('captainAfkReason')?.value||''}));
+ $('rosterObjectionSubmit')?.addEventListener('click',()=>lobbyReview('roster',{reason:$('rosterObjectionReason')?.value||'',proof:$('rosterObjectionProof')?.value||''}));
+ $('captainResultSubmit')?.addEventListener('click',()=>lobbyReview('result',{reason:$('captainResultReason')?.value||'',proof:$('captainResultProof')?.value||'',scoreA:$('captainScoreA')?.value,scoreB:$('captainScoreB')?.value}));
  updateRoomCountdown();
 }
 async function loadLobby(){
@@ -323,6 +336,15 @@ async function lobbyAction(action,data={}){
  lobbySaving=true;
  try{await api('/tournament/lobby/update',true,{matchId:m.id,action,...data});await loadLobby();toast('✓ İşlem kaydedildi.','ok');
  }catch(e){toast('İşlem başarısız: '+e.message,'error');}
+ finally{lobbySaving=false;}
+}
+async function lobbyReview(kind,data){
+ const m=activeMatch();if(!m||lobbySaving)return;
+ const question=kind==='roster'?'Kadro itirazını hakeme göndermek istiyor musun? İnceleme tamamlanana kadar maç başlamayacak.':'Maç sonucunu ve Hızlıresim kanıtını hakeme göndermek istiyor musun?';
+ if(!confirm(question))return;
+ lobbySaving=true;
+ try{await api('/tournament/lobby/review',true,{matchId:m.id,kind,...data});await loadLobby();toast('✓ Hakem incelemesine gönderildi.','ok');}
+ catch(e){toast('Gönderilemedi: '+e.message,'error');}
  finally{lobbySaving=false;}
 }
 $('lobbyRefresh').addEventListener('click',loadLobby);
