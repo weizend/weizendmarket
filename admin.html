@@ -3451,6 +3451,14 @@ html,body{max-width:100%;overflow-x:hidden}
       </div>
 
 
+
+      <div class="card" id="arenaCaptainLobbyAdminCard">
+        <div class="sectionHeaderRow"><div><h2>🎮 Kaptan Lobileri ve AFK Kontrolü</h2>
+        <p class="muted">Maçı sen çağırırsın; A/B kaptanı oyun içinden lobi kurar. 10 dakika sonra gelen AFK şikâyetini yalnızca yönetici onaylar. Hükmen sonuç, normal fikstür sonuç sistemine işlenir.</p></div>
+        <button class="secondary smallButton" onclick="loadArenaLobbiesAdmin()">🔄 Lobileri Yenile</button></div>
+        <div id="arenaLobbiesAdmin" class="tournamentEntriesView">Bir turnuva seçildiğinde maç lobileri görünecek.</div>
+      </div>
+
       <div class="card" id="tournamentSubscriptionCard">
         <div class="sectionHeaderRow">
           <div>
@@ -10581,6 +10589,7 @@ async function loadTournamentBracket(silent=false){
 
     currentTournamentBracket = d;
     renderTournamentBracket(d);
+    loadArenaLobbiesAdmin(tournamentId).catch(()=>{});
 
     if(!silent){
       showStatus('tournamentBracketStatus','✅ Fikstür yenilendi.',true);
@@ -10597,6 +10606,71 @@ async function loadTournamentBracket(silent=false){
       showStatus('tournamentBracketStatus','❌ ' + esc(error.message || error),false);
     }
   }
+}
+
+
+/* WEİZEND ARENA V27 — Kaptan lobileri ve AFK hakem paneli */
+async function loadArenaLobbiesAdmin(forcedId){
+ const tid=forcedId||document.getElementById('tournamentSelect')?.value||'';
+ const host=document.getElementById('arenaLobbiesAdmin');if(!host)return;
+ if(!tid){host.textContent='Önce turnuva seç.';return;}
+ try{
+  const {r,d}=await api(`/admin/tournament/lobbies?id=${encodeURIComponent(tid)}`);
+  if(!r.ok||!d?.success)throw Error(d?.error||`HTTP ${r.status}`);
+  const matchNames=new Map((currentTournamentBracket?.matches||[]).map(m=>[String(m.id),m]));
+  const lob=new Map((d.lobbies||[]).map(x=>[String(x.match_id),x]));
+  const matches=(d.matches||[]).filter(m=>['ready','completed'].includes(String(m.status))&&m.participant_a_id&&m.participant_b_id);
+  const reports=d.reports||[];
+  if(!matches.length){host.innerHTML='<div class="tournamentEmpty">Henüz kaptanların lobi kurabileceği maç yok. Fikstür yayımlandığında burada görünecek.</div>';return;}
+  host.innerHTML=matches.map(m=>{
+   const l=lob.get(String(m.id))||{},n=matchNames.get(String(m.id))||{};
+   const mid=encodeURIComponent(m.id);
+   const closed=m.status==='completed';
+   const reportList=reports.filter(x=>String(x.match_id)===String(m.id));
+   const subtitle=`${Number(m.round_number)||'?'} . Tur · M${Number(m.match_number)||'?'}`;
+   return `<div class="tournamentTeamCard" style="margin:10px 0">
+     <div class="tournamentTeamHead"><div><strong>${esc(subtitle)} · ${esc(n.participantAName||'A Takımı')} vs ${esc(n.participantBName||'B Takımı')}</strong>
+       <div class="muted">Sorumlu: ${l.host_side==='b'?'B kaptanı':'A kaptanı'} · ${l.called_at?'Çağrı: '+esc(new Date(l.called_at).toLocaleString('tr-TR')):'Henüz çağrılmadı'} · ${l.lobby_open_at?'Lobi kuruldu':'Lobi bekleniyor'}</div>
+       <div class="muted">Hazır: A ${l.ready_a_at?'✅':'⏳'} / B ${l.ready_b_at?'✅':'⏳'}</div></div>
+       <span class="badge ${closed?'ok':'warn'}">${closed?'Sonuçlandı':'Devam ediyor'}</span></div>
+     ${!closed?`<div class="inlineActions" style="margin:10px 0">
+       <button class="smallBtn" onclick="arenaAdminLobbyAction('${esc(mid)}','call')" ${l.called_at?'disabled':''}>⏱️ ${l.called_at?'Çağrıldı':'Maçı Çağır (10 dk)'}</button>
+       <button class="smallBtn secondary" onclick="arenaAdminLobbyAction('${esc(mid)}','host','a')">A Kaptanı Lobi Kursun</button>
+       <button class="smallBtn secondary" onclick="arenaAdminLobbyAction('${esc(mid)}','host','b')">B Kaptanı Lobi Kursun</button></div>`:''}
+     ${l.lobby_note?`<p class="muted">Kaptan notu: ${esc(l.lobby_note)}</p>`:''}
+     ${reportList.map(x=>`<div style="padding:10px;background:#161315;border:1px solid #433;border-radius:10px;margin-top:8px">
+        <strong>🚩 AFK bildirimi: ${esc(x.reporter_username)} → ${x.accused_side==='a'?'A Takımı':'B Takımı'}</strong>
+        <div class="muted">${esc(x.reason)} · ${esc(x.status)} · ${esc(x.created_at)}</div>
+        ${x.admin_note?`<div class="muted">Yönetici kararı: ${esc(x.admin_note)}</div>`:''}
+        ${x.status==='pending'&&!closed?`<div class="inlineActions" style="margin-top:9px">
+           <button class="smallBtn warn" onclick="arenaAdminAfkDecision('${esc(encodeURIComponent(x.id))}','approve')">⚠️ Hükmen Galibiyet Onayla</button>
+           <button class="smallBtn secondary" onclick="arenaAdminAfkDecision('${esc(encodeURIComponent(x.id))}','reject')">Reddet</button>
+        </div>`:''}
+      </div>`).join('')}</div>`;
+  }).join('');
+ }catch(e){host.textContent='⚠️ Lobi listesi alınamadı: '+(e.message||e)+' — D1 V27 tabloları kurulmuş mu?';}
+}
+async function arenaAdminLobbyAction(mid,action,side){
+ const matchId=decodeURIComponent(mid);
+ if(action==='host'&&!confirm('Lobi sorumlusu değiştirilecek ve mevcut hazır işaretleri sıfırlanacak. Devam?'))return;
+ if(action==='call'&&!confirm('AFK için 10 dakikalık resmi maç çağrısı başlatılsın mı?'))return;
+ try{const {r,d}=await api('/admin/tournament/lobby/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({matchId,action,side})});
+  if(!r.ok||!d?.success)throw Error(d?.error||`HTTP ${r.status}`);
+  await loadArenaLobbiesAdmin();
+ }catch(e){alert('Lobi işlemi yapılamadı: '+(e.message||e));}
+}
+async function arenaAdminAfkDecision(encodedId,decision){
+ const reportId=decodeURIComponent(encodedId);
+ const approve=decision==='approve';
+ if(!confirm(approve?'Bu karar maçı HÜKMEN sonuçlandıracak ve kazananı sonraki tura taşıyacak. Kanıtı kontrol ettin mi?':'AFK şikâyetini reddetmek istediğinden emin misin?'))return;
+ const note=prompt('Karar gerekçesini yaz (en az 8 karakter):');
+ if(note===null)return;
+ if(note.trim().length<8){alert('En az 8 karakter gerekçe gerekli.');return;}
+ try{const {r,d}=await api('/admin/tournament/lobby/afk-resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reportId,decision,note:note.trim()})});
+  if(!r.ok||!d?.success)throw Error(d?.error||`HTTP ${r.status}`);
+  await loadTournamentBracket(true);await loadArenaLobbiesAdmin();
+  alert(approve?'Hükmen sonuç kaydedildi. Tahminler ve sonraki tur fikstürü güncellendi.':'AFK başvurusu reddedildi.');
+ }catch(e){alert('Karar işlenemedi: '+(e.message||e));}
 }
 
 function renderTournamentBracket(data){
