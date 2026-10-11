@@ -12319,10 +12319,12 @@ return;
                             ? 'Oyun içi adını gir ve katılım şartını tamamla. Doğrulama bitmeden kayıt kesinleşmez.'
                             : 'Kaptan takımı kendi hesabıyla başlatır. Her oyuncu kendi katılım şartını tamamlar. Takım arkadaşları davet koduyla katılır. Kaptanın şartı doğrulanınca davet kodları oluşur.'}
                     </div>
-                    <div class="tv2-actions">
+                    ${!tv2State.form ? `<div class="tv2-actions">
                         <button class="tv2-btn ${createClosed?'secondary':''}" ${createClosed?'disabled':''} onclick="tv2ShowCreateForm()">${teamSize <= 1 ? '🎮 KAYIT OL' : '👑 TAKIM KUR'}</button>
                         ${teamSize > 1 ? `<button class="tv2-btn ${inviteJoinClosed?'secondary':''}" ${inviteJoinClosed?'disabled':''} onclick="tv2ShowJoinForm()">🔑 TAKIMA KATIL</button>` : ''}
-                    </div>
+                    </div>` : `<div class="tv2-actions wz-v3039-choice-back">
+                        <button type="button" class="tv2-btn secondary" onclick="tv2CancelInlineForm()">← SEÇİMİ DEĞİŞTİR</button>
+                    </div>`}
                     <div id="tv2InlineForm"></div>
                 </div>
             `;
@@ -12362,11 +12364,11 @@ return;
 
     function tv2ShowCreateForm(keep = false) {
         tv2State.form = 'create';
+        // First selection rebuilds the modal without showing the two choice buttons again.
+        // The render calls us with keep=true to inject the real V3 form exactly once.
+        if (!keep) { tv2RenderModal(); return; }
         const host = document.getElementById('tv2InlineForm');
-        if (!host) {
-            if (!keep) tv2RenderModal();
-            return;
-        }
+        if (!host) return;
         const t = tv2State.publicData?.tournament || {};
         const rule = tv2State.me?.rule || tv2State.publicData?.rule || {};
         const size = Math.max(1, Number(t.teamSize || 1));
@@ -12479,11 +12481,10 @@ return;
 
     function tv2ShowJoinForm(keep = false) {
         tv2State.form = 'join';
+        // Match the one-step team creation path: show the form, not the choice a second time.
+        if (!keep) { tv2RenderModal(); return; }
         const host = document.getElementById('tv2InlineForm');
-        if (!host) {
-            if (!keep) tv2RenderModal();
-            return;
-        }
+        if (!host) return;
         const rule = tv2State.me?.rule || tv2State.publicData?.rule || {};
         host.innerHTML = `
             <div class="tv2-panel tv2-form-card tv3-flow-card">
@@ -12708,7 +12709,7 @@ return;
                     </div>
                 </div>
                 <div class="wz-v3037-team-share">
-                  <button class="tv2-btn secondary" type="button" onclick="wzV3037CopyTournamentLink()">🔗 TURNUVA BAĞLANTISINI KOPYALA</button>
+                  <button class="tv2-btn secondary" type="button" onclick="wzV3037CopyTournamentLink(null,this)">🔗 TURNUVA BAĞLANTISINI KOPYALA</button>
                   <button class="tv2-btn" type="button" onclick="wzV3037CopyTeamInvite()" ${invites.some(x=>(x.code||x.displayCode)&&!['used','revoked','expired'].includes(String(x.status||'')))?'':'disabled'}>📨 ARKADAŞIMA DAVET MESAJI</button>
                 </div>
                 <div class="tv2-muted wz-v3037-invite-note">Bağlantı doğru turnuvayı açar. Davet mesajı, ilk kullanılabilir özel kodunu da içerir. Kod yalnızca güvendiğin takım arkadaşına gönderilmeli.</div>
@@ -15558,7 +15559,7 @@ return;
             <p><strong>Kaptan:</strong> Takım Kur → katılım şartını tamamla → davet kodunu arkadaşına gönder.</p>
             <p><strong>Oyuncu:</strong> Takıma Katıl → davet kodunu ve Riot ID'ni gir → katılım şartını tamamla.</p>
             <p><strong>AFK:</strong> Maç daveti → kaptanın VALORANT lobisi → hazır onayları → kadro kanıtları → maç → sonuç. Canlı yayın gerekmiyor.</p>
-            <button type="button" class="wz-v3037-share-link" onclick="wzV3037CopyTournamentLink('${esc(id)}')">🔗 BU TURNUVANIN BAĞLANTISINI KOPYALA</button>
+            <button type="button" class="wz-v3037-share-link" onclick="wzV3037CopyTournamentLink('${esc(id)}',this)">🔗 BU TURNUVANIN BAĞLANTISINI KOPYALA</button>
           </details></div>
           <div class="wz-turn-tabs-label">Turnuva Detayları</div>
           <nav class="wz-turn-tabs" aria-label="Turnuva detay bölümleri">${tabButtons.map(([id2,icon,name])=>`<button type="button" class="wz-turn-tab ${state.tab===id2?'active':''} ${id2==='arena'?'wz-arena-intro-tab':''}" onclick="wzTurnSetTab('${id2}')" aria-pressed="${state.tab===id2?'true':'false'}"><span class="wz-turn-tab-icon" aria-hidden="true">${icon}</span><span>${name}</span></button>`).join('')}</nav>
@@ -16270,6 +16271,10 @@ return;
   #redirectModal.wz-payment-guide .redirect-modal-body {padding:16px!important;}
 }
 </style>
+<style id="wz-v3039-single-choice">
+  #tv2ModalBody .wz-v3039-choice-back {margin:0 0 8px;}
+  #tv2ModalBody .wz-v3039-choice-back .tv2-btn {min-height:36px;font-size:.78rem;opacity:.88;}
+</style>
 
 <script id="wz-v3037-share-js">
 (function(){
@@ -16290,10 +16295,26 @@ return;
     await copyTextReliable(value);
     if(typeof showStatusToast==='function')showStatusToast(msg||'✅ Kopyalandı.',2600);
   }
-  window.wzV3037CopyTournamentLink=async function(tournamentId){
+  window.wzV3037CopyTournamentLink=async function(tournamentId,button){
+    if(button?.disabled) return;
+    const original=button?.textContent||'';
+    if(button){button.disabled=true;button.textContent='⏳ KOPYALANIYOR...';}
+    let copied=false;
     try{
       await copyOut(linkFor(tournamentId||currentTeamTournamentId()),'✅ Turnuva bağlantısı kopyalandı.');
-    }catch(err){if(typeof showStatusToast==='function')showStatusToast('⚠️ '+(err?.message||err),3500);}
+      copied=true;
+      if(button)button.textContent='✅ BAĞLANTI KOPYALANDI';
+    }catch(err){
+      if(button)button.textContent='⚠️ KOPYALANAMADI';
+      if(typeof showStatusToast==='function')showStatusToast('⚠️ '+(err?.message||err),3500);
+    }finally{
+      if(button){
+        // Prevent double copying, keep the feedback visible, then restore the original label.
+        setTimeout(()=>{
+          if(button.isConnected){button.disabled=false;button.textContent=original;}
+        },copied?2600:3500);
+      }
+    }
   };
   window.wzV3037CopyTeamInvite=async function(){
     try{
