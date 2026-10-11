@@ -54,6 +54,15 @@ main{max-width:1232px;padding:27px 16px 60px}
   flex-shrink:0;
 }
 
+/* V28.1: Arena profil Kick logosu - beyaz dis halkayi siyah cercevede kirp. */
+.wz-market-account .wz-account-avatar.wz-kick-profile-icon{
+  background-color:#050505 !important;
+  background-size:125% 125% !important;
+  background-position:center center !important;
+  border:1px solid #050505 !important;
+  box-shadow:none !important;
+  border-radius:50% !important;
+}
 /* WEİZEND ARENA V27 - kaptan lobisi ve hazır kontrol */
 .lobby-panel{margin-top:15px}
 .lobby-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:10px 0}
@@ -287,10 +296,23 @@ function renderAll(){renderLobby();renderHero();renderBracket();renderParticipan
 function cachePublic(){try{sessionStorage.setItem(cacheKey,JSON.stringify({at:Date.now(),detail:state.detail}));}catch{}}
 function restorePublic(){try{const v=JSON.parse(sessionStorage.getItem(cacheKey)||'null');if(!v||Date.now()-Number(v.at)>12*3600*1000||v.detail?.tournament?.id!==tid)return;state.detail=v.detail;state.t=v.detail.tournament;state.selected=v.detail.matches?.[0]?.id||null;renderAll();}catch{}}
 async function refresh(initial=false){if(state.loading)return;state.loading=true;state.authState=token()?'checking':'guest';state.authError='';renderAuthStatus();$('refreshBtn').disabled=true;
- try{const [detail,pred]=await Promise.all([api('/tournament/public?id='+encodeURIComponent(tid)),api('/tournament/predictions?id='+encodeURIComponent(tid))]);
+ try{
+ // V28.1: Pick'em hata verse de fikstur, takimlar ve mac odasi yuklenebilsin.
+ const [detailResult,predResult]=await Promise.allSettled([
+   api('/tournament/public?id='+encodeURIComponent(tid)),
+   api('/tournament/predictions?id='+encodeURIComponent(tid))
+ ]);
+ if(detailResult.status!=='fulfilled')throw detailResult.reason;
+ const detail=detailResult.value;
  if(detail?.tournament?.id!==tid)throw Error('Sunucudan beklenen turnuva dönmedi.');
- state.detail=detail;state.t=detail.tournament;cachePublic();state.pred=pred;const matches=detail.matches||[];if(!matches.some(m=>m.id===state.selected))state.selected=matches[0]?.id||null;
+ state.detail=detail;state.t=detail.tournament;cachePublic();
+ state.pred=predResult.status==='fulfilled' ? predResult.value : {
+   prediction:{open:false,configuredOpen:false,lockMessage:'Tahmin servisi şu anda erişilemiyor.'},
+   myPicks:[],leaderboard:[],submission:{submitted:false,selectedCount:0,expectedCount:0,canSubmit:false}
+ };
+ const matches=detail.matches||[];if(!matches.some(m=>m.id===state.selected))state.selected=matches[0]?.id||null;
  hideToast();renderAll();
+ if(predResult.status!=='fulfilled')toast('Fikstür yüklendi, fakat tahmin bilgileri alınamadı: '+(predResult.reason?.message||'Bağlantı hatası'), 'error');
  }catch(e){if(state.detail){toast('Güncel bilgiler alınamadı. Son görüntülenen turnuva korunuyor. '+e.message,'error');}else{toast('Turnuva açılamadı: '+e.message,'error');$('tournamentTitle').textContent='Turnuva yüklenemedi';$('bracket').innerHTML='<div class="empty">Bağlantıyı kontrol edip Yenile butonuna bas.</div>';}}
  finally{
    // Fikstür boş olduğunda veya public API hata verdiğinde de oturum sonucunu yaz.
