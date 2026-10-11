@@ -7363,11 +7363,22 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
             return m?{marker:m[0],tournamentId:m[1],matchId:m[2]}:null;
         }
         async function inboxSetArenaLinkStatus(button,invite){
+            button.__wzArenaInvite=invite;
+            if(button.__wzLinkChecking)return;
+            button.__wzLinkChecking=true;
             try{
                 const res=await inboxRequest('/tournament/lobby/link?matchId='+encodeURIComponent(invite.matchId));
                 if(!button.isConnected)return;
+                let hint=button.nextElementSibling;
+                if(!hint||!hint.classList.contains('wz-arena-invite-hint')){
+                    hint=document.createElement('p');hint.className='wz-arena-invite-hint';
+                    hint.style.cssText='font-size:12px;line-height:1.5;color:#ffd89c;margin:9px 0 0;';
+                    button.insertAdjacentElement('afterend',hint);
+                }
                 if(res?.active===true){
+                    hint.hidden=true;
                     button.disabled=false;
+                    button.title='Lobiye katıl';
                     button.textContent='🎮 LOBİYE KATIL';
                     button.onclick=()=>{
                         const arenaUrl='https://weizend.github.io/weizendmarket/arena.html?tournament='
@@ -7377,14 +7388,26 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
                     };
                 }else{
                     button.disabled=true;
-                    button.textContent=String(res?.reason||'').includes('tamamlandı')?'🔒 LOBİ KAPANDI':'⏳ LOBİ BEKLENİYOR';
+                    const waiting=Boolean(res?.waitingForCaptain);
+                    button.textContent=String(res?.reason||'').includes('tamamlandı')?'🔒 LOBİ KAPANDI':waiting?'⏳ KAPTAN LOBİSİ BEKLENİYOR':'⏳ LOBİ BEKLENİYOR';
                     button.title=String(res?.reason||'Lobi henüz aktif değil.');
+                    hint.hidden=!waiting;
+                    if(waiting)hint.textContent='Kaptanların VALORANT lobisi oluşturması bekleniyor. Kod kaydedildiğinde Lobiye Katıl butonu aktif olacaktır.';
                 }
             }catch(_){
                 if(!button.isConnected)return;
                 button.disabled=true;button.textContent='⚠️ LOBİ KONTROL EDİLEMEDİ';
-            }
+            }finally{button.__wzLinkChecking=false;}
         }
+        // While the inbox is open, a captain's saved code unlocks players' buttons
+        // without requiring message reload. Max 5 checks per 12 seconds.
+        setInterval(()=>{
+            const modal=document.getElementById('inboxModal');
+            if(!modal||modal.style.display!=='flex'||document.hidden)return;
+            [...modal.querySelectorAll('.inbox-arena-room-btn[disabled]')].slice(0,5).forEach(button=>{
+                if(button.__wzArenaInvite)inboxSetArenaLinkStatus(button,button.__wzArenaInvite);
+            });
+        },12000);
 
 
         // Vaktiyle bazı OTOMATİK bildirimler D1'e 'admin' olarak kaydedilmişti.
