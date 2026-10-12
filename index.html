@@ -95,6 +95,24 @@
   document.documentElement.classList.add('wz-boot');
   try{
     const allowed=['market','tournament','profile'];
+    // V30.4.0.2: Arena'dan Market'e yeni sayfa acilisinda Tumu secili baslar.
+    // Normal F5 bu alana girmez; secilen filtreyi korur.
+    const arenaReturnKey='wz_t_arena_return_v30402';
+    let fromArena=false;
+    try{
+      const ref=document.referrer ? new URL(document.referrer,location.href) : null;
+      fromArena=!!(ref && /\/arena(?:\.html|\/index\.html|\/)?$/i.test(ref.pathname));
+      if(fromArena || sessionStorage.getItem(arenaReturnKey)==='away'){
+        fromArena=true;
+        sessionStorage.setItem('wz_t_filter','all');
+        sessionStorage.setItem('wz_t_search','');
+        sessionStorage.setItem('wz_t_screen','list');
+        sessionStorage.setItem('wz_t_tab','overview');
+        sessionStorage.setItem('wz_t_strip_scroll_v30402','0');
+        sessionStorage.removeItem(arenaReturnKey);
+      }
+    }catch(_){}
+    window.__WZ_STARTED_FROM_ARENA__=fromArena;
     const historyView=history.state && allowed.includes(history.state.wzView)
       ? history.state.wzView
       : '';
@@ -122,6 +140,45 @@
     }catch(_){}
 
     window.__WZ_INITIAL_VIEW__=view;
+    // Mark only actual outgoing Arena navigation (not ordinary filters or tab changes).
+    window.__WZ_ARM_ARENA_RETURN__=()=>{
+      try{sessionStorage.setItem(arenaReturnKey,'armed')}catch(_){}
+    };
+    document.addEventListener('click',event=>{
+      const a=event.target.closest?.('a[href]');
+      if(!a)return;
+      try{
+        if(/\/arena(?:\.html|\/index\.html|\/)?$/i.test(new URL(a.href,location.href).pathname)){
+          window.__WZ_ARM_ARENA_RETURN__();
+        }
+      }catch(_){}
+    },true);
+    function markArenaAway(){
+      try{if(sessionStorage.getItem(arenaReturnKey)==='armed')sessionStorage.setItem(arenaReturnKey,'away')}catch(_){}
+    }
+    function checkArenaReturn(){
+      if(document.hidden)return;
+      try{
+        if(sessionStorage.getItem(arenaReturnKey)!=='away')return;
+        sessionStorage.removeItem(arenaReturnKey);
+        sessionStorage.setItem('wz_t_filter','all');
+        sessionStorage.setItem('wz_t_search','');
+        sessionStorage.setItem('wz_t_screen','list');
+        sessionStorage.setItem('wz_t_tab','overview');
+        sessionStorage.setItem('wz_t_strip_scroll_v30402','0');
+        window.__WZ_RETURN_TOURNAMENT_TO_ALL__?.();
+      }catch(_){}
+    }
+    document.addEventListener('visibilitychange',()=>document.hidden?markArenaAway():checkArenaReturn());
+    window.addEventListener('pagehide',markArenaAway);
+    window.addEventListener('pageshow',checkArenaReturn);
+    window.addEventListener('focus',checkArenaReturn);
+    // Save the horizontal strip, independently of normal page scroll restoration.
+    document.addEventListener('scroll',event=>{
+      if(event.target?.matches?.('#wzEsportsHub .wz-turn-strip')){
+        try{sessionStorage.setItem('wz_t_strip_scroll_v30402',String(event.target.scrollLeft||0))}catch(_){}
+      }
+    },true);
     document.documentElement.dataset.wzInitialView=view;
     document.documentElement.dataset.wzCurrentView=view;
 
@@ -4918,8 +4975,27 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
     if(!raw) return;
 
     const cached=JSON.parse(raw);
-    if(typeof cached.html==='string' && cached.html.trim()){
+    const currentFilter=sessionStorage.getItem('wz_t_filter')||'all';
+    const currentSearch=sessionStorage.getItem('wz_t_search')||'';
+    const currentScreen=sessionStorage.getItem('wz_t_screen')||'list';
+    // An old/incompatible cache could paint Tamamlanan with Tumu active.
+    const coherent=cached.shellVersion==='v30.4.0.2' &&
+      cached.filter===currentFilter && cached.search===currentSearch &&
+      cached.screen===currentScreen;
+    if(coherent && typeof cached.html==='string' && cached.html.trim()){
       host.innerHTML=cached.html;
+      const strip=host.querySelector('.wz-turn-strip');
+      if(strip){
+        const savedX=Number(sessionStorage.getItem('wz_t_strip_scroll_v30402')||0);
+        if(Number.isFinite(savedX))strip.scrollLeft=Math.max(0,savedX);
+        const active=strip.querySelector('[data-wz-turn-filter].active');
+        if(active){
+          const left=active.offsetLeft-strip.offsetLeft;
+          if(left<strip.scrollLeft)strip.scrollLeft=Math.max(0,left-12);
+          else if(left+active.offsetWidth>strip.scrollLeft+strip.clientWidth)
+            strip.scrollLeft=Math.max(0,left+active.offsetWidth-strip.clientWidth+12);
+        }
+      }
       window.__WZ_RESTORE_LOGOS__?.(host);
       window.__WZ_TOURNAMENT_SHELL_HYDRATED__=true;
 
@@ -7448,6 +7524,7 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
                         const arenaUrl='https://weizend.github.io/weizendmarket/arena.html?tournament='
                             +encodeURIComponent(invite.tournamentId)+'&match='+encodeURIComponent(invite.matchId)+'&room=1';
                         // Kullanıcının Market mesaj kutusu yerinde kalsın.
+                        window.__WZ_ARM_ARENA_RETURN__?.();
                         window.open(arenaUrl,'_blank','noopener,noreferrer');
                     };
                 }else{
@@ -14963,6 +15040,8 @@ return;
       wzPreserveTournamentLogoNodes(current,next);
       current.replaceWith(next);
       window.__WZ_RESTORE_LOGOS__?.(next);
+      // Filter/search changed without a full repaint: update the cached shell too.
+      if(state.screen==='list')cacheTournamentShell(document.getElementById('wzEsportsHub'));
     }
   }
   function renderEasyGuide(){
@@ -15663,6 +15742,10 @@ return;
       sessionStorage.setItem(
         WZ_T_SHELL_CACHE_KEY,
         JSON.stringify({
+          shellVersion:'v30.4.0.2',
+          filter:state.filter,
+          search:state.search,
+          screen:state.screen,
           html:host.innerHTML,
           savedAt:Date.now()
         })
@@ -15724,7 +15807,8 @@ return;
       : null;
 
     // Katalog degistiginde tam cizim gerekebilir; yatay kategori konumunu koru.
-    const previousFilterScroll = host.querySelector('.wz-turn-strip')?.scrollLeft ?? 0;
+    const savedStripX=(()=>{try{return Math.max(0,Number(sessionStorage.getItem('wz_t_strip_scroll_v30402')||0))}catch(_){return 0}})();
+    const previousFilterScroll = host.querySelector('.wz-turn-strip')?.scrollLeft || savedStripX;
 
     const newTree=document.createElement('div');
     newTree.innerHTML = `<div class="wz-turn-root">
@@ -15735,7 +15819,16 @@ return;
     host.replaceChildren(...newTree.childNodes);
     window.__WZ_RESTORE_LOGOS__?.(host);
     const nextFilterStrip=host.querySelector('.wz-turn-strip');
-    if(nextFilterStrip) nextFilterStrip.scrollLeft=previousFilterScroll;
+    if(nextFilterStrip){
+      nextFilterStrip.scrollLeft=previousFilterScroll;
+      const active=nextFilterStrip.querySelector('[data-wz-turn-filter].active');
+      if(active){
+        const left=active.offsetLeft-nextFilterStrip.offsetLeft;
+        if(left<nextFilterStrip.scrollLeft)nextFilterStrip.scrollLeft=Math.max(0,left-12);
+        else if(left+active.offsetWidth>nextFilterStrip.scrollLeft+nextFilterStrip.clientWidth)
+          nextFilterStrip.scrollLeft=Math.max(0,left+active.offsetWidth-nextFilterStrip.clientWidth+12);
+      }
+    }
 
     if(previousDetailScroll !== null){
       const nextDetailWindow=host.querySelector('.wz-turn-detail-window');
@@ -15847,6 +15940,21 @@ return;
       input.focus({preventScroll:true});
       try{ input.setSelectionRange(0,0); }catch(_){}
     }
+  };
+  window.__WZ_RETURN_TOURNAMENT_TO_ALL__=function(){
+    // Tumu zaten secili olsa da Arena donusunde seridi basa al.
+    wzReleaseHydratedTournamentShell();
+    state.filter='all';
+    state.search='';
+    state.screen='list';
+    state.tab='overview';
+    document.body.classList.remove('wz-turn-modal-open','wz-turn-modal-entering');
+    persistTournamentState();
+    const strip=document.querySelector('#wzEsportsHub .wz-turn-strip');
+    if(strip)strip.scrollLeft=0;
+    const input=document.getElementById('wzTournamentSearchInput');
+    if(input)input.value='';
+    if(document.body.classList.contains('wz-view-tournament'))render();
   };
   window.wzTurnSetFilter=function(filter){
     const allowed=['all','free','subscription','paid','mine','live','active','soon','closed','done'];
