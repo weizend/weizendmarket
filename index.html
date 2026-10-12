@@ -4868,7 +4868,7 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
 
             <div id="accessCard" class="access-card">
                 <h3 id="accessTitle">🔒 WEİZEND MARKET</h3>
-                <p id="accessText">Kick kullanıcı adını yaz. Hesabını sohbetten tek kullanımlık <b>!doğrula KOD</b> komutuyla güvenli şekilde doğrula.</p>
+                <p id="accessText">🔐 Market, turnuva ve hesap işlemlerini güvenle kullanabilmek için Kick hesabını doğrulaman gerekir. Kullanıcı adını yaz ve sana özel <b>!doğrula KOD</b> komutunu Kick sohbetine gönder.</p>
 
                 <div id="usernameForm" class="access-form">
                     <input id="kickUsernameInput" class="access-input" type="text" autocomplete="off" maxlength="40" placeholder="Kick kullanıcı adın">
@@ -8913,25 +8913,39 @@ else if (deliveryType === 'manual') {
         }
 
         function goToVerification() {
-            // Kullanıcı doğrulanmamışsa ürün işlemi başlatma; doğrulama alanına götür.
+            // V30.4.0.3: Market/turnuva/tahmin/profil işlemlerindeki bütün
+            // doğrulama butonları aynı, gerçek Kick doğrulama kartına gider.
             if (marketAuthenticated && localStorage.getItem(SESSION_STORAGE_KEY)) return;
+
+            // Kayıt penceresi doğrulama kartının üzerinde kalmasın.
+            try {
+                if (document.getElementById('tv2Modal')?.style.display === 'flex' &&
+                    typeof tv2Close === 'function') tv2Close();
+            } catch (_) {}
+            try { window.wzDismissSharedTurnuvaLink?.(); } catch (_) {}
+            document.body.classList.remove('wz-turn-modal-open', 'wz-turn-modal-entering');
+            if (typeof window.wzSetView === 'function') window.wzSetView('market');
+            document.body.style.overflow = '';
 
             const authState = getAuthState();
             if (authState) {
                 showVerificationActivation(authState.username, authState.code);
             } else {
-                showUsernameForm('🔒 Bu ürünü almak için önce Kick hesabını doğrulaman gerekiyor.');
+                showUsernameForm('🔐 Market, turnuva ve hesap işlemlerinde güvenliğin için Kick hesabını doğrulaman gerekiyor. Kullanıcı adını yazıp doğrulama kodu oluştur.');
             }
 
+            // Instagram / mobil tarayıcıda da kapalı turnuva modalına değil,
+            // Market'teki gerçek erişim formuna kaydır.
             const accessCard = document.getElementById('accessCard');
-            accessCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-            setTimeout(() => {
+            if (!accessCard) return;
+            requestAnimationFrame(() => {
+                accessCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 const input = document.getElementById('kickUsernameInput');
-                if (input && document.getElementById('usernameForm').style.display !== 'none') input.focus();
-            }, 450);
+                if (input && document.getElementById('usernameForm')?.style.display !== 'none') {
+                    try { input.focus({ preventScroll: true }); } catch (_) { input.focus(); }
+                }
+            });
         }
-
 
         function getMarketProduct(productId) {
             const wanted = String(productId || '').toLowerCase();
@@ -13590,6 +13604,8 @@ return;
     setTimeout(()=>{ if(typeof openGiftRedeem==='function') openGiftRedeem(); },80);
   };
   window.wzGoToLogin=function(){
+    // Profil dahil her "Kick hesabını doğrula" bağlantısını aynı karta bağla.
+    if(typeof goToVerification==='function') { goToVerification(); return; }
     wzSetView('market');
     setTimeout(()=>{
       const card=document.getElementById('accessCard');
@@ -13793,6 +13809,37 @@ return;
     myEntrySession:'',
     guideOpen:false
   };
+
+  // V30.4.0.3: Paylaşım linki açıldığında önce katalog beklenir;
+  // katalog geldiği anda doğru turnuva detay penceresi tek sefer açılır.
+  // Yeni polling/API isteği oluşturmaz; mevcut /tournaments yanıtını kullanır.
+  let wzSharedTurnuvaPending = Boolean(window.__WZ_TOURNAMENT_DEEP_LINK__);
+  window.wzDismissSharedTurnuvaLink = function(){ wzSharedTurnuvaPending=false; };
+  function wzOpenSharedTurnuvaIfReady(freshCatalog=false){
+    if(!wzSharedTurnuvaPending) return false;
+    const id=String(window.__WZ_TOURNAMENT_DEEP_LINK__||'');
+    if(!id || !catalog().length) return false;
+    const item=getItem(id);
+    if(!item){
+      // Eski oturum kataloğunda bulunmasa bile yeni indirme bitene kadar bekle.
+      // Ancak sunucudan gelen GÜNCEL listede de yoksa yanlış turnuvayı açma.
+      if(!freshCatalog) return false;
+      wzSharedTurnuvaPending=false;
+      state.screen='list';
+      state.selectedId='';
+      persistTournamentState();
+      return false;
+    }
+    wzSharedTurnuvaPending=false;
+    state.filter='all';
+    state.search='';
+    state.tab='overview';
+    if(typeof window.wzSetView==='function' && !document.body.classList.contains('wz-view-tournament')){
+      window.wzSetView('tournament');
+    }
+    window.wzTurnOpen(id);
+    return true;
+  }
 
   function persistTournamentState(){
     try{
@@ -16004,6 +16051,7 @@ return;
   };
 
   window.wzTurnBack=function(){
+    wzSharedTurnuvaPending=false;
     // Kişisel davet bağlantısındaki turnuva parametresini geri çıkarken temizle.
     if(window.__WZ_TOURNAMENT_DEEP_LINK__){
       try{const url=new URL(location.href);url.searchParams.delete('turnuva');history.replaceState(history.state,'',url.href);}catch(_){}
@@ -16145,6 +16193,7 @@ return;
 
   document.addEventListener('wz:tournament-catalog-updated',event=>{
     const detail=event?.detail||{};
+    if(detail.ok!==false && wzOpenSharedTurnuvaIfReady(true)) return;
     wzTournamentCatalogError = detail.ok===false
       ? String(detail.error || 'Turnuva bilgileri alınamadı.')
       : '';
@@ -16178,6 +16227,7 @@ return;
   const baseSetView=window.wzSetView;
   if(typeof baseSetView==='function'){
     window.wzSetView=function(view){
+      if(view!=='tournament') wzSharedTurnuvaPending=false;
       const enteringTournament =
         view==='tournament' &&
         !document.body.classList.contains('wz-view-tournament');
@@ -16230,8 +16280,8 @@ return;
     }
 
     if(document.body.classList.contains('wz-view-tournament')){
-      // Cache varsa ilk karede mevcut liste/detay görünür.
-      render();
+      // Paylaşım linkinde katalog cache'de mevcutsa ilk açılışta da detay aç.
+      if(!wzOpenSharedTurnuvaIfReady()) render();
 
       // Gerçek veriyi sessizce yenile; event gelince ekran tekrar çizilir.
       try{
