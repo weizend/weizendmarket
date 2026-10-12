@@ -2840,10 +2840,17 @@ body.wz-page-modal-open{
 
 
 <style id="wz-turn-chip-hover-v55">
-.wz-turn-chip:hover{
-  background:#ffffff!important;
-  color:#111111!important;
-  border-color:#ffffff!important;
+/* V30.4.0.1: Android dokunusundan sonra kalici beyaz hover'i engelle. */
+@media (hover:hover) and (pointer:fine){
+  .wz-turn-chip:not(.active):hover{
+    background:#ffffff!important;
+    color:#111111!important;
+    border-color:#ffffff!important;
+  }
+}
+.wz-turn-chip:focus-visible{
+  outline:2px solid #ffffff;
+  outline-offset:3px;
 }
 </style>
 
@@ -14591,7 +14598,7 @@ return;
       ['closed','Kayıt Kapandı'],
       ['done','Tamamlanan']
     ];
-    return `<div class="wz-turn-strip">${defs.map(([id,name])=>`<button type="button" class="wz-turn-chip ${state.filter===id?'active':''}" onclick="wzTurnSetFilter('${id}')">${name}</button>`).join('')}</div>`;
+    return `<div class="wz-turn-strip" aria-label="Turnuva filtreleri">${defs.map(([id,name])=>`<button type="button" data-wz-turn-filter="${id}" aria-pressed="${state.filter===id?'true':'false'}" class="wz-turn-chip ${state.filter===id?'active':''}" onclick="wzTurnSetFilter('${id}')">${name}</button>`).join('')}</div>`;
   }
   function tournamentLogoUrl(item){
     const t=item?.tournament||{}; const rule=item?.rule||{};
@@ -15716,6 +15723,9 @@ return;
       ? (host.querySelector('.wz-turn-detail-window')?.scrollTop ?? null)
       : null;
 
+    // Katalog degistiginde tam cizim gerekebilir; yatay kategori konumunu koru.
+    const previousFilterScroll = host.querySelector('.wz-turn-strip')?.scrollLeft ?? 0;
+
     const newTree=document.createElement('div');
     newTree.innerHTML = `<div class="wz-turn-root">
       ${renderListPage()}
@@ -15724,6 +15734,8 @@ return;
     wzPreserveTournamentLogoNodes(host,newTree);
     host.replaceChildren(...newTree.childNodes);
     window.__WZ_RESTORE_LOGOS__?.(host);
+    const nextFilterStrip=host.querySelector('.wz-turn-strip');
+    if(nextFilterStrip) nextFilterStrip.scrollLeft=previousFilterScroll;
 
     if(previousDetailScroll !== null){
       const nextDetailWindow=host.querySelector('.wz-turn-detail-window');
@@ -15837,15 +15849,33 @@ return;
     }
   };
   window.wzTurnSetFilter=function(filter){
+    const allowed=['all','free','subscription','paid','mine','live','active','soon','closed','done'];
+    if(!allowed.includes(filter)) return;
     wzReleaseHydratedTournamentShell();
     state.guideOpen=!!document.getElementById('wzTournamentEasyGuide')?.open;
     state.filter=filter;
+    persistTournamentState();
+
+    // V30.4.0.1: Tum liste sayfasini (ozellikle kaydirilmis filtre seridini)
+    // silip yeniden olusturma. Yalnizca aktif dugmeyi ve sonuclari degistir.
+    const strip=document.querySelector('#wzEsportsHub .wz-turn-strip');
+    const results=document.getElementById('wzTournamentResults');
+    if(state.screen==='list' && strip && results){
+      strip.querySelectorAll('[data-wz-turn-filter]').forEach(button=>{
+        const active=button.dataset.wzTurnFilter===filter;
+        button.classList.toggle('active',active);
+        button.setAttribute('aria-pressed',active?'true':'false');
+      });
+      refreshTournamentListResults();
+    }else{
+      // Veri henuz gelmediyse mevcut yukleme/hata ekranini koru.
+      render();
+    }
+
     if(filter==='mine' && state.myEntrySession!==(localStorage.getItem(SESSION_STORAGE_KEY)||'')){
-      // Mevcut endpoint, yalnızca gerçekten gerekliyse bir kez çağrılır.
+      // Mevcut endpoint: sadece Turnuvalarim secildiginde, gereken bir kez sorgula.
       wzV95LoadMyEntryStatuses();
     }
-    persistTournamentState();
-    render();
   };
 
   window.wzTurnOpen=function(id){
