@@ -963,6 +963,48 @@ body.dmModalOpen{overflow:hidden}
   .activityAmount{font-size:.96rem}
 }
 
+
+/* WEIZEND Admin V30.4.1 - isolated turnuva console */
+#wz41Dashboard,#wz41Menu{border:1px solid #363030;background:#121212}
+#wz41Dashboard h2{margin:0 0 6px}
+.wz41-hero{display:flex;align-items:start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.wz41-hero .muted{margin:0 0 10px}
+.wz41-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:12px 0}
+.wz41-stat{border:1px solid #333;border-radius:11px;padding:11px 12px;min-height:66px;background:#171717}
+.wz41-stat strong{font-size:23px;display:block;color:#fafafa}
+.wz41-stat small{font-size:12px;color:#aaa}
+.wz41-stat.urgent{border-color:#9e3232}
+.wz41-filterbar{display:grid;grid-template-columns:minmax(160px,1fr) minmax(150px,200px) auto;gap:8px;align-items:center}
+.wz41-filterbar input,.wz41-filterbar select{min-width:0;margin:0;height:44px}
+.wz41-filterbar button{width:auto!important;margin:0!important;min-height:44px}
+.wz41-note{margin:9px 0!important;line-height:1.55;min-height:19px}
+.wz41-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:9px;margin-top:10px;max-height:54vh;overflow-y:auto;padding:3px 1px}
+.wz41-card{border:1px solid #393939;background:#181818;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:9px;min-width:0}
+.wz41-card.selected{border-color:#df2424;box-shadow:inset 3px 0 0 #dc2323}
+.wz41-card.urgent{border-color:#b83a3a}
+.wz41-card h3{font-size:15px;margin:0;color:white;overflow-wrap:anywhere}
+.wz41-card-info{font-size:12px;color:#aaa;line-height:1.6}
+.wz41-statusline{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.wz41-chip{display:inline-block;border:1px solid #4b4b4b;border-radius:30px;padding:3px 7px;font-size:11px;color:#ddd}
+.wz41-chip.warn{border-color:#8e5350;color:#ffb1ab}
+.wz41-chip.ok{border-color:#3d7652;color:#a0edbf}
+.wz41-card button{margin:0!important;width:100%;min-height:40px}
+.wz41-menu{padding:13px 16px!important}
+.wz41-menu-title{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:11px}
+.wz41-menu-title b{font-size:15px}
+.wz41-menu .wz41-tabs{display:flex;flex-wrap:wrap;gap:7px}
+.wz41-menu .wz41-tabs button{width:auto!important;margin:0!important;flex:1 1 130px;padding:10px 12px!important;min-height:43px;border-radius:9px;background:#222;border:1px solid #3a3a3a;color:#ddd;font-size:12px}
+.wz41-menu .wz41-tabs button.active{background:#b91c1c;border-color:#e43838;color:white}
+.wz41-matchmsg{margin:12px 0 3px;display:flex;gap:7px;flex-wrap:wrap}
+.wz41-matchmsg button{width:auto!important;max-width:100%}
+.wz41-overlay{position:fixed;inset:0;background:#000c;display:flex;align-items:center;justify-content:center;padding:15px;z-index:99999;overflow:auto}
+.wz41-dialog{background:#171717;color:#eee;border:1px solid #555;border-radius:14px;padding:20px;width:min(540px,100%);max-height:93vh;overflow:auto}
+.wz41-dialog h3{margin:0 0 9px;font-size:20px}
+.wz41-dialog textarea{width:100%;min-height:115px;resize:vertical;box-sizing:border-box;margin:10px 0}
+.wz41-dialog .wz41-actions{display:flex;gap:8px;flex-wrap:wrap}
+.wz41-dialog .wz41-actions button{flex:1 1 130px}
+@media(max-width:720px){.wz41-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.wz41-filterbar{grid-template-columns:1fr}.wz41-filterbar button{width:100%!important}.wz41-list{grid-template-columns:1fr;max-height:62vh}.wz41-menu .wz41-tabs button{flex:1 1 43%}.wz41-dialog{padding:14px}}
+
 </style>
 
 <style id="wz-admin-past-tournaments-v29">
@@ -2957,6 +2999,37 @@ html,body{max-width:100%;overflow-x:hidden}
 
     <div id="section-tournaments" class="section">
 
+      <!-- V30.4.1: compact multi-tournament console: existing endpoints only -->
+      <div class="card wz41-dashboard" id="wz41Dashboard">
+        <div class="wz41-hero"><div><h2>🏆 WEİZEND • Turnuva Kontrol Merkezi</h2>
+          <p class="muted">Turnuvanı seç; sadece işlem yapacağın alanı aç. Diğer bölümler kapalı kalır.</p></div>
+          <button type="button" class="secondary smallButton" onclick="wz41RefreshCatalog()">↻ Turnuvaları Yenile</button></div>
+        <div class="wz41-stats" id="wz41Stats"><span>Turnuvalar yükleniyor...</span></div>
+        <div class="wz41-filterbar">
+          <input id="wz41Search" type="search" placeholder="Turnuva adı, format veya ID ara..." oninput="wz41RenderDashboard()" aria-label="Turnuva ara">
+          <select id="wz41Filter" onchange="wz41RenderDashboard()" aria-label="Turnuva durumu">
+            <option value="all">Tüm Turnuvalar</option><option value="urgent">🚨 Hakem Bekleyenler</option>
+            <option value="playing">🟢 Maç Oynananlar</option><option value="pending">⏳ Kayıt / Bekleyenler</option>
+          </select>
+          <button type="button" class="secondary smallButton" id="wz41ScanButton" onclick="wz41ScanAll()">🔎 Tümünü Kontrol Et</button>
+        </div>
+        <div id="wz41ScanNote" class="muted wz41-note" role="status">Maç durumları yalnızca seçtiğinde veya Tümünü Kontrol Et'e bastığında sorgulanır.</div>
+        <div id="wz41TournamentList" class="wz41-list"></div>
+      </div>
+      <div class="card wz41-menu" id="wz41Menu">
+        <div class="wz41-menu-title"><b id="wz41SelectedTitle">📍 Seçili Turnuva</b><span id="wz41SelectedMeta" class="muted"></span></div>
+        <div class="wz41-tabs" role="group" aria-label="Turnuva yönetim bölümleri">
+          <button type="button" data-wz41="lobbies" onclick="wz41OpenPanel('lobbies')">⚖️ Lobiler / Hakem</button>
+          <button type="button" data-wz41="teams" onclick="wz41OpenPanel('teams')">👥 Takımlar</button>
+          <button type="button" data-wz41="bracket" onclick="wz41OpenPanel('bracket')">🎮 Fikstür / Skor</button>
+          <button type="button" data-wz41="settings" onclick="wz41OpenPanel('settings')">⚙️ Ayarlar</button>
+          <button type="button" data-wz41="payments" onclick="wz41OpenPanel('payments')">💳 Katılım Hareketleri</button>
+          <button type="button" data-wz41="new" onclick="wz41OpenPanel('new')">➕ Yeni Turnuva</button>
+          <button type="button" data-wz41="past" onclick="wz41OpenPanel('past')">🗃️ Geçmiş</button>
+        </div>
+      </div>
+
+
       <div class="card" id="newTournamentCard">
         <h2>➕ Yeni Turnuva Oluştur</h2>
         <p class="muted">
@@ -4035,6 +4108,7 @@ function openTab(name){
   }
 
   if(name === 'tournaments'){
+    wz41Init();
     updateCreateTournamentEntryFields();
     loadTournamentList();
   }
@@ -8688,6 +8762,7 @@ function renderTournamentOptions(){
   filterTournamentOptions();
   renderPastTournaments();
   renderCreateTournamentTemplates();
+  wz41RenderDashboard();
 }
 
 function pastTournamentSortValue(item){
@@ -10650,16 +10725,10 @@ async function loadTournamentBracket(silent=false){
 let v30AdminOpenMatch='';
 let v30AdminLiveInterval=null;
 function v30AdminEnablePoll(){
- if(v30AdminLiveInterval)return;
- v30AdminLiveInterval=setInterval(()=>{
-  const select=document.getElementById('tournamentSelect');
-  const card=document.getElementById('arenaCaptainLobbyAdminCard');
-  if(document.hidden||!select?.value||!card||card.offsetParent===null)return;
-  // Do not replace the referee controls while the admin types into a field.
-  if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName||''))return;
-  loadArenaLobbiesAdmin(select.value).catch(()=>{});
- },15000);
+  // V30.4.1: no idle 15-second D1 reads. Manual refresh / tab return only.
+  if(v30AdminLiveInterval){clearInterval(v30AdminLiveInterval);v30AdminLiveInterval=null;}
 }
+
 async function v30AdminFetch(tid){
  const {r,d}=await api(`/admin/tournament/v30?id=${encodeURIComponent(tid)}&_=${Date.now()}`);
  if(!r.ok||!d?.success)throw Error(d?.error||`HTTP ${r.status}`);
@@ -10684,6 +10753,8 @@ function v30AdminRender(d,tid){
  const host=document.getElementById('arenaLobbiesAdmin');if(!host)return;
  const status=document.getElementById('arenaLobbiesRefreshStatus');
  const matches=(d.matches||[]).filter(m=>m.participant_a_id&&m.participant_b_id);
+ wz41CacheV30.set(String(tid),{data:d,checked:Date.now()});
+ if(typeof wz41RenderDashboard==='function')wz41RenderDashboard();
  if(d.broadcastEnabled){
    const names=new Map((currentTournamentBracket?.matches||[]).map(m=>[String(m.id),m]));
    const entries=matches.map(m=>{
@@ -10717,11 +10788,17 @@ function v30AdminRender(d,tid){
   const proofs=`<div class="muted">VALORANT davet kodu: <strong>${esc(r.lobby_code||'Henüz girilmedi')}</strong></div><div class="muted">Kaptan katılımı: A ${v.captain_a_joined_at?'✅':'⏳'} · B ${v.captain_b_joined_at?'✅':'⏳'}</div><div class="muted">Hazır / Devam / Başlat: A ${v.consent_a_at?'✅':'⏳'} / ${v.start_a_at?'✅':'⏳'} · B ${v.consent_b_at?'✅':'⏳'} / ${v.start_b_at?'✅':'⏳'}</div><p>${r.proof_a?`<a href="${esc(r.proof_a)}" target="_blank" rel="noopener noreferrer">📸 A Kadro Kanıtı ↗</a>`:'A kanıtı bekleniyor'} · ${r.proof_b?`<a href="${esc(r.proof_b)}" target="_blank" rel="noopener noreferrer">📸 B Kadro Kanıtı ↗</a>`:'B kanıtı bekleniyor'}</p>`;
   const disputes=pending.map(x=>`<div style="padding:10px;border:1px solid #8c2929;border-radius:9px;margin-top:7px"><strong>🚨 ${esc(x.team_side.toUpperCase())} kaptanı itiraz etti</strong><p>${esc(x.reason)}</p><a href="${esc(x.proof_url)}" target="_blank" rel="noopener noreferrer">Kanıt ↗</a></div>`).join('');
   const controls=phase==='blocked'?`<div class="inlineActions"><button type="button" class="smallBtn secondary" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','dismiss')" ${!v.blocked_from_phase?'disabled':''}>✅ İtirazı Reddet</button><button type="button" class="smallBtn warn" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','winner','a')">🏆 A Kazansın</button><button type="button" class="smallBtn warn" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','winner','b')">🏆 B Kazansın</button></div>`:'';
-  return `<div class="tournamentTeamCard" style="padding:0;margin:7px 0;${blocked?'border-color:#ce2c2c;box-shadow:inset 3px 0 0 #dc2a2a;':''}"><button type="button" class="secondary" style="width:100%;text-align:left;background:none;display:flex;align-items:center;justify-content:space-between;gap:10px" onclick="v30AdminToggle('${encodeURIComponent(m.id)}')"><span><strong>${Number(m.round_number)}. Tur · M${Number(m.match_number)} · ${title}</strong><br><small class="muted">${esc(phaseLabel[phase]||phase)}</small></span><span>${blocked?'🔴':active?'▴':'▾'}</span></button>${active?`<div style="padding:10px;border-top:1px solid #333">${proofs}${rows}${disputes}${controls}</div>`:''}</div>`;
+  return `<div class="tournamentTeamCard" style="padding:0;margin:7px 0;${blocked?'border-color:#ce2c2c;box-shadow:inset 3px 0 0 #dc2a2a;':''}"><button type="button" class="secondary" style="width:100%;text-align:left;background:none;display:flex;align-items:center;justify-content:space-between;gap:10px" onclick="v30AdminToggle('${encodeURIComponent(m.id)}')"><span><strong>${Number(m.round_number)}. Tur · M${Number(m.match_number)} · ${title}</strong><br><small class="muted">${esc(phaseLabel[phase]||phase)}</small></span><span>${blocked?'🔴':active?'▴':'▾'}</span></button>${active?`<div style="padding:10px;border-top:1px solid #333">${proofs}${rows}${disputes}${controls}<div class="wz41-matchmsg"><button type="button" class="smallBtn secondary" onclick="wz41ComposeReferee('${encodeURIComponent(m.id)}')">💬 Oyunculara Özel Hakem Mesajı</button></div></div>`:''}</div>`;
  }).join('');
  host.innerHTML=adminToolbar+sum+(cards||'<div class="tournamentEmpty">Henüz maç oluşmadı. Kayıtlar tamamlanınca fikstür otomatik oluşturulacak.</div>');
 }
-function v30AdminToggle(mid){const id=decodeURIComponent(mid);v30AdminOpenMatch=v30AdminOpenMatch===id?'':id;loadArenaLobbiesAdmin();}
+function v30AdminToggle(mid){
+ const id=decodeURIComponent(mid);v30AdminOpenMatch=v30AdminOpenMatch===id?'':id;
+ const tid=document.getElementById('tournamentSelect')?.value||'';
+ const snap=wz41CacheV30.get(String(tid));
+ if(snap?.data) v30AdminRender(snap.data,tid);
+ else loadArenaLobbiesAdmin().catch(()=>{});
+}
 async function v30AdminControl(action){
  const tid=document.getElementById('tournamentSelect')?.value||'';
  if(action==='enable'&&!confirm('V30 bu turnuvada etkinleştirilecek; mevcut başlamış V28 maçı varsa geçiş reddedilir. Yedek aldın mı?'))return;
@@ -11538,6 +11615,238 @@ document
     }
   );
 
+
+
+/* ===========================================================
+  V30.4.1 MULTI-TOURNAMENT CONSOLE
+  No new Worker routes; no background D1 scanning.
+=========================================================== */
+const wz41CacheV30=new Map();
+let wz41Panel='lobbies';
+let wz41Installed=false;
+let wz41ScanBusy=false;
+const wz41PanelIds={
+ lobbies:['arenaCaptainLobbyAdminCard'],
+ teams:['tournamentEntriesCard'],
+ bracket:['tournamentBracketCard'],
+ settings:['tournamentManagerCard'],
+ payments:['tournamentSubscriptionCard'],
+ new:['newTournamentCard'],
+ past:['pastTournamentsCard']
+};
+function wz41Init(){
+ if(wz41Installed)return;
+ wz41Installed=true;
+ wz41OpenPanel('lobbies',false);
+ // Regain visibility: sync selected referee board ONCE, not every few seconds.
+ document.addEventListener('visibilitychange',()=>{
+  if(document.hidden || !document.getElementById('section-tournaments')?.classList.contains('active') || wz41Panel!=='lobbies')return;
+  const tid=document.getElementById('tournamentSelect')?.value;
+  if(tid)loadArenaLobbiesAdmin(tid).catch(()=>{});
+ });
+}
+function wz41OpenPanel(key,scroll=true){
+ if(!wz41PanelIds[key])return;
+ wz41Panel=key;
+ for(const [name,ids] of Object.entries(wz41PanelIds)){
+  for(const id of ids){ const el=document.getElementById(id);if(el)el.style.display=name===key?'':'none'; }
+ }
+ for(const btn of document.querySelectorAll('#wz41Menu button[data-wz41]')){
+  const yes=btn.dataset.wz41===key;
+  btn.classList.toggle('active',yes);
+  btn.setAttribute('aria-pressed',String(yes));
+ }
+ // Fetch non-critical data only after requesting that management view.
+ const tid=document.getElementById('tournamentSelect')?.value||'';
+ if(tid && key==='payments')refreshTournamentParticipationTransactions().catch(()=>{});
+ if(tid && key==='lobbies'){
+  const cache=wz41CacheV30.get(String(tid));
+  if(cache?.data)v30AdminRender(cache.data,tid);
+  else loadArenaLobbiesAdmin(tid).catch(()=>{});
+ }
+ if(scroll)document.getElementById('wz41Menu')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function wz41ActiveList(){
+ return tournamentCatalogCache.filter(t=>{
+  const lc=String(t?.lifecycleStatus||'').toLowerCase();
+  return lc!=='completed' && lc!=='template' && t?.adminTemplate!==true;
+ });
+}
+function wz41TournamentSummary(t){
+ const snap=wz41CacheV30.get(String(t.id));
+ const d=snap?.data;
+ const matches=(d?.matches||[]).filter(m=>m.participant_a_id&&m.participant_b_id);
+ const urgent=matches.filter(m=>['blocked','finalizing'].includes(m.v30?.phase) || (m.disputes||[]).some(x=>x.status==='pending')).length;
+ const playing=matches.filter(m=>m.v30?.phase==='playing').length;
+ const live=!!d?.broadcastEnabled;
+ return {snap,urgent,playing,live,ready:Number(t.completedCount||0),total:Number(t.registeredCount||0),cap:Number(t.capacity||0)};
+}
+function wz41RenderDashboard(){
+ const host=document.getElementById('wz41TournamentList');if(!host)return;
+ const list=wz41ActiveList();
+ const query=String(document.getElementById('wz41Search')?.value||'').trim().toLocaleLowerCase('tr-TR');
+ const filter=document.getElementById('wz41Filter')?.value||'all';
+ const selected=document.getElementById('tournamentSelect')?.value||'';
+ let urgentCount=0,playingCount=0,scanned=0;
+ for(const t of list){const s=wz41TournamentSummary(t);urgentCount+=s.urgent;playingCount+=s.playing;if(s.snap)scanned++;}
+ const stats=document.getElementById('wz41Stats');
+ if(stats)stats.innerHTML=`<div class="wz41-stat"><strong>${list.length}</strong><small>Yönetilen Turnuva</small></div>
+   <div class="wz41-stat"><strong>${scanned}/${list.length}</strong><small>Maçları Kontrol Edilen</small></div>
+   <div class="wz41-stat"><strong>${playingCount}</strong><small>Oynanan Maç (kontrol edilen)</small></div>
+   <div class="wz41-stat ${urgentCount?'urgent':''}"><strong>${urgentCount}</strong><small>Hakem Bekleyen (kontrol edilen)</small></div>`;
+ const visible=list.filter(t=>{
+   const text=[t.name,t.id,t.teamSize,t.gameName].join(' ').toLocaleLowerCase('tr-TR');
+   if(query && !text.includes(query))return false;
+   const s=wz41TournamentSummary(t);
+   if(filter==='urgent')return s.urgent>0;
+   if(filter==='playing')return s.playing>0;
+   if(filter==='pending')return !['in_progress'].includes(String(t.lifecycleStatus||'').toLowerCase());
+   return true;
+ }).sort((a,b)=>{
+   const ua=wz41TournamentSummary(a).urgent,ub=wz41TournamentSummary(b).urgent;
+   if(ua!==ub)return ub-ua;
+   return Number(Date.parse(b.createdAt||b.created_at)||0)-Number(Date.parse(a.createdAt||a.created_at)||0);
+ });
+ host.innerHTML=visible.length?visible.map(t=>{
+   const size=Math.max(1,Number(t.teamSize||1)),s=wz41TournamentSummary(t);
+   const fmt=size===1?'1v1 Solo':`${size}v${size}`;
+   const select=String(t.id)===String(selected);
+   const lc=tournamentLifecycleText(t.lifecycleStatus,t);
+   return `<div class="wz41-card ${select?'selected':''} ${s.urgent?'urgent':''}">
+     <h3>${esc(t.name||'Turnuva')}</h3>
+     <div class="wz41-card-info">🎮 ${esc(fmt)} · ${esc(t.gameName||'VALORANT')}<br>👥 ${s.total}/${s.cap||'-'} kayıt · ${s.ready} hazır<br>${esc(lc)}</div>
+     <div class="wz41-statusline">
+       ${s.urgent?`<span class="wz41-chip warn">🚨 ${s.urgent} hakem bekliyor</span>`:''}
+       ${s.playing?`<span class="wz41-chip ok">🟢 ${s.playing} oynanıyor</span>`:''}
+       ${s.snap?`<span class="wz41-chip">${new Date(s.snap.checked).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})} kontrol edildi</span>`:'<span class="wz41-chip">Maçları kontrol edilmedi</span>'}
+     </div>
+     <button type="button" class="${select?'secondary':'smallBtn'}" onclick="wz41SelectTournament('${encodeURIComponent(String(t.id))}')">${select?'✅ Seçili · Lobileri Aç':'⚖️ Turnuvayı Yönet'}</button>
+   </div>`;
+ }).join(''):'<div class="tournamentEmpty">Bu filtreye uyan turnuva bulunamadı. Hakem filtresinde sonuç görmek için önce “Tümünü Kontrol Et”e bas.</div>';
+ const t=list.find(x=>String(x.id)===String(selected));
+ const title=document.getElementById('wz41SelectedTitle');
+ if(title)title.textContent=t?`📍 ${t.name} · ${Number(t.teamSize||1)}v${Number(t.teamSize||1)}`:'📍 Önce bir turnuva seç';
+ const meta=document.getElementById('wz41SelectedMeta');
+ if(meta)meta.textContent=t?`Kayıt ${Number(t.registeredCount||0)}/${Number(t.capacity||0)} · Hazır ${Number(t.completedCount||0)}`:'';
+}
+async function wz41SelectTournament(encodedId){
+ const tid=decodeURIComponent(String(encodedId||''));
+ const select=document.getElementById('tournamentSelect');
+ if(!select || !Array.from(select.options).some(x=>x.value===tid))return;
+ if(select.value!==tid){
+   select.value=tid;
+   v30AdminOpenMatch='';
+   await loadTournamentConfig();
+ }
+ wz41RenderDashboard();
+ wz41OpenPanel('lobbies');
+}
+async function wz41RefreshCatalog(){
+ await loadTournamentList(true);wz41RenderDashboard();
+ const note=document.getElementById('wz41ScanNote');
+ if(note)note.textContent='✅ Turnuva listesi güncellendi. Maç durumlarını ayrıca kontrol edebilirsin.';
+}
+async function wz41ScanAll(){
+ if(wz41ScanBusy)return;
+ const list=wz41ActiveList();
+ if(!list.length)return;
+ wz41ScanBusy=true;
+ const btn=document.getElementById('wz41ScanButton');if(btn)btn.disabled=true;
+ const note=document.getElementById('wz41ScanNote');
+ let done=0,fail=0;
+ try{
+  // 2 concurrent tournament queries maximum, user triggered, no idle load.
+  for(let i=0;i<list.length;i+=2){
+   const batch=list.slice(i,i+2);
+   const results=await Promise.allSettled(batch.map(t=>v30AdminFetch(String(t.id))));
+   for(let j=0;j<batch.length;j++){
+    const result=results[j];
+    if(result.status==='fulfilled')wz41CacheV30.set(String(batch[j].id),{data:result.value,checked:Date.now()});
+    else fail++;
+    done++;
+   }
+   if(note)note.textContent=`⏳ ${done}/${list.length} turnuva kontrol edildi...`;
+   wz41RenderDashboard();
+  }
+  if(note)note.textContent=`✅ ${done-fail}/${list.length} turnuva kontrol edildi · ${new Date().toLocaleTimeString('tr-TR')} ${fail?`· ${fail} turnuvada hata; tekrar deneyebilirsin.`:''} · Otomatik sorgu yapılmaz.`;
+ }finally{wz41ScanBusy=false;if(btn)btn.disabled=false;}
+}
+let wz41MessageRecipients=[];
+let wz41MessageMatch=null;
+let wz41SentCount=0;
+const wz41SentUids=new Set();
+function wz41CloseReferee(){document.getElementById('wz41RefereeDialog')?.remove();wz41MessageMatch=null;wz41MessageRecipients=[];}
+async function wz41ComposeReferee(encodedMid){
+ const tid=document.getElementById('tournamentSelect')?.value||'';
+ const snap=wz41CacheV30.get(String(tid));
+ const id=decodeURIComponent(String(encodedMid||''));
+ const match=(snap?.data?.matches||[]).find(m=>String(m.id)===id);
+ if(!match || !match.participant_a_id || !match.participant_b_id){alert('Maç bulunamadı; lobi listesini yenile.');return;}
+ // Always read currently joined players from admin-authorized backend on explicit compose.
+ let entries;
+ try{
+  const {r,d}=await api(`/admin/tournament/v3/entries?id=${encodeURIComponent(tid)}&_=${Date.now()}`);
+  if(!r.ok||!d?.success)throw Error(d?.error||`HTTP ${r.status}`);
+  entries=d.teams||[];
+ }catch(e){alert('Oyuncular doğrulanamadı: '+e.message);return;}
+ const selected=new Set([String(match.participant_a_id),String(match.participant_b_id)]);
+ const teams=entries.filter(x=>selected.has(String(x.team?.id||'')));
+ if(teams.length!==2){alert('Bu maçın iki takım kadrosu doğrulanamadı. Mesaj gönderilmedi.');return;}
+ const members=new Map();
+ for(const entry of teams){
+  const team=entry.team||{};
+  for(const s of entry.slots||[]){
+   if(!s.kickUid || !['joined','captain'].includes(String(s.status||s.joinStatus||'').toLowerCase()))continue;
+   const uid=String(s.kickUid);
+   members.set(uid,{uid,username:String(s.username||s.kickUsername||team.captainUsername||'Oyuncu')});
+  }
+  if(team.captainKickUid){
+   const uid=String(team.captainKickUid);
+   if(!members.has(uid))members.set(uid,{uid,username:String(team.captainUsername||'Kaptan')});
+  }
+ }
+ wz41MessageRecipients=[...members.values()];
+ wz41SentCount=0;wz41SentUids.clear();
+ if(!wz41MessageRecipients.length){alert('Kick hesabı doğrulanmış katılımcı bulunamadı.');return;}
+ wz41MessageMatch={id,tournamentId:tid,tournamentName:tournamentCatalogCache.find(x=>String(x.id)===String(tid))?.name||tid,round:match.round_number,num:match.match_number};
+ const prior=document.getElementById('wz41RefereeDialog');if(prior)prior.remove();
+ const overlay=document.createElement('div');overlay.id='wz41RefereeDialog';overlay.className='wz41-overlay';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');
+ overlay.innerHTML=`<div class="wz41-dialog"><h3>💬 Maç Hakem Duyurusu</h3>
+   <p class="muted">${esc(wz41MessageMatch.tournamentName)} · Tur ${Number(match.round_number)} / Maç ${Number(match.match_number)}</p>
+   <p><strong>${wz41MessageRecipients.length} doğrulanmış alıcı:</strong> ${wz41MessageRecipients.map(x=>esc(x.username)).join(', ')}</p>
+   <div class="muted">Mesajlar oyuncuların <b>Market Gelen Kutusu'na özel mesaj</b> olarak gider. Ortak Arena sohbeti değildir. Oyuncular cevap verebilir; cevaplarını Admin Mesajlar bölümünde görebilirsin.</div>
+   <textarea id="wz41RefereeText" maxlength="1000" placeholder="Örn: Lütfen 5 dakika içinde kadro kanıtlarınızı tamamlayın."></textarea>
+   <div id="wz41RefereeStatus" class="muted" role="status"></div>
+   <div class="wz41-actions"><button type="button" id="wz41RefereeSend" onclick="wz41SendReferee()">📨 Mesaj Gönder</button><button type="button" class="secondary" onclick="wz41CloseReferee()">İptal</button></div>
+ </div>`;
+ document.body.appendChild(overlay);
+ overlay.addEventListener('click',e=>{if(e.target===overlay)wz41CloseReferee();});
+ overlay.querySelector('textarea')?.focus();
+}
+async function wz41SendReferee(){
+ const text=String(document.getElementById('wz41RefereeText')?.value||'').trim();
+ const target=wz41MessageMatch;
+ const rec=[...wz41MessageRecipients].filter(p=>!wz41SentUids.has(p.uid));
+ if(!target||!rec.length)return;
+ if(text.length<5){document.getElementById('wz41RefereeStatus').textContent='En az 5 karakterlik bir duyuru yaz.';return;}
+ if(!confirm(`${rec.length} oyuncuya ÖZEL mesaj gönderilsin mi? Geri alınamaz.${wz41SentCount?' Daha önce ulaşan '+wz41SentCount+' kullanıcıya tekrar gönderilmeyecek.':''}`))return;
+ const btn=document.getElementById('wz41RefereeSend'),status=document.getElementById('wz41RefereeStatus');
+ if(btn)btn.disabled=true;
+ let success=0;const errors=[];const failed=[];
+ for(const p of rec){
+  if(status)status.textContent=`⏳ Mesaj gönderiliyor: ${success+errors.length}/${rec.length}`;
+  try{
+   const payload={kickUid:p.uid,subject:`🏆 Hakem • ${target.tournamentName} / Tur ${target.round} Maç ${target.num}`,message:text,allowReply:true};
+   const {r,d}=await api('/admin/message/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+   if(!r.ok||!d?.success)throw Error(d?.error||`HTTP ${r.status}`);
+   success++;wz41SentCount++;wz41SentUids.add(p.uid);
+  }catch(e){errors.push(p.username+': '+(e.message||e));failed.push(p);}
+ }
+ wz41MessageRecipients=failed;
+ if(status)status.textContent=`${errors.length?'⚠️':'✅'} ${wz41SentCount} oyuncuya özel mesaj ulaştı.${errors.length?' Ulaşmayan: '+errors.join(' · ')+'. Yalnızca bu kişilere tekrar deneyebilirsin.':' Yanıtlar Admin Mesajlar bölümüne gelecek.'}`;
+ if(btn){btn.disabled=!failed.length;btn.textContent=failed.length?'📨 Yalnızca Ulaşmayanlara Tekrar Dene':'✅ Gönderildi';}
+ if(wz41SentCount)document.getElementById('wz41RefereeText').readOnly=true;
+}
 
 /* =========================================================
    START
