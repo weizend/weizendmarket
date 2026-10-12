@@ -142,24 +142,11 @@
   document.documentElement.classList.add('wz-boot');
   try{
     const allowed=['market','tournament','profile'];
-    // V30.4.0.2: Arena'dan Market'e yeni sayfa acilisinda Tumu secili baslar.
-    // Normal F5 bu alana girmez; secilen filtreyi korur.
-    const arenaReturnKey='wz_t_arena_return_v30402';
-    let fromArena=false;
-    try{
-      const ref=document.referrer ? new URL(document.referrer,location.href) : null;
-      fromArena=!!(ref && /\/arena(?:\.html|\/index\.html|\/)?$/i.test(ref.pathname));
-      if(fromArena || sessionStorage.getItem(arenaReturnKey)==='away'){
-        fromArena=true;
-        sessionStorage.setItem('wz_t_filter','all');
-        sessionStorage.setItem('wz_t_search','');
-        sessionStorage.setItem('wz_t_screen','list');
-        sessionStorage.setItem('wz_t_tab','overview');
-        sessionStorage.setItem('wz_t_strip_scroll_v30402','0');
-        sessionStorage.removeItem(arenaReturnKey);
-      }
-    }catch(_){}
-    window.__WZ_STARTED_FROM_ARENA__=fromArena;
+    // V30.4.6: Arena ayrı sekmede açılır. Mevcut turnuva detayını,
+    // kategori/arama/sekme seçimini ve konumu Market sekmesinde sakla.
+    // Eski 'Arena'dan dönünce Tümü'ne sıfırla' işareti artık kullanılmaz.
+    try{sessionStorage.removeItem('wz_t_arena_return_v30402')}catch(_){}
+    window.__WZ_STARTED_FROM_ARENA__=false;
     const historyView=history.state && allowed.includes(history.state.wzView)
       ? history.state.wzView
       : '';
@@ -170,6 +157,8 @@
     // V30.3.7: Paylaşılan turnuva adresi Market yerine doğru turnuvayı açar.
     const sharedId=(new URLSearchParams(location.search)).get('turnuva')||'';
     window.__WZ_TOURNAMENT_DEEP_LINK__=/^[A-Za-z0-9_-]{1,110}$/.test(sharedId)?sharedId:'';
+    window.__WZ_ARENA_DETAILS_RETURN__=!!window.__WZ_TOURNAMENT_DEEP_LINK__ &&
+      (new URLSearchParams(location.search)).get('wz_arena_return')==='1';
     if(window.__WZ_TOURNAMENT_DEEP_LINK__) view='tournament';
 
     const token=localStorage.getItem('weizend_market_session_secure_v2') || '';
@@ -187,39 +176,9 @@
     }catch(_){}
 
     window.__WZ_INITIAL_VIEW__=view;
-    // Mark only actual outgoing Arena navigation (not ordinary filters or tab changes).
-    window.__WZ_ARM_ARENA_RETURN__=()=>{
-      try{sessionStorage.setItem(arenaReturnKey,'armed')}catch(_){}
-    };
-    document.addEventListener('click',event=>{
-      const a=event.target.closest?.('a[href]');
-      if(!a)return;
-      try{
-        if(/\/arena(?:\.html|\/index\.html|\/)?$/i.test(new URL(a.href,location.href).pathname)){
-          window.__WZ_ARM_ARENA_RETURN__();
-        }
-      }catch(_){}
-    },true);
-    function markArenaAway(){
-      try{if(sessionStorage.getItem(arenaReturnKey)==='armed')sessionStorage.setItem(arenaReturnKey,'away')}catch(_){}
-    }
-    function checkArenaReturn(){
-      if(document.hidden)return;
-      try{
-        if(sessionStorage.getItem(arenaReturnKey)!=='away')return;
-        sessionStorage.removeItem(arenaReturnKey);
-        sessionStorage.setItem('wz_t_filter','all');
-        sessionStorage.setItem('wz_t_search','');
-        sessionStorage.setItem('wz_t_screen','list');
-        sessionStorage.setItem('wz_t_tab','overview');
-        sessionStorage.setItem('wz_t_strip_scroll_v30402','0');
-        window.__WZ_RETURN_TOURNAMENT_TO_ALL__?.();
-      }catch(_){}
-    }
-    document.addEventListener('visibilitychange',()=>document.hidden?markArenaAway():checkArenaReturn());
-    window.addEventListener('pagehide',markArenaAway);
-    window.addEventListener('pageshow',checkArenaReturn);
-    window.addEventListener('focus',checkArenaReturn);
+    // Eski gelen kutusu bağlantısı bu fonksiyonu çağırabilir; kasıtlı olarak
+    // işlem yapmaz. Arena'ya gitmek artık Market durumunu değiştirmez.
+    window.__WZ_ARM_ARENA_RETURN__=()=>{};
     // Save the horizontal strip, independently of normal page scroll restoration.
     document.addEventListener('scroll',event=>{
       if(event.target?.matches?.('#wzEsportsHub .wz-turn-strip')){
@@ -13901,6 +13860,11 @@ return;
       window.wzSetView('tournament');
     }
     window.wzTurnOpen(id);
+    // Yalnızca Arena'daki "Detaylara Geri Dön" bağlantısından açıldıysa
+    // turnuvanın Arena sekmesini seç; normal paylaşılan linkleri değiştirme.
+    if(window.__WZ_ARENA_DETAILS_RETURN__===true){
+      window.wzTurnSetTab?.('arena');
+    }
     return true;
   }
 
@@ -15757,6 +15721,17 @@ return;
     return WZ_ARENA_REAL_URL+'?tournament='+encodeURIComponent(String(id||'')).replace(/'/g,'%27');
   }
 
+  // V30.4.6: Kullanıcının dokunduğu Market sekmesi olduğu gibi kalır;
+  // yalnızca kendi alanımızdaki Arena için opener bağlantısını koruyoruz.
+  window.wzOpenTournamentArena=function(event,id){
+    if(event && (event.button!==0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)) return true;
+    try{
+      const opened=window.open(wzArenaDeepLink(id),'_blank');
+      if(opened) return false; // window.open başarılıysa anchor ayrıca açılmasın.
+    }catch(_){ }
+    return true; // Popup engellendiyse anchor normal yeni sekme açar.
+  };
+
   function renderArenaIntro(item){
     const name=esc(item?.tournament?.name || 'Bu turnuva');
     const link=esc(wzArenaDeepLink(item?.tournament?.id));
@@ -15776,7 +15751,7 @@ return;
       <div class="wz-arena-intro-note"><span aria-hidden="true">ℹ️</span><span>Katılımcılar, fikstür ve sonuçlar turnuva ilerledikçe güncellenir. Kick hesabınla Arena üzerinde tahmin yapabilirsin; maç odası ve kaptan sonuç bildirimi ise henüz ayrı bir bağlantı gerektirir.</span></div>
       <div class="wz-arena-intro-cta">
         <p>Hazırsan <strong>${name}</strong> turnuvasının Arena sayfasına geç!</p>
-        <a class="wz-arena-intro-go" href="${link}" target="_blank" rel="noopener noreferrer" aria-label="${name} için WEİZEND Arena sayfasını yeni sekmede aç">ŞİMDİ ARENA'YA GİT <span aria-hidden="true">↗</span></a>
+        <a class="wz-arena-intro-go" href="${link}" target="_blank" rel="opener" onclick="return wzOpenTournamentArena(event,'${esc(item?.tournament?.id||'')}')" aria-label="${name} için WEİZEND Arena sayfasını yeni sekmede aç">ŞİMDİ ARENA'YA GİT <span aria-hidden="true">↗</span></a>
         <small>Arena yeni sekmede açılır; Market hesabın bu sekmede açık kalır.</small>
       </div>
     </section>`;
