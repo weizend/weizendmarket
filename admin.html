@@ -10834,21 +10834,25 @@ function v30AdminRender(d,tid){
  const alerts=matches.filter(m=>m.v30?.phase==='blocked'||(m.v30?.phase==='finalizing'));
  const map=new Map((currentTournamentBracket?.matches||[]).map(m=>[String(m.id),m]));
  const teamName=(m,side)=>map.get(String(m.id))?.[side==='a'?'participantAName':'participantBName']||(side==='a'?m.participant_a_id:m.participant_b_id);
- const phaseLabel={captains:'Kaptanlar bekleniyor',code:'Davet kodu',ready:'Oyuncular hazır veriyor',proof:'Hızlıresim kanıtı',review:'Kadro onayları',start:'Maç başlatma onayı',playing:'🟢 Oynanıyor',result_pending:'⏱️ Rakip sonuç bekleniyor',blocked:'🚨 HAKEM MÜDAHALESİ',finalizing:'⚠️ Sonuç kontrolü',completed:'✅ Tamamlandı'};
+ const phaseLabel={captains:'Kaptanlar bekleniyor',code:'Davet kodu',ready:'Oyuncular hazır veriyor',proof:'Hızlıresim kanıtı',review:'Kadro onayları',start:'Maç başlatma onayı',playing:'🟢 Oynanıyor',result_pending:'⏱️ Rakip sonuç bekleniyor',blocked:'🚨 HAKEM KARARI BEKLENİYOR',finalizing:'⚠️ Sonuç kontrolü',completed:'✅ Tamamlandı'};
  if(status)status.textContent=`✅ V30 Hakem Merkezi güncellendi · ${matches.length} maç · ${alerts.length} müdahale · ${new Date().toLocaleTimeString('tr-TR')}`;
  const sum=`<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0"><div class="tournamentTeamCard">🏆 <strong>${matches.length}</strong> Maç</div><div class="tournamentTeamCard">🟢 <strong>${matches.filter(m=>m.v30?.phase==='playing').length}</strong> Oynanan</div><div class="tournamentTeamCard" style="border-color:${alerts.length?'#a71919':'#333'}">${alerts.length?'🚨':'✅'} <strong>${alerts.length}</strong> Hakem Bekleyen</div></div>`;
  const adminToolbar=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0">${d.enabled?'':`<button type="button" class="smallBtn warn" onclick="v30AdminControl('enable')">⚙️ V30 Sistemini Etkinleştir</button>`}${v303AdminStartButtons(d)}</div><p class="muted">${d.startedAt?'✅ Turnuva başlatıldı: '+esc(new Date(d.startedAt).toLocaleString('tr-TR')):'⏳ Planlanan turnuva saati beklenecek. İstersen Şimdi Başlat.'}</p>${d.fixtureError?`<p class="muted">⏳ Fikstür bekleniyor: ${esc(d.fixtureError)}</p>`:''}`;
  const cards=matches.map(m=>{
   const v=m.v30||{},r=m.room||{},pending=(m.disputes||[]).filter(x=>x.status==='pending');
-  const blocked=v.phase==='blocked'||v.phase==='finalizing';
+   const blocked=v.phase==='blocked'||v.phase==='finalizing';
   const phase=m.status==='completed'?'completed':v.phase||'captains';
+   const doubleNoShow=phase==='blocked'&&['captains','code','ready'].includes(String(v.blocked_from_phase||''));
   const active=v30AdminOpenMatch===m.id;
   const title=esc(teamName(m,'a'))+' <span style="color:#999">vs</span> '+esc(teamName(m,'b'));
   const rows=(m.results||[]).map(x=>`<p>🏁 ${esc(x.team_side.toUpperCase())}: ${Number(x.score_a)}-${Number(x.score_b)} · <a href="${esc(x.proof_url)}" target="_blank" rel="noopener noreferrer">Sonuç kanıtını aç ↗</a></p>`).join('');
   const proofs=`<div class="muted">VALORANT davet kodu: <strong>${esc(r.lobby_code||'Henüz girilmedi')}</strong></div><div class="muted">Kaptan katılımı: A ${v.captain_a_joined_at?'✅':'⏳'} · B ${v.captain_b_joined_at?'✅':'⏳'}</div><div class="muted">Hazır / Devam / Başlat: A ${v.consent_a_at?'✅':'⏳'} / ${v.start_a_at?'✅':'⏳'} · B ${v.consent_b_at?'✅':'⏳'} / ${v.start_b_at?'✅':'⏳'}</div><p>${r.proof_a?`<a href="${esc(r.proof_a)}" target="_blank" rel="noopener noreferrer">📸 A Kadro Kanıtı ↗</a>`:'A kanıtı bekleniyor'} · ${r.proof_b?`<a href="${esc(r.proof_b)}" target="_blank" rel="noopener noreferrer">📸 B Kadro Kanıtı ↗</a>`:'B kanıtı bekleniyor'}</p>`;
   const disputes=pending.map(x=>`<div style="padding:10px;border:1px solid #8c2929;border-radius:9px;margin-top:7px"><strong>🚨 ${esc(x.team_side.toUpperCase())} kaptanı itiraz etti</strong><p>${esc(x.reason)}</p><a href="${esc(x.proof_url)}" target="_blank" rel="noopener noreferrer">Kanıt ↗</a></div>`).join('');
-  const controls=phase==='blocked'?`<div class="inlineActions"><button type="button" class="smallBtn secondary" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','dismiss')" ${!v.blocked_from_phase?'disabled':''}>✅ İtirazı Reddet</button><button type="button" class="smallBtn warn" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','winner','a')">🏆 A Kazansın</button><button type="button" class="smallBtn warn" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','winner','b')">🏆 B Kazansın</button></div>`:'';
-  return `<div class="tournamentTeamCard" style="padding:0;margin:7px 0;${blocked?'border-color:#ce2c2c;box-shadow:inset 3px 0 0 #dc2a2a;':''}"><button type="button" class="secondary" style="width:100%;text-align:left;background:none;display:flex;align-items:center;justify-content:space-between;gap:10px" onclick="v30AdminToggle('${encodeURIComponent(m.id)}')"><span><strong>${Number(m.round_number)}. Tur · M${Number(m.match_number)} · ${title}</strong><br><small class="muted">${esc(phaseLabel[phase]||phase)}</small></span><span>${blocked?'🔴':active?'▴':'▾'}</span></button>${active?`<div style="padding:10px;border-top:1px solid #333">${proofs}${rows}${disputes}${controls}<div class="wz41-matchmsg"><button type="button" class="smallBtn secondary" onclick="wz41ComposeReferee('${encodeURIComponent(m.id)}')">💬 Oyunculara Özel Hakem Mesajı</button></div></div>`:''}</div>`;
+   const noShowNotice=doubleNoShow?`<div style="margin:9px 0;padding:10px;border:1px solid #a05f20;border-radius:9px;background:#281c0d;color:#ffe0ac"><b>⏱️ İki takım da hazır katılımını tamamlamadı.</b><br>Hiçbir takıma otomatik galibiyet verilmedi. Davet zamanı: ${esc(v.lobby_called_at?new Date(v.lobby_called_at).toLocaleString('tr-TR'):'Kayıtlı değil')}. Kararı yalnızca hakem verebilir.</div>`:'';
+   const controls=phase==='blocked'?(doubleNoShow
+     ? `<div class="inlineActions"><button type="button" class="smallBtn secondary" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','reopen')">↺ Maçı Yeniden Aç (15 dk)</button><button type="button" class="smallBtn warn" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','winner','a')">🏆 A Kazansın</button><button type="button" class="smallBtn warn" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','winner','b')">🏆 B Kazansın</button></div>`
+     : `<div class="inlineActions"><button type="button" class="smallBtn secondary" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','dismiss')" ${!v.blocked_from_phase?'disabled':''}>✅ İtirazı Reddet</button><button type="button" class="smallBtn warn" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','winner','a')">🏆 A Kazansın</button><button type="button" class="smallBtn warn" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','winner','b')">🏆 B Kazansın</button></div>`):'';
+  return `<div class="tournamentTeamCard" style="padding:0;margin:7px 0;${blocked?'border-color:#ce2c2c;box-shadow:inset 3px 0 0 #dc2a2a;':''}"><button type="button" class="secondary" style="width:100%;text-align:left;background:none;display:flex;align-items:center;justify-content:space-between;gap:10px" onclick="v30AdminToggle('${encodeURIComponent(m.id)}')"><span><strong>${Number(m.round_number)}. Tur · M${Number(m.match_number)} · ${title}</strong><br><small class="muted">${esc(phaseLabel[phase]||phase)}</small></span><span>${blocked?'🔴':active?'▴':'▾'}</span></button>${active?`<div style="padding:10px;border-top:1px solid #333">${proofs}${rows}${disputes}${noShowNotice}${controls}<div class="wz41-matchmsg"><button type="button" class="smallBtn secondary" onclick="wz41ComposeReferee('${encodeURIComponent(m.id)}')">💬 Oyunculara Özel Hakem Mesajı</button></div></div>`:''}</div>`;
  }).join('');
  host.innerHTML=adminToolbar+sum+(cards||'<div class="tournamentEmpty">Henüz maç oluşmadı. Kayıtlar tamamlanınca fikstür otomatik oluşturulacak.</div>');
 }
@@ -11762,13 +11766,8 @@ function wz41RenderDashboard(){
    <div class="wz41-stat"><strong>${scanned}/${list.length}</strong><small>Maçları Kontrol Edilen</small></div>
    <div class="wz41-stat"><strong>${playingCount}</strong><small>Oynanan Maç (kontrol edilen)</small></div>
    <div class="wz41-stat ${urgentCount?'urgent':''}"><strong>${urgentCount}</strong><small>Hakem Bekleyen (kontrol edilen)</small></div>`;
- // V30.4.1.4: Search also indexes the DISPLAYED format (1v1, 2v2, etc.).
- // The old search only included raw numeric teamSize (1, 2) and missed '1v1'.
  const visible=list.filter(t=>{
-   const size=Math.max(1,Number(t.teamSize||1));
-   const format=size===1?'1v1 Solo':`${size}v${size} Takımlı`;
-   const text=[t.name,t.id,t.teamSize,t.gameName,format,`${size}vs${size}`,
-     `${size} v ${size}`,size===1?'tekli bireysel':'takım'].join(' ').toLocaleLowerCase('tr-TR');
+   const text=[t.name,t.id,t.teamSize,t.gameName].join(' ').toLocaleLowerCase('tr-TR');
    if(query && !text.includes(query))return false;
    const s=wz41TournamentSummary(t);
    if(filter==='urgent')return s.urgent>0;
@@ -11795,11 +11794,7 @@ function wz41RenderDashboard(){
      </div>
      <button type="button" class="${select?'secondary':'smallBtn'}" onclick="wz41SelectTournament('${encodeURIComponent(String(t.id))}')">${select?'✅ Seçili · Lobileri Aç':'⚖️ Turnuvayı Yönet'}</button>
    </div>`;
- }).join(''):`<div class="tournamentEmpty">${query
-   ? `🔎 “${esc(query)}” aramasıyla eşleşen ${filter==='all'?'aktif turnuva':'turnuva'} bulunamadı. Diğer filtreleri veya arama ifadesini kontrol et.`
-   : filter==='urgent'||filter==='playing'
-     ? 'Bu durum filtresine uyan maç bulunamadı. Güncel maç bilgileri için “Tümünü Kontrol Et”e bas.'
-     : 'Seçilen filtrede turnuva bulunamadı.'}</div>`;
+ }).join(''):'<div class="tournamentEmpty">Bu filtreye uyan turnuva bulunamadı. Hakem filtresinde sonuç görmek için önce “Tümünü Kontrol Et”e bas.</div>';
  const t=list.find(x=>String(x.id)===String(selected));
  const title=document.getElementById('wz41SelectedTitle');
  if(title)title.textContent=t?`📍 ${t.name} · ${Number(t.teamSize||1)}v${Number(t.teamSize||1)}`:'📍 Önce bir turnuva seç';
