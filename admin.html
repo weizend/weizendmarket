@@ -11762,8 +11762,13 @@ function wz41RenderDashboard(){
    <div class="wz41-stat"><strong>${scanned}/${list.length}</strong><small>Maçları Kontrol Edilen</small></div>
    <div class="wz41-stat"><strong>${playingCount}</strong><small>Oynanan Maç (kontrol edilen)</small></div>
    <div class="wz41-stat ${urgentCount?'urgent':''}"><strong>${urgentCount}</strong><small>Hakem Bekleyen (kontrol edilen)</small></div>`;
+ // V30.4.1.4: Search also indexes the DISPLAYED format (1v1, 2v2, etc.).
+ // The old search only included raw numeric teamSize (1, 2) and missed '1v1'.
  const visible=list.filter(t=>{
-   const text=[t.name,t.id,t.teamSize,t.gameName].join(' ').toLocaleLowerCase('tr-TR');
+   const size=Math.max(1,Number(t.teamSize||1));
+   const format=size===1?'1v1 Solo':`${size}v${size} Takımlı`;
+   const text=[t.name,t.id,t.teamSize,t.gameName,format,`${size}vs${size}`,
+     `${size} v ${size}`,size===1?'tekli bireysel':'takım'].join(' ').toLocaleLowerCase('tr-TR');
    if(query && !text.includes(query))return false;
    const s=wz41TournamentSummary(t);
    if(filter==='urgent')return s.urgent>0;
@@ -11790,7 +11795,11 @@ function wz41RenderDashboard(){
      </div>
      <button type="button" class="${select?'secondary':'smallBtn'}" onclick="wz41SelectTournament('${encodeURIComponent(String(t.id))}')">${select?'✅ Seçili · Lobileri Aç':'⚖️ Turnuvayı Yönet'}</button>
    </div>`;
- }).join(''):'<div class="tournamentEmpty">Bu filtreye uyan turnuva bulunamadı. Hakem filtresinde sonuç görmek için önce “Tümünü Kontrol Et”e bas.</div>';
+ }).join(''):`<div class="tournamentEmpty">${query
+   ? `🔎 “${esc(query)}” aramasıyla eşleşen ${filter==='all'?'aktif turnuva':'turnuva'} bulunamadı. Diğer filtreleri veya arama ifadesini kontrol et.`
+   : filter==='urgent'||filter==='playing'
+     ? 'Bu durum filtresine uyan maç bulunamadı. Güncel maç bilgileri için “Tümünü Kontrol Et”e bas.'
+     : 'Seçilen filtrede turnuva bulunamadı.'}</div>`;
  const t=list.find(x=>String(x.id)===String(selected));
  const title=document.getElementById('wz41SelectedTitle');
  if(title)title.textContent=t?`📍 ${t.name} · ${Number(t.teamSize||1)}v${Number(t.teamSize||1)}`:'📍 Önce bir turnuva seç';
