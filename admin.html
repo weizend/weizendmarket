@@ -1055,6 +1055,39 @@ body.dmModalOpen{overflow:hidden}
 .wz41-dialog .wz41-actions button{flex:1 1 130px}
 @media(max-width:720px){.wz41-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.wz41-filterbar{grid-template-columns:1fr}.wz41-filterbar button{width:100%!important}.wz41-list{grid-template-columns:1fr;max-height:62vh}.wz41-menu .wz41-tabs button{flex:1 1 43%}.wz41-dialog{padding:14px}}
 
+
+/* WEİZEND V30.4.8: Mesaj akışında gerçek kaydırma alanı ve görünür gönderim sonucu */
+#section-messages .dmShell{min-height:0;align-items:stretch}
+#section-messages .dmChat,#section-messages .dmChatPanel{
+  min-height:0;min-width:0;overflow:hidden;
+}
+#section-messages .dmChatPanel > .dmMessages{
+  flex:1 1 0%;height:auto;min-height:0;min-width:0;
+  overflow-y:auto!important;overflow-x:hidden!important;
+  overscroll-behavior-y:contain;touch-action:pan-y;
+  scroll-behavior:auto!important;
+  scrollbar-width:thin;-webkit-overflow-scrolling:touch;
+}
+/* Flex çocuklarının dikeyde ezilmesini ve kaydırmanın kaybolmasını önle. */
+#section-messages .dmMessages > *{flex-shrink:0;}
+#section-messages .dmMessages > .dmChatEmpty{height:auto;min-height:100%;}
+#section-messages .dmSendStatus{
+  flex:0 0 auto;padding:8px 15px;background:#102117;
+  border-top:1px solid #2a6540;color:#b5ffd0;font-size:.78rem;line-height:1.4;
+  overflow-wrap:anywhere;
+}
+#section-messages .dmSendStatus.error{
+  background:#271010;border-color:#823030;color:#ffb4b4;
+}
+#section-messages .dmSendStatus.warn{
+  background:#2a2010;border-color:#725629;color:#ffe0a1;
+}
+#section-messages .dmSendStatus[hidden]{display:none!important}
+@media(max-width:800px){
+  #section-messages .dmMessages > *{flex-shrink:0}
+  #section-messages .dmChatPanel > .dmMessages{height:auto!important;min-height:0!important}
+}
+
 </style>
 
 <style id="wz-admin-touch-highlight-fix-v30412">
@@ -2915,6 +2948,7 @@ html,body{max-width:100%;overflow-x:hidden}
               </div>
 
               <div id="adminChatMessages" class="dmMessages"></div>
+              <div id="adminConversationSendStatus" class="dmSendStatus" role="status" aria-live="polite" hidden></div>
 
               <div class="dmComposer">
                 <textarea id="adminConversationReply" maxlength="5000"
@@ -3891,6 +3925,10 @@ let adminConversationsCache = [];
 let adminConversationTotalCount = 0;
 let adminConversationHasMore = false;
 let currentAdminConversationUid = '';
+// Yalnızca sunucunun başarılı olarak kaydettiği mesajlar; anlık D1 okuma gecikmesini tolere eder.
+const adminConfirmedSentMessages = new Map();
+let adminMessageSendInFlight = false;
+let adminRenderedConversationUid = '';
 let currentAdminConversation = null;
 // Mobilde kullanıcı geri tuşuyla konuşma listesine döndüğünde canlı mesaj yenilemesi
 // açık konuşmayı kendi kendine tekrar açmamalı.
@@ -6604,10 +6642,48 @@ function renderAdminConversationList(){
   if(more) more.classList.toggle('hidden', !adminConversationHasMore);
 }
 
+function setAdminConversationSendStatus(message = '', type = 'ok'){
+  const el = document.getElementById('adminConversationSendStatus');
+  if(!el) return;
+  el.textContent = String(message || '');
+  el.classList.toggle('error', type === 'error');
+  el.classList.toggle('warn', type === 'warn');
+  el.hidden = !message;
+}
+
+function reconcileAdminConfirmedMessages(uid, remoteRows){
+  const rows = Array.isArray(remoteRows) ? remoteRows.slice() : [];
+  const pending = adminConfirmedSentMessages.get(uid);
+  if(!pending?.size) return rows;
+  const ids = new Set(rows.map(m=>String(m?.id || '')));
+  const now = Date.now();
+  for(const [id, entry] of pending){
+    if(ids.has(id) || now - entry.time > 120000){
+      pending.delete(id);
+    }else{
+      rows.push(entry.message);
+    }
+  }
+  if(!pending.size) adminConfirmedSentMessages.delete(uid);
+  rows.sort((a,b)=>{
+    const dateNum=v=>Date.parse(/(?:Z|[+-]\d{2}:\d{2})$/i.test(String(v||'')) ? String(v) : String(v||'').replace(' ','T')+'Z') || 0;
+    const at=dateNum(a.created_at);
+    const bt=dateNum(b.created_at);
+    if(at!==bt) return at-bt;
+    return String(a.id||'').localeCompare(String(b.id||''));
+  });
+  return rows;
+}
+
 async function selectAdminConversation(encodedUid, silent = false){
   const uid = decodeURIComponent(encodedUid || '');
   if(!uid) return;
   adminConversationListOnlyMode = false;
+  if(currentAdminConversationUid !== uid){
+    setAdminConversationSendStatus();
+    currentAdminConversation = null;
+    adminRenderedConversationUid = '';
+  }
   currentAdminConversationUid = uid;
   document.querySelector('#section-messages .dmShell')?.classList.add('mobileChatOpen');
   renderAdminConversationList();
@@ -6624,11 +6700,14 @@ async function selectAdminConversation(encodedUid, silent = false){
   try{
     const {r,d} = await api(`/admin/conversation?kickUid=${encodeURIComponent(uid)}&_=${Date.now()}`);
     if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+    // Farklı konuşmaya geçildiyse eski isteğin yanıtı görünümü değiştirmesin.
+    if(currentAdminConversationUid !== uid) return;
 
+    const mergedMessages = reconcileAdminConfirmedMessages(uid,d.messages);
     currentAdminConversation = {
       user:d.user || {kick_uid:uid,username:'Kullanıcı'},
-      messages:Array.isArray(d.messages) ? d.messages : [],
-      totalCount:Number(d.totalCount || 0),
+      messages:mergedMessages,
+      totalCount:Math.max(Number(d.totalCount || 0),mergedMessages.length),
       truncated:Boolean(d.truncated),
       replyAllowed:d.replyAllowed === true
     };
@@ -6640,8 +6719,12 @@ async function selectAdminConversation(encodedUid, silent = false){
     renderAdminConversation();
     refreshAdminMessagesBadge().catch(() => {});
   }catch(error){
-    currentAdminConversation = null;
-    if(messages) messages.innerHTML = `<div class="muted" style="padding:20px;text-align:center;">❌ ${esc(error.message || error)}</div>`;
+    if(currentAdminConversationUid !== uid) return;
+    // Mevcut içerik kaybolmasın: bağlantı kesilirse son başarılı görünümü sakla.
+    if(!currentAdminConversation){
+      if(messages) messages.innerHTML = `<div class="muted" style="padding:20px;text-align:center;">❌ ${esc(error.message || error)}</div>`;
+    }
+    setAdminConversationSendStatus('⚠️ Konuşma yenilenemedi: '+String(error.message || error),'warn');
     showStatus('adminMessagesStatus','❌ ' + esc(error.message || error),false);
   }
 }
@@ -6687,7 +6770,12 @@ function renderAdminConversation(){
   }
 
   const box = document.getElementById('adminChatMessages');
+  if(!box) return;
   const rows = data.messages || [];
+  const sameConversation = adminRenderedConversationUid === currentAdminConversationUid;
+  const wasNearBottom = !sameConversation || (box.scrollHeight - box.scrollTop - box.clientHeight < 100);
+  const oldScrollTop = box.scrollTop;
+  adminRenderedConversationUid = currentAdminConversationUid;
 
   if(rows.length === 0){
     box.innerHTML = '<div class="dmChatEmpty"><div class="dmChatEmptyIcon">✉️</div><strong style="color:#fff;">Henüz mesaj yok</strong><div style="margin-top:7px;">Aşağıdan ilk mesajı gönderebilirsin.</div></div>';
@@ -6721,9 +6809,14 @@ function renderAdminConversation(){
     }).join('');
   }
 
-  requestAnimationFrame(() => {
+  // Kullanıcı eski mesajlara bakıyorsa realtime yenileme onu sona fırlatmasın.
+  // Yeni konuşma açıldığında ve alta yakınken en yeni mesaj görünür.
+  if(wasNearBottom){
     box.scrollTop = box.scrollHeight;
-  });
+    requestAnimationFrame(()=>{if(box.isConnected) box.scrollTop = box.scrollHeight;});
+  }else{
+    box.scrollTop = oldScrollTop;
+  }
 }
 
 async function toggleAdminConversationReply(){
@@ -6785,14 +6878,17 @@ function handleAdminConversationKey(event){
 }
 
 async function sendAdminConversationMessage(){
+  if(adminMessageSendInFlight) return; // Enter ve buton aynı anda basılırsa ikinci POST gitmez.
   const uid = currentAdminConversationUid;
   const textarea = document.getElementById('adminConversationReply');
   const button = document.getElementById('adminConversationSendButton');
   const message = String(textarea?.value || '').trim();
   if(!uid || !message) return;
 
+  adminMessageSendInFlight = true;
   const oldText = button?.textContent || 'Gönder';
-  if(button){ button.disabled = true; button.textContent = 'Gönderiliyor...'; }
+  if(button){button.disabled = true;button.textContent = 'Gönderiliyor...';}
+  setAdminConversationSendStatus('⏳ Mesaj gönderiliyor...');
 
   try{
     const {r,d} = await api('/admin/conversation/send',{
@@ -6800,18 +6896,56 @@ async function sendAdminConversationMessage(){
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({kickUid:uid,message})
     });
-    if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+    if(!r.ok || !d?.success || !d.messageId){
+      throw new Error(d?.error || `HTTP ${r.status}`);
+    }
 
-    if(textarea) textarea.value = '';
-    await selectAdminConversation(encodeURIComponent(uid), true);
-    await loadAdminConversations(true,false);
+    // Yalnızca Worker'ın başarılı kayıt onayından sonra göster.
+    const saved = {
+      id:String(d.messageId),thread_id:String(d.threadId || ''),kick_uid:uid,
+      sender_type:'admin',sender_name:'(Yönetici) Weizend',body:message,
+      created_at:new Date().toISOString(),user_read_at:null,admin_read_at:new Date().toISOString()
+    };
+    const confirmed = adminConfirmedSentMessages.get(uid) || new Map();
+    confirmed.set(saved.id,{message:saved,time:Date.now()});
+    adminConfirmedSentMessages.set(uid,confirmed);
+
+    if(currentAdminConversationUid === uid){
+      if(currentAdminConversation){
+        const rows=currentAdminConversation.messages || [];
+        if(!rows.some(m=>String(m.id)===saved.id)){
+          rows.push(saved);
+          currentAdminConversation.totalCount = Number(currentAdminConversation.totalCount || 0) + 1;
+        }
+        const box = document.getElementById('adminChatMessages');
+        if(box) box.scrollTop=box.scrollHeight;
+        renderAdminConversation();
+      }
+      // Gönderim sırasında yeni taslak yazıldıysa onu koru.
+      if(textarea && String(textarea.value || '').trim()===message) textarea.value='';
+      setAdminConversationSendStatus('✅ Mesaj kaydedildi ve gönderildi.');
+    }
+
+    // Diğer çağrılar mesaj gönderimini geri alamaz: yükleme başarısızlığı tekrar gönderim değildir.
+    try{
+      if(currentAdminConversationUid === uid) await selectAdminConversation(encodeURIComponent(uid),true);
+      await loadAdminConversations(true,false);
+    }catch(refreshError){
+      if(currentAdminConversationUid === uid){
+        setAdminConversationSendStatus('✅ Mesaj kaydedildi. Konuşma listesi yenilenemedi; Yenile ile tekrar deneyebilirsin.','warn');
+      }
+      console.warn('ADMIN DM AFTER SEND REFRESH:',refreshError);
+    }
   }catch(error){
+    if(currentAdminConversationUid === uid){
+      setAdminConversationSendStatus('❌ Mesaj gönderilemedi: '+String(error.message || error),'error');
+    }
     showStatus('adminMessagesStatus','❌ ' + esc(error.message || error),false);
   }finally{
-    if(button){ button.disabled = false; button.textContent = oldText; }
+    adminMessageSendInFlight = false;
+    if(button){button.disabled = false;button.textContent = oldText;}
   }
 }
-
 
 function deleteAdminConversationMessage(encodedMessageId){
   const messageId = decodeURIComponent(encodedMessageId || '');
@@ -6832,6 +6966,8 @@ function deleteAdminConversationMessage(encodedMessageId){
 
 async function performDeleteAdminMessage(messageId,threadId,scope){
   if(!messageId) return;
+  // Sunucuda silinen mesaj, kısa süreli gönderim onay önbelleğinde de kalmasın.
+
   try{
     const {r,d} = await api('/admin/message/delete',{
       method:'POST',
@@ -6839,6 +6975,7 @@ async function performDeleteAdminMessage(messageId,threadId,scope){
       body:JSON.stringify({messageId,scope})
     });
     if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
+    for(const stored of adminConfirmedSentMessages.values()) stored.delete(String(messageId));
 
     if(currentAdminConversationUid){
       await selectAdminConversation(encodeURIComponent(currentAdminConversationUid),true);
@@ -6908,6 +7045,7 @@ async function deleteCurrentAdminConversation(){
     });
     if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
 
+    adminConfirmedSentMessages.delete(uid);
     currentAdminConversationUid = '';
     currentAdminConversation = null;
     adminConversationListOnlyMode = true;
@@ -6932,6 +7070,7 @@ async function deleteAllAdminMessages(){
     const {r,d} = await api('/admin/messages/delete-all',{method:'POST'});
     if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
 
+    adminConfirmedSentMessages.clear();
     adminConversationsCache = [];
     adminConversationTotalCount = 0;
     adminConversationHasMore = false;
