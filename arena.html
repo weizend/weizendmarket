@@ -1,6 +1,53 @@
 <!doctype html>
 <html lang="tr">
 <head>
+<script id="wz-v3044-duplicate-post-guard">
+/* V30.4.4 — Sadece aynı Worker POST işleminin tekrarlanan gönderimini birleştirir.
+   GET, gezinme, farklı verili POST ve WebSocket akışları değişmez. */
+(function(){
+  'use strict';
+  if(window.__wzDuplicatePostGuardInstalled) return;
+  window.__wzDuplicatePostGuardInstalled=true;
+  const nativeFetch=window.fetch.bind(window);
+  const pending=new Map();
+  const recent=new Map();
+  const COOL_MS=1200;
+  const HOST='weizend-botrix.weizendtv.workers.dev';
+  window.fetch=function(input,init){
+    try{
+      const isReq=typeof Request!=='undefined'&&input instanceof Request;
+      const method=String(init?.method||(isReq?input.method:'GET')).toUpperCase();
+      // Gövdesi stream olan istekler hariç, boş gövdeli POST dahil edilir; GET dokunulmaz.
+      if(method!=='POST'||(isReq&&!init)||
+         (init?.body!=null&&typeof init.body!=='string')) return nativeFetch(input,init);
+      const url=new URL(isReq?input.url:String(input),location.href);
+      if(url.hostname!==HOST) return nativeFetch(input,init);
+      const headers=new Headers(init.headers||(isReq?input.headers:undefined));
+      const auth=headers.get('Authorization')||'';
+      const key=url.href+'\u0000'+auth+'\u0000'+(init?.body||'');
+      const exists=pending.get(key);
+      if(exists) return exists.then(r=>r.clone());
+      const old=recent.get(key);
+      if(old&&old.until>Date.now()) return Promise.resolve(old.response.clone());
+      // Kısa süreli belleği kullanıcı işlemleri sırasında temizle; polling ekleme.
+      if(recent.size>24){
+        for(const [k,v] of recent){if(v.until<=Date.now())recent.delete(k)}
+        while(recent.size>40) recent.delete(recent.keys().next().value);
+      }
+      const run=Promise.resolve().then(()=>nativeFetch(input,init)).then(r=>{
+        if(r.ok) recent.set(key,{response:r.clone(),until:Date.now()+COOL_MS});
+        return r;
+      });
+      pending.set(key,run);
+      // Başarısız istekler tekrar denenebilir; hata önbelleğe alınmaz.
+      run.then(()=>{if(pending.get(key)===run)pending.delete(key)},
+               ()=>{if(pending.get(key)===run)pending.delete(key)});
+      return run.then(r=>r.clone());
+    }catch(_){return nativeFetch(input,init)}
+  };
+})();
+</script>
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#070707">
