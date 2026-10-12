@@ -1007,7 +1007,29 @@ body.dmModalOpen{overflow:hidden}
 
 </style>
 
+<style id="wz-admin-touch-highlight-fix-v30412">
+/* V30.4.1.2: Android Chrome taps used to leave a cyan rectangular flash
+   visible across the just-opened team/player dialog. Presentation only;
+   no interaction/API/data changes. Keep keyboard focus indication. */
+@media (hover: none) and (pointer: coarse) {
+  button, a, summary, [role="button"], .wz-v54-team-pick {
+    -webkit-tap-highlight-color: transparent;
+  }
+  .wz-v54-team-pick {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+.wz-v54-team-pick:focus-visible,
+.wz-v54-admin-close:focus-visible {
+  outline: 2px solid #ff5454;
+  outline-offset: 3px;
+}
+</style>
+
 <style id="wz-admin-past-tournaments-v29">
+  /* V30.4.1.1: many completed events scroll inside their own history panel. */
+  #pastTournamentList{max-height:min(58vh,620px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;padding:3px 5px 5px 1px}
   .pastTournamentList{display:grid;gap:10px;margin-top:12px}
   .pastTournamentItem{
     display:flex;align-items:center;justify-content:space-between;gap:14px;
@@ -3487,7 +3509,7 @@ html,body{max-width:100%;overflow-x:hidden}
               Turnuva Yönetim Merkezi'nde <b>ŞABLON</b> olarak saklanır.
             </p>
           </div>
-          <button class="secondary smallButton" onclick="loadTournamentList(true)">🔄 Yenile</button>
+          <button type="button" id="pastTournamentRefreshButton" class="secondary smallButton" onclick="wz411RefreshPastOnly()">🔄 Yenile</button>
         </div>
         <div id="pastTournamentStatus" class="status tournamentInlineStatus"></div>
         <div id="pastTournamentList" class="pastTournamentList">
@@ -8765,6 +8787,33 @@ function renderTournamentOptions(){
   wz41RenderDashboard();
 }
 
+// V30.4.1.1: The past tab refresh is intentionally isolated.
+// It performs one catalog request. No config, roster, bracket or payment reads.
+let wz411PastRefreshPending = false;
+async function wz411RefreshPastOnly(){
+  if(wz411PastRefreshPending) return;
+  wz411PastRefreshPending = true;
+  const btn=document.getElementById('pastTournamentRefreshButton');
+  const oldText=btn?.textContent || '🔄 Yenile';
+  if(btn){btn.disabled=true;btn.textContent='⏳ Yenileniyor...';}
+  try{
+    const {r,d}=await api(`/admin/tournaments?_=${Date.now()}`);
+    if(!r.ok || !d?.success || !Array.isArray(d.tournaments)){
+      throw new Error(d?.error || `HTTP ${r.status}`);
+    }
+    tournamentCatalogCache=d.tournaments;
+    renderPastTournaments();
+    wz41RenderDashboard(); // uses the same fetched catalog; no additional network call
+    showStatus('pastTournamentStatus','✅ Geçmiş turnuvalar güncellendi.',true);
+    if(wz41Installed) wz411ApplyPanelVisibility();
+  }catch(error){
+    showStatus('pastTournamentStatus','❌ Geçmiş turnuvalar yenilenemedi: '+esc(error.message||error),false);
+  }finally{
+    wz411PastRefreshPending=false;
+    if(btn){btn.disabled=false;btn.textContent=oldText;}
+  }
+}
+
 function pastTournamentSortValue(item){
   const candidates = [
     item?.eventDate,
@@ -9219,6 +9268,8 @@ async function loadTournamentConfig(){
     }
 
     setTournamentTemplateMode(false);
+    // V30.4.1.1: template editor must not re-open panels hidden by the new console.
+    if(wz41Installed) wz411ApplyPanelVisibility();
     updateTournamentEntryFields();
 
     await Promise.all([
@@ -9891,6 +9942,9 @@ let wzV54AdminTeamEntries=[];
 function wzV54CloseAdminTeam(){ document.getElementById('wzV54TeamDialog')?.remove(); }
 function wzV54OpenAdminTeam(index){
   const entry=wzV54AdminTeamEntries[Number(index)]; if(!entry)return;
+  // V30.4.1.2: release pressed team-card focus before showing the overlay.
+  const tapSource=document.activeElement;
+  if(tapSource?.matches?.('.wz-v54-team-pick')) tapSource.blur();
   const team=entry.team||{};
   const slots=Array.isArray(entry.slots)?entry.slots:[];
   const invites=Array.isArray(entry.invites)?entry.invites:[];
@@ -11645,12 +11699,19 @@ function wz41Init(){
   if(tid)loadArenaLobbiesAdmin(tid).catch(()=>{});
  });
 }
+// V30.4.1.1: Pure visibility sync. Never calls API or changes forms.
+function wz411ApplyPanelVisibility(){
+ for(const [name,ids] of Object.entries(wz41PanelIds)){
+  for(const id of ids){
+   const el=document.getElementById(id);
+   if(el) el.style.display=name===wz41Panel?'':'none';
+  }
+ }
+}
 function wz41OpenPanel(key,scroll=true){
  if(!wz41PanelIds[key])return;
  wz41Panel=key;
- for(const [name,ids] of Object.entries(wz41PanelIds)){
-  for(const id of ids){ const el=document.getElementById(id);if(el)el.style.display=name===key?'':'none'; }
- }
+ wz411ApplyPanelVisibility();
  for(const btn of document.querySelectorAll('#wz41Menu button[data-wz41]')){
   const yes=btn.dataset.wz41===key;
   btn.classList.toggle('active',yes);
