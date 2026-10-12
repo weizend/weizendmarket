@@ -409,6 +409,7 @@ function v30RoomHtml(s,m){
   const status={captains:'İki kaptanın katılımı bekleniyor',code:'VALORANT davet kodu',ready:'Oyuncuların hazır onayı',proof:'İki kaptanın ekran görüntüsü',review:'Kaptanların kadro kontrolü',start:'Maç başlatma onayı',playing:'MAÇ OYNANIYOR',result_pending:'Rakibin sonuç bildirmesi bekleniyor',blocked:'HAKEM İNCELEMESİ',finalizing:'Sonuç işleniyor',completed:'MAÇ TAMAMLANDI'};
   const dis=(s.disputes||[]).filter(d=>d.status==='pending');
   const blocked=s.phase==='blocked';
+  const doubleNoShow=blocked&&['captains','code','ready'].includes(s.blockedFromPhase);
   const waitLine='<p class="hint">Diğer kaptanın onayı bekleniyor. İşlemler sunucuda saklanır; sayfayı yenilemen gerekmez.</p>';
   let controls='';
   if(s.phase==='captains')controls=`<div class="room-step"><h3>1. Kaptan VALORANT lobisini kurar</h3><p class="hint">İlk katılan kaptan özel VALORANT lobisini kurup davet kodunu kaydedebilir. Diğer kaptan geldiğinde aynı kodu görecek; oyuncular kod gelene kadar bekler.</p><p>${s.captainAJoined?'✅':'⏳'} ${esc(displayName(m,'a'))} kaptanı · ${s.captainBJoined?'✅':'⏳'} ${esc(displayName(m,'b'))} kaptanı</p>${cap&&!myJoin?'<button class="btn" id="v30Join">🎮 Lobiye Katıl</button>':waitLine}</div>`;
@@ -423,7 +424,7 @@ function v30RoomHtml(s,m){
     const waiting=s.phase==='result_pending'?`<div class="lobby-warning">⏳ İlk skor bildirildi. Rakip takım için 10 dakika son süre: <strong>${esc(s.resultDeadline||'')}</strong>. Süre dolarsa itiraz yoksa ilk bildiren kazanır.</div>`:'';
     controls=`<div class="room-step"><h3>🟢 MAÇ OYNANIYOR</h3>${waiting}<p>İhlal varsa İtiraz Et, oyun bittiyse Maçı Tamamla seç.</p>${cap?`<button class="btn secondary" id="v30DisputeShow">🚩 İtiraz Et</button> ${own?'<span>✅ Takımın sonuç bildirdi.</span>':'<button class="btn" id="v30ResultShow">🏁 Maçı Tamamla</button>'}`:''}</div>`;
   }
-  if(blocked)controls=`<div class="room-step"><h3>🚨 Hakem kararı bekleniyor</h3><p class="lobby-warning">İtiraz veya çelişkili skor bulundu. Başlatma ve sonuç işlemleri durduruldu.</p>${dis.map(d=>`<p>${esc(d.reason)} · <a href="${esc(d.proof_url)}" target="_blank" rel="noopener noreferrer">Kanıtı Aç ↗</a></p>`).join('')}</div>`;
+  if(blocked)controls=`<div class="room-step"><h3>🚨 Hakem Kararı Bekleniyor</h3><p class="lobby-warning">${doubleNoShow?'Davet süresi doldu ve iki takımın da hazır katılımı tamamlanmadı. Otomatik kazanan belirlenmedi. Admin panelinden hakem kararı beklenecek.':'İtiraz veya çelişkili skor bulundu. Başlatma ve sonuç işlemleri durduruldu.'}</p>${dis.map(d=>`<p>${esc(d.reason)} · <a href="${esc(d.proof_url)}" target="_blank" rel="noopener noreferrer">Kanıtı Aç ↗</a></p>`).join('')}</div>`;
   if(s.phase==='finalizing')controls='<div class="room-step"><h3>⏳ Maç sonucu fikstüre işleniyor</h3></div>';
   if(s.phase==='completed'||s.matchStatus==='completed')controls='<div class="room-step"><h3>🏆 Maç tamamlandı</h3><p>Eski lobiye işlem yapılamaz. Yeni tur için sistem mesajını bekle.</p></div>';
   const submission=(s.resultSubmissions||[]).map(x=>`<p class="lobby-note">🏁 ${x.team_side.toUpperCase()} takımı sonucu: ${x.score_a}-${x.score_b} · <a href="${esc(x.proof_url)}" target="_blank" rel="noopener noreferrer">Kanıt ↗</a></p>`).join('');
