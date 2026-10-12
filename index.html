@@ -4367,6 +4367,22 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
 .wz-turn-chip[onclick*="'mine'"]{border-color:#84272c;color:#ffd6d6}
 .wz-turn-chip.active{background:#e31b1b!important;border-color:#e31b1b!important;color:#fff!important}
 @media(max-width:500px){.wz-v3037-help summary{align-items:flex-start;flex-direction:column}.wz-v3037-help summary span{text-align:left}.wz-v3037-team-share button{flex:1 1 100%}}
+
+/* V30.4.3 · Mobil kategori: dokunma / hover kaliciligi yok. */
+.wz-turn-strip{overscroll-behavior-x:contain;scroll-behavior:auto}
+.wz-turn-chip{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+@media (hover:none), (pointer:coarse){
+  #wzEsportsHub .wz-turn-chip:not(.active),
+  #wzEsportsHub .wz-turn-chip:not(.active):hover,
+  #wzEsportsHub .wz-turn-chip:not(.active):focus,
+  #wzEsportsHub .wz-turn-chip:not(.active):active{
+    background:#101319!important;color:#b5b7c0!important;border-color:#2a2d36!important;
+    box-shadow:none!important;filter:none!important;
+  }
+  #wzEsportsHub .wz-turn-chip[data-wz-turn-filter="free"]:not(.active){border-color:#297f4b!important;color:#baf6ce!important}
+  #wzEsportsHub .wz-turn-chip[data-wz-turn-filter="mine"]:not(.active){border-color:#84272c!important;color:#ffd6d6!important}
+  #wzEsportsHub .wz-turn-chip.active{background:#e31b1b!important;border-color:#e31b1b!important;color:#fff!important}
+}
 </style>
 </head>
 <body>
@@ -15080,6 +15096,10 @@ return;
   function refreshTournamentListResults(){
     const current=document.getElementById('wzTournamentResults');
     if(!current) return;
+    // Kaydirma, filtre seridi ve arama input'u bu islemde DOM'dan cikarilmaz.
+    const savedY=window.scrollY||document.documentElement.scrollTop||0;
+    const strip=document.querySelector('#wzEsportsHub .wz-turn-strip');
+    const savedX=strip?.scrollLeft??0;
     const shell=document.createElement('div');
     shell.innerHTML=renderTournamentListResults();
     const next=shell.firstElementChild;
@@ -15087,7 +15107,11 @@ return;
       wzPreserveTournamentLogoNodes(current,next);
       current.replaceWith(next);
       window.__WZ_RESTORE_LOGOS__?.(next);
-      // Filter/search changed without a full repaint: update the cached shell too.
+      if(strip)strip.scrollLeft=savedX;
+      // Filtre sonucunun boyu azalsa da tarayicinin gereksiz yukari kaymasini azalt.
+      if(document.body.classList.contains('wz-view-tournament') && window.scrollY!==savedY){
+        window.scrollTo({top:savedY,left:window.scrollX,behavior:'auto'});
+      }
       if(state.screen==='list')cacheTournamentShell(document.getElementById('wzEsportsHub'));
     }
   }
@@ -15835,6 +15859,27 @@ return;
       return;
     }
 
+    // V30.4.3: Tam ekran cizimini sadece detay / ilk yukleme icin yap.
+    // Katalog yenilemesi, filtre degisimi ve zaman cizelgesi diger DOM'u bozmaz.
+    if(state.screen==='list' && host.querySelector('.wz-turn-list-page') &&
+       !host.querySelector('.wz-turn-detail-page') && !wzKeepHydratedTournamentShell){
+      const strip=host.querySelector('.wz-turn-strip');
+      const currentX=strip?.scrollLeft??0;
+      if(strip){
+        strip.querySelectorAll('[data-wz-turn-filter]').forEach(button=>{
+          const selected=button.dataset.wzTurnFilter===state.filter;
+          button.classList.toggle('active',selected);
+          button.setAttribute('aria-pressed',selected?'true':'false');
+        });
+        strip.scrollLeft=currentX;
+      }
+      const search=host.querySelector('#wzTournamentSearchInput');
+      if(search && search!==document.activeElement && search.value!==state.search)search.value=state.search;
+      refreshTournamentListResults();
+      wzTurnListStatusSignature=wzTournamentListStatusSignature();
+      return;
+    }
+
     const all=visibleCatalog();
     if(!all.length){
       host.innerHTML = `<div class="wz-turn-root">${renderSearch()}${renderFilters()}<div class="wz-turn-empty">Henüz yayınlanmış turnuva yok.</div></div>`;
@@ -16007,6 +16052,10 @@ return;
     const allowed=['all','free','subscription','paid','mine','live','active','soon','closed','done'];
     if(!allowed.includes(filter)) return;
     wzReleaseHydratedTournamentShell();
+    const touchingButton=document.activeElement;
+    if(touchingButton?.matches?.('#wzEsportsHub [data-wz-turn-filter]')){
+      touchingButton.blur(); // Android'in kalici :focus / dokunma efektini temizle.
+    }
     state.guideOpen=!!document.getElementById('wzTournamentEasyGuide')?.open;
     state.filter=filter;
     persistTournamentState();
