@@ -1088,6 +1088,62 @@ body.dmModalOpen{overflow:hidden}
   #section-messages .dmChatPanel > .dmMessages{height:auto!important;min-height:0!important}
 }
 
+
+/* V30.5.0 — SADECE MASAÜSTÜ: mesaj yazma alanını görünür tut.
+   Sol konuşma listesi ve sağ sohbet ayrı kayar; mobil düzen aynen korunur.
+   Flex uzun konuşma ya da tarayıcı ölçeklemesi ile yazma alanını
+   panel dışına ittiğinde grid satırları bu taşmayı engeller. */
+@media (min-width:801px) {
+  #section-messages .dmChat {
+    min-width:0;
+    min-height:0;
+    overflow:hidden;
+  }
+  #section-messages .dmChatPanel:not(.hidden) {
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:auto minmax(0,1fr) auto auto auto;
+    height:100%;
+    min-height:0;
+    min-width:0;
+    overflow:hidden;
+  }
+  #section-messages .dmChatPanel > .dmChatHeader {
+    min-height:0;
+    min-width:0;
+  }
+  #section-messages .dmChatPanel > .dmMessages {
+    min-height:0!important;
+    min-width:0;
+    height:auto!important;
+    max-height:none!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    overscroll-behavior-y:contain;
+  }
+  #section-messages .dmChatPanel > .dmSendStatus {
+    min-height:0;
+  }
+  #section-messages .dmChatPanel > .dmComposer {
+    display:flex;
+    position:relative;
+    z-index:1;
+    min-width:0;
+    flex-shrink:0;
+    margin:0;
+  }
+  #section-messages .dmChatPanel > .dmComposer textarea {
+    min-width:0;
+    width:100%;
+    min-height:44px;
+    max-height:120px;
+  }
+  #section-messages .dmChatPanel > .dmComposerHint {
+    min-width:0;
+    flex-shrink:0;
+  }
+}
+
 </style>
 
 <style id="wz-admin-touch-highlight-fix-v30412">
@@ -3928,6 +3984,9 @@ let currentAdminConversationUid = '';
 // Yalnızca sunucunun başarılı olarak kaydettiği mesajlar; anlık D1 okuma gecikmesini tolere eder.
 const adminConfirmedSentMessages = new Map();
 let adminMessageSendInFlight = false;
+// V30.4.9 — Sunucu kaydetti, fakat ağ yanıtı kaybolduysa aynı taslağı ikinci kez üretme.
+// İşlem kimliği yalnızca mesajın başarılı kayıt onayı gelince temizlenir.
+let adminPendingMessageRequest = null;
 let adminRenderedConversationUid = '';
 let currentAdminConversation = null;
 // Mobilde kullanıcı geri tuşuyla konuşma listesine döndüğünde canlı mesaj yenilemesi
@@ -6885,6 +6944,15 @@ async function sendAdminConversationMessage(){
   const message = String(textarea?.value || '').trim();
   if(!uid || !message) return;
 
+  const draftKey = uid + '\u0000' + message;
+  if(!adminPendingMessageRequest || adminPendingMessageRequest.draftKey !== draftKey){
+    const randomBytes = new Uint8Array(16);
+    crypto.getRandomValues(randomBytes);
+    const requestId = 'MSG-' + Array.from(randomBytes, b=>b.toString(16).padStart(2,'0')).join('').toUpperCase();
+    adminPendingMessageRequest = {draftKey, requestId};
+  }
+  const requestId = adminPendingMessageRequest.requestId;
+
   adminMessageSendInFlight = true;
   const oldText = button?.textContent || 'Gönder';
   if(button){button.disabled = true;button.textContent = 'Gönderiliyor...';}
@@ -6894,11 +6962,13 @@ async function sendAdminConversationMessage(){
     const {r,d} = await api('/admin/conversation/send',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({kickUid:uid,message})
+      body:JSON.stringify({kickUid:uid,message,requestId})
     });
     if(!r.ok || !d?.success || !d.messageId){
       throw new Error(d?.error || `HTTP ${r.status}`);
     }
+    // Ağ hatasından sonra tekrar deneme aynı mesajı döndürebilir; yeni gönderi oluşturmaz.
+    if(adminPendingMessageRequest?.requestId === requestId) adminPendingMessageRequest = null;
 
     // Yalnızca Worker'ın başarılı kayıt onayından sonra göster.
     const saved = {
