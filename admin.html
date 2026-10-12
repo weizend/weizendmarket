@@ -1185,6 +1185,72 @@ body.dmModalOpen{overflow:hidden}
   #section-messages .dmDesktopFixVersion{display:none}
 }
 
+
+/* WEİZEND V30.5.2 — Masaüstü konuşma önizlemesini mobil gibi tut.
+   Önizleme tek satır ve üç nokta; tarih sağ üstte; yatay kaydırma yok.
+   Mobil CSS ve mesaj gönderme düzenine dokunulmadı. */
+@media (min-width:801px) {
+  #section-messages .dmSidebar,
+  #section-messages .dmConversationList {
+    min-width:0;
+    max-width:100%;
+  }
+  #section-messages .dmConversationList {
+    overflow-x:hidden!important;
+    overflow-y:auto;
+  }
+  #section-messages .dmConversationItem {
+    position:relative;
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    grid-template-columns:46px minmax(0,1fr)!important;
+    overflow:hidden;
+  }
+  #section-messages .dmConversationMain {
+    grid-column:2;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+  }
+  #section-messages .dmConversationNameRow {
+    width:100%;
+    min-width:0;
+    padding-right:112px;
+  }
+  #section-messages .dmConversationName,
+  #section-messages .dmConversationNick,
+  #section-messages .dmConversationPreview {
+    display:block;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  #section-messages .dmConversationSide {
+    position:absolute;
+    top:12px;
+    right:10px;
+    min-width:0;
+    max-width:110px;
+    flex-direction:row-reverse;
+    align-items:center;
+    gap:4px;
+    pointer-events:none;
+  }
+  #section-messages .dmConversationTime {
+    display:block;
+    min-width:0;
+    max-width:110px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    font-size:.63rem;
+  }
+}
+
 </style>
 
 <style id="wz-admin-touch-highlight-fix-v30412">
@@ -2988,7 +3054,7 @@ html,body{max-width:100%;overflow-x:hidden}
       <div class="card">
         <div class="topbar">
           <div>
-            <h2>💬 Mesajlar <span class="dmDesktopFixVersion" title="Masaüstü sohbet görünümü">V30.5.1</span></h2>
+            <h2>💬 Mesajlar <span class="dmDesktopFixVersion" title="Masaüstü sohbet görünümü">V30.5.2</span></h2>
             <div id="adminMessagesSummary" class="muted">Kullanıcı konuşmaları yükleniyor...</div>
           </div>
           <div class="dmTopActions">
