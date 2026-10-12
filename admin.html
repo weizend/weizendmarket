@@ -1144,6 +1144,47 @@ body.dmModalOpen{overflow:hidden}
   }
 }
 
+
+/* WEİZEND V30.5.1 — Masaüstü DM gerçek kök düzeltmesi.
+   11+ konuşmalı sol listedeki grid implicit auto satırı içeriğe göre
+   büyüyor ve sağ panelin Gönder alanını görünür gövdenin altına itiyordu.
+   Tek grid satırını sabit shell yüksekliğine sığdır ve yalnızca listeyi
+   kaydır. Mobildeki block tabanlı tek panel yapısı korunur. */
+@media (min-width:801px) {
+  #section-messages .dmShell {
+    grid-template-rows:minmax(0,1fr)!important;
+  }
+  #section-messages .dmShell > .dmSidebar,
+  #section-messages .dmShell > .dmChat {
+    min-height:0!important;
+  }
+  #section-messages .dmShell > .dmChat {
+    overflow:hidden!important;
+  }
+  #section-messages .dmChatPanel:not(.hidden) {
+    height:100%!important;
+    min-height:0!important;
+  }
+  #section-messages .dmChatPanel > .dmMessages {
+    min-height:0!important;
+    height:auto!important;
+    overflow-y:auto!important;
+  }
+  #section-messages .dmChatPanel > .dmComposer {
+    flex-shrink:0!important;
+  }
+  #section-messages .dmDesktopFixVersion {
+    font-size:10px;
+    color:#85858b;
+    font-weight:500;
+    margin-left:6px;
+    white-space:nowrap;
+  }
+}
+@media (max-width:800px){
+  #section-messages .dmDesktopFixVersion{display:none}
+}
+
 </style>
 
 <style id="wz-admin-touch-highlight-fix-v30412">
@@ -2947,7 +2988,7 @@ html,body{max-width:100%;overflow-x:hidden}
       <div class="card">
         <div class="topbar">
           <div>
-            <h2>💬 Mesajlar</h2>
+            <h2>💬 Mesajlar <span class="dmDesktopFixVersion" title="Masaüstü sohbet görünümü">V30.5.1</span></h2>
             <div id="adminMessagesSummary" class="muted">Kullanıcı konuşmaları yükleniyor...</div>
           </div>
           <div class="dmTopActions">
