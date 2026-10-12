@@ -1,6 +1,53 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
+<script id="wz-v3044-duplicate-post-guard">
+/* V30.4.4 — Sadece aynı Worker POST işleminin tekrarlanan gönderimini birleştirir.
+   GET, gezinme, farklı verili POST ve WebSocket akışları değişmez. */
+(function(){
+  'use strict';
+  if(window.__wzDuplicatePostGuardInstalled) return;
+  window.__wzDuplicatePostGuardInstalled=true;
+  const nativeFetch=window.fetch.bind(window);
+  const pending=new Map();
+  const recent=new Map();
+  const COOL_MS=1200;
+  const HOST='weizend-botrix.weizendtv.workers.dev';
+  window.fetch=function(input,init){
+    try{
+      const isReq=typeof Request!=='undefined'&&input instanceof Request;
+      const method=String(init?.method||(isReq?input.method:'GET')).toUpperCase();
+      // Gövdesi stream olan istekler hariç, boş gövdeli POST dahil edilir; GET dokunulmaz.
+      if(method!=='POST'||(isReq&&!init)||
+         (init?.body!=null&&typeof init.body!=='string')) return nativeFetch(input,init);
+      const url=new URL(isReq?input.url:String(input),location.href);
+      if(url.hostname!==HOST) return nativeFetch(input,init);
+      const headers=new Headers(init.headers||(isReq?input.headers:undefined));
+      const auth=headers.get('Authorization')||'';
+      const key=url.href+'\u0000'+auth+'\u0000'+(init?.body||'');
+      const exists=pending.get(key);
+      if(exists) return exists.then(r=>r.clone());
+      const old=recent.get(key);
+      if(old&&old.until>Date.now()) return Promise.resolve(old.response.clone());
+      // Kısa süreli belleği kullanıcı işlemleri sırasında temizle; polling ekleme.
+      if(recent.size>24){
+        for(const [k,v] of recent){if(v.until<=Date.now())recent.delete(k)}
+        while(recent.size>40) recent.delete(recent.keys().next().value);
+      }
+      const run=Promise.resolve().then(()=>nativeFetch(input,init)).then(r=>{
+        if(r.ok) recent.set(key,{response:r.clone(),until:Date.now()+COOL_MS});
+        return r;
+      });
+      pending.set(key,run);
+      // Başarısız istekler tekrar denenebilir; hata önbelleğe alınmaz.
+      run.then(()=>{if(pending.get(key)===run)pending.delete(key)},
+               ()=>{if(pending.get(key)===run)pending.delete(key)});
+      return run.then(r=>r.clone());
+    }catch(_){return nativeFetch(input,init)}
+  };
+})();
+</script>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex,nofollow">
@@ -2330,7 +2377,7 @@ html,body{max-width:100%;overflow-x:hidden}
           </div>
         </div>
 
-        <button onclick="createGiftCode()">🎁 Tek Kullanımlık Kod Oluştur</button>
+        <button id="wzGiftCreateButton" onclick="createGiftCode()">🎁 Tek Kullanımlık Kod Oluştur</button>
 
         <div id="giftCreatedBox" style="display:none;margin-top:14px;padding:16px;border:1px solid #7c2b2b;border-radius:12px;background:#1a0d0d;">
           <div class="muted" style="margin-bottom:6px;">Kullanıcıya vereceğin hediye kodu:</div>
@@ -4342,7 +4389,14 @@ function updateGiftCodeRewardFields(){
   if(pointsField) pointsField.classList.toggle('hidden', rewardType !== 'points');
 }
 
+// V30.4.4: Aynı hediye kodu isteği iki kez gönderilemez.
+// Bağlantı zaman aşımında aynı requestId korunur; sunucu ikinci kodu üretmez.
+let wzGiftCreateBusy=false;
+let wzGiftCreateUnlockAt=0;
+const WZ_GIFT_PENDING_KEY='weizend_admin_gift_create_pending_v3044';
+
 async function createGiftCode(){
+  if(wzGiftCreateBusy || Date.now()<wzGiftCreateUnlockAt) return;
   const productName = String(document.getElementById('giftProductName')?.value || '').trim();
   const rewardType = String(document.getElementById('giftRewardType')?.value || 'delivery');
   const deliveryValue = String(document.getElementById('giftDeliveryValue')?.value || '').trim();
@@ -4371,23 +4425,47 @@ async function createGiftCode(){
     return;
   }
 
+  wzGiftCreateBusy=true;
+  const wzButton=document.getElementById('wzGiftCreateButton');
+  if(wzButton){wzButton.disabled=true;wzButton.textContent='⏳ Kod oluşturuluyor...';}
+  const wzPayload={
+    productName, rewardType,
+    deliveryValue:rewardType==='delivery'?deliveryValue:'',
+    pointsAmount:rewardType==='points'?pointsAmount:null
+  };
+  let wzRequestId='';
   try{
+    const hashBytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(wzPayload)));
+    const fingerprint=Array.from(new Uint8Array(hashBytes),b=>b.toString(16).padStart(2,'0')).join('');
+    let pending=null;
+    try{pending=JSON.parse(sessionStorage.getItem(WZ_GIFT_PENDING_KEY)||'null');}catch(_){}
+    if(pending?.fingerprint===fingerprint && Date.now()-Number(pending.createdAt||0)<86400000 &&
+       /^[0-9a-f-]{36}$/.test(String(pending.requestId||''))){
+      wzRequestId=pending.requestId;
+    }else{
+      wzRequestId=crypto.randomUUID();
+      try{sessionStorage.setItem(WZ_GIFT_PENDING_KEY,JSON.stringify({requestId:wzRequestId,fingerprint,createdAt:Date.now()}));}catch(_){}
+    }
     const {r,d} = await api('/admin/gift-codes/create',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        productName,
-        rewardType,
-        deliveryValue:rewardType === 'delivery' ? deliveryValue : '',
-        pointsAmount:rewardType === 'points' ? pointsAmount : null
-      })
+      body:JSON.stringify({...wzPayload,requestId:wzRequestId})
     });
 
+    if(r.ok && d?.success && d?.alreadyCreated){
+      showStatus('giftCodeStatus',
+        `⚠️ Aynı oluşturma isteği daha önce işlendi; ikinci bir kod oluşturulmadı. Kayıt sonu: ${esc(d.giftCode?.last4||'—')}. Önceki kodu kaydetmediysen mevcut kayıtları kontrol et.`,
+        false);
+      await loadGiftCodes();
+      return;
+    }
     if(!r.ok || !d?.success || !d?.giftCode?.code){
       throw new Error(d?.error || `HTTP ${r.status}`);
     }
 
     lastCreatedGiftCode = d.giftCode.code;
+    // Kod başarıyla alındı. Sonraki bilinçli oluşturma yeni istek kimliği alabilir.
+    try{sessionStorage.removeItem(WZ_GIFT_PENDING_KEY);}catch(_){}
 
     document.getElementById('giftCreatedCode').textContent = lastCreatedGiftCode;
     document.getElementById('giftCreatedBox').style.display = 'block';
@@ -4407,9 +4485,15 @@ async function createGiftCode(){
   }catch(error){
     showStatus(
       'giftCodeStatus',
-      '❌ ' + esc(error.message || error),
+      '❌ ' + esc(error.message || error) + ' (Yanıt gelmediyse aynı bilgilerle tekrar denediğinde ikinci kod üretilmeyecek.)',
       false
     );
+  }finally{
+    wzGiftCreateBusy=false;
+    wzGiftCreateUnlockAt=Date.now()+1300;
+    setTimeout(()=>{
+      if(wzButton){wzButton.disabled=false;wzButton.textContent='🎁 Tek Kullanımlık Kod Oluştur';}
+    },1300);
   }
 }
 
