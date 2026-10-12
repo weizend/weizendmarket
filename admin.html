@@ -969,6 +969,9 @@ body.dmModalOpen{overflow:hidden}
 #wz41Dashboard h2{margin:0 0 6px}
 .wz41-hero{display:flex;align-items:start;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .wz41-hero .muted{margin:0 0 10px}
+.wz41-refreshwrap{display:flex;flex-direction:column;align-items:stretch;gap:6px;min-width:min(265px,100%)}
+.wz41-refreshwrap button{margin:0!important}
+.wz41-refreshwrap .wz41-progress-note{margin:0!important;font-size:12px;line-height:1.45;overflow-wrap:anywhere}
 .wz41-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:12px 0}
 .wz41-stat{border:1px solid #333;border-radius:11px;padding:11px 12px;min-height:66px;background:#171717}
 .wz41-stat strong{font-size:23px;display:block;color:#fafafa}
@@ -3025,7 +3028,10 @@ html,body{max-width:100%;overflow-x:hidden}
       <div class="card wz41-dashboard" id="wz41Dashboard">
         <div class="wz41-hero"><div><h2>🏆 WEİZEND • Turnuva Kontrol Merkezi</h2>
           <p class="muted">Turnuvanı seç; sadece işlem yapacağın alanı aç. Diğer bölümler kapalı kalır.</p></div>
-          <button type="button" class="secondary smallButton" onclick="wz41RefreshCatalog()">↻ Turnuvaları Yenile</button></div>
+          <div class="wz41-refreshwrap">
+            <button type="button" class="secondary smallButton" id="wz41RefreshButton" onclick="wz41RefreshCatalog()">↻ Turnuvaları Yenile</button>
+            <div id="wz41CatalogNote" class="muted wz41-progress-note" role="status" aria-live="polite">Turnuva kayıtları yenilenir; maç durumları ayrı kontrol edilir.</div>
+          </div></div>
         <div class="wz41-stats" id="wz41Stats"><span>Turnuvalar yükleniyor...</span></div>
         <div class="wz41-filterbar">
           <input id="wz41Search" type="search" placeholder="Turnuva adı, format veya ID ara..." oninput="wz41RenderDashboard()" aria-label="Turnuva ara">
@@ -8754,7 +8760,7 @@ async function loadTournamentList(force=false){
   finally{ tournamentListRequest = null; }
 }
 
-function renderTournamentOptions(){
+function renderTournamentOptions(skipDetailLoad=false){
   const select = document.getElementById('tournamentSelect');
   if(!select) return;
 
@@ -8781,7 +8787,7 @@ function renderTournamentOptions(){
     select.value = previous;
   }
 
-  filterTournamentOptions();
+  filterTournamentOptions(skipDetailLoad);
   renderPastTournaments();
   renderCreateTournamentTemplates();
   wz41RenderDashboard();
@@ -8919,7 +8925,7 @@ async function deletePastTournament(encodedId){
   }
 }
 
-function filterTournamentOptions(){
+function filterTournamentOptions(skipDetailLoad=false){
   const search = String(document.getElementById('tournamentSearch')?.value || '')
     .trim()
     .toLocaleLowerCase('tr-TR');
@@ -8941,7 +8947,7 @@ function filterTournamentOptions(){
 
   if(select.selectedOptions[0]?.hidden && firstVisible){
     select.value = firstVisible.value;
-    loadTournamentConfig();
+    if(!skipDetailLoad) loadTournamentConfig();
   }
 }
 
@@ -11676,6 +11682,7 @@ document
   No new Worker routes; no background D1 scanning.
 =========================================================== */
 const wz41CacheV30=new Map();
+let wz41CatalogBusy=false;
 let wz41Panel='lobbies';
 let wz41Installed=false;
 let wz41ScanBusy=false;
@@ -11802,18 +11809,62 @@ async function wz41SelectTournament(encodedId){
  wz41RenderDashboard();
  wz41OpenPanel('lobbies');
 }
+// V30.4.1.3: Manual catalog refresh uses exactly one list request.
+// No team, payment, bracket or match-detail reads; no idle polling.
+function wz413CatalogSnapshot(items){
+ const fields=['name','teamSize','gameName','lifecycleStatus','registrationOpen',
+   'registeredCount','completedCount','capacity','eventDate','updatedAt','entryMode',
+   'feePerPlayerCents','active','comingSoon','broadcastEnabled'];
+ return new Map((Array.isArray(items)?items:[]).filter(t=>t&&t.id!=null).map(t=>[
+  String(t.id),JSON.stringify(fields.map(key=>t[key]??null))
+ ]));
+}
 async function wz41RefreshCatalog(){
- await loadTournamentList(true);wz41RenderDashboard();
- const note=document.getElementById('wz41ScanNote');
- if(note)note.textContent='✅ Turnuva listesi güncellendi. Maç durumlarını ayrıca kontrol edebilirsin.';
+ if(wz41CatalogBusy)return;
+ wz41CatalogBusy=true;
+ const btn=document.getElementById('wz41RefreshButton');
+ const note=document.getElementById('wz41CatalogNote');
+ const before=wz413CatalogSnapshot(tournamentCatalogCache);
+ const buttonText='↻ Turnuvaları Yenile';
+ if(btn){btn.disabled=true;btn.textContent='⏳ Turnuvalar Güncelleniyor...';}
+ if(note)note.textContent='⏳ Turnuva listesi sunucudan alınıyor...';
+ try{
+  const {r,d}=await api(`/admin/tournaments?_=${Date.now()}`);
+  if(!r.ok||!d?.success||!Array.isArray(d.tournaments))
+   throw new Error(d?.error||`HTTP ${r.status}`);
+  tournamentCatalogCache=d.tournaments;
+  renderTournamentOptions(true);
+  wz411ApplyPanelVisibility();
+  const after=wz413CatalogSnapshot(tournamentCatalogCache);
+  let added=0,removed=0,changed=0;
+  for(const [id,signature] of after){
+   if(!before.has(id))added++;
+   else if(before.get(id)!==signature)changed++;
+  }
+  for(const id of before.keys())if(!after.has(id))removed++;
+  const count=wz41ActiveList().length;
+  const time=new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+  if(note){
+   note.textContent=added||removed||changed
+    ? `✅ ${count} turnuva listelendi · ${added} yeni, ${changed} güncellenen, ${removed} listeden çıkan · ${time}`
+    : `✅ Liste güncel, yeni değişiklik yok · ${count} turnuva · ${time}`;
+  }
+ }catch(error){
+  if(note)note.textContent='❌ Liste yenilenemedi: '+String(error?.message||error)+'. Mevcut liste korundu.';
+ }finally{
+  wz41CatalogBusy=false;
+  if(btn){btn.disabled=false;btn.textContent=buttonText;}
+ }
 }
 async function wz41ScanAll(){
  if(wz41ScanBusy)return;
  const list=wz41ActiveList();
- if(!list.length)return;
- wz41ScanBusy=true;
- const btn=document.getElementById('wz41ScanButton');if(btn)btn.disabled=true;
  const note=document.getElementById('wz41ScanNote');
+ if(!list.length){if(note)note.textContent='ℹ️ Kontrol edilecek aktif turnuva bulunmuyor.';return;}
+ wz41ScanBusy=true;
+ const btn=document.getElementById('wz41ScanButton');
+ if(btn){btn.disabled=true;btn.textContent=`⏳ Maçlar Kontrol Ediliyor (0/${list.length})`;} 
+ if(note)note.textContent=`⏳ 0/${list.length} turnuvanın maç durumları kontrol ediliyor...`;
  let done=0,fail=0;
  try{
   // 2 concurrent tournament queries maximum, user triggered, no idle load.
@@ -11826,11 +11877,25 @@ async function wz41ScanAll(){
     else fail++;
     done++;
    }
+   if(btn)btn.textContent=`⏳ Maçlar Kontrol Ediliyor (${done}/${list.length})`;
    if(note)note.textContent=`⏳ ${done}/${list.length} turnuva kontrol edildi...`;
    wz41RenderDashboard();
   }
-  if(note)note.textContent=`✅ ${done-fail}/${list.length} turnuva kontrol edildi · ${new Date().toLocaleTimeString('tr-TR')} ${fail?`· ${fail} turnuvada hata; tekrar deneyebilirsin.`:''} · Otomatik sorgu yapılmaz.`;
- }finally{wz41ScanBusy=false;if(btn)btn.disabled=false;}
+  let playing=0,urgent=0;
+  for(const t of list){
+   if(!wz41CacheV30.has(String(t.id)))continue;
+   const status=wz41TournamentSummary(t);playing+=status.playing;urgent+=status.urgent;
+  }
+  const time=new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+  if(note)note.textContent=fail
+   ? `⚠️ ${done-fail}/${list.length} turnuva kontrol edildi · ${fail} hata. Başarısız turnuvaları tekrar kontrol et. · ${time}`
+   : `✅ ${done}/${list.length} turnuva kontrol edildi · ${playing} oynanan maç, ${urgent} hakem bekleyen · ${time}.`;
+ }catch(error){
+  if(note)note.textContent='❌ Maç kontrolü tamamlanamadı: '+String(error?.message||error);
+ }finally{
+  wz41ScanBusy=false;
+  if(btn){btn.disabled=false;btn.textContent='🔎 Tümünü Kontrol Et';}
+ }
 }
 let wz41MessageRecipients=[];
 let wz41MessageMatch=null;
