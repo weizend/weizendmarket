@@ -2744,7 +2744,7 @@ html,body{max-width:100%;overflow-x:hidden}
         <div id="supportRewardSummary" class="supportRewardSummary"></div>
 
         <div class="tableWrap">
-          <table style="min-width:1040px;">
+          <table style="min-width:1190px;">
             <thead>
               <tr>
                 <th>Kaynak</th>
@@ -2753,12 +2753,13 @@ html,body{max-width:100%;overflow-x:hidden}
                 <th>Ödül Puanı</th>
                 <th>Durum</th>
                 <th>Hediye Kodu</th>
+                <th>Kullanan</th>
                 <th>Tarih</th>
                 <th>İşlem</th>
               </tr>
             </thead>
             <tbody id="supportRewardEventsBody">
-              <tr><td colspan="8" class="muted">Destek kayıtları henüz yüklenmedi.</td></tr>
+              <tr><td colspan="9" class="muted">Destek kayıtları henüz yüklenmedi.</td></tr>
             </tbody>
           </table>
         </div>
@@ -4764,8 +4765,8 @@ function renderGiftCodes(items){
       : '🎁 VP / Ürün Kodu';
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><strong>${esc(item.product_name || '-')}</strong></td>
-      <td><strong>${esc(item.owner_username || '-')}</strong></td>
+      <td><strong>${esc(item.source_type === 'support_reward' ? 'Destek Ödülü' : (item.product_name || '-'))}</strong></td>
+      <td><strong>${esc(item.owner_username || item.assigned_username_norm || '-')}</strong></td>
       <td>${esc(rewardText)}</td>
       <td class="code">••••-${esc(item.redeem_code_last4 || '----')}</td>
       <td><span class="badge ${badge}">${esc(statusText)}</span></td>
@@ -5031,7 +5032,7 @@ function renderSupportRewardEvents(){
 
   body.innerHTML='';
   if(!items.length){
-    body.innerHTML='<tr><td colspan="8" class="muted">Bu filtrede destek kaydı bulunamadı.</td></tr>';
+    body.innerHTML='<tr><td colspan="9" class="muted">Bu filtrede destek kaydı bulunamadı.</td></tr>';
     return;
   }
 
@@ -5042,9 +5043,14 @@ function renderSupportRewardEvents(){
     const canDelete=eventStatus==='cancelled';
     const codeLast4=String(item.redeem_code_last4||'').trim();
     const giftStatus=String(item.gift_code_status||'').trim();
-    const codeText=codeLast4
-      ? `••••-${codeLast4}${giftStatus ? ` · ${supportRewardGiftStatusText(giftStatus)}` : ''}`
-      : '-';
+    const codeText=codeLast4 ? `••••-${codeLast4}` : '-';
+    const usedBy=String(item.gift_code_redeemed_by_username||'').trim();
+    // Kullanilmamis kod kirmizi; kullanilan kodda yalnizca GERCEK kullanan.
+    const redeemerText = !codeLast4 ? '<span class="muted">-</span>'
+      : giftStatus==='unused' ? '<span style="color:#ff6464;font-weight:800">Kullanılmadı</span>'
+      : giftStatus==='processing' ? `<span class="badge warn">${esc(usedBy||'Puan Gönderiliyor')}</span>`
+      : giftStatus==='redeemed' ? (usedBy ? `<strong>${esc(usedBy)}</strong>` : '<span class="muted">Kullanıldı · isim yok</span>')
+      : `<span class="muted">${esc(supportRewardGiftStatusText(giftStatus))}</span>`;
     const userName=String(item.username||item.username_norm||'-');
     const uid=String(item.kick_uid||'');
 
@@ -5056,6 +5062,7 @@ function renderSupportRewardEvents(){
       <td><span class="supportRewardPoints">${Number(item.points_awarded||0).toLocaleString('tr-TR')} Puan</span></td>
       <td><span class="badge ${statusBadge}">${esc(statusText)}</span></td>
       <td><span class="supportRewardCode">${esc(codeText)}</span></td>
+      <td>${redeemerText}</td>
       <td>${esc(dateText(item.occurred_at || item.created_at))}</td>
       <td>${canCancel
         ? `<button class="smallBtn danger" onclick="cancelSupportRewardEvent('${encodeURIComponent(item.id)}')">🚫 İptal Et</button>`
@@ -5069,7 +5076,7 @@ function renderSupportRewardEvents(){
 async function loadSupportRewardEvents(){
   const body=document.getElementById('supportRewardEventsBody');
   const status=String(document.getElementById('supportRewardStatusFilter')?.value||'').trim();
-  if(body) body.innerHTML='<tr><td colspan="8" class="muted">⏳ Destek kayıtları yükleniyor...</td></tr>';
+  if(body) body.innerHTML='<tr><td colspan="9" class="muted">⏳ Destek kayıtları yükleniyor...</td></tr>';
 
   try{
     const qs=status?`?status=${encodeURIComponent(status)}&_=${Date.now()}`:`?_=${Date.now()}`;
@@ -5078,7 +5085,7 @@ async function loadSupportRewardEvents(){
     supportRewardEventsCache=Array.isArray(d.events)?d.events:[];
     renderSupportRewardEvents();
   }catch(error){
-    if(body) body.innerHTML=`<tr><td colspan="8" class="muted">❌ ${esc(error.message || error)}</td></tr>`;
+    if(body) body.innerHTML=`<tr><td colspan="9" class="muted">❌ ${esc(error.message || error)}</td></tr>`;
     showStatus('supportRewardEventsStatus','❌ '+esc(error.message || error),false);
   }
 }
