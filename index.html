@@ -1,6 +1,32 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
+<meta charset="UTF-8">
+<!-- WEİZEND | Sosyal medya kartı ve site simgesi -->
+<meta name="description" content="WEİZEND MARKET: yayın puanları, özel ödüller, Valorant turnuvaları ve WEİZEND ARENA. Takımını kur, mücadeleye katıl!">
+<link rel="canonical" href="https://www.weizend.com/">
+<meta name="theme-color" content="#090a0d">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="WEİZEND">
+<meta property="og:locale" content="tr_TR">
+<meta property="og:url" content="https://www.weizend.com/">
+<meta property="og:title" content="WEİZEND MARKET | Turnuvalar, Ödüller ve Arena">
+<meta property="og:description" content="WEİZEND MARKET: yayın puanları, özel ödüller, Valorant turnuvaları ve WEİZEND ARENA. Takımını kur, mücadeleye katıl!">
+<meta property="og:image" content="https://www.weizend.com/weizend-paylasim.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="WEİZEND resmi paylaşım görseli">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="WEİZEND MARKET | Turnuvalar, Ödüller ve Arena">
+<meta name="twitter:description" content="WEİZEND MARKET: yayın puanları, özel ödüller, Valorant turnuvaları ve WEİZEND ARENA. Takımını kur, mücadeleye katıl!">
+<meta name="twitter:image" content="https://www.weizend.com/weizend-paylasim.jpg">
+<!-- /WEİZEND sosyal kartı -->
+<!-- WEİZEND V30.6.6: Turnuva ve takım özel paylaşım bağlantıları /paylas/... üzerinden sağlanır. -->
 <script id="wz-v3044-duplicate-post-guard">
 /* V30.4.4 — Sadece aynı Worker POST işleminin tekrarlanan gönderimini birleştirir.
    GET, gezinme, farklı verili POST ve WebSocket akışları değişmez. */
@@ -279,7 +305,7 @@ body.wz-initializing *{
 }
 </style>
 
-    <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
 <link rel="preconnect" href="https://i.hizliresim.com" crossorigin>
 <link rel="dns-prefetch" href="//i.hizliresim.com">
@@ -16644,9 +16670,22 @@ return;
     const key=String(id||'');
     if(!/^[A-Za-z0-9_-]{1,110}$/.test(key)) throw new Error('Turnuva bağlantısı oluşturulamadı.');
     // URL'deki diğer parametreler özel bilgi içerebilir; paylaşma.
-    const url=new URL(location.pathname,location.origin);
-    url.searchParams.set('turnuva',key);
-    return url.href;
+    // GitHub'daki eski yayın bu yeni Pages URL'sini barındırmaz.
+    // Eski sitede eski deep link akışını koru; WWW'de özel OG önizlemesini kullan.
+    if(!/^(?:www\.)?weizend\.com$/i.test(location.hostname)){
+      const legacy=new URL(location.pathname,location.origin);
+      legacy.searchParams.set('turnuva',key);
+      return legacy.href;
+    }
+    return new URL('/paylas/turnuva/'+encodeURIComponent(key),'https://www.weizend.com').href;
+  }
+  function inviteLinkFor(id){
+    const key=String(id||'');
+    if(!/^[A-Za-z0-9_-]{1,110}$/.test(key)) throw new Error('Takım daveti bağlantısı oluşturulamadı.');
+    // Eski GitHub sitemizde de davet linki çalışmaya devam etsin.
+    if(!/^(?:www\.)?weizend\.com$/i.test(location.hostname)) return linkFor(key);
+    // Gizli takım kodunu URL'ye koyma; mesajın içinde ayrı gönderilir.
+    return new URL('/paylas/davet/'+encodeURIComponent(key),'https://www.weizend.com').href;
   }
   function currentTeamTournamentId(){
     try{return String(tv2State?.tournamentId||'');}catch(_){return '';}
@@ -16700,7 +16739,7 @@ return;
       const entryUX=typeof tv3EntryUX==='function'
         ? tv3EntryUX({...(tv2State?.publicData?.rule||{}),...(me?.rule||{}),entryMode:me?.rule?.entryMode||tv2State?.publicData?.rule?.entryMode||tv2State?.publicData?.tournament?.entryMode},tv2State?.publicData?.tournament||{})
         : {inviteStep:'Katılım şartını tamamla.'};
-      const message=`🎮 ${title}\n👑 ${teamName} takımına davetlisin!\n\n1️⃣ Bu turnuvayı aç: ${linkFor(id)}\n2️⃣ Kick hesabınla doğrulama yap.\n3️⃣ TAKIMA KATIL butonuna bas.\n4️⃣ Davet kodunu ve Riot ID'ni gir.\n5️⃣ ${entryUX.inviteStep}\n\n🔑 Tek kullanımlık takım kodun: ${code}\n\n🏆 Maçlar WEİZEND ARENA'da AFK oynanır, yayın gerekmez.\n🔒 Bu kodu başka kimseyle paylaşma.`;
+      const message=`🎮 ${title}\n👑 ${teamName} takımına davetlisin!\n\n1️⃣ Takım davetini aç: ${inviteLinkFor(id)}\n2️⃣ Kick hesabınla doğrulama yap.\n3️⃣ TAKIMA KATIL butonuna bas.\n4️⃣ Davet kodunu ve Riot ID'ni gir.\n5️⃣ ${entryUX.inviteStep}\n\n🔑 Tek kullanımlık takım kodun: ${code}\n\n🏆 Maçlar WEİZEND ARENA'da AFK oynanır, yayın gerekmez.\n🔒 Bu kodu başka kimseyle paylaşma.`;
 
       inviteShareBusy=true;
       if(button){button.disabled=true;button.textContent='📤 PAYLAŞIM HAZIRLANIYOR...';}
