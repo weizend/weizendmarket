@@ -7543,7 +7543,7 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
                     button.title='Lobiye katıl';
                     button.textContent='🎮 LOBİYE KATIL';
                     button.onclick=()=>{
-                        const arenaUrl='https://weizend.github.io/weizendmarket/arena.html?tournament='
+                        const arenaUrl=new URL('arena.html',location.href).href+'?tournament='
                             +encodeURIComponent(invite.tournamentId)+'&match='+encodeURIComponent(invite.matchId)+'&room=1';
                         // Kullanıcının Market mesaj kutusu yerinde kalsın.
                         window.__WZ_ARM_ARENA_RETURN__?.();
@@ -15715,7 +15715,7 @@ return;
     </div>`;
   }
 
-  const WZ_ARENA_REAL_URL='https://weizend.github.io/weizendmarket/arena.html';
+  const WZ_ARENA_REAL_URL=new URL('arena.html',location.href).href;
   function wzArenaDeepLink(id){
     // Her turnuvanın kendi gerçek Market kimliği; hiçbir sabit 1v1/3v3 yönlendirmesi yok.
     return WZ_ARENA_REAL_URL+'?tournament='+encodeURIComponent(String(id||'')).replace(/'/g,'%27');
