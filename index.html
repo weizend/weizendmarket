@@ -162,6 +162,17 @@
     if(window.__WZ_TOURNAMENT_DEEP_LINK__) view='tournament';
 
     const token=localStorage.getItem('weizend_market_session_secure_v2') || '';
+    // V30.6.4: Doğrulanmış kullanıcı siteye YENİ GİRİŞ yaptığında
+    // Profil ile karşılaşır. F5 (reload) mevcut sekmeyi ve scroll'u korur;
+    // doğrudan paylaşılan turnuva bağlantıları ise kendi turnuvasını açar.
+    let isReload=false;
+    try{
+      const navigation=performance.getEntriesByType('navigation')[0];
+      isReload=navigation?.type==='reload';
+    }catch(_){}
+    if(token && !isReload && !window.__WZ_TOURNAMENT_DEEP_LINK__){
+      view='profile';
+    }
     if(view==='profile' && !token){
       view='market';
       sessionStorage.setItem('wz_current_view','market');
@@ -6519,6 +6530,15 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
             showUsernameForm();
         }
 
+        // V30.6.4: Başarılı ilk doğrulamanın ardından Profil'i göster;
+        // normal profil/puan güncellemelerinde kullanıcıyı bulunduğu sekmeden atma.
+        function wzOpenProfileAfterVerification() {
+            if (window.__WZ_TOURNAMENT_DEEP_LINK__) return;
+            try {
+                if (typeof window.wzSetView === 'function') window.wzSetView('profile');
+            } catch (_) {}
+        }
+
         async function checkAuthStatus(options = {}) {
             const manual = options.manual === true;
 
@@ -6593,11 +6613,13 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
                     };
                     localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(instantProfile));
                     showAccount(instantProfile);
+                    wzOpenProfileAfterVerification();
                     return true;
                 }
 
                 // Profil alanı gelmezse güvenli oturumla tek seferlik profil kontrolünü kullan.
                 const opened = await checkSession({ silent: false, retries: 1 });
+                if (opened) wzOpenProfileAfterVerification();
                 return opened;
             } catch (error) {
                 console.error('AUTH STATUS ERROR:', error);
