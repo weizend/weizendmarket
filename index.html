@@ -188,16 +188,18 @@
     if(window.__WZ_TOURNAMENT_DEEP_LINK__) view='tournament';
 
     const token=localStorage.getItem('weizend_market_session_secure_v2') || '';
-    // V30.6.4: Doğrulanmış kullanıcı siteye YENİ GİRİŞ yaptığında
-    // Profil ile karşılaşır. F5 (reload) mevcut sekmeyi ve scroll'u korur;
-    // doğrudan paylaşılan turnuva bağlantıları ise kendi turnuvasını açar.
+    // V30.6.11: Yeni ziyaret veya Bilgi Merkezi'nden Market'e donus Market'ten baslar.
+    // F5 mevcut sekmeyi/scroll'u korur; paylasilan turnuva baglantisi onceliklidir.
+    // Kick dogrulamasi basarili oldugunda mevcut wzOpenProfileAfterVerification()
+    // kullaniciyi o anda Profil'e gecirir; mevcut oturum yenilemeleri sekme degistirmez.
     let isReload=false;
     try{
       const navigation=performance.getEntriesByType('navigation')[0];
       isReload=navigation?.type==='reload';
     }catch(_){}
-    if(token && !isReload && !window.__WZ_TOURNAMENT_DEEP_LINK__){
-      view='profile';
+    const guideMarketRequest=(new URLSearchParams(location.search)).get('wz_market')==='1';
+    if(!window.__WZ_TOURNAMENT_DEEP_LINK__ && (guideMarketRequest || !isReload)){
+      view='market';
     }
     if(view==='profile' && !token){
       view='market';
@@ -205,10 +207,14 @@
     }
 
     try{
+      // Bilgi Merkezi'nden gelen tek-seferlik Market tercihini adresten kaldir:
+      // F5 yaptiginda kullanicinin sonradan sectigi sekme korunabilsin.
+      const cleanedUrl=new URL(location.href);
+      if(guideMarketRequest) cleanedUrl.searchParams.delete('wz_market');
       history.replaceState(
         Object.assign({},history.state||{},{wzView:view}),
         '',
-        location.href
+        cleanedUrl.href
       );
     }catch(_){}
 
