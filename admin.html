@@ -982,6 +982,102 @@ body.dmModalOpen{overflow:hidden}
   .supportRewardToolbar button{width:100%;min-width:0;flex:1 1 100%}
 }
 
+/* =========================================================
+   V30.6.15 — SADECE DESTEK HAKLARI TABLOSU
+   Masaustunde kaydirmasiz kompakt duzen, dar ekranda kartlar.
+   Turnuva/odeme/missxss/API fonksiyonlarina dokunulmaz.
+   ========================================================= */
+#section-supportrewards .supportRewardEventsWrap{
+  max-width:100%;
+  overflow-x:hidden;
+}
+#section-supportrewards .supportRewardEventsTable{
+  width:100%;
+  min-width:0!important;
+  table-layout:fixed;
+}
+#section-supportrewards .supportRewardEventsTable th,
+#section-supportrewards .supportRewardEventsTable td{
+  padding:10px 6px;
+  font-size:.80rem;
+  line-height:1.35;
+  overflow-wrap:anywhere;
+  word-break:normal;
+}
+#section-supportrewards .supportRewardEventsTable th{font-size:.74rem;}
+#section-supportrewards .supportRewardEventsTable th:nth-child(1){width:10%;}
+#section-supportrewards .supportRewardEventsTable th:nth-child(2){width:13%;}
+#section-supportrewards .supportRewardEventsTable th:nth-child(3){width:8%;}
+#section-supportrewards .supportRewardEventsTable th:nth-child(4){width:12%;}
+#section-supportrewards .supportRewardEventsTable th:nth-child(5){width:14%;}
+#section-supportrewards .supportRewardEventsTable th:nth-child(6){width:9%;}
+#section-supportrewards .supportRewardEventsTable th:nth-child(7){width:11%;}
+#section-supportrewards .supportRewardEventsTable th:nth-child(8){width:14%;}
+#section-supportrewards .supportRewardEventsTable th:nth-child(9){width:9%;}
+#section-supportrewards .supportRewardEventsTable .supportRewardUser{min-width:0;}
+#section-supportrewards .supportRewardEventsTable .supportRewardUser .muted{font-size:.67rem;}
+#section-supportrewards .supportRewardEventsTable .supportRewardSource,
+#section-supportrewards .supportRewardEventsTable .supportRewardPoints,
+#section-supportrewards .supportRewardEventsTable .supportRewardCode{white-space:normal;}
+#section-supportrewards .supportRewardEventsTable .badge{
+  max-width:100%;
+  white-space:normal;
+  text-align:center;
+}
+#section-supportrewards .supportRewardEventsTable button{
+  max-width:100%;
+  min-width:0;
+  width:auto;
+  font-size:.72rem;
+  padding:7px 6px;
+  white-space:normal;
+}
+/* Kucuk masaustu, tablet ve telefonda 9 sutun yerine kaydirmasiz kartlar. */
+@media(max-width:1050px){
+  #section-supportrewards .supportRewardEventsWrap{overflow:visible;}
+  #section-supportrewards .supportRewardEventsTable,
+  #section-supportrewards .supportRewardEventsTable tbody{display:block;width:100%;}
+  #section-supportrewards .supportRewardEventsTable thead{display:none;}
+  #section-supportrewards .supportRewardEventsTable tbody tr{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:2px;
+    padding:10px;
+    margin:9px;
+    background:#0b0b0b;
+    border:1px solid #2b2b2b;
+    border-radius:10px;
+  }
+  #section-supportrewards .supportRewardEventsTable tbody td{
+    display:block;
+    min-width:0;
+    padding:8px!important;
+    border:0;
+    font-size:.82rem;
+  }
+  #section-supportrewards .supportRewardEventsTable tbody td::before{
+    display:block;
+    margin-bottom:5px;
+    font-size:.70rem;
+    font-weight:700;
+    color:#939393;
+  }
+  #section-supportrewards .supportRewardEventsTable tbody td:nth-child(1)::before{content:'Kaynak';}
+  #section-supportrewards .supportRewardEventsTable tbody td:nth-child(2)::before{content:'Kullanıcı';}
+  #section-supportrewards .supportRewardEventsTable tbody td:nth-child(3)::before{content:'Destek';}
+  #section-supportrewards .supportRewardEventsTable tbody td:nth-child(4)::before{content:'Ödül Puanı';}
+  #section-supportrewards .supportRewardEventsTable tbody td:nth-child(5)::before{content:'Durum';}
+  #section-supportrewards .supportRewardEventsTable tbody td:nth-child(6)::before{content:'Hediye Kodu';}
+  #section-supportrewards .supportRewardEventsTable tbody td:nth-child(7)::before{content:'Kullanan';}
+  #section-supportrewards .supportRewardEventsTable tbody td:nth-child(8)::before{content:'Tarih';}
+  #section-supportrewards .supportRewardEventsTable tbody td:nth-child(9)::before{content:'İşlem';}
+  #section-supportrewards .supportRewardEventsTable tbody td[colspan]{grid-column:1/-1;}
+  #section-supportrewards .supportRewardEventsTable tbody td[colspan]::before{content:none!important;}
+}
+@media(max-width:680px){
+  #section-supportrewards .supportRewardEventsTable tbody tr{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+
 
 /* =========================================================
    BYNOGAME SON AKTİVİTE - TEMİZ GÖRÜNÜM
@@ -2743,8 +2839,8 @@ html,body{max-width:100%;overflow-x:hidden}
 
         <div id="supportRewardSummary" class="supportRewardSummary"></div>
 
-        <div class="tableWrap">
-          <table style="min-width:1190px;">
+        <div class="tableWrap supportRewardEventsWrap">
+          <table class="supportRewardEventsTable">
             <thead>
               <tr>
                 <th>Kaynak</th>
@@ -4766,7 +4862,7 @@ function renderGiftCodes(items){
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><strong>${esc(item.source_type === 'support_reward' ? 'Destek Ödülü' : (item.product_name || '-'))}</strong></td>
-      <td><strong>${esc(item.owner_username || item.assigned_username_norm || '-')}</strong></td>
+      <td><strong>${esc(item.owner_username || (item.source_type === 'support_reward' ? (item.assigned_username_norm || '-') : 'Weizend'))}</strong></td>
       <td>${esc(rewardText)}</td>
       <td class="code">••••-${esc(item.redeem_code_last4 || '----')}</td>
       <td><span class="badge ${badge}">${esc(statusText)}</span></td>
