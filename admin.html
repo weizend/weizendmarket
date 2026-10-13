@@ -2591,10 +2591,11 @@ html,body{max-width:100%;overflow-x:hidden}
       <div class="card">
         <h2>🎟️ Oluşturulan Hediye Kodları</h2>
         <div class="tableWrap">
-          <table>
+          <table style="min-width:1120px">
             <thead>
               <tr>
                 <th>Ödül</th>
+                <th>Sahip</th>
                 <th>Tür / Değer</th>
                 <th>Kod</th>
                 <th>Durum</th>
@@ -2605,7 +2606,7 @@ html,body{max-width:100%;overflow-x:hidden}
               </tr>
             </thead>
             <tbody id="giftCodesBody">
-              <tr><td colspan="8" class="muted">Hediye kodları henüz yüklenmedi.</td></tr>
+              <tr><td colspan="9" class="muted">Hediye kodları henüz yüklenmedi.</td></tr>
             </tbody>
           </table>
         </div>
@@ -4718,14 +4719,14 @@ async function copyCreatedGiftCode(){
 async function loadGiftCodes(){
   const body = document.getElementById('giftCodesBody');
   if(!body) return;
-  body.innerHTML = '<tr><td colspan="8" class="muted">⏳ Hediye kodları yükleniyor...</td></tr>';
+  body.innerHTML = '<tr><td colspan="9" class="muted">⏳ Hediye kodları yükleniyor...</td></tr>';
 
   try{
     const {r,d} = await api('/admin/gift-codes');
     if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
     renderGiftCodes(Array.isArray(d.giftCodes) ? d.giftCodes : []);
   }catch(error){
-    body.innerHTML = `<tr><td colspan="8" class="muted">❌ ${esc(error.message || error)}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="9" class="muted">❌ ${esc(error.message || error)}</td></tr>`;
   }
 }
 
@@ -4735,7 +4736,7 @@ function renderGiftCodes(items){
   body.innerHTML = '';
 
   if(!items.length){
-    body.innerHTML = '<tr><td colspan="8" class="muted">Henüz hediye kodu oluşturulmadı.</td></tr>';
+    body.innerHTML = '<tr><td colspan="9" class="muted">Henüz hediye kodu oluşturulmadı.</td></tr>';
     return;
   }
 
@@ -4764,6 +4765,7 @@ function renderGiftCodes(items){
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><strong>${esc(item.product_name || '-')}</strong></td>
+      <td><strong>${esc(item.owner_username || '-')}</strong></td>
       <td>${esc(rewardText)}</td>
       <td class="code">••••-${esc(item.redeem_code_last4 || '----')}</td>
       <td><span class="badge ${badge}">${esc(statusText)}</span></td>
@@ -4977,6 +4979,18 @@ function supportRewardStatusInfo(status){
   return map[String(status||'')] || [String(status||'-'),''];
 }
 
+// Veritabanındaki durum kodları İngilizce kalır; yöneticiye Türkçe gösterilir.
+function supportRewardGiftStatusText(status){
+  const labels={
+    unused:'Kullanılmadı',
+    processing:'Puan Gönderiliyor',
+    redeemed:'Kullanıldı',
+    expired:'Süresi Doldu',
+    disabled:'Geçersiz'
+  };
+  return labels[String(status || '')] || String(status || '-');
+}
+
 function supportRewardSupportText(item){
   const type=String(item?.source_type||'');
   const qty=Math.max(1,Math.trunc(Number(item?.quantity||1)));
@@ -5029,7 +5043,7 @@ function renderSupportRewardEvents(){
     const codeLast4=String(item.redeem_code_last4||'').trim();
     const giftStatus=String(item.gift_code_status||'').trim();
     const codeText=codeLast4
-      ? `••••-${codeLast4}${giftStatus ? ` · ${giftStatus}` : ''}`
+      ? `••••-${codeLast4}${giftStatus ? ` · ${supportRewardGiftStatusText(giftStatus)}` : ''}`
       : '-';
     const userName=String(item.username||item.username_norm||'-');
     const uid=String(item.kick_uid||'');
