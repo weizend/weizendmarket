@@ -1,6 +1,6 @@
-// WEİZEND V30.6.6 — Cloudflare Pages Functions (SADECE PAYLAŞIM)
+// WEİZEND V30.6.8 — Cloudflare Pages Functions (SADECE PAYLAŞIM)
 // /paylas/turnuva/:id => turnuvaya özel kapak + bilgiler
-// /paylas/davet/:id   => "Takıma Davetlisin" + Arena görseli
+// /paylas/davet/:id   => "Takıma Davetlisin" + özel davet görseli
 // İnsan ziyaretçi eski ?turnuva=id bağlantısına yönlenir.
 // Worker, D1, auth, kayıt, ödeme veya turnuva mantığına dokunmaz.
 
@@ -98,13 +98,18 @@ export async function onRequestGet(context) {
     image = safeImage(item?.cardImageUrl) || safeImage(item?.heroImageUrl) || ARENA_COVER;
   }
   const label = kind === 'davet' ? 'Takım davetine git' : 'Turnuvayı görüntüle';
+  // "VALORANT" -> "VALORANT TURNUVASI"; isimde TURNUVASI zaten varsa tekrar ekleme.
+  const baseTournamentName = name.replace(/\s+turnuvas[ıi]\s*$/iu, '').trim();
+  const tournamentTitle = baseTournamentName
+    ? `${baseTournamentName.toLocaleUpperCase('tr-TR')} TURNUVASI`
+    : 'WEİZEND TURNUVASI';
   const title = kind === 'davet'
     ? 'Takıma Davetlisin! | WEİZEND ARENA'
-    : `${name || 'WEİZEND TURNUVASI'} | WEİZEND ARENA`;
+    : `${tournamentTitle} | WEİZEND ARENA`;
   const description = kind === 'davet'
     ? 'Bir WEİZEND turnuvası takımına davetlisin! Bağlantıyı aç, Kick hesabınla doğrulan ve sana gönderilen özel davet koduyla takıma katıl.'
-    : name
-      ? `${name} detaylarını ve katılım koşullarını keşfet. Takımını kur, turnuvaya katıl ve WEİZEND ARENA'da mücadele et.`
+    : baseTournamentName
+      ? `${baseTournamentName} turnuvasının detaylarını ve katılım koşullarını keşfet. Takımını kur, turnuvaya katıl ve WEİZEND ARENA'da mücadele et.`
       : 'WEİZEND turnuva detaylarını görüntüle, takımını kur ve ARENA heyecanına katıl.';
   const html = previewHtml({ title, description, image, pageUrl, destination, label });
   return new Response(html, {
