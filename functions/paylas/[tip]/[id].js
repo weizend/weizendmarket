@@ -7,6 +7,7 @@
 const SITE = 'https://www.weizend.com';
 const TOURNAMENT_API = 'https://weizend-botrix.weizendtv.workers.dev/tournaments';
 const ARENA_COVER = SITE + '/arena-paylasim.jpg';
+const INVITE_COVER = SITE + '/takim-davet-paylasim.jpg';
 const ID_PATTERN = /^[A-Za-z0-9_-]{1,110}$/;
 const FETCH_TIMEOUT_MS = 3500;
 const CACHE_MS = 10 * 60 * 1000;
@@ -87,7 +88,7 @@ export async function onRequestGet(context) {
   const pageUrl = `${SITE}/paylas/${kind}/${slug}`;
   const destination = `${SITE}/?turnuva=${slug}`;
   let name = '';
-  let image = ARENA_COVER;
+  let image = kind === 'davet' ? INVITE_COVER : ARENA_COVER;
   // Davet kapak görseli ve başlığı her zaman özel; davet kodu asla URL'ye geçmez.
   // Turnuva görselini sadece açık, genel katalogdan al.
   if (kind === 'turnuva') {
