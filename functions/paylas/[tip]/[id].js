@@ -109,7 +109,7 @@ export async function onRequestGet(context) {
   const description = kind === 'davet'
     ? 'Bir WEİZEND turnuvası takımına davetlisin! Bağlantıyı aç, Kick hesabınla doğrulan ve sana gönderilen özel davet koduyla takıma katıl.'
     : baseTournamentName
-      ? `${baseTournamentName} turnuvasının detaylarını ve katılım koşullarını keşfet. Takımını kur, turnuvaya katıl ve WEİZEND ARENA'da mücadele et.`
+      ? `${tournamentTitle} detaylarını ve katılım koşullarını keşfet. Takımını kur, turnuvaya katıl ve WEİZEND ARENA'da mücadele et.`
       : 'WEİZEND turnuva detaylarını görüntüle, takımını kur ve ARENA heyecanına katıl.';
   const html = previewHtml({ title, description, image, pageUrl, destination, label });
   return new Response(html, {
