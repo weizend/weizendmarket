@@ -704,6 +704,11 @@ function v30RoomHtml(s,m){
     controls=`<div class="room-step"><h3>🟢 MAÇ OYNANIYOR</h3>${waiting}<p>İhlal varsa İtiraz Et, oyun bittiyse Maçı Tamamla seç.</p>${cap?`<button class="btn secondary" id="v30DisputeShow">🚩 İtiraz Et</button> ${own?'<span>✅ Takımın sonuç bildirdi.</span>':'<button class="btn" id="v30ResultShow">🏁 Maçı Tamamla</button>'}`:''}</div>`;
   }
   if(blocked)controls=`<div class="room-step"><h3>🚨 Hakem Kararı Bekleniyor</h3><p class="lobby-warning">${doubleNoShow?'Davet süresi doldu ve iki takımın da hazır katılımı tamamlanmadı. Otomatik kazanan belirlenmedi. Admin panelinden hakem kararı beklenecek.':'İtiraz veya çelişkili skor bulundu. Başlatma ve sonuç işlemleri durduruldu.'}</p>${dis.map(d=>`<p>${esc(d.reason)} · <a href="${esc(d.proof_url)}" target="_blank" rel="noopener noreferrer">Kanıtı Aç ↗</a></p>`).join('')}</div>`;
+  const myAfk=(s.reports||[]);
+  if(s.canReportAfk&&cap&&!blocked){
+    controls+=`<div class="room-step"><h3>🚩 15 Dakika Doldu — Hakeme Bildir</h3><p class="hint">Rakibin katılmaması veya maç hazırlıklarının tamamlanmaması durumunda gerekçeni yaz. Bildirim maçı incelemeye alır, otomatik kazanan belirlemez.</p><textarea id="v30AfkReason" maxlength="800" placeholder="En az 12 karakterle eksik oyuncuyu ve durumu açıkla..."></textarea><button class="btn secondary" id="v30AfkSend">🚩 AFK Başvurusu Gönder</button></div>`;
+  }
+  if(myAfk.length)controls+=`<div class="lobby-note">🚩 AFK bildirimin: ${myAfk.map(x=>esc(x.status)).join(', ')}</div>`;
   if(s.phase==='finalizing')controls='<div class="room-step"><h3>⏳ Maç sonucu fikstüre işleniyor</h3></div>';
   if(s.phase==='completed'||s.matchStatus==='completed')controls='<div class="room-step"><h3>🏆 Maç tamamlandı</h3><p>Eski lobiye işlem yapılamaz. Yeni tur için sistem mesajını bekle.</p></div>';
   const submission=(s.resultSubmissions||[]).map(x=>`<p class="lobby-note">🏁 ${x.team_side.toUpperCase()} takımı sonucu: ${x.score_a}-${x.score_b} · <a href="${esc(x.proof_url)}" target="_blank" rel="noopener noreferrer">Kanıt ↗</a></p>`).join('');
@@ -723,6 +728,7 @@ function v30RenderLobby(s,m){
   on('v30ResultShow',()=>{const form=$('v30ResultForm');form.hidden=!form.hidden;if(!form.hidden)form.scrollIntoView({block:'nearest'});});
   on('v30DisputeSend',()=>lobbyReview('dispute',{reason:$('v30DisputeReason')?.value||'',proof:$('v30DisputeProof')?.value||''}));
   on('v30ResultSend',()=>lobbyReview('result',{scoreA:$('v30ScoreA')?.value,scoreB:$('v30ScoreB')?.value,proof:$('v30ResultProof')?.value,confirmed:!!$('v30Confirmed')?.checked}));
+  on('v30AfkSend',()=>lobbyAction('afk_report',{reason:$('v30AfkReason')?.value||''}));
   updateRoomCountdown();
 }
 function v30StartPolling(){
