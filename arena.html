@@ -202,6 +202,18 @@ body.arena-dialog-open{overflow:hidden}
   .wz-arena-return .wz-arena-return-arrow{width:24px;height:27px;font-size:18px}
 }
 @media(max-width:365px){.wz-arena-return .wz-account-copy b{font-size:9px}}
+/* V30.6.17: Read-only public roster accordions, closed by default. */
+.wz617-roster{padding:0;overflow:hidden}
+.wz617-roster>summary{list-style:none;cursor:pointer;padding:11px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:space-between}
+.wz617-roster>summary::-webkit-details-marker{display:none}
+.wz617-roster>summary strong{display:inline;flex:1;min-width:130px;overflow-wrap:anywhere}
+.wz617-roster-tag{font-size:11px;color:#ddd;font-weight:800}
+.wz617-roster-tag.waiting{color:#ffd47a}
+.wz617-roster>summary:focus-visible{outline:2px solid #f66;outline-offset:-2px}
+.wz617-roster>summary:hover{background:#271818}
+.wz617-roster-players{border-top:1px solid #343434;padding:10px 11px;color:#d3d3d3;font-size:12px;display:grid;gap:7px}
+.wz617-roster-players>div{overflow-wrap:anywhere}
+.wz617-roster-players small{color:#aaa}
 </style>
 </head>
 <body>
@@ -385,9 +397,16 @@ function arenaPlayerGameName(p){
   const game=String(p?.gameId||p?.riotId||'').trim();
   return game || 'Oyun içi ad bekleniyor';
 }
-function renderParticipants(){const d=state.detail||{},teams=d.teams||[],people=d.participants||[];
- if(!teams.length&&!people.length){$('participants').innerHTML='<div class="small">Henüz kayıtlı katılımcı bulunmuyor. Yalnızca tamamlanmış takımlar gösterilir.</div>';return;}
- $('participants').innerHTML=teams.length?teams.map(t=>`<div class="member"><strong>${esc(t.name||'Takım')}</strong><small>${esc((t.members||[]).map(arenaPlayerGameName).join(' • ')||'Kadro bekleniyor')}</small></div>`).join(''):people.map(p=>`<div class="member"><strong>${esc(arenaPlayerGameName(p))}</strong></div>`).join('');}
+function renderParticipants(){const d=state.detail||{},teams=Array.isArray(d.teams)?d.teams:[],people=d.participants||[];
+ const pending=Array.isArray(d.waitingTeams)?d.waitingTeams:[];
+ const all=[...teams.map(t=>({...t,_pending:false})),...pending.map(t=>({...t,_pending:true}))];
+ if(!all.length&&!people.length){$('participants').innerHTML='<div class="small">Henüz kayıtlı takım veya katılımcı bulunmuyor.</div>';return;}
+ $('participants').innerHTML=all.length?all.map(t=>{
+   const members=Array.isArray(t.members)?t.members:[];
+   const joined=Number.isFinite(Number(t.joinedCount))?Number(t.joinedCount):members.length;
+   const count=Math.max(0,Number(t.teamSize)||2);
+   return `<details class="member wz617-roster"><summary><strong>${esc(t.name||'Takım')}</strong><span class="wz617-roster-tag ${t._pending?'waiting':''}">${t._pending?'⏳ Oyuncu bekleniyor':'✅ Hazır'} · ${joined}/${count}</span><span aria-hidden="true">⌄</span></summary><div class="wz617-roster-players">${members.length?members.map((m,i)=>`<div>👤 ${esc(arenaPlayerGameName(m))}${String(m.role||'').toLowerCase()==='captain'||(i===0&&!members.some(x=>String(x.role||'').toLowerCase()==='captain'))?' · Kaptan':''}</div>`).join(''):'<small>Henüz oyuncu bilgisi yok.</small>'}</div></details>`;
+ }).join(''):people.map(p=>`<div class="member"><strong>${esc(arenaPlayerGameName(p))}</strong></div>`).join('');}
 function renderBoard(){if(!state.pred){$('predictionBoard').textContent='Tahmin sıralaması yükleniyor...';return;}
  const list=state.pred.leaderboard||[];if(!list.length){$('predictionBoard').textContent='Henüz tahmin yapan yok.';return;}
  $('predictionBoard').innerHTML=`<table class="leaderboard"><thead><tr><th>#</th><th>Kick Kullanıcısı</th><th>Puan</th><th>Doğru</th></tr></thead><tbody>`+list.slice(0,50).map(x=>`<tr><td>${Number(x.rank)||0}</td><td>${esc(x.username)}</td><td class="count">${Number(x.score)||0}</td><td class="count">${Number(x.correctCount)||0}</td></tr>`).join('')+'</tbody></table>';
