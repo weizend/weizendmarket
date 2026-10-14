@@ -10602,7 +10602,9 @@ return;
             const t = item.tournament || {};
             const rule = item.rule || {};
             const teamMode = String(t.mode || '') !== 'solo';
-            const used = Number(t.registeredCount || (teamMode ? item.teams.length : 0));
+            const used = Math.max(0,Number(t.registeredCount ?? (teamMode ? item.teams.length : 0))||0);
+            const ready = Math.max(0,Number(t.completedCount||0));
+            const waiting = teamMode ? Math.max(0,used-ready) : 0;
             const capacity = Number(t.capacity || 0);
             const full = capacity > 0 && used >= capacity;
             const blocked =
@@ -10737,7 +10739,7 @@ return;
 
                     <div class="tv2-card-note">
                         ${teamMode
-                            ? `Sadece tüm oyuncuları ve katılım şartları tamamlanan takımlar herkese açık listede görünür. Kaptan kendi kaydını tamamladıktan sonra takım arkadaşları için tek kullanımlık davet kodları oluşturulur.`
+                            ? `👥 ${used}/${capacity||'-'} takım yeri kullanılıyor · ✅ ${ready} hazır · ⏳ ${waiting} oyuncu bekliyor. ${full&&waiting>0?'Şu anda yeni takım oluşturulamaz. Eksik takımlar iptal edilip kontenjan açılırsa daha sonra yeniden kontrol edebilirsin.':''} Takımları ve kadroları Arena sayfasından inceleyebilirsin.`
                             : `Kayıtlı oyuncuları, fikstürü ve sonuçları turnuva detayından görebilirsin.`}
                     </div>
 
@@ -14463,9 +14465,9 @@ return;
     const c=tournamentCategory(item);
     if(c==='done') return 'TAMAMLANDI';
     if(c==='live') return isTournamentBroadcast(item) ? 'CANLI' : 'MAÇLAR BAŞLADI';
+    if(wzV272RosterWaiting(item)) return 'KADROLAR BEKLENİYOR';
     if(registrationPhase(item)==='full') return 'KAYITLAR DOLDU';
     if(c==='soon') return 'YAKINDA';
-    if(wzV272RosterWaiting(item)) return 'KADROLAR BEKLENİYOR';
     if(registrationPhase(item)==='full') return 'KAYITLAR DOLU';
     if(c==='closed') return 'KAYIT KAPANDI';
     return 'AKTİF';
@@ -15075,7 +15077,7 @@ return;
           </div>
           <div class="wz-turn-card-entry-stack">
             <span class="wz-v96-format-badge">${esc(modeText(t))}</span>
-            <div class="wz-turn-card-participation"><span class="wz-turn-card-count">👥 <strong>${wzV95ReadyCount(item)}/${Math.max(0,Number(t.capacity||0))}</strong> ${Number(t.teamSize||1)>1?'Hazır Takım':'Oyuncu'}</span></div>
+            <div class="wz-turn-card-participation"><span class="wz-turn-card-count">👥 <strong>${Math.max(0,Number(t.registeredCount||0))}/${Math.max(0,Number(t.capacity||0))}</strong> ${Number(t.teamSize||1)>1?'Takım':'Oyuncu'}${Number(t.teamSize||1)>1?`<small style="display:block;font-size:.67rem;color:#c4d8d2">✅ ${wzV95ReadyCount(item)} hazır · ⏳ ${Math.max(0,Number(t.registeredCount||0)-wzV95ReadyCount(item))} bekliyor</small>`:''}</span></div>
             <span class="wz-turn-entry-pill ${esc(entryBadge.className)}">
               <span>${entryBadge.icon}</span><span>${esc(entryBadge.text)}</span>
             </span>
@@ -15091,7 +15093,7 @@ return;
 
         ${completed && fin.champion ? `<div class="wz-turn-completed-note">Şampiyon: <b>${esc(fin.champion)}</b></div>` : ''}
         <div data-wz-entry-tournament="${esc(id)}">${wzV95RegistrationNotice(id)}</div>
-        ${wzV272RosterWaiting(item)?`<div class="wz-v272-roster-note">👥 Yeni takım kontenjanı dolu; eksik oyuncu geçerli davet koduyla <b>Detayları Gör → Davet Koduyla Katıl</b> adımından ilerleyebilir. Kayıt süresi ve diğer şartlar geçerlidir.</div>`:''}
+        ${wzV272RosterWaiting(item)?`<div class="wz-v272-roster-note">⏳ Kontenjan dolu ancak eksik takımlar var. Eksik takım iptal edilirse boş yer açılabilir; daha sonra sayfayı yenileyip kontrol edebilirsin. Mevcut davet koduyla katılım, kayıt tarihi ve diğer şartlar uygunsa devam eder. <b>Bu turnuvada otomatik 30 dakika takım iptali henüz etkin değil.</b></div>`:''}
         <div class="wz-turn-card-actions">
           <button type="button" class="wz-turn-mainbtn" onclick="wzTurnOpen('${esc(id)}')">Detayları Gör</button>
         </div>
@@ -15275,11 +15277,23 @@ return;
         <div class="wz-turn-detailrow"><span>Format</span><b>${esc(modeText(t))} ${Number(t.teamSize||1)>1?'(Takımlı)':'(Solo)'}</b></div>
         <div class="wz-turn-detailrow"><span>Harita</span><b>${esc(mapDisplayName(t,rule))}</b></div>
         <div class="wz-turn-detailrow"><span>Maç Formatı</span><b>${esc(matchFormat(t,rule))}</b></div>
-        <div class="wz-turn-detailrow"><span>Kontenjan</span><b>${Number(t.capacity||0)||'-'} ${Number(t.teamSize||1)>1?'Takım':'Oyuncu'}</b></div>
+        <div class="wz-turn-detailrow"><span>Kontenjan</span><b>${Math.max(0,Number(t.registeredCount||0))}/${Number(t.capacity||0)||'-'} ${Number(t.teamSize||1)>1?'Takım':'Oyuncu'}</b></div>
+        ${Number(t.teamSize||1)>1?`<div class="wz-turn-detailrow"><span>Takımların Durumu</span><b>✅ ${Number(t.completedCount||0)} hazır · ⏳ ${Math.max(0,Number(t.registeredCount||0)-Number(t.completedCount||0))} eksik</b></div>`:''}
         <div class="wz-turn-detailrow"><span>Katılım</span><b>${esc(entryText(item))}</b></div>
         ${Number(t.teamSize||1)>1?'<div class="wz-turn-detailrow"><span>Ödül Dağılımı</span><b>🏅 Kişi Başı</b></div>':''}
       </div>
     </div>`;
+  }
+  // V30.6.17: Never include waiting teams in bracket/prediction arrays.
+  // These are shown only in a separate public roster list.
+  function wz617VisibleTeams(detail){
+    const ready=(Array.isArray(detail?.teams)?detail.teams:[])
+      .filter(team=>['ready','locked','active'].includes(String(team?.status||'').toLowerCase()))
+      .map(team=>({...team,_pending:false}));
+    const pending=(Array.isArray(detail?.waitingTeams)?detail.waitingTeams:[])
+      .filter(team=>String(team?.status||'').toLowerCase()!=='cancelled')
+      .map(team=>({...team,_pending:true}));
+    return [...ready,...pending];
   }
   function renderParticipants(detail,item){
     const t=detail?.tournament||item?.tournament||{};
@@ -15326,18 +15340,17 @@ return;
       </div>`;
     }
 
-    const teams=(Array.isArray(detail?.teams)?detail.teams:[])
-      .filter(team=>['ready','locked','active'].includes(String(team?.status||'').toLowerCase()));
+    const teams=wz617VisibleTeams(detail);
     const totalPlayers=teams.reduce((n,t)=>n+(t.members?.length||0),0);
     return `<div class="wz-turn-box wz-turn-participants-box">
       <div class="wz-turn-participants-head"><div>
         <h3>👥 Katılımcılar</h3>
-        <div class="wz-turn-participants-note">Yalnızca kaydı tamamlanmış takımlar listelenir. Takım adına dokunarak kadroyu görebilirsin.</div>
-      </div><div class="wz-turn-participants-count"><strong>${teams.length} / ${capacity||'-'}</strong><span>Takım</span><small>${totalPlayers} Oyuncu</small></div></div>
+        <div class="wz-turn-participants-note">Kontenjandaki hazır ve oyuncu bekleyen bütün takımlar burada görünür. Takıma dokunarak yalnızca katılmış oyuncuları görebilirsin.</div>
+      </div><div class="wz-turn-participants-count"><strong>${teams.length} / ${capacity||'-'}</strong><span>Takım</span><small>✅ ${teams.filter(t=>!t._pending).length} hazır · ⏳ ${teams.filter(t=>t._pending).length} bekliyor</small></div></div>
       ${teams.length?`<div class="wz-turn-team-list">${teams.map((team,i)=>`
         <button class="wz-v95-public-team-btn" type="button" onclick="wzV95OpenPublicTeam(${i})">
           <span class="wz-turn-team-order">${i+1}</span><strong>${esc(team.name||'Takım')}</strong>
-          <span style="font-size:.72rem;color:#a9ebc1">✅ Onaylı</span><span>›</span>
+          <span style="font-size:.72rem;color:${team._pending?'#ffd47a':'#a9ebc1'}">${team._pending?'⏳ Bekliyor':'✅ Hazır'} · ${Number(team.joinedCount??(team.members||[]).length)}/${Number(team.teamSize||2)}</span><span>›</span>
         </button>`).join('')}</div>`:'<div class="wz-turn-empty">Henüz onaylı takım bulunmuyor.</div>'}
     </div>`;
   }
@@ -15349,8 +15362,7 @@ return;
   window.wzV95ClosePublicTeam=wzV95ClosePublicTeam;
   window.wzV95OpenPublicTeam=function(index){
     const detail=state.details.get(state.selectedId);
-    const teams=(Array.isArray(detail?.teams)?detail.teams:[])
-      .filter(team=>['ready','locked','active'].includes(String(team?.status||'').toLowerCase()));
+    const teams=wz617VisibleTeams(detail);
     const team=teams[Number(index)]; if(!team)return;
     wzV95ClosePublicTeam();
     const members=Array.isArray(team.members)?team.members:[];
@@ -15358,7 +15370,7 @@ return;
     overlay.id='wzV95PublicTeamDialog';overlay.className='wz-v95-team-overlay';
     overlay.setAttribute('role','presentation');
     overlay.innerHTML=`<section class="wz-v95-team-modal" role="dialog" aria-modal="true" aria-label="Takım kadrosu">
-      <div class="wz-v95-team-top"><h3>👥 ${esc(team.name||'Takım')} · ${members.length} Oyuncu</h3>
+      <div class="wz-v95-team-top"><h3>👥 ${esc(team.name||'Takım')} · ${members.length}/${Number(team.teamSize||members.length)} Oyuncu ${team._pending?'· ⏳ Bekliyor':''}</h3>
       <button class="wz-v95-team-close" type="button" onclick="wzV95ClosePublicTeam()" aria-label="Kapat">×</button></div>
       <div class="wz-v95-team-scroll">${members.length?members.map((m,i)=>`
         <div class="wz-v95-team-person"><span class="mark">${String(m.role||'').toLowerCase()==='captain'||i===0?'👑':'👤'}</span>
@@ -15830,7 +15842,7 @@ return;
     if(state.tab==='arena') panel=renderArenaIntro(item);
     else if(detail?.__error) panel = `<div class="wz-turn-empty">${esc(detail.__error)}</div>`;
     else if(detail){
-      if(state.tab==='overview') panel = renderOverview(detail,item);
+      if(state.tab==='overview') panel = renderOverview(detail,item) + renderParticipants(detail,item);
       if(state.tab==='rules') panel = renderRules(item);
       if(state.tab==='prizes') panel = renderPrizes(detail,item);
       if(state.tab==='participants') panel = renderParticipants(detail,item);
