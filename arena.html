@@ -216,6 +216,24 @@ body.arena-dialog-open{overflow:hidden}
 .wz617-roster-players small{color:#aaa}
 </style>
 
+<style id="wz622-team-dialog-style">
+/* V30.6.22: Turnuva detaylarındaki gibi ayrı kadro modalı. */
+.wz622-team-btn{display:flex;width:100%;align-items:center;gap:9px;flex-wrap:wrap;text-align:left;color:#fff;cursor:pointer}
+.wz622-team-btn strong{flex:1;min-width:90px}
+.wz622-team-btn:hover{background:#261719;border-color:#844}
+.wz622-team-overlay{position:fixed;inset:0;z-index:2147482000;display:grid;place-items:center;background:#000d;padding:14px;overscroll-behavior:contain}
+.wz622-team-dialog{width:min(570px,100%);max-height:min(86dvh,760px);display:flex;flex-direction:column;overflow:hidden;background:#101013;color:#fff;border:1px solid #48444c;border-radius:18px;box-shadow:0 22px 80px #000c}
+.wz622-team-header{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:15px 16px;border-bottom:1px solid #353039}
+.wz622-team-title{margin:0;font-size:16px;overflow-wrap:anywhere;flex:1}
+.wz622-team-close{flex:none;width:40px;height:40px;background:#252528;color:#fff;border:1px solid #555;border-radius:9px;font-size:26px;line-height:1}
+.wz622-team-content{overflow-y:auto;min-height:0;padding:14px 16px;overscroll-behavior:contain}
+.wz622-team-person{display:flex;align-items:flex-start;gap:12px;background:#181a20;border:1px solid #333;border-radius:11px;padding:12px;margin-bottom:9px}
+.wz622-team-person .wz622-mark{min-width:28px;font-size:22px}
+.wz622-team-person strong{display:block;font-size:14px;overflow-wrap:anywhere}
+.wz622-team-person small{display:block;color:#b3bac7;margin-top:4px;font-size:12px;overflow-wrap:anywhere}
+@media(max-width:460px){.wz622-team-overlay{padding:8px}.wz622-team-dialog{max-height:92dvh}.wz622-team-header{padding:11px}.wz622-team-content{padding:10px}}
+</style>
+
 <style id="wz619-free-team-clock-style">
 .wz619-clock{display:inline-flex;gap:5px;align-items:center;font-weight:700;font-variant-numeric:tabular-nums;color:#ffcd7c;font-size:12px}
 .wz619-deadline-note{border:1px solid #5e441f;background:#1b160f;border-radius:8px;padding:9px 11px;color:#f6d4a0;font-size:12px;line-height:1.55;margin-top:8px}
@@ -403,16 +421,58 @@ function arenaPlayerGameName(p){
   const game=String(p?.gameId||p?.riotId||'').trim();
   return game || 'Oyun içi ad bekleniyor';
 }
-function renderParticipants(){const d=state.detail||{},teams=Array.isArray(d.teams)?d.teams:[],people=d.participants||[];
- const pending=Array.isArray(d.waitingTeams)?d.waitingTeams:[];
- const all=[...teams.map(t=>({...t,_pending:false})),...pending.map(t=>({...t,_pending:true}))];
+function wz622PublicTeams(){
+ const d=state.detail||{};
+ const ready=(Array.isArray(d.teams)?d.teams:[]).filter(t=>['ready','locked','active'].includes(String(t.status||'').toLowerCase())).map(t=>({...t,_pending:false}));
+ const pending=(Array.isArray(d.waitingTeams)?d.waitingTeams:[]).filter(t=>String(t.status||'').toLowerCase()!=='cancelled').map(t=>({...t,_pending:true}));
+ return [...ready,...pending];
+}
+function renderParticipants(){
+ const d=state.detail||{},all=wz622PublicTeams(),people=d.participants||[];
  if(!all.length&&!people.length){$('participants').innerHTML='<div class="small">Henüz kayıtlı takım veya katılımcı bulunmuyor.</div>';return;}
  $('participants').innerHTML=all.length?all.map(t=>{
    const members=Array.isArray(t.members)?t.members:[];
    const joined=Number.isFinite(Number(t.joinedCount))?Number(t.joinedCount):members.length;
    const count=Math.max(0,Number(t.teamSize)||2);
-   return `<details class="member wz617-roster"><summary><strong>${esc(t.name||'Takım')}</strong><span class="wz617-roster-tag ${t._pending?'waiting':''}">${t._pending?'⏳ Oyuncu bekleniyor':'✅ Hazır'} · ${joined}/${count}</span>${t._pending&&t.freeTeamExpiresAt?`<span class="wz619-clock">⌛ <span data-wz619-deadline="${esc(t.freeTeamExpiresAt)}">30:00</span></span>`:''}<span aria-hidden="true">⌄</span></summary><div class="wz617-roster-players">${members.length?members.map((m,i)=>`<div>👤 ${esc(arenaPlayerGameName(m))}${String(m.role||'').toLowerCase()==='captain'||(i===0&&!members.some(x=>String(x.role||'').toLowerCase()==='captain'))?' · Kaptan':''}</div>`).join(''):'<small>Henüz oyuncu bilgisi yok.</small>'}</div></details>`;
- }).join(''):people.map(p=>`<div class="member"><strong>${esc(arenaPlayerGameName(p))}</strong></div>`).join('');}
+   return `<button type="button" class="member wz622-team-btn" data-wz622-team="${esc(t.id||'')}"><strong>${esc(t.name||'Takım')}</strong><span class="wz617-roster-tag ${t._pending?'waiting':''}">${t._pending?'⏳ Oyuncu bekleniyor':'✅ Hazır'} · ${joined}/${count}</span>${t._pending&&t.freeTeamExpiresAt?`<span class="wz619-clock">⌛ <span data-wz619-deadline="${esc(t.freeTeamExpiresAt)}">30:00</span></span>`:''}<span aria-hidden="true">›</span></button>`;
+ }).join(''):people.map(p=>`<div class="member"><strong>${esc(arenaPlayerGameName(p))}</strong></div>`).join('');
+}
+let wz622TeamDialog=null;
+function wz622CloseTeamDialog(){
+ if(!wz622TeamDialog)return;
+ wz622TeamDialog.remove();wz622TeamDialog=null;
+ document.body.style.overflow=window.__wz622OldBodyOverflow||'';
+}
+async function wz622ShowTeamDialog(teamId){
+ // Tıklama anında sunucudan taze kayıt al: admin tarafından silinen takım açılmasın.
+ const id=String(teamId||'');if(!id)return;
+ try{
+   const current=await api('/tournament/public?id='+encodeURIComponent(tid)+'&_='+Date.now());
+   if(current?.tournament?.id!==tid)throw Error('Turnuva bilgisi eşleşmedi.');
+   state.detail=current;state.t=current.tournament;cachePublic();renderParticipants();renderHero();
+   const team=wz622PublicTeams().find(t=>String(t.id||'')===id);
+   if(!team){toast('Bu takım artık turnuvada kayıtlı değil. Liste güncellendi.','ok');return;}
+   const members=Array.isArray(team.members)?team.members:[];
+   const count=Math.max(0,Number(team.teamSize||2));
+   wz622CloseTeamDialog();
+   const overlay=document.createElement('div');overlay.className='wz622-team-overlay';overlay.setAttribute('role','presentation');
+   overlay.innerHTML=`<section class="wz622-team-dialog" role="dialog" aria-modal="true" aria-label="Takım kadrosu">
+     <div class="wz622-team-header"><h3 class="wz622-team-title">👥 ${esc(team.name||'Takım')} · ${members.length}/${count} Oyuncu ${team._pending?'· ⏳ Bekliyor':''}</h3>
+       <button type="button" class="wz622-team-close" aria-label="Kapat">×</button></div>
+     <div class="wz622-team-content">${team._pending&&team.freeTeamExpiresAt?`<p class="wz619-clock">⏳ Kalan süre: <span data-wz619-deadline="${esc(team.freeTeamExpiresAt)}">30:00</span></p>`:''}
+       ${members.length?members.map((m,i)=>`<div class="wz622-team-person"><span class="wz622-mark">${String(m.role||'').toLowerCase()==='captain'||i===0?'👑':'👤'}</span><div><strong>Kick: ${esc(m.username||m.plannedUsername||'-')}</strong><small>Oyun adı: ${esc(m.gameId||m.riotId||'-')}</small></div></div>`).join(''):'<p class="small">Kadro bilgisi henüz bulunmuyor.</p>'}</div></section>`;
+   overlay.addEventListener('click',e=>{if(e.target===overlay||e.target.closest('.wz622-team-close'))wz622CloseTeamDialog();});
+   window.__wz622OldBodyOverflow=document.body.style.overflow;
+   document.body.style.overflow='hidden';document.body.appendChild(overlay);wz622TeamDialog=overlay;
+   overlay.querySelector('.wz622-team-close')?.focus({preventScroll:true});
+ }catch(error){toast('Takım bilgileri güncellenemedi: '+String(error?.message||error),'error');}
+}
+$('participants').addEventListener('click',e=>{
+ const button=e.target.closest('[data-wz622-team]');
+ if(button && $('participants').contains(button))void wz622ShowTeamDialog(button.dataset.wz622Team);
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&wz622TeamDialog){e.preventDefault();e.stopPropagation();wz622CloseTeamDialog();}},true);
+
 function renderBoard(){if(!state.pred){$('predictionBoard').textContent='Tahmin sıralaması yükleniyor...';return;}
  const list=state.pred.leaderboard||[];if(!list.length){$('predictionBoard').textContent='Henüz tahmin yapan yok.';return;}
  $('predictionBoard').innerHTML=`<table class="leaderboard"><thead><tr><th>#</th><th>Kick Kullanıcısı</th><th>Puan</th><th>Doğru</th></tr></thead><tbody>`+list.slice(0,50).map(x=>`<tr><td>${Number(x.rank)||0}</td><td>${esc(x.username)}</td><td class="count">${Number(x.score)||0}</td><td class="count">${Number(x.correctCount)||0}</td></tr>`).join('')+'</tbody></table>';
@@ -714,6 +774,7 @@ async function confirmCoupon(){
  }catch(e){toast('Kupon onaylanamadı: '+e.message,'error');await refresh();}
  finally{state.saving=false;renderMatch();}
 }
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&tid&&!state.loading)void refresh();});
 $('refreshBtn').onclick=()=>refresh();$('pickA').onclick=()=>savePick(0);$('pickB').onclick=()=>savePick(1);
 $('confirmPicks').onclick=()=>confirmCoupon();
 $('editPicks').onclick=()=>{state.editMode=true;renderMatch();};
