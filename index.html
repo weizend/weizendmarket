@@ -15284,8 +15284,8 @@ return;
         <div class="wz-turn-detailrow"><span>Format</span><b>${esc(modeText(t))} ${Number(t.teamSize||1)>1?'(Takımlı)':'(Solo)'}</b></div>
         <div class="wz-turn-detailrow"><span>Harita</span><b>${esc(mapDisplayName(t,rule))}</b></div>
         <div class="wz-turn-detailrow"><span>Maç Formatı</span><b>${esc(matchFormat(t,rule))}</b></div>
-        <div class="wz-turn-detailrow"><span>Kontenjan</span><b>${Math.max(0,Number(t.registeredCount||0))}/${Number(t.capacity||0)||'-'} ${Number(t.teamSize||1)>1?'Takım':'Oyuncu'}</b></div>
-        ${Number(t.teamSize||1)>1?`<div class="wz-turn-detailrow"><span>Takımların Durumu</span><b>✅ ${Number(t.completedCount||0)} hazır · ⏳ ${Math.max(0,Number(t.registeredCount||0)-Number(t.completedCount||0))} eksik</b></div>`:''}
+        <div class="wz-turn-detailrow"><span>Kontenjan</span><b>${Math.max(0,Number(detail?.tournament?.registeredCount??t.registeredCount??0))}/${Number(detail?.tournament?.capacity??t.capacity??0)||'-'} ${Number(t.teamSize||1)>1?'Takım':'Oyuncu'}</b></div>
+        ${Number(t.teamSize||1)>1?`<div class="wz-turn-detailrow"><span>Takımların Durumu</span><b>✅ ${Number(detail?.tournament?.completedCount??t.completedCount??0)} hazır · ⏳ ${Math.max(0,Number(detail?.tournament?.registeredCount??t.registeredCount??0)-Number(detail?.tournament?.completedCount??t.completedCount??0))} eksik</b></div>`:''}
         <div class="wz-turn-detailrow"><span>Katılım</span><b>${esc(entryText(item))}</b></div>
         ${Number(t.teamSize||1)>1?'<div class="wz-turn-detailrow"><span>Ödül Dağılımı</span><b>🏅 Kişi Başı</b></div>':''}
       </div>
@@ -15355,22 +15355,83 @@ return;
         <div class="wz-turn-participants-note">Kontenjandaki hazır ve oyuncu bekleyen bütün takımlar burada görünür. Takıma dokunarak yalnızca katılmış oyuncuları görebilirsin.</div>
       </div><div class="wz-turn-participants-count"><strong>${teams.length} / ${capacity||'-'}</strong><span>Takım</span><small>✅ ${teams.filter(t=>!t._pending).length} hazır · ⏳ ${teams.filter(t=>t._pending).length} bekliyor</small></div></div>
       ${teams.length?`<div class="wz-turn-team-list">${teams.map((team,i)=>`
-        <button class="wz-v95-public-team-btn" type="button" onclick="wzV95OpenPublicTeam(${i})">
+        <button class="wz-v95-public-team-btn" type="button" onclick="wzV95OpenPublicTeam('${encodeURIComponent(String(team.id||'')).replace(/'/g,'%27')}')">
           <span class="wz-turn-team-order">${i+1}</span><strong>${esc(team.name||'Takım')}</strong>
           <span style="font-size:.72rem;color:${team._pending?'#ffd47a':'#a9ebc1'}">${team._pending?'⏳ Bekliyor':'✅ Hazır'} · ${Number(team.joinedCount??(team.members||[]).length)}/${Number(team.teamSize||2)}</span>${team._pending && team.freeTeamExpiresAt ? `<span class="wz619-clock">⌛ <span data-wz619-deadline="${esc(team.freeTeamExpiresAt)}">30:00</span></span>`:''}<span>›</span>
         </button>`).join('')}</div>`:'<div class="wz-turn-empty">Henüz onaylı takım bulunmuyor.</div>'}
     </div>`;
   }
 
+  // V30.6.22.2: On page return/team click, read current public D1-backed
+  // tournament details. No polling: never assume sessionStorage is authoritative.
+  let wz622LastRefresh=0;
+  let wz622ActiveRefresh=null;
+  async function wz622FetchFreshPublicDetail(tournamentId){
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),18000);
+    try{
+      const response=await fetch(
+        `${MARKET_WORKER}/tournament/public?id=${encodeURIComponent(tournamentId)}&_=${Date.now()}`,
+        {headers:{'Accept':'application/json'},cache:'no-store',signal:controller.signal}
+      );
+      const data=await response.json();
+      if(!response.ok || !data?.success) throw Error(data?.error||`HTTP ${response.status}`);
+      return data;
+    }finally{clearTimeout(timeout);}
+  }
+  async function wz622RefreshOpenDetail(force=false){
+    if(state.screen!=='detail' || !state.selectedId || document.hidden) return false;
+    if(wz622ActiveRefresh) return wz622ActiveRefresh;
+    if(!force && Date.now()-wz622LastRefresh<1200) return true;
+    wz622LastRefresh=Date.now();
+    const id=String(state.selectedId);
+    const task=(async()=>{
+      try{
+        const fresh=await wz622FetchFreshPublicDetail(id);
+        if(String(fresh?.tournament?.id||'')!==id || state.selectedId!==id || state.screen!=='detail') return false;
+        const before=state.details.get(id);
+        const signature=data=>JSON.stringify({count:data?.tournament?.registeredCount,
+          ready:data?.tournament?.completedCount,teams:data?.teams,waiting:data?.waitingTeams});
+        const changed=signature(before)!==signature(fresh);
+        state.details.set(id,fresh);
+        persistTournamentDetailCache(state.details);
+        if(changed){
+          wzReleaseHydratedTournamentShell();
+          wzV95ClosePublicTeam();
+          render();
+        }
+        return true;
+      }catch(_){return false;} // A failed request must not approve stale cache contents.
+    })();
+    wz622ActiveRefresh=task;
+    try{return await task;}finally{if(wz622ActiveRefresh===task)wz622ActiveRefresh=null;}
+  }
+  document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden) void wz622RefreshOpenDetail();
+  });
+  window.addEventListener('focus',()=>{void wz622RefreshOpenDetail();});
+
   function wzV95ClosePublicTeam(){
     document.getElementById('wzV95PublicTeamDialog')?.remove();
     window.__wzV95TeamDialogOpen=false;
   }
   window.wzV95ClosePublicTeam=wzV95ClosePublicTeam;
-  window.wzV95OpenPublicTeam=function(index){
+  window.wzV95OpenPublicTeam=async function(encodedTeamId){
+    // Verify that the clicked team still exists on the server.
+    const checked=await wz622RefreshOpenDetail(true);
+    if(!checked){
+      if(typeof showStatusToast==='function') showStatusToast('Takım bilgisi güncellenemedi. Lütfen tekrar dene.',3500);
+      return;
+    }
     const detail=state.details.get(state.selectedId);
     const teams=wz617VisibleTeams(detail);
-    const team=teams[Number(index)]; if(!team)return;
+    let requestedId='';
+    try{requestedId=decodeURIComponent(String(encodedTeamId||''));}catch(_){return;}
+    const team=teams.find(t=>String(t.id||'')===requestedId);
+    if(!team){
+      if(typeof showStatusToast==='function') showStatusToast('Bu takım artık turnuvaya kayıtlı değil. Liste güncellendi.',4000);
+      return;
+    }
     wzV95ClosePublicTeam();
     const members=Array.isArray(team.members)?team.members:[];
     const overlay=document.createElement('div');
@@ -16429,6 +16490,8 @@ return;
     if(document.body.classList.contains('wz-view-tournament')){
       // Paylaşım linkinde katalog cache'de mevcutsa ilk açılışta da detay aç.
       if(!wzOpenSharedTurnuvaIfReady()) render();
+      // On hard reload: validate the open roster once, then update only if changed.
+      if(state.screen==='detail' && state.selectedId) void wz622RefreshOpenDetail(true);
 
       // Gerçek veriyi sessizce yenile; event gelince ekran tekrar çizilir.
       try{
