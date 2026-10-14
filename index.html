@@ -9,7 +9,7 @@
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
-<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="WEİZEND">
 <meta property="og:locale" content="tr_TR">
@@ -14607,7 +14607,8 @@ return;
 
   async function ensureDetail(id){
     if(!id) return null;
-    if(state.details.has(id)) return state.details.get(id);
+    if(state.details.has(id) && !state.details.get(id)?.__error) return state.details.get(id);
+    if(state.details.get(id)?.__error) state.details.delete(id);
 
     if(state.loading.has(id)){
       for(let i=0;i<70;i++){
@@ -15100,7 +15101,7 @@ return;
 
         ${completed && fin.champion ? `<div class="wz-turn-completed-note">Şampiyon: <b>${esc(fin.champion)}</b></div>` : ''}
         <div data-wz-entry-tournament="${esc(id)}">${wzV95RegistrationNotice(id)}</div>
-        ${wzV272RosterWaiting(item)?`<div class="wz-v272-roster-note">⏳ Kontenjan dolu ancak eksik takımlar var. Eksik takım iptal edilirse boş yer açılabilir; daha sonra sayfayı yenileyip kontrol edebilirsin. Mevcut davet koduyla katılım, kayıt tarihi ve diğer şartlar uygunsa devam eder.</div>`:''}
+        ${wzV272RosterWaiting(item)?`<div class="wz-v272-roster-note">⏳ Kontenjan dolu ancak eksik takımlar var. Eksik takım iptal edilirse boş yer açılabilir; daha sonra sayfayı yenileyip kontrol edebilirsin. Mevcut davet koduyla katılım, kayıt tarihi ve diğer şartlar uygunsa devam eder. <b>Güncellemeden sonra oluşturulan ücretsiz takımlar için 30 dakika kuralı geçerlidir; önceki takımlar otomatik süreye tabi değildir.</b></div>`:''}
         <div class="wz-turn-card-actions">
           <button type="button" class="wz-turn-mainbtn" onclick="wzTurnOpen('${esc(id)}')">Detayları Gör</button>
         </div>
@@ -15908,7 +15909,7 @@ return;
     let panel = `<div class="wz-turn-loading">Turnuva detayları yükleniyor...</div>`;
     // Arena tanıtımı ayrı bir veri isteği beklemez; Market API geçici sorun yaşasa da açılır.
     if(state.tab==='arena') panel=renderArenaIntro(item);
-    else if(detail?.__error) panel = `<div class="wz-turn-empty">${esc(detail.__error)}</div>`;
+    else if(detail?.__error) panel = `<div class="wz-turn-empty">⚠️ Güncel turnuva bilgileri alınamadı. ${esc(detail.__error)}<div style="margin-top:14px"><button type="button" class="wz-turn-register" onclick="wzRetryCurrentTournamentDetail()">🔄 Yeniden Dene</button></div></div>`;
     else if(detail){
       if(state.tab==='overview') panel = renderOverview(detail,item) + renderParticipants(detail,item);
       if(state.tab==='rules') panel = renderRules(item);
@@ -16256,6 +16257,12 @@ return;
     window.__wzTurnModalEnterTimer=setTimeout(()=>{
       document.body.classList.remove('wz-turn-modal-entering');
     },240);
+  };
+
+  window.wzRetryCurrentTournamentDetail=function(){
+    if(!state.selectedId || state.screen!=='detail')return;
+    state.details.delete(String(state.selectedId));
+    render();
   };
 
   window.wzTurnBack=function(){
