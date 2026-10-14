@@ -10553,7 +10553,7 @@ function wzV3047RenderTeamDialog(entry,firstOpen=false){
         }).join('')}
         ${subs.map(p=>`<div class="tournamentV3Payment"><b>🎟️ Abonelik / Gift · ${esc(p.payerUsername||'-')}</b><div class="muted">Durum: ${esc(p.status||'-')} · Normal Abone ${Number(p.receivedDirectSubs||0)}/${Number(p.requiredDirectSubs||0)} · Gift ${Number(p.receivedGifts||0)}/${Number(p.requiredGifts||0)}</div></div>`).join('')}
         ${!payments.length&&!subs.length?'<div class="wz-v3047-empty">Bu takım için ödeme hareketi yok.</div>':''}</div></section>
-      <div class="muted" style="margin-top:13px">Fikstür yayımlandıktan sonra takım adı ve, maçlar başlamamışsa, mevcut oyuncunun oyun içi adı düzeltilebilir. Doğrulanmış Kick hesabı başka bir kişiye devredilemez. Takım/oyuncu silmek için fikstürün güvenli biçimde geri alınması gerekir; tahmin ve ödeme kayıtları korunur.</div>
+      <div class="muted" style="margin-top:13px">Fikstür yayımlandıktan sonra takım adı ve oyuncunun oyun içi adı düzeltilebilir. Ücretsiz üyeler maç çağrısı başlamadan önce doğrulanmış başka bir Kick hesabıyla 🔁 Değiştir üzerinden değiştirilebilir. Kaptan ve gerçek ödemesi/aboneliği olan koltuklar korunur. Takım silme ve oyuncu çıkarma fikstür varken kapalıdır.</div>
     </div></section>`;
   if(!firstOpen){const scroll=overlay.querySelector('.wz-v54-admin-modal-scroll');if(scroll)scroll.scrollTop=priorScroll;}
   else overlay.querySelector('.wz-v54-admin-close')?.focus({preventScroll:true});
@@ -10773,8 +10773,8 @@ function editTournamentSlot(encodedSlotId,encodedUsername,encodedGameId){
   }
   const help = document.getElementById('tournamentSlotEditExplain');
   if(help)help.textContent=fixturePublished
-    ? 'Fikstür yayımlandı: aynı oyuncunun yalnızca oyun içi adını maç başlamadan düzeltebilirsin. Kick hesabı sabit kalır.'
-    : 'Kick kullanıcı adı ve oyun içi oyuncu adını aynı ekrandan düzenleyebilirsin.';
+    ? 'Fikstür yayımlansa veya maçlar oynansa da bu oyuncunun VALORANT Ad#TAG bilgisini güncelleyebilirsin. Kick hesabı ve maç sonuçları değişmez.'
+    : 'Kadro kayıtlarını değiştirmeden mevcut oyuncunun oyun içi adını (VALORANT Ad#TAG) düzenleyebilirsin.';
   if(status){
     status.style.display = 'none';
     status.innerHTML = '';
@@ -12590,7 +12590,7 @@ async function invalidateAllUserSessions(){
 <div id="tournamentPlayerEditOverlay" class="choiceOverlay" onclick="if(event.target===this) closeTournamentSlotEditor()">
   <div class="choiceCard" onclick="event.stopPropagation()">
     <h3>✏️ Oyuncu Bilgilerini Düzenle</h3>
-    <p id="tournamentSlotEditExplain">Kick kullanıcı adı ve oyun içi oyuncu adını aynı ekrandan düzenleyebilirsin.</p>
+    <p id="tournamentSlotEditExplain">Kadro kayıtlarını değiştirmeden mevcut oyuncunun oyun içi adını (VALORANT Ad#TAG) düzenleyebilirsin.</p>
 
     <div class="field">
       <label class="title">Kick Kullanıcı Adı</label>
@@ -12598,7 +12598,7 @@ async function invalidateAllUserSessions(){
     </div>
 
     <div class="field">
-      <label class="title">Oyun İçi Ad / ID</label>
+      <label class="title">VALORANT Adı ve Etiketi (Ad#TAG)</label>
       <input id="tournamentEditGameId" maxlength="80" autocomplete="off" placeholder="Örn: Weizend#WZND">
     </div>
 
