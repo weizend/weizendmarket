@@ -235,7 +235,7 @@
     // islenirken onceden iste. F5 sonrasinda W placeholder gosterme.
     if(view==='tournament'){
       try{
-        const cached=JSON.parse(sessionStorage.getItem('weizend_tournament_shell_refreshfix_v20')||'null');
+        const cached=JSON.parse(sessionStorage.getItem('weizend_tournament_shell_refreshfix_v30618')||'null');
         const html=typeof cached?.html==='string' ? cached.html : '';
         const seen=new Set();
         const logoPattern=/class="wz-turn-game-logo"\s*>\s*<img\b[^>]*\bsrc="([^"]+)"/g;
@@ -5036,7 +5036,7 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
     const host=document.getElementById('wzEsportsHub');
     if(!host) return;
 
-    const raw=sessionStorage.getItem('weizend_tournament_shell_refreshfix_v20');
+    const raw=sessionStorage.getItem('weizend_tournament_shell_refreshfix_v30618');
     if(!raw) return;
 
     const cached=JSON.parse(raw);
@@ -13824,7 +13824,7 @@ return;
 (function(){
   let wzTournamentCatalogError='';
 
-  const WZ_T_DETAIL_CACHE_KEY='weizend_tournament_detail_cache_final_v65';
+  const WZ_T_DETAIL_CACHE_KEY='weizend_tournament_detail_cache_v30618';
   const WZ_T_PREDICTION_CACHE_KEY='weizend_tournament_prediction_cache_final_v65';
 
   const cachedDetails=(()=>{
@@ -15890,7 +15890,7 @@ return;
     </div>`;
   }
 
-  const WZ_T_SHELL_CACHE_KEY='weizend_tournament_shell_refreshfix_v20';
+  const WZ_T_SHELL_CACHE_KEY='weizend_tournament_shell_refreshfix_v30618';
 
   function cacheTournamentShell(host){
     try{
@@ -16173,6 +16173,9 @@ return;
   window.wzTurnOpen=function(id){
     wzReleaseHydratedTournamentShell();
     state.selectedId=String(id||'');
+    // V30.6.18: Her yeni detay acilisinda sunucudan guncel takimi al.
+    // Eski sessionStorage'daki sadece hazir takim kaydi, bekleyenleri saklamasin.
+    state.details.delete(state.selectedId);
     state.screen='detail';
     state.tab='overview';
     state.bracketMode='tree';
