@@ -413,13 +413,21 @@ function displayName(m,which){const given=which==='a'?m.participantAName:m.parti
  if((m.matchKind||'main')==='third_place')return 'Yarı final kaybedeni';
  const r=Number(m.roundNumber||0);if(r>1&&(m.matchKind||'main')==='main')return 'Önceki tur galibi';
  return'Bekleniyor';}
-function renderBracket(){const matches=state.detail?.matches||[];if(!matches.length){$('bracket').innerHTML='<div class="empty">Henüz fikstür yayımlanmadı. Katılımlar tamamlanıp eşleşmeler oluşturulduğunda burada görünecek.</div>';return;}
+let wz629BracketSignature='';
+function renderBracket(){
+ const bracketEl=$('bracket');
+ const bracketSignature=JSON.stringify({matches:state.detail?.matches||[],selected:state.selected,picks:state.pred?.myPicks||[]});
+ if(bracketSignature===wz629BracketSignature&&bracketEl?.querySelector('.rounds'))return;
+ const oldBracketScroll=bracketEl?.scrollLeft||0;
+ const matches=state.detail?.matches||[];if(!matches.length){$('bracket').innerHTML='<div class="empty">Henüz fikstür yayımlanmadı. Katılımlar tamamlanıp eşleşmeler oluşturulduğunda burada görünecek.</div>';return;}
  const picks=predMap();$('bracket').innerHTML='<div class="rounds">'+rounds(matches).map((r)=>'<section class="round"><h3>'+ (r.kind==='third_place'?'🥉 Üçüncülük':r.round===Math.max(...matches.filter(m=>(m.matchKind||'main')==='main').map(m=>Number(m.roundNumber)))?'🏆 Final':r.round===1?'1. Tur':r.round+'. Tur')+' • '+r.matches.length+' maç</h3><div class="round-matches">'+r.matches.map(m=>{
  const aId=projectedSlot(m,'a'),bId=projectedSlot(m,'b');const s1=picks.get(String(m.id))===String(aId)&&!!aId,s2=picks.get(String(m.id))===String(bId)&&!!bId;
  const a=m.winnerId&&String(m.winnerId)===String(aId),b=m.winnerId&&String(m.winnerId)===String(bId);
  return `<button class="match ${state.selected===m.id?'active':''}" type="button" data-mid="${esc(m.id)}"><div class="match-head"><span>M${Number(m.matchNumber)||'?'} · ${Number(m.roundNumber)||'?'}. tur</span><span>${m.status==='completed'?'SONUÇLANDI':'BEKLİYOR'}</span></div><div class="side ${a?'winner':s1?'predicted':''}"><strong>${esc(displayName(m,'a'))}</strong><span>${a?'✓':s1?'★':''}</span></div><div class="side ${b?'winner':s2?'predicted':''}"><strong>${esc(displayName(m,'b'))}</strong><span>${b?'✓':s2?'★':''}</span></div></button>`;
  }).join('')+'</div></section>').join('')+'</div>';
- document.querySelectorAll('[data-mid]').forEach(btn=>btn.addEventListener('click',()=>{state.selected=btn.dataset.mid;renderBracket();renderMatch();}));}
+ document.querySelectorAll('[data-mid]').forEach(btn=>btn.addEventListener('click',()=>{state.selected=btn.dataset.mid;renderBracket();renderMatch();})); wz629BracketSignature=bracketSignature;
+ bracketEl.scrollLeft=oldBracketScroll;
+}
 function renderCouponControls(){
  const sub=state.pred?.submission||{},list=wzPredictionOrder(),expected=Number(sub.expectedCount||list.length||0),selected=Number(sub.selectedCount||0);
  const submitted=sub.submitted===true,open=state.pred?.prediction?.open===true;
@@ -512,11 +520,29 @@ function renderParticipants(){
 }
 let wz622TeamDialog=null;
 let wz622TeamRequest=0;
+const wz629ScrollLock={active:false,y:0,htmlOverflow:'',bodyCss:''};
+function wz629SyncDialogScroll(){
+ const open=!!wz622TeamDialog || !roomDialog.hidden;
+ if(open&&!wz629ScrollLock.active){
+   wz629ScrollLock.active=true;
+   wz629ScrollLock.y=window.scrollY||document.documentElement.scrollTop||0;
+   wz629ScrollLock.htmlOverflow=document.documentElement.style.overflow;
+   wz629ScrollLock.bodyCss=document.body.style.cssText;
+   document.documentElement.style.overflow='hidden';
+   Object.assign(document.body.style,{position:'fixed',top:-wz629ScrollLock.y+'px',left:'0',right:'0',width:'100%',overflow:'hidden'});
+ }else if(!open&&wz629ScrollLock.active){
+   document.body.style.cssText=wz629ScrollLock.bodyCss;
+   document.documentElement.style.overflow=wz629ScrollLock.htmlOverflow;
+   wz629ScrollLock.active=false;
+   window.scrollTo(0,wz629ScrollLock.y);
+ }
+}
+
 function wz622CloseTeamDialog(){
  ++wz622TeamRequest; // Kapatılan veya ekranı terk edilen pencere eski istekle yeniden açılmasın.
  if(!wz622TeamDialog)return;
  wz622TeamDialog.remove();wz622TeamDialog=null;
- document.body.style.overflow=window.__wz622OldBodyOverflow||'';
+ wz629SyncDialogScroll();
 }
 async function wz622ShowTeamDialog(teamId){
  // Tıklama anında sunucudan taze kayıt al: admin tarafından silinen takım açılmasın.
@@ -539,8 +565,8 @@ async function wz622ShowTeamDialog(teamId){
      <div class="wz622-team-content">${team._pending&&team.freeTeamExpiresAt?`<p class="wz619-clock">⏳ Kalan süre: <span data-wz619-deadline="${esc(team.freeTeamExpiresAt)}">30:00</span></p>`:''}
        ${members.length?members.map((m,i)=>`<div class="wz622-team-person"><span class="wz622-mark">${String(m.role||'').toLowerCase()==='captain'||i===0?'👑':'👤'}</span><div><strong>Kick: ${esc(m.username||m.plannedUsername||'-')}</strong><small>Oyun adı: ${esc(m.gameId||m.riotId||'-')}</small></div></div>`).join(''):'<p class="small">Kadro bilgisi henüz bulunmuyor.</p>'}</div></section>`;
    overlay.addEventListener('click',e=>{if(e.target===overlay||e.target.closest('.wz622-team-close'))wz622CloseTeamDialog();});
-   window.__wz622OldBodyOverflow=document.body.style.overflow;
-   document.body.style.overflow='hidden';document.body.appendChild(overlay);wz622TeamDialog=overlay;
+   document.body.appendChild(overlay);wz622TeamDialog=overlay;
+   wz629SyncDialogScroll();
    overlay.querySelector('.wz622-team-close')?.focus({preventScroll:true});
  }catch(error){if(request===wz622TeamRequest)toast('Takım bilgileri güncellenemedi: '+String(error?.message||error),'error');}
 }
@@ -580,10 +606,10 @@ function updateRoomCountdown(){
 }
 setInterval(()=>{if(!roomDialog.hidden)updateRoomCountdown()},1000);
 function openInvitationRoom(){
- roomDialog.hidden=false;document.body.classList.add('arena-dialog-open');try{sessionStorage.setItem('wz_v30_active_match_'+tid,state.selected);}catch{};loadLobby();
+ roomDialog.hidden=false;document.body.classList.add('arena-dialog-open');wz629SyncDialogScroll();try{sessionStorage.setItem('wz_v30_active_match_'+tid,state.selected);}catch{};loadLobby();
 }
 function closeInvitationRoom(){
- roomDialog.hidden=true;document.body.classList.remove('arena-dialog-open');v306Disconnect();
+ roomDialog.hidden=true;document.body.classList.remove('arena-dialog-open');wz629SyncDialogScroll();v306Disconnect();
  if(v30RoomInterval){clearInterval(v30RoomInterval);v30RoomInterval=null;}
  lobbySeq++;lobbyCache=null;
  const params=new URLSearchParams(location.search);params.delete('room');params.delete('match');
@@ -798,22 +824,34 @@ $('v30ActiveMatch').addEventListener('click',()=>{const id=sessionStorage.getIte
 function renderAll(){renderLobby();renderHero();renderPredictionAward();renderBracket();renderParticipants();renderMatch();renderBoard();}
 function cachePublic(){try{sessionStorage.setItem(cacheKey,JSON.stringify({at:Date.now(),detail:state.detail}));}catch{}}
 function restorePublic(){
+ // Yenilemede eski isimleri bir an gösterip sunucu cevabıyla değiştirme.
+ // Önbelleği yalnızca bağlantı hatası halinde yedek veri olarak tut.
  // D1 doğrulanmadan 12 saat önceki takım listesini 'güncel' gibi sunma.
  // Eski fikstür yalnızca yardımcı olabilir; takım alanı doğrulamayı bekler.
  try{const v=JSON.parse(sessionStorage.getItem(cacheKey)||'null');
    if(!v||Date.now()-Number(v.at)>3*60*1000||v.detail?.tournament?.id!==tid)return;
    state.detail={...v.detail,teams:[],waitingTeams:[],participants:[]};
    state.t=v.detail.tournament;state.selected=v.detail.matches?.[0]?.id||null;
-   renderAll();$('participants').innerHTML='<div class="small">⏳ Takım listesi sunucudan doğrulanıyor...</div>';
+   // İlk görünür çizim yalnızca yeni sunucu cevabı geldikten sonra yapılır.
+   // Hata olursa refresh catch içinde bu güvenli yedek görüntülenir.
  }catch{}
 }
 async function refresh(initial=false){if(state.loading)return;state.loading=true;state.authState=token()?'checking':'guest';state.authError='';renderAuthStatus();$('refreshBtn').disabled=true;
  try{
  // V28.1: Pick'em hata verse de fikstur, takimlar ve mac odasi yuklenebilsin.
- const [detailResult,predResult]=await Promise.allSettled([
+ const signedIn=!!token();
+ let [detailResult,predResult]=await Promise.allSettled([
    api('/tournament/public?id='+encodeURIComponent(tid)),
-   api('/tournament/predictions?id='+encodeURIComponent(tid))
+   api('/tournament/predictions'+(signedIn?'/me':'')+'?id='+encodeURIComponent(tid),signedIn)
  ]);
+ const identityOk=signedIn&&predResult.status==='fulfilled';
+ const identityError=identityOk?'':String(predResult.reason?.message||'Oturum kontrol edilemedi.');
+ // Eski / süresi dolmuş Kick oturumunda seyirci tahmin ekranını kapalı gösterme:
+ // yalnızca kimlik kontrolü başarısızsa anonim veriyi bir kere al.
+ if(signedIn&&!identityOk){
+   try{predResult={status:'fulfilled',value:await api('/tournament/predictions?id='+encodeURIComponent(tid))};}
+   catch(_){/* Kurtarılamayan tahmin servisi ana fikstürü engellemez. */}
+ }
  if(detailResult.status!=='fulfilled')throw detailResult.reason;
  const detail=detailResult.value;
  if(detail?.tournament?.id!==tid)throw Error('Sunucudan beklenen turnuva dönmedi.');
@@ -822,6 +860,9 @@ async function refresh(initial=false){if(state.loading)return;state.loading=true
    prediction:{open:false,configuredOpen:false,lockMessage:'Tahmin servisi şu anda erişilemiyor.'},
    myPicks:[],leaderboard:[],submission:{submitted:false,selectedCount:0,expectedCount:0,canSubmit:false}
  };
+ state.authed=identityOk;
+ state.authState=state.authed?'ok':signedIn?'error':'guest';
+ state.authError=signedIn&&!state.authed?identityError:'';
  const matches=detail.matches||[];if(!matches.some(m=>m.id===state.selected))state.selected=matches[0]?.id||null;
  hideToast();renderAll();
  // Invitation dialog opens as soon as the public match is available; Pick'em identity must not block it.
@@ -830,19 +871,11 @@ async function refresh(initial=false){if(state.loading)return;state.loading=true
    if(found){roomLinkHandled=true;state.selected=found.id;renderBracket();renderMatch();openInvitationRoom();}
  }
  if(predResult.status!=='fulfilled')toast('Fikstür yüklendi, fakat tahmin bilgileri alınamadı: '+(predResult.reason?.message||'Bağlantı hatası'), 'error');
- }catch(e){if(state.detail){toast('Güncel bilgiler alınamadı. Son görüntülenen turnuva korunuyor. '+e.message,'error');}else{toast('Turnuva açılamadı: '+e.message,'error');$('tournamentTitle').textContent='Turnuva yüklenemedi';$('bracket').innerHTML='<div class="empty">Bağlantıyı kontrol edip Yenile butonuna bas.</div>';}}
+ }catch(e){if(state.detail){renderAll();toast('Güncel bilgiler alınamadı. Son görüntülenen turnuva korunuyor. '+e.message,'error');}else{toast('Turnuva açılamadı: '+e.message,'error');$('tournamentTitle').textContent='Turnuva yüklenemedi';$('bracket').innerHTML='<div class="empty">Bağlantıyı kontrol edip Yenile butonuna bas.</div>';}}
  finally{
-   // Fikstür boş olduğunda veya public API hata verdiğinde de oturum sonucunu yaz.
-   if(token()){
-     try{
-       const own=await api('/tournament/predictions/me?id='+encodeURIComponent(tid),true);
-       state.pred=own;state.authed=true;state.authState='ok';state.authError='';
-       renderAll();if(!roomDialog.hidden)loadLobby();
-     }catch(e){
-       state.authed=false;state.authState='error';state.authError=e.message||'Oturum kontrolü başarısız.';
-       renderAuthStatus();renderCouponControls();
-     }
-   }else{state.authed=false;state.authState='guest';renderAuthStatus();renderCouponControls();}
+   // V30.6.29: Kimlik/kupon aynı ilk istekte alındı; ikinci GET ve ikinci
+   // tam sayfa render'ı yok. Sunucu hatasında son görsel korunur.
+   renderAuthStatus();renderCouponControls();
    state.loading=false;$('refreshBtn').disabled=false;
     if(roomLinkRequested&&!roomLinkHandled && state.detail){
       const found=(state.detail?.matches||[]).find(m=>m.id===invitedMatch);
