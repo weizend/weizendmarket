@@ -235,7 +235,7 @@
     // islenirken onceden iste. F5 sonrasinda W placeholder gosterme.
     if(view==='tournament'){
       try{
-        const cached=JSON.parse(sessionStorage.getItem('weizend_tournament_shell_refreshfix_v30618')||'null');
+        const cached=JSON.parse(sessionStorage.getItem('weizend_tournament_shell_refreshfix_v30619')||'null');
         const html=typeof cached?.html==='string' ? cached.html : '';
         const seen=new Set();
         const logoPattern=/class="wz-turn-game-logo"\s*>\s*<img\b[^>]*\bsrc="([^"]+)"/g;
@@ -4433,6 +4433,12 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
   #wzEsportsHub .wz-turn-chip.active{background:#e31b1b!important;border-color:#e31b1b!important;color:#fff!important}
 }
 </style>
+
+<style id="wz619-free-team-clock-style">
+.wz619-clock{display:inline-flex;gap:5px;align-items:center;font-weight:700;font-variant-numeric:tabular-nums;color:#ffcd7c;font-size:12px}
+.wz619-deadline-note{border:1px solid #5e441f;background:#1b160f;border-radius:8px;padding:9px 11px;color:#f6d4a0;font-size:12px;line-height:1.55;margin-top:8px}
+.wz619-deadline-note strong{font-variant-numeric:tabular-nums;color:#fff}
+</style>
 </head>
 <body>
 <script id="wz-v58-prepaint-view">
@@ -5036,7 +5042,7 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
     const host=document.getElementById('wzEsportsHub');
     if(!host) return;
 
-    const raw=sessionStorage.getItem('weizend_tournament_shell_refreshfix_v30618');
+    const raw=sessionStorage.getItem('weizend_tournament_shell_refreshfix_v30619');
     if(!raw) return;
 
     const cached=JSON.parse(raw);
@@ -13006,6 +13012,7 @@ return;
                         : (size <= 1 ? `⏳ ${entryUX.label} işleminin tamamlanması bekleniyor.` : `${entryUX.teamPending} (${readyCount}/${size})`)}
                 </div>
                 <div class="tv3-slot-list">${slotHtml}</div>
+                ${!teamReady && team.freeTeamExpiresAt ? `<div class="wz619-deadline-note">⏳ <b>Takım tamamlama süresi:</b> <strong data-wz619-deadline="${tv2Esc(team.freeTeamExpiresAt)}">30:00</strong><br>Ücretsiz takımını 30 dakika içinde tamamlamalısın. Süre sonunda eksik kalırsa takım otomatik iptal edilerek kontenjan açılır. Bu süre sayfayı yenileyince sıfırlanmaz.</div>`:''}
                 ${inviteHtml}
                 ${isCaptain && String((me.rule||rule).entryMode||'')==='tl' && !me.activePayment && String(team.status||'')==='captain_payment_pending' ? `<div class="tv2-panel"><div class="tv2-message">⚠️ Takım oluşturulmuş fakat aktif bağış kodu bulunamadı. Kayıtları silmeden ödeme hazırlamayı yeniden dene.</div><button class="tv2-btn" onclick="tv3RecoverCaptainPayment()">💳 ÖDEME KODUNU YENİDEN HAZIRLA</button></div>` : ''}
                 ${tlPayment}
@@ -13824,7 +13831,7 @@ return;
 (function(){
   let wzTournamentCatalogError='';
 
-  const WZ_T_DETAIL_CACHE_KEY='weizend_tournament_detail_cache_v30618';
+  const WZ_T_DETAIL_CACHE_KEY='weizend_tournament_detail_cache_v30619';
   const WZ_T_PREDICTION_CACHE_KEY='weizend_tournament_prediction_cache_final_v65';
 
   const cachedDetails=(()=>{
@@ -15093,7 +15100,7 @@ return;
 
         ${completed && fin.champion ? `<div class="wz-turn-completed-note">Şampiyon: <b>${esc(fin.champion)}</b></div>` : ''}
         <div data-wz-entry-tournament="${esc(id)}">${wzV95RegistrationNotice(id)}</div>
-        ${wzV272RosterWaiting(item)?`<div class="wz-v272-roster-note">⏳ Kontenjan dolu ancak eksik takımlar var. Eksik takım iptal edilirse boş yer açılabilir; daha sonra sayfayı yenileyip kontrol edebilirsin. Mevcut davet koduyla katılım, kayıt tarihi ve diğer şartlar uygunsa devam eder. <b>Bu turnuvada otomatik 30 dakika takım iptali henüz etkin değil.</b></div>`:''}
+        ${wzV272RosterWaiting(item)?`<div class="wz-v272-roster-note">⏳ Kontenjan dolu ancak eksik takımlar var. Eksik takım iptal edilirse boş yer açılabilir; daha sonra sayfayı yenileyip kontrol edebilirsin. Mevcut davet koduyla katılım, kayıt tarihi ve diğer şartlar uygunsa devam eder. <b>Güncellemeden sonra oluşturulan ücretsiz takımlar için 30 dakika kuralı geçerlidir; önceki takımlar otomatik süreye tabi değildir.</b></div>`:''}
         <div class="wz-turn-card-actions">
           <button type="button" class="wz-turn-mainbtn" onclick="wzTurnOpen('${esc(id)}')">Detayları Gör</button>
         </div>
@@ -15350,7 +15357,7 @@ return;
       ${teams.length?`<div class="wz-turn-team-list">${teams.map((team,i)=>`
         <button class="wz-v95-public-team-btn" type="button" onclick="wzV95OpenPublicTeam(${i})">
           <span class="wz-turn-team-order">${i+1}</span><strong>${esc(team.name||'Takım')}</strong>
-          <span style="font-size:.72rem;color:${team._pending?'#ffd47a':'#a9ebc1'}">${team._pending?'⏳ Bekliyor':'✅ Hazır'} · ${Number(team.joinedCount??(team.members||[]).length)}/${Number(team.teamSize||2)}</span><span>›</span>
+          <span style="font-size:.72rem;color:${team._pending?'#ffd47a':'#a9ebc1'}">${team._pending?'⏳ Bekliyor':'✅ Hazır'} · ${Number(team.joinedCount??(team.members||[]).length)}/${Number(team.teamSize||2)}</span>${team._pending && team.freeTeamExpiresAt ? `<span class="wz619-clock">⌛ <span data-wz619-deadline="${esc(team.freeTeamExpiresAt)}">30:00</span></span>`:''}<span>›</span>
         </button>`).join('')}</div>`:'<div class="wz-turn-empty">Henüz onaylı takım bulunmuyor.</div>'}
     </div>`;
   }
@@ -15370,7 +15377,7 @@ return;
     overlay.id='wzV95PublicTeamDialog';overlay.className='wz-v95-team-overlay';
     overlay.setAttribute('role','presentation');
     overlay.innerHTML=`<section class="wz-v95-team-modal" role="dialog" aria-modal="true" aria-label="Takım kadrosu">
-      <div class="wz-v95-team-top"><h3>👥 ${esc(team.name||'Takım')} · ${members.length}/${Number(team.teamSize||members.length)} Oyuncu ${team._pending?'· ⏳ Bekliyor':''}</h3>
+      <div class="wz-v95-team-top"><h3>👥 ${esc(team.name||'Takım')} · ${members.length}/${Number(team.teamSize||members.length)} Oyuncu ${team._pending?'· ⏳ Bekliyor':''}</h3>${team._pending&&team.freeTeamExpiresAt?`<div class="wz619-clock">⏳ Süre: <span data-wz619-deadline="${esc(team.freeTeamExpiresAt)}">30:00</span></div>`:''}
       <button class="wz-v95-team-close" type="button" onclick="wzV95ClosePublicTeam()" aria-label="Kapat">×</button></div>
       <div class="wz-v95-team-scroll">${members.length?members.map((m,i)=>`
         <div class="wz-v95-team-person"><span class="mark">${String(m.role||'').toLowerCase()==='captain'||i===0?'👑':'👤'}</span>
@@ -15890,7 +15897,7 @@ return;
     </div>`;
   }
 
-  const WZ_T_SHELL_CACHE_KEY='weizend_tournament_shell_refreshfix_v30618';
+  const WZ_T_SHELL_CACHE_KEY='weizend_tournament_shell_refreshfix_v30619';
 
   function cacheTournamentShell(host){
     try{
@@ -16817,6 +16824,22 @@ return;
       if(button && button.isConnected){button.disabled=false;button.textContent=originalLabel;}
     }
   };
+})();
+</script>
+
+<script id="wz619-free-team-clock">
+(function(){
+  function tick(){
+    document.querySelectorAll('[data-wz619-deadline]').forEach(el=>{
+      const date=Date.parse(el.getAttribute('data-wz619-deadline')||'');
+      if(!Number.isFinite(date)){el.textContent='—';return;}
+      const ms=date-Date.now();
+      if(ms<=0){el.textContent='00:00 · Kontrol bekleniyor';return;}
+      const sec=Math.ceil(ms/1000);
+      el.textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');
+    });
+  }
+  tick();setInterval(tick,1000);
 })();
 </script>
 </body>
