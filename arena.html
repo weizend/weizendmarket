@@ -440,6 +440,7 @@ function renderParticipants(){
 let wz622TeamDialog=null;
 let wz622TeamRequest=0;
 function wz622CloseTeamDialog(){
+ ++wz622TeamRequest; // Kapatılan veya ekranı terk edilen pencere eski istekle yeniden açılmasın.
  if(!wz622TeamDialog)return;
  wz622TeamDialog.remove();wz622TeamDialog=null;
  document.body.style.overflow=window.__wz622OldBodyOverflow||'';
@@ -723,7 +724,16 @@ $('v30ActiveMatch').addEventListener('click',()=>{const id=sessionStorage.getIte
 
 function renderAll(){renderLobby();renderHero();renderPredictionAward();renderBracket();renderParticipants();renderMatch();renderBoard();}
 function cachePublic(){try{sessionStorage.setItem(cacheKey,JSON.stringify({at:Date.now(),detail:state.detail}));}catch{}}
-function restorePublic(){try{const v=JSON.parse(sessionStorage.getItem(cacheKey)||'null');if(!v||Date.now()-Number(v.at)>12*3600*1000||v.detail?.tournament?.id!==tid)return;state.detail=v.detail;state.t=v.detail.tournament;state.selected=v.detail.matches?.[0]?.id||null;renderAll();}catch{}}
+function restorePublic(){
+ // D1 doğrulanmadan 12 saat önceki takım listesini 'güncel' gibi sunma.
+ // Eski fikstür yalnızca yardımcı olabilir; takım alanı doğrulamayı bekler.
+ try{const v=JSON.parse(sessionStorage.getItem(cacheKey)||'null');
+   if(!v||Date.now()-Number(v.at)>3*60*1000||v.detail?.tournament?.id!==tid)return;
+   state.detail={...v.detail,teams:[],waitingTeams:[],participants:[]};
+   state.t=v.detail.tournament;state.selected=v.detail.matches?.[0]?.id||null;
+   renderAll();$('participants').innerHTML='<div class="small">⏳ Takım listesi sunucudan doğrulanıyor...</div>';
+ }catch{}
+}
 async function refresh(initial=false){if(state.loading)return;state.loading=true;state.authState=token()?'checking':'guest';state.authError='';renderAuthStatus();$('refreshBtn').disabled=true;
  try{
  // V28.1: Pick'em hata verse de fikstur, takimlar ve mac odasi yuklenebilsin.
