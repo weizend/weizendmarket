@@ -10526,13 +10526,10 @@ function wzV3047RenderTeamDialog(entry,firstOpen=false){
         const edit=encodeURIComponent(String(s.id||''));
         const canEdit=Boolean(username && s.id);
         const canRemove=!isCaptain&&['joined','payment_pending','invited'].includes(status)&&Boolean(s.id);
-        const hasBracket=Array.isArray(currentTournamentBracket?.matches)&&currentTournamentBracket.matches.length>0;
-        const canReplaceFree=hasBracket&&!isCaptain&&status==='joined'&&String(s.paymentStatus||'')==='paid'&&String(s.paidVia||'')==='free';
         return `<div class="wz-v3047-slot"><span class="num">${isCaptain?'👑':Number(s.slotNo||i+1)}</span>
           <div><strong>${esc(username||'Oyuncu Bekleniyor')}</strong><small>${isCaptain?'Kaptan · ':''}${esc(tournamentV3SlotText(status,role))} · Oyun: ${esc(game||'-')}</small><small>${esc(tournamentPaymentText(s.paymentStatus||'unpaid',s.paidVia||s.paymentVia||''))}${s.paidForByUsername?' · Ödeyen: '+esc(s.paidForByUsername):''}</small></div>
           <div class="wz-v3047-slot-actions">
             ${canEdit?`<button type="button" class="wz-v3047-icon" aria-label="${isCaptain?'Kaptanı':'Oyuncuyu'} düzenle" title="Düzenle" onclick="editTournamentSlot('${edit}','${encodeURIComponent(username)}','${encodeURIComponent(game)}')">✏️</button>`:''}
-            ${canReplaceFree?`<button type="button" class="smallBtn secondary" style="width:auto" title="Ücretsiz oyuncu değişimi: maç çağrılmadan önce" onclick="wzV30625ReplaceFreePlayer('${edit}','${encodeURIComponent(username)}','${encodeURIComponent(game)}')">🔁 Değiştir</button>`:''}
             ${isCaptain?`<button type="button" class="wz-v3047-icon danger" aria-label="Kaptanı kaldır" title="Kaptan için takım silme onayı gerekir" onclick="wzV3047CaptainRemove('${ed}')">🗑</button>`:canRemove?`<button type="button" class="wz-v3047-icon danger" aria-label="Oyuncuyu takımdan çıkar" title="Oyuncuyu çıkar" onclick="deleteTournamentSlot('${edit}')">🗑</button>`:''}
           </div></div>`;
       }).join(''):'<div class="wz-v3047-empty">Henüz koltuk kaydı bulunmuyor.</div>'}</section>
@@ -10556,7 +10553,7 @@ function wzV3047RenderTeamDialog(entry,firstOpen=false){
         }).join('')}
         ${subs.map(p=>`<div class="tournamentV3Payment"><b>🎟️ Abonelik / Gift · ${esc(p.payerUsername||'-')}</b><div class="muted">Durum: ${esc(p.status||'-')} · Normal Abone ${Number(p.receivedDirectSubs||0)}/${Number(p.requiredDirectSubs||0)} · Gift ${Number(p.receivedGifts||0)}/${Number(p.requiredGifts||0)}</div></div>`).join('')}
         ${!payments.length&&!subs.length?'<div class="wz-v3047-empty">Bu takım için ödeme hareketi yok.</div>':''}</div></section>
-      <div class="muted" style="margin-top:13px">Fikstür yayımlandıktan sonra takım adı ve oyuncunun oyun içi adı düzeltilebilir. Ücretsiz üyeler maç çağrısı başlamadan önce doğrulanmış başka bir Kick hesabıyla 🔁 Değiştir üzerinden değiştirilebilir. Kaptan ve gerçek ödemesi/aboneliği olan koltuklar korunur. Takım silme ve oyuncu çıkarma fikstür varken kapalıdır.</div>
+      <div class="muted" style="margin-top:13px">Fikstür yayımlandıktan sonra takım adı ve, maçlar başlamamışsa, mevcut oyuncunun oyun içi adı düzeltilebilir. Doğrulanmış Kick hesabı başka bir kişiye devredilemez. Takım/oyuncu silmek için fikstürün güvenli biçimde geri alınması gerekir; tahmin ve ödeme kayıtları korunur.</div>
     </div></section>`;
   if(!firstOpen){const scroll=overlay.querySelector('.wz-v54-admin-modal-scroll');if(scroll)scroll.scrollTop=priorScroll;}
   else overlay.querySelector('.wz-v54-admin-close')?.focus({preventScroll:true});
@@ -10829,62 +10826,6 @@ async function saveTournamentSlotEditor(){
       button.disabled = false;
       button.innerText = '💾 Kaydet';
     }
-  }
-}
-
-// V30.6.25 — A deliberate, server-verified admin roster correction.
-let wzV30625SwapBusy=false;
-function wzV30625CloseSwap(){
-  if(wzV30625SwapBusy)return;
-  document.getElementById('wzV30625Swap')?.remove();
-}
-function wzV30625ReplaceFreePlayer(encodedSlotId,encodedOldUsername,encodedOldGameId){
-  const slotId=decodeURIComponent(encodedSlotId||'');
-  const oldName=decodeURIComponent(encodedOldUsername||'');
-  const oldGame=decodeURIComponent(encodedOldGameId||'');
-  if(!slotId)return;
-  document.getElementById('wzV30625Swap')?.remove();
-  const dialog=document.createElement('div');
-  dialog.id='wzV30625Swap';dialog.className='choiceOverlay open';
-  dialog.style.zIndex='100080';
-  dialog.innerHTML=`<div class="choiceCard" role="dialog" aria-modal="true" aria-label="Fikstürü koruyarak oyuncuyu değiştir">
-    <h3>🔁 Ücretsiz Oyuncu Değiştir</h3>
-    <p><b>${esc(oldName)}</b> yerine kayıtlı başka bir Kick hesabı eklenecek. Takım kimliği ve fikstür değişmez. Bu işlem yalnızca maç çağrıları başlamadan yapılabilir; ücretli ve abonelik koltukları değiştirilemez.</p>
-    <label class="title" for="wzV30625NewKick">Yeni oyuncunun doğrulanmış Kick kullanıcı adı</label>
-    <input id="wzV30625NewKick" autocomplete="off" maxlength="40" placeholder="Kick kullanıcı adı">
-    <label class="title" for="wzV30625Game" style="margin-top:10px">Yeni oyuncunun VALORANT ID bilgisi</label>
-    <input id="wzV30625Game" autocomplete="off" maxlength="80" placeholder="Oyuncu#TAG">
-    <p id="wzV30625SwapStatus" style="color:#ffb2b2;margin-top:10px" aria-live="polite"></p>
-    <div class="choiceActions"><button type="button" id="wzV30625Confirm">✅ Oyuncuyu Değiştir</button><button type="button" class="secondary" id="wzV30625Cancel">İptal</button></div>
-  </div>`;
-  document.body.append(dialog);
-  dialog.querySelector('#wzV30625Cancel').onclick=wzV30625CloseSwap;
-  dialog.querySelector('#wzV30625Confirm').onclick=()=>wzV30625CommitSwap(slotId,oldName);
-  dialog.addEventListener('click',e=>{if(e.target===dialog)wzV30625CloseSwap();});
-  dialog.querySelector('#wzV30625NewKick')?.focus();
-}
-async function wzV30625CommitSwap(slotId,oldName){
-  if(wzV30625SwapBusy)return;
-  const overlay=document.getElementById('wzV30625Swap');
-  const username=String(overlay?.querySelector('#wzV30625NewKick')?.value||'').trim().replace(/^@/,'');
-  const gameId=String(overlay?.querySelector('#wzV30625Game')?.value||'').trim();
-  const status=overlay?.querySelector('#wzV30625SwapStatus');
-  if(!/^[A-Za-z0-9_]{2,40}$/.test(username)||!gameId){if(status)status.textContent='Geçerli Kick kullanıcı adı ve Riot ID gir.';return;}
-  if(!confirm(`${oldName} yerine ${username} eklensin mi? Fikstür ve ödemeler değişmeyecek. İşlem kayıt altına alınacak.`))return;
-  wzV30625SwapBusy=true;
-  const button=overlay?.querySelector('#wzV30625Confirm');if(button)button.disabled=true;
-  try{
-    const {r,d}=await api('/admin/tournament/v3/slot/replace-free',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({slotId,username,gameId,confirmation:'OYUNCUYU_DEGISTIR'})});
-    if(!r.ok||!d?.success)throw new Error(d?.error||`HTTP ${r.status}`);
-    overlay?.remove();
-    await loadTournamentEntries(true);
-    showStatus('tournamentEntriesStatus','✅ '+String(d.message||'Kadro güncellendi.'),true);
-    wzV3047TeamNotice('✅ '+String(d.message||'Kadro güncellendi.'),true);
-  }catch(error){
-    if(status)status.textContent='❌ '+String(error.message||error);
-  }finally{
-    wzV30625SwapBusy=false;if(button)button.disabled=false;
   }
 }
 
