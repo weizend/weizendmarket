@@ -15101,7 +15101,7 @@ return;
 
         ${completed && fin.champion ? `<div class="wz-turn-completed-note">Şampiyon: <b>${esc(fin.champion)}</b></div>` : ''}
         <div data-wz-entry-tournament="${esc(id)}">${wzV95RegistrationNotice(id)}</div>
-        ${wzV272RosterWaiting(item)?`<div class="wz-v272-roster-note">⏳ Kontenjan dolu ancak eksik takımlar var. Eksik takım iptal edilirse boş yer açılabilir; daha sonra sayfayı yenileyip kontrol edebilirsin. Mevcut davet koduyla katılım, kayıt tarihi ve diğer şartlar uygunsa devam eder. <b>Güncellemeden sonra oluşturulan ücretsiz takımlar için 30 dakika kuralı geçerlidir; önceki takımlar otomatik süreye tabi değildir.</b></div>`:''}
+        ${wzV272RosterWaiting(item)?`<div class="wz-v272-roster-note">⏳ Kontenjan dolu ancak eksik takımlar var. Eksik takım iptal edilirse boş yer açılabilir; daha sonra sayfayı yenileyip kontrol edebilirsin. Mevcut davet koduyla katılım, kayıt tarihi ve diğer şartlar uygunsa devam eder.</div>`:''}
         <div class="wz-turn-card-actions">
           <button type="button" class="wz-turn-mainbtn" onclick="wzTurnOpen('${esc(id)}')">Detayları Gör</button>
         </div>
