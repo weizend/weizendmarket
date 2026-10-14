@@ -5842,7 +5842,9 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
         function syncMarketModalScrollLock() {
             const hasOpenModal = MARKET_MODAL_IDS
                 .map(id => document.getElementById(id))
-                .some(isMarketModalVisible);
+                .some(isMarketModalVisible)
+                || !!document.getElementById('wzV95PublicTeamDialog')
+                || document.body.classList.contains('wz-turn-modal-open');
 
             if (hasOpenModal) lockMarketPageScroll();
             else unlockMarketPageScroll();
@@ -5866,6 +5868,11 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
                 });
             }
 
+            // Turnuva detay penceresi body class ile açılır; dinamik takım
+            // kadrosu penceresi ise kendi açık/kapalı olayında kilidi eşitler.
+            marketModalObserver.observe(document.body,{
+                attributes:true, attributeFilter:['class']
+            });
             syncMarketModalScrollLock();
         }
 
@@ -7584,6 +7591,19 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
             const m=String(body||'').match(/\[\[WEIZEND_ARENA_LOBBY\|([A-Za-z0-9_:-]{1,120})\|([A-Za-z0-9_:-]{1,160})\]\]/);
             return m?{marker:m[0],tournamentId:m[1],matchId:m[2]}:null;
         }
+        // V30.6.29: Fixture system messages carry a marker, never user HTML.
+        // Existing secure lobby invite buttons are untouched.
+        function inboxArenaFixture(body,senderType) {
+            if(senderType!=='system')return null;
+            const m=String(body||'').match(/\[\[WEIZEND_ARENA_FIXTURE\|([A-Za-z0-9_:-]{1,120})\]\]/);
+            return m?{marker:m[0],tournamentId:m[1]}:null;
+        }
+        function inboxFixtureButtonHTML(invite){
+            if(!invite)return '';
+            const url=new URL('arena.html',location.href);
+            url.searchParams.set('tournament',invite.tournamentId);
+            return '<a class="inbox-arena-room-btn wz629-fixture-link" href="'+escapeHtml(url.href)+'" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;margin-top:10px">🎮 ARENA · FİKSTÜR & TAHMİNLER</a>';
+        }
         async function inboxSetArenaLinkStatus(button,invite){
             button.__wzArenaInvite=invite;
             if(button.__wzLinkChecking)return;
@@ -7693,10 +7713,11 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
                 // o ana kadar birikmiş haklar tek seferde tüketilir.
                 const supportHtml = '';
                 const arenaInvite=inboxArenaInvite(body,senderType);
-                const messageBody=arenaInvite?body.replace(arenaInvite.marker,'').trim():body;
+                const fixtureInvite=inboxArenaFixture(body,senderType);
+                const messageBody=body.replace(arenaInvite?.marker||fixtureInvite?.marker||'\0','').trim();
                 const arenaButtonHtml=arenaInvite
                     ? '<button class="inbox-arena-room-btn" type="button" disabled>⏳ LOBİ KONTROL EDİLİYOR...</button>'
-                    : '';
+                    : inboxFixtureButtonHTML(fixtureInvite);
 
                 bubble.innerHTML = `
                     <div class="inbox-message-sender">${escapeHtml(senderName)}</div>
@@ -15415,6 +15436,8 @@ return;
   function wzV95ClosePublicTeam(){
     document.getElementById('wzV95PublicTeamDialog')?.remove();
     window.__wzV95TeamDialogOpen=false;
+    // Aynı tıklamada başka pencere açılabilir; en son durumu bir kere kontrol et.
+    queueMicrotask(()=>{if(typeof syncMarketModalScrollLock==='function')syncMarketModalScrollLock();});
   }
   window.wzV95ClosePublicTeam=wzV95ClosePublicTeam;
   window.wzV95OpenPublicTeam=async function(encodedTeamId){
@@ -15447,6 +15470,7 @@ return;
         <small>Oyun adı: ${esc(m.gameId||m.riotId||'-')}</small></div></div>`).join(''):'<p>Kadro bilgisi henüz bulunmuyor.</p>'}</div></section>`;
     overlay.addEventListener('click',e=>{if(e.target===overlay)wzV95ClosePublicTeam()});
     document.body.append(overlay);window.__wzV95TeamDialogOpen=true;
+    if(typeof syncMarketModalScrollLock==='function')syncMarketModalScrollLock();
     overlay.querySelector('.wz-v95-team-close')?.focus({preventScroll:true});
   };
   document.addEventListener('keydown',e=>{
