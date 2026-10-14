@@ -3396,6 +3396,7 @@ html,body{max-width:100%;overflow-x:hidden}
           <button type="button" data-wz41="lobbies" onclick="wz41OpenPanel('lobbies')">⚖️ Lobiler / Hakem</button>
           <button type="button" data-wz41="teams" onclick="wz41OpenPanel('teams')">👥 Takımlar</button>
           <button type="button" data-wz41="bracket" onclick="wz41OpenPanel('bracket')">🎮 Fikstür / Skor</button>
+          <button type="button" data-wz41="predictions" onclick="wz41OpenPanel('predictions')">🎯 Tahminler</button>
           <button type="button" data-wz41="settings" onclick="wz41OpenPanel('settings')">⚙️ Ayarlar</button>
           <button type="button" data-wz41="payments" onclick="wz41OpenPanel('payments')">💳 Katılım Hareketleri</button>
           <button type="button" data-wz41="new" onclick="wz41OpenPanel('new')">➕ Yeni Turnuva</button>
@@ -3832,7 +3833,12 @@ html,body{max-width:100%;overflow-x:hidden}
           <div id="tournamentStatus" class="status tournamentInlineStatus"></div>
         </div>
 
-        <h3 class="subTitle">🎯 Tahmin / Pick'em Sistemi</h3>
+
+
+      </div>
+
+      <div class="card" id="tournamentPredictionsCard">
+                <h3 class="subTitle">🎯 Tahmin / Pick'em Sistemi</h3>
         <div id="tPredictionBox" class="tPredictionBox">
           <div id="tPredictionSummary" class="tPredictionSummary">
             Fikstür oluşturulduktan sonra tahmin sistemini buradan açabilirsin.
@@ -3848,7 +3854,7 @@ html,body{max-width:100%;overflow-x:hidden}
           <div id="tPredictionStatus" class="status tournamentInlineStatus"></div>
           <div id="tPredictionLeaderboard" class="tPredictionLeaderboard"></div>
         </div>
-
+        <p class="muted" style="margin-top:12px">Tahminler bir kez kaydedilince fikstür değiştirmek veri kaybına yol açabilir. Tahminleri kapatmak eski kayıtları silmez.</p>
       </div>
 
       <div class="card" id="pastTournamentsCard">
@@ -10547,7 +10553,7 @@ function wzV3047RenderTeamDialog(entry,firstOpen=false){
         }).join('')}
         ${subs.map(p=>`<div class="tournamentV3Payment"><b>🎟️ Abonelik / Gift · ${esc(p.payerUsername||'-')}</b><div class="muted">Durum: ${esc(p.status||'-')} · Normal Abone ${Number(p.receivedDirectSubs||0)}/${Number(p.requiredDirectSubs||0)} · Gift ${Number(p.receivedGifts||0)}/${Number(p.requiredGifts||0)}</div></div>`).join('')}
         ${!payments.length&&!subs.length?'<div class="wz-v3047-empty">Bu takım için ödeme hareketi yok.</div>':''}</div></section>
-      <div class="muted" style="margin-top:13px">Maç/fikstür oluşturulduktan sonra düzenleme ve çıkarma işlemlerini Worker güvenlik kuralları kısıtlar. Para gelen bekleyen ödemeler korunur.</div>
+      <div class="muted" style="margin-top:13px">Fikstür yayımlandıktan sonra takım adı ve, maçlar başlamamışsa, mevcut oyuncunun oyun içi adı düzeltilebilir. Doğrulanmış Kick hesabı başka bir kişiye devredilemez. Takım/oyuncu silmek için fikstürün güvenli biçimde geri alınması gerekir; tahmin ve ödeme kayıtları korunur.</div>
     </div></section>`;
   if(!firstOpen){const scroll=overlay.querySelector('.wz-v54-admin-modal-scroll');if(scroll)scroll.scrollTop=priorScroll;}
   else overlay.querySelector('.wz-v54-admin-close')?.focus({preventScroll:true});
@@ -10760,6 +10766,15 @@ function editTournamentSlot(encodedSlotId,encodedUsername,encodedGameId){
 
   if(kickInput) kickInput.value = currentUsernameValue;
   if(gameInput) gameInput.value = currentGameIdValue;
+  const fixturePublished = Array.isArray(currentTournamentBracket?.matches) && currentTournamentBracket.matches.length>0;
+  if(kickInput){
+    kickInput.readOnly = fixturePublished;
+    kickInput.title = fixturePublished ? 'Fikstür sonrası doğrulanmış Kick hesabı değiştirilemez.' : '';
+  }
+  const help = document.getElementById('tournamentSlotEditExplain');
+  if(help)help.textContent=fixturePublished
+    ? 'Fikstür yayımlandı: aynı oyuncunun yalnızca oyun içi adını maç başlamadan düzeltebilirsin. Kick hesabı sabit kalır.'
+    : 'Kick kullanıcı adı ve oyun içi oyuncu adını aynı ekrandan düzenleyebilirsin.';
   if(status){
     status.style.display = 'none';
     status.innerHTML = '';
@@ -10802,7 +10817,7 @@ async function saveTournamentSlotEditor(){
 
     closeTournamentSlotEditor();
     await loadTournamentEntries(true);
-    showStatus('tournamentEntriesStatus','✅ Kick kullanıcı adı ve oyun içi ad güncellendi.',true);
+    showStatus('tournamentEntriesStatus','✅ Oyuncu bilgileri güncellendi.',true);
     wzV3047TeamNotice('✅ Oyuncu bilgileri güncellendi.',true);
   }catch(error){
     showStatus('tournamentPlayerEditStatus','❌ ' + esc(error.message || error),false);
@@ -11235,7 +11250,7 @@ async function drawTournament(){
 
     showStatus(
       'tournamentBracketStatus',
-      `✅ Fikstür oluşturuldu. ${Number(d.participantCount||0)} katılımcı · ${Number(d.rounds||0)} tur. Tahmin sistemini artık açabilirsin.`,
+      `✅ Fikstür oluşturuldu. ${Number(d.participantCount||0)} katılımcı · ${Number(d.rounds||0)} tur. Üst menüden 🎯 Tahminler bölümüne geçip tahminleri açabilirsin.`,
       true
     );
 
@@ -12205,6 +12220,7 @@ const wz41PanelIds={
  lobbies:['arenaCaptainLobbyAdminCard'],
  teams:['tournamentEntriesCard'],
  bracket:['tournamentBracketCard'],
+ predictions:['tournamentPredictionsCard'],
  settings:['tournamentManagerCard'],
  payments:['tournamentSubscriptionCard'],
  new:['newTournamentCard'],
@@ -12242,6 +12258,7 @@ function wz41OpenPanel(key,scroll=true){
  // Fetch non-critical data only after requesting that management view.
  const tid=document.getElementById('tournamentSelect')?.value||'';
  if(tid && key==='payments')refreshTournamentParticipationTransactions().catch(()=>{});
+ if(tid && key==='predictions')loadTournamentPredictions(true).catch(()=>{});
  if(tid && key==='lobbies'){
   const cache=wz41CacheV30.get(String(tid));
   if(cache?.data)v30AdminRender(cache.data,tid);
@@ -12573,7 +12590,7 @@ async function invalidateAllUserSessions(){
 <div id="tournamentPlayerEditOverlay" class="choiceOverlay" onclick="if(event.target===this) closeTournamentSlotEditor()">
   <div class="choiceCard" onclick="event.stopPropagation()">
     <h3>✏️ Oyuncu Bilgilerini Düzenle</h3>
-    <p>Kick kullanıcı adı ve oyun içi oyuncu adını aynı ekrandan düzenleyebilirsin.</p>
+    <p id="tournamentSlotEditExplain">Kick kullanıcı adı ve oyun içi oyuncu adını aynı ekrandan düzenleyebilirsin.</p>
 
     <div class="field">
       <label class="title">Kick Kullanıcı Adı</label>
