@@ -438,6 +438,7 @@ function renderParticipants(){
  }).join(''):people.map(p=>`<div class="member"><strong>${esc(arenaPlayerGameName(p))}</strong></div>`).join('');
 }
 let wz622TeamDialog=null;
+let wz622TeamRequest=0;
 function wz622CloseTeamDialog(){
  if(!wz622TeamDialog)return;
  wz622TeamDialog.remove();wz622TeamDialog=null;
@@ -446,9 +447,11 @@ function wz622CloseTeamDialog(){
 async function wz622ShowTeamDialog(teamId){
  // Tıklama anında sunucudan taze kayıt al: admin tarafından silinen takım açılmasın.
  const id=String(teamId||'');if(!id)return;
+ const request=++wz622TeamRequest;
  try{
    const current=await api('/tournament/public?id='+encodeURIComponent(tid)+'&_='+Date.now());
-   if(current?.tournament?.id!==tid)throw Error('Turnuva bilgisi eşleşmedi.');
+   if(request!==wz622TeamRequest)return; // Another roster was clicked later.
+   if(String(current?.tournament?.id||'')!==tid)throw Error('Turnuva bilgisi eşleşmedi.');
    state.detail=current;state.t=current.tournament;cachePublic();renderParticipants();renderHero();
    const team=wz622PublicTeams().find(t=>String(t.id||'')===id);
    if(!team){toast('Bu takım artık turnuvada kayıtlı değil. Liste güncellendi.','ok');return;}
@@ -465,7 +468,7 @@ async function wz622ShowTeamDialog(teamId){
    window.__wz622OldBodyOverflow=document.body.style.overflow;
    document.body.style.overflow='hidden';document.body.appendChild(overlay);wz622TeamDialog=overlay;
    overlay.querySelector('.wz622-team-close')?.focus({preventScroll:true});
- }catch(error){toast('Takım bilgileri güncellenemedi: '+String(error?.message||error),'error');}
+ }catch(error){if(request===wz622TeamRequest)toast('Takım bilgileri güncellenemedi: '+String(error?.message||error),'error');}
 }
 $('participants').addEventListener('click',e=>{
  const button=e.target.closest('[data-wz622-team]');
