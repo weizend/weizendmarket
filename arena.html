@@ -215,6 +215,12 @@ body.arena-dialog-open{overflow:hidden}
 .wz617-roster-players>div{overflow-wrap:anywhere}
 .wz617-roster-players small{color:#aaa}
 </style>
+
+<style id="wz619-free-team-clock-style">
+.wz619-clock{display:inline-flex;gap:5px;align-items:center;font-weight:700;font-variant-numeric:tabular-nums;color:#ffcd7c;font-size:12px}
+.wz619-deadline-note{border:1px solid #5e441f;background:#1b160f;border-radius:8px;padding:9px 11px;color:#f6d4a0;font-size:12px;line-height:1.55;margin-top:8px}
+.wz619-deadline-note strong{font-variant-numeric:tabular-nums;color:#fff}
+</style>
 </head>
 <body>
 <header class="wz-market-header"><div class="top">
@@ -405,7 +411,7 @@ function renderParticipants(){const d=state.detail||{},teams=Array.isArray(d.tea
    const members=Array.isArray(t.members)?t.members:[];
    const joined=Number.isFinite(Number(t.joinedCount))?Number(t.joinedCount):members.length;
    const count=Math.max(0,Number(t.teamSize)||2);
-   return `<details class="member wz617-roster"><summary><strong>${esc(t.name||'Takım')}</strong><span class="wz617-roster-tag ${t._pending?'waiting':''}">${t._pending?'⏳ Oyuncu bekleniyor':'✅ Hazır'} · ${joined}/${count}</span><span aria-hidden="true">⌄</span></summary><div class="wz617-roster-players">${members.length?members.map((m,i)=>`<div>👤 ${esc(arenaPlayerGameName(m))}${String(m.role||'').toLowerCase()==='captain'||(i===0&&!members.some(x=>String(x.role||'').toLowerCase()==='captain'))?' · Kaptan':''}</div>`).join(''):'<small>Henüz oyuncu bilgisi yok.</small>'}</div></details>`;
+   return `<details class="member wz617-roster"><summary><strong>${esc(t.name||'Takım')}</strong><span class="wz617-roster-tag ${t._pending?'waiting':''}">${t._pending?'⏳ Oyuncu bekleniyor':'✅ Hazır'} · ${joined}/${count}</span>${t._pending&&t.freeTeamExpiresAt?`<span class="wz619-clock">⌛ <span data-wz619-deadline="${esc(t.freeTeamExpiresAt)}">30:00</span></span>`:''}<span aria-hidden="true">⌄</span></summary><div class="wz617-roster-players">${members.length?members.map((m,i)=>`<div>👤 ${esc(arenaPlayerGameName(m))}${String(m.role||'').toLowerCase()==='captain'||(i===0&&!members.some(x=>String(x.role||'').toLowerCase()==='captain'))?' · Kaptan':''}</div>`).join(''):'<small>Henüz oyuncu bilgisi yok.</small>'}</div></details>`;
  }).join(''):people.map(p=>`<div class="member"><strong>${esc(arenaPlayerGameName(p))}</strong></div>`).join('');}
 function renderBoard(){if(!state.pred){$('predictionBoard').textContent='Tahmin sıralaması yükleniyor...';return;}
  const list=state.pred.leaderboard||[];if(!list.length){$('predictionBoard').textContent='Henüz tahmin yapan yok.';return;}
@@ -714,6 +720,22 @@ $('editPicks').onclick=()=>{state.editMode=true;renderMatch();};
 if(!tid||tid.length>120||!/^[a-zA-Z0-9_:-]+$/.test(tid)){
  $('tournamentTitle').textContent='Turnuva seçilmedi';$('bracket').innerHTML='<div class="empty">Bir turnuvanın Arena bağlantısını aç. <a href="'+href+'">Siteye dön</a>.</div>';$('pickProgress').textContent='Turnuva bekleniyor.';$('authText').textContent='';$('participants').textContent='';$('predictionBoard').textContent='';$('refreshBtn').disabled=true;
 }else{restorePublic();try{if(sessionStorage.getItem('wz_v30_active_match_'+tid))$('v30ActiveMatch').style.display='inline-block';}catch{}refresh(true)}
+})();
+</script>
+
+<script id="wz619-free-team-clock">
+(function(){
+  function tick(){
+    document.querySelectorAll('[data-wz619-deadline]').forEach(el=>{
+      const date=Date.parse(el.getAttribute('data-wz619-deadline')||'');
+      if(!Number.isFinite(date)){el.textContent='—';return;}
+      const ms=date-Date.now();
+      if(ms<=0){el.textContent='00:00 · Kontrol bekleniyor';return;}
+      const sec=Math.ceil(ms/1000);
+      el.textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');
+    });
+  }
+  tick();setInterval(tick,1000);
 })();
 </script>
 </body>
