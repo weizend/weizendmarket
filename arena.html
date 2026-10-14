@@ -221,10 +221,18 @@ body.arena-dialog-open{overflow:hidden}
 .wz-pred-nav .btn{font-size:11px;min-width:0;padding:10px 7px}
 .wz-pred-nav b{font-size:11px;color:#e6d8d8;white-space:nowrap}
 .wz-pred-lock{border:1px solid #7c3737;background:#291313;padding:11px;border-radius:9px;text-align:center;color:#ffd2d2;font-weight:900;font-size:13px}
-.wz-pred-votes{font-size:11px;display:grid;gap:6px;margin:10px 0;color:#bdbdbd}
-.wz-pred-vote-line{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:2px}
-.wz-pred-vote-track{background:#292929;border-radius:99px;height:5px;overflow:hidden}
-.wz-pred-vote-fill{height:100%;background:#e22;min-width:0;transition:width .2s}
+/* V30.6.28 — eski tahmin barlari: yuksek oy kirmizi, digeri gri */
+.wz-pred-votes{display:grid;gap:10px;margin:12px 0 14px;padding:12px;border:1px solid #353035;border-radius:12px;background:#111014;color:#ddd;font-size:12px}
+.wz-pred-votes>strong{color:#f0e5e5;font-size:12px;line-height:1.45}
+.wz-pred-vote-item{min-width:0}
+.wz-pred-vote-line{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px;font-weight:700}
+.wz-pred-vote-line span:first-child{min-width:0;overflow-wrap:anywhere}
+.wz-pred-vote-line span:last-child{flex-shrink:0;font-variant-numeric:tabular-nums;color:#eee}
+.wz-pred-vote-track{background:#303036;border-radius:99px;height:10px;overflow:hidden}
+.wz-pred-vote-fill{height:100%;background:#919198;min-width:0;border-radius:99px;transition:width .2s}
+.wz-pred-vote-fill.leading{background:linear-gradient(90deg,#ba131a,#f3222c)}
+.wz-pred-vote-empty{color:#a4a4aa;font-size:11px;line-height:1.4}
+.wz-pred-vote-line.leading span:first-child{color:#ffb5b5}
 .wz-pred-dependency{font-size:12px;line-height:1.45;border:1px solid #665522;background:#1a160e;color:#ffdda0;padding:9px;border-radius:9px}
 @media(max-width:520px){.wz-pred-nav .btn{font-size:10px;padding:10px 5px}}
 </style>
@@ -437,14 +445,24 @@ function renderCouponControls(){
 }
 function renderPredictionVotes(m,opts){
  const box=$('wzPredVotes');if(!box)return;
- const totalPeople=Number(state.pred?.stats?.participantCount||0);
- if(!m||!state.pred?.matchVotes){box.textContent=totalPeople+' kişi kuponunu onayladı.';return;}
- const votes=state.pred.matchVotes[String(m.id)]||{choices:{},total:0};
- const total=Number(votes.total||0);
- box.innerHTML=`<strong>📊 ${total} onaylı tahmin · ${totalPeople} katılımcı</strong>`+
-   (opts.length===2?opts.map(id=>{const count=Math.max(0,Number(votes.choices?.[String(id)]||0)),p=total?Math.round(count*100/total):0;return `<div><div class="wz-pred-vote-line"><span>${esc(nameFor(id))}</span><span>${count} kişi · %${p}</span></div><div class="wz-pred-vote-track"><div class="wz-pred-vote-fill" style="width:${p}%"></div></div></div>`}).join(''):'<small>Bu eşleşme için önceki tur tahminleri tamamlanmalı.</small>');
+ const totalPeople=Math.max(0,Number(state.pred?.stats?.participantCount||0));
+ if(!m){box.textContent=totalPeople+' kişi kuponunu onayladı.';return;}
+ const votes=state.pred?.matchVotes?.[String(m.id)]||{choices:{},total:0};
+ const counts=opts.length===2?opts.map(id=>Math.max(0,Number(votes.choices?.[String(id)]||0))):[];
+ // Projected finals/3rd place depend on each user's own picks; count only votes
+ // for the two candidates that are currently displayed in this viewer's bracket.
+ const shownTotal=counts.reduce((n,v)=>n+v,0);
+ const rawTotal=Math.max(0,Number(votes.total||0));
+ const maxVote=Math.max(0,...counts);
+ box.innerHTML=`<strong>📊 Bu maçın tahminleri · ${shownTotal} seçim · ${totalPeople} onaylı katılımcı</strong>`+
+   (opts.length===2?opts.map((id,i)=>{
+      const count=counts[i],pct=shownTotal?Math.round(count*100/shownTotal):0;
+      const leading=count>0&&count===maxVote&&counts.filter(v=>v===maxVote).length===1;
+      return `<div class="wz-pred-vote-item"><div class="wz-pred-vote-line ${leading?'leading':''}"><span>${esc(nameFor(id))}</span><span>${count} kişi · %${pct}</span></div><div class="wz-pred-vote-track"><div class="wz-pred-vote-fill ${leading?'leading':''}" style="width:${pct}%"></div></div></div>`;
+   }).join('')+(shownTotal===0?'<div class="wz-pred-vote-empty">Henüz bu eşleşmeye onaylı oy verilmedi.</div>':''):
+      '<div class="wz-pred-vote-empty">Bu eşleşme için önce önceki tur seçimleri tamamlanmalı.</div>')+
+   (rawTotal>shownTotal?'<div class="wz-pred-vote-empty">Diğer tahmin yollarında '+(rawTotal-shownTotal)+' seçim daha var.</div>':'');
 }
-
 function renderAuthStatus(){
  const el=$('authText');if(!el)return;
  if(!token()){
@@ -835,18 +853,28 @@ async function refresh(initial=false){if(state.loading)return;state.loading=true
 async function savePick(i){
  const m=activeMatch();if(!m||state.saving||!state.authed||state.pred?.prediction?.open!==true||(state.pred?.submission?.submitted&&!state.editMode))return;
  const id=(i===0?$('pickA'):$('pickB')).dataset.winner;if(!id)return;
- const wasEditing=state.editMode;
  state.saving=true;renderMatch();
  try{
    state.pred=await api('/tournament/predictions/pick',true,{tournamentId:tid,matchId:m.id,winnerId:id});
    state.authed=true;
    const sub=state.pred?.submission||{};
-   if(!wasEditing && sub.expectedCount>0&&sub.selectedCount===sub.expectedCount&&sub.canSubmit){
+   const complete=Number(sub.expectedCount)>0&&Number(sub.selectedCount)===Number(sub.expectedCount);
+   if(sub.submitted===true){
+     // V30.6.28: Worker has atomically confirmed the final choice.
+     state.editMode=false;
+     toast('🔒 Son tahmin kaydedildi. Kuponun otomatik onaylandı ve kilitlendi.','ok');
+   }else if(complete){
+     // Compatible fallback if a previously deployed Worker does not yet auto-submit.
      try{
        state.pred=await api('/tournament/predictions/submit',true,{tournamentId:tid});
+       if(state.pred?.submission?.submitted!==true)throw Error('Sunucu kupon onayını doğrulamadı.');
        state.editMode=false;
-       toast('✓ Son tahmin kaydedildi! Kuponun onaylandı ve kilitlendi.','ok');
-     }catch(e){toast('Tahminlerin kaydedildi ancak kupon onaylanamadı: '+e.message,'error');}
+       toast('🔒 Son tahmin kaydedildi. Kuponun otomatik onaylandı ve kilitlendi.','ok');
+     }catch(e){
+       // Preserve the picks and keep an explicit retry button; never claim a lock that failed.
+       state.editMode=false;
+       toast('8/8 tahmin kaydedildi ancak onay kesinleşmedi: '+e.message+' · Tahminleri Onayla ile tekrar dene.','error');
+     }
    }else{
      const order=wzPredictionOrder(),index=order.findIndex(x=>x.id===m.id),unpicked=wzMissingMatch();
      if(index>=0&&index<order.length-1){
@@ -854,7 +882,7 @@ async function savePick(i){
        if(after)state.selected=after.id;
        else if(unpicked)state.selected=unpicked.id;
      }else if(unpicked)state.selected=unpicked.id;
-     toast('★ Tahminin kaydedildi.'+(unpicked?' Sonraki tahmine geçebilirsin.':' Değişiklikleri Kaydet ile onaylayabilirsin.'),'ok');
+     toast('★ Tahmin kaydedildi.'+(unpicked?' Sonraki tahmine geçebilirsin.':''),'ok');
    }
    renderAll();
  }catch(e){toast('Tahmin kaydedilemedi: '+e.message,'error');await refresh();}
