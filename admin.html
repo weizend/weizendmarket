@@ -2329,6 +2329,21 @@ html,body{max-width:100%;overflow-x:hidden}
 @media(max-width:650px){.wz-v54-team-pickers{grid-template-columns:1fr}.wz-v54-admin-overlay{padding:7px}.wz-v54-admin-modal{max-height:93dvh}.wz-v54-admin-modal-scroll{padding:11px}.wz-v3047-slot{grid-template-columns:31px minmax(0,1fr);gap:8px}.wz-v3047-slot-actions{grid-column:2;justify-content:flex-start}.wz-v3047-invite-grid{grid-template-columns:1fr}.wz-v3047-icon{height:35px!important;width:35px!important;min-width:35px!important}}
 </style>
 
+
+<style id="wz629-admin-modal-scroll-lock">
+/* V30.6.29: Admin'de acik pencere kayar, arka sayfa sabit kalir. */
+html:has(.wz-v54-admin-overlay),
+html:has(#wz41RefereeDialog),
+html:has(.choiceOverlay.open),
+html:has(#adminNewMessageModal:not(.hidden)),
+body:has(.wz-v54-admin-overlay),
+body:has(#wz41RefereeDialog),
+body:has(.choiceOverlay.open),
+body:has(#adminNewMessageModal:not(.hidden)){
+  overflow:hidden!important;
+  overscroll-behavior:none;
+}
+</style>
 </head>
 
 <body>
@@ -11250,7 +11265,7 @@ async function drawTournament(){
 
     showStatus(
       'tournamentBracketStatus',
-      `✅ Fikstür oluşturuldu. ${Number(d.participantCount||0)} katılımcı · ${Number(d.rounds||0)} tur. Üst menüden 🎯 Tahminler bölümüne geçip tahminleri açabilirsin.`,
+      `✅ Fikstür oluşturuldu. ${Number(d.participantCount||0)} katılımcı · ${Number(d.rounds||0)} tur. ${d.predictionsOpened===true?'🎯 Tahminler otomatik açıldı. Tahminler sekmesinden kapatabilirsin.':'⚠️ Tahminler açılamadı: '+esc(String(d.predictionsOpenError||'Tahminler menüsünden durumu kontrol et.'))}`,
       true
     );
 
