@@ -3400,6 +3400,16 @@ body:has(#adminNewMessageModal:not(.hidden)){
   ❌ SİPARİŞİ İPTAL ET VE PUANI İADE ET
 
 </button>
+        <button id="wz49ConfirmRefundDetail" type="button" class="success"
+          style="display:none;margin-top:10px"
+          onclick="currentOrder?.id && confirmRefundReceived(encodeURIComponent(currentOrder.id))">
+          ✅ İadeyi Onayla – Stoku Güncelle
+        </button>
+        <p id="wz49RefundHelp" class="muted" style="display:none;font-size:12px;line-height:1.5;margin-top:8px">
+          BotRix/Kick sohbetinden puanın eksiksiz geri verildiğini kontrol et.
+          İade başlatılırken otomatik !puanver gönderilir. Gecikmiş bir komut olmadığını kontrol etmeden manuel tekrar gönderme.
+          Onaylayınca stok yalnızca bir kez güncellenir. Bu buton puan göndermez.
+        </p>
 
         <button id="wz47WalletReconcileButton" type="button" class="secondary"
           style="margin-top:10px;display:none"
@@ -7670,7 +7680,7 @@ function renderAdminOrders(){
 
       <td>
         <span class="badge ${orderStatusBadge(o.status)}">
-          ${esc(o.refund?.status==='completed' ? 'İade Edildi' : o.refund?.status==='pending' ? 'İade Onayı Bekliyor' : orderStatusText(o.status))}${o.manualReviewReason ? '<br><small>'+esc(o.manualReviewReason === 'ADMIN_POINTS_REFUND' ? 'Yönetici tarafından puan iadesi' : o.manualReviewReason)+'</small>' : ''}
+          ${esc(o.refund?.status==='completed' ? 'İade Edildi' : o.refund?.status==='pending' ? 'Puan İadesi – Yönetici Onayı Bekliyor' : orderStatusText(o.status))}${o.manualReviewReason ? '<br><small>'+esc(o.manualReviewReason === 'ADMIN_POINTS_REFUND' ? 'Yönetici tarafından puan iadesi' : o.manualReviewReason === 'REFUND_PENDING' ? 'Kick/BotRix kontrolü gerekiyor' : o.manualReviewReason)+'</small>' : ''}
         </span>
       </td>
 
@@ -7681,7 +7691,7 @@ function renderAdminOrders(){
       <td>
         <div class="orderActions">
           ${o.paymentType==='points' && o.refund?.status==='pending' ? `
-            <button class="smallBtn secondary" onclick="confirmRefundReceived('${encodeURIComponent(o.id)}')">Puan iade edildi: onayla</button>` : ''}
+            <button class="smallBtn secondary" onclick="confirmRefundReceived('${encodeURIComponent(o.id)}')">✅ İadeyi Onayla (Stok)</button>` : ''}
           ${o.paymentType === 'points' && ['pending','expired','failed'].includes(o.status) ? `
             <button class="smallBtn secondary" onclick="resolvePointReview('${encodeURIComponent(o.id)}','debited')">Puan silindi: onayla</button>
             <button class="smallBtn secondary" onclick="resolvePointReview('${encodeURIComponent(o.id)}','not_debited')">Puan silinmedi: iptal</button>` : ''}
@@ -7726,16 +7736,31 @@ async function resolvePointReview(encodedId,decision){
 }
 
 async function confirmRefundReceived(encodedId){
-  if(!confirm('Bu siparişin puanının TAMAMININ kullanıcıya geri verildiğini BotRix geçmişinden doğruladın mı? Bu işlem tekrar puan göndermez; iadeyi tamamlar ve stoğu geri ekler.')) return;
+  const orderId=decodeURIComponent(encodedId);
+  const item=adminOrdersCache.find(o=>String(o.id)===orderId);
+  const orderName=item?.username || currentOrder?.username || 'kullanıcı';
+  const amount=item?.refund?.amountPoints || currentOrder?.refund?.amountPoints || 0;
+  if(!confirm(`${orderName} kullanıcısına ${points(amount)} puanın TAMAMININ BotRix/Kick üzerinden geri verildiğini doğruladın mı?\n\n`+
+    'Onay verirsen iade kesinleşecek ve stok yalnızca bir kez artırılacak.\n'+
+    'Bu işlem PUAN GÖNDERMEZ. Önce otomatik !puanver komutunun gecikmediğini kontrol et; puan yoksa güvenle manuel gönder ve bakiyeyi doğrula.')) return;
+  const detailButton=document.getElementById('wz49ConfirmRefundDetail');
+  if(detailButton && currentOrder?.id===orderId) detailButton.disabled=true;
   try{
     const {r,d}=await api('/admin/order/confirm-refund',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({orderId:decodeURIComponent(encodedId),confirmed:true})});
+      body:JSON.stringify({orderId,confirmed:true})});
     if(!r.ok || !d?.success) throw new Error(d?.error || 'İade onaylanamadı.');
-    await loadAdminOrders();
-    alert('İade tamamlandı. Stok güncellendi.');
-  }catch(error){alert(error.message || String(error));}
+    stopRefundWatch();
+    await Promise.allSettled([loadAdminOrders(),loadProducts()]);
+    if(currentOrder?.id===orderId) await wz48RefreshCurrentOrder(true);
+    alert(d.alreadyCompleted ? 'İade daha önce tamamlanmış. Yeni stok veya puan işlemi yapılmadı.' :
+      'İade yönetici tarafından onaylandı. Stok güncellendi. BotRix puanı tekrar gönderilmedi.');
+  }catch(error){
+    alert('İade onayı tamamlanamadı: '+(error.message || String(error)));
+    if(currentOrder?.id===orderId) await wz48RefreshCurrentOrder(true);
+  }finally{
+    if(detailButton)detailButton.disabled=false;
+  }
 }
-
 async function settleCancelledPoints(encodedId,decision){
   const warning=decision==='refunded'
     ? 'Bu sipariş için silinen puanın TAMAMININ BotRix tarafından geri verildiğini ve bekleyen başka iade komutu olmadığını kontrol ettin mi? Bu düğme puan vermez; yalnızca doğruladığın sonucu kaydeder ve satın alma engelini kaldırır.'
@@ -8218,7 +8243,7 @@ function renderOrder(o){
   const effectiveStatus = refundStatus === 'completed'
     ? 'İade Edildi'
     : refundStatus === 'pending'
-      ? 'Puan İadesi Bekleniyor'
+      ? 'Puan İadesi – Yönetici Onayı Bekliyor'
       : orderStatusText(o.status);
   document.getElementById('oStatus').innerHTML =
     `<span class="badge ${refundStatus === 'completed' ? 'bad' : o.status === 'delivered' ? 'ok' : 'warn'}">${esc(effectiveStatus)}</span>`;
@@ -8245,6 +8270,11 @@ function renderOrder(o){
 
   const refundButton =
   document.getElementById('refundButton');
+  const manualConfirm = document.getElementById('wz49ConfirmRefundDetail');
+  const manualHelp = document.getElementById('wz49RefundHelp');
+  const pendingManualRefund = o.paymentType === 'points' && o.refund?.status === 'pending';
+  if (manualConfirm) manualConfirm.style.display = pendingManualRefund ? 'block' : 'none';
+  if (manualHelp) manualHelp.style.display = pendingManualRefund ? 'block' : 'none';
 
 const refundable =
   o.paymentType === 'points' &&
@@ -8258,7 +8288,7 @@ if(
   refundButton.disabled = true;
 
   refundButton.innerText =
-    `⏳ ${points(o.refund.amountPoints)} İADE BEKLENİYOR`;
+    `⏳ ${points(o.refund.amountPoints)} İADE ONAYI BEKLİYOR`;
 
 }else if(
   o.refund?.status === 'completed'
@@ -8463,13 +8493,14 @@ async function watchRefundCompletion(orderId, attempt = 0){
     showStatus(
       'lookupStatus',
       d.alreadyPending
-        ? '⏳ Bu siparişin puan iadesi zaten bekleniyor.'
-        : `✅ ${points(amount)} iade işlemi başlatıldı. BotRix puanı eklediğinde işlem otomatik tamamlanacak.`,
+        ? '⏳ Bu siparişin puan iadesi yönetici onayını bekliyor.'
+        : `✅ ${points(amount)} iade komutu başlatıldı. Kick/BotRix üzerinden puanın geri verildiğini doğrula, ardından İadeyi Onayla butonuna bas. Stok onayda güncellenir.`,
       true
     );
 
     await loadAdminOrders();
-    watchRefundCompletion(currentOrder?.id);
+    // V30.6.49: Manual confirmation does not need periodic polling.
+    stopRefundWatch();
 
   }catch(error){
 
