@@ -4409,6 +4409,11 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
 .wz-v3037-help-card{background:#13151b;border:1px solid #2c2e36;border-radius:10px;padding:12px}
 .wz-v3037-help-card b{color:#fff;font-size:.88rem}
 .wz-v3037-help-card p,.wz-v3037-detail-guide p{line-height:1.5;color:#c9cbd4;font-size:.77rem;margin:8px 0 0}
+/* V30.6.41 — Katılım ve tahmin rehberinde tek adımda Arena yönlendirmesi. */
+.wz-v30641-guide-path{display:block;margin-top:10px;padding:9px 11px;border:1px solid #59441c;border-radius:8px;background:rgba(79,53,15,.23);color:#ffdc92;font-size:.75rem;font-weight:800;line-height:1.65;overflow-wrap:anywhere}
+.wz-v30641-pred-card{border-color:#6e4a1f;background:linear-gradient(120deg,#201b17,#14161e)}
+.wz-v30641-pred-card b{color:#ffdb98}
+.wz-v30641-guide-note{color:#bfcbd6;font-size:.72rem;line-height:1.55}
 .wz-v3037-help-card strong{color:#fff}
 .wz-v3037-detail-guide{margin:0 12px 12px}
 .wz-v3037-detail-guide details{background:#151419;border:1px solid #43242a;border-radius:10px;color:#eee;padding:11px}
@@ -15178,7 +15183,7 @@ return;
           </div>
           <div class="wz-turn-card-entry-stack">
             <span class="wz-v96-format-badge">${esc(modeText(t))}</span>
-            <div class="wz-turn-card-participation"><span class="wz-turn-card-count">👥 <strong>${Math.max(0,Number(t.registeredCount||0))}/${Math.max(0,Number(t.capacity||0))}</strong> ${Number(t.teamSize||1)>1?'Takım':'Oyuncu'}${Number(t.teamSize||1)>1?`<small style="display:block;font-size:.67rem;color:#c4d8d2">✅ ${wzV95ReadyCount(item)} hazır · ⏳ ${Math.max(0,Number(t.registeredCount||0)-wzV95ReadyCount(item))} bekliyor</small>`:''}</span></div>
+            <div class="wz-turn-card-participation"><span class="wz-turn-card-count">👥 <strong>${Math.max(0,Number(t.registeredCount||0))}/${Math.max(0,Number(t.capacity||0))}</strong> ${Number(t.teamSize||1)>1?'Takım':'Oyuncu'}${Number(t.teamSize||1)>1 && !(Number(t.capacity||0)>0 && Number(t.registeredCount||0)>=Number(t.capacity||0) && wzV95ReadyCount(item)>=Number(t.registeredCount||0))?`<small style="display:block;font-size:.67rem;color:#c4d8d2">✅ ${wzV95ReadyCount(item)} hazır · ⏳ ${Math.max(0,Number(t.registeredCount||0)-wzV95ReadyCount(item))} bekliyor</small>`:''}</span></div>
             <span class="wz-turn-entry-pill ${esc(entryBadge.className)}">
               <span>${entryBadge.icon}</span><span>${esc(entryBadge.text)}</span>
             </span>
@@ -15285,14 +15290,19 @@ return;
   }
   function renderEasyGuide(){
     return `<details class="wz-v3037-help" id="wzTournamentEasyGuide" ${state.guideOpen?'open':''}>
-      <summary>❓ Nasıl katılırım? <span>Takım kurma · Davet kodu · AFK maç</span></summary>
+      <summary>❓ Nasıl Katılırım / Nasıl Tahmin Yaparım? <span>Takım kurma · Davet kodu · AFK maç · Fikstür · Tahminler</span></summary>
       <div class="wz-v3037-help-body">
         <div class="wz-v3037-help-card"><b>👑 Takım kuracağım</b>
           <p>Kick hesabını doğrula → turnuvada <strong>Takım Kur</strong> → takım adını ve Riot ID'ni yaz → katılım şartını tamamla → oluşturulan tek kullanımlık davet kodunu arkadaşına gönder.</p></div>
         <div class="wz-v3037-help-card"><b>🔑 Arkadaşımın takımına katılacağım</b>
           <p>Kaptandan turnuva bağlantısını ve davet kodunu al → Kick hesabını doğrula → <strong>Takıma Katıl</strong> → davet kodunu ve Riot ID'ni gir → gerekiyorsa kendi katılım şartını tamamla.</p></div>
         <div class="wz-v3037-help-card"><b>🎮 Yayın olmadan AFK maç nasıl oynanır?</b>
-          <p>Başlangıçta maç davetin gelir. Kaptanlardan biri VALORANT özel oyun kodunu sisteme kaydeder; oyuncular lobiye katılıp hazır verir. Kaptanlar kadro görsellerini gönderir, onay verir ve maç başlar. Maç bitince skor ve kanıt girilir; uyuşmazlıkta yönetici inceler.</p></div>
+          <p>Başlangıçta maç daveti gelir → tüm takım oyuncuları <strong>Arena lobisine girip Hazırım</strong> der → kaptanlardan ilki tek VALORANT kodunu paylaşır → oyuncular aynı VALORANT lobisinde toplanır → kaptanlar lobi ekran görüntülerini gönderir ve kadroları onaylar → iki kaptan kuralları ve maçtan sonra geri dönme sorumluluğunu kabul edip <strong>Maçı Başlat</strong> der. <strong>VALORANT maçını oyun içinde başlatıp bitirin; ardından Arena’ya geri dönerek iki takımın skorunu ve sonuç ekran görüntüsü bağlantısını mutlaka gönderin.</strong> İki kaptanın skoru eşleşince fikstür güncellenir; uyuşmazlıkta hakem inceler.</p></div>
+        <div class="wz-v3037-help-card wz-v30641-pred-card"><b>🎯 Nasıl tahmin yaparım? Fikstürü nerede görürüm?</b>
+          <span class="wz-v30641-guide-path">Detayları Gör → Arena → ŞİMDİ ARENA'YA GİT → MAÇLAR / TAHMİNLER</span>
+          <p>Turnuva kartında <strong>Detayları Gör</strong> butonuna bas. Açılan turnuva detaylarında <strong>Arena</strong> sekmesini seç, ardından <strong>ŞİMDİ ARENA'YA GİT</strong> butonuyla Arena'yı aç.</p>
+          <p><strong>⚔️ MAÇLAR</strong> bölümünde gerçek fikstürü, eşleşmeleri ve kesinleşmiş skorları görebilirsin. <strong>🎯 TAHMİNLER</strong> bölümünde Kick hesabını doğrulayarak maçların kazananlarını seçebilir, ardından <strong>Tahminleri Onayla</strong> butonuyla kuponunu tamamlayabilirsin.</p>
+          <p class="wz-v30641-guide-note">Tahminler yalnızca tahmin süresi açıkken yapılabilir. Maçlar başladıysa tahminler kilitli olabilir; mevcut tahminleri ve sonuçları yine inceleyebilirsin.</p></div>
       </div>
     </details>`;
   }
@@ -15379,7 +15389,7 @@ return;
         <div class="wz-turn-detailrow"><span>Harita</span><b>${esc(mapDisplayName(t,rule))}</b></div>
         <div class="wz-turn-detailrow"><span>Maç Formatı</span><b>${esc(matchFormat(t,rule))}</b></div>
         <div class="wz-turn-detailrow"><span>Kontenjan</span><b>${Math.max(0,Number(detail?.tournament?.registeredCount??t.registeredCount??0))}/${Number(detail?.tournament?.capacity??t.capacity??0)||'-'} ${Number(t.teamSize||1)>1?'Takım':'Oyuncu'}</b></div>
-        ${Number(t.teamSize||1)>1?`<div class="wz-turn-detailrow"><span>Takımların Durumu</span><b>✅ ${Number(detail?.tournament?.completedCount??t.completedCount??0)} hazır · ⏳ ${Math.max(0,Number(detail?.tournament?.registeredCount??t.registeredCount??0)-Number(detail?.tournament?.completedCount??t.completedCount??0))} eksik</b></div>`:''}
+        ${Number(t.teamSize||1)>1 && !(Number(detail?.tournament?.capacity??t.capacity??0)>0 && Number(detail?.tournament?.registeredCount??t.registeredCount??0)>=Number(detail?.tournament?.capacity??t.capacity??0) && Number(detail?.tournament?.completedCount??t.completedCount??0)>=Number(detail?.tournament?.registeredCount??t.registeredCount??0))?`<div class="wz-turn-detailrow"><span>Takımların Durumu</span><b>✅ ${Number(detail?.tournament?.completedCount??t.completedCount??0)} hazır · ⏳ ${Math.max(0,Number(detail?.tournament?.registeredCount??t.registeredCount??0)-Number(detail?.tournament?.completedCount??t.completedCount??0))} eksik</b></div>`:''}
         <div class="wz-turn-detailrow"><span>Katılım</span><b>${esc(entryText(item))}</b></div>
         ${Number(t.teamSize||1)>1?'<div class="wz-turn-detailrow"><span>Ödül Dağılımı</span><b>🏅 Kişi Başı</b></div>':''}
       </div>
@@ -15447,7 +15457,7 @@ return;
       <div class="wz-turn-participants-head"><div>
         <h3>👥 Katılımcılar</h3>
         <div class="wz-turn-participants-note">Kontenjandaki hazır ve oyuncu bekleyen bütün takımlar burada görünür. Takıma dokunarak yalnızca katılmış oyuncuları görebilirsin.</div>
-      </div><div class="wz-turn-participants-count"><strong>${teams.length} / ${capacity||'-'}</strong><span>Takım</span><small>✅ ${teams.filter(t=>!t._pending).length} hazır · ⏳ ${teams.filter(t=>t._pending).length} bekliyor</small></div></div>
+      </div><div class="wz-turn-participants-count"><strong>${teams.length} / ${capacity||'-'}</strong><span>Takım</span>${!(capacity>0 && teams.length>=capacity && teams.every(t=>!t._pending))?`<small>✅ ${teams.filter(t=>!t._pending).length} hazır · ⏳ ${teams.filter(t=>t._pending).length} bekliyor</small>`:''}</div></div>
       ${teams.length?`<div class="wz-turn-team-list">${teams.map((team,i)=>`
         <button class="wz-v95-public-team-btn" type="button" onclick="wzV95OpenPublicTeam('${encodeURIComponent(String(team.id||'')).replace(/'/g,'%27')}')">
           <span class="wz-turn-team-order">${i+1}</span><strong>${esc(team.name||'Takım')}</strong>
@@ -16041,10 +16051,13 @@ return;
             <button id="wzTurnRegisterBtn" type="button" class="wz-turn-register ${registrationAction.enabled?'':'is-disabled'}"
               onclick="wzTournamentRegistration('${esc(id)}')" ${registrationAction.enabled ? '' : 'disabled'}>${esc(registrationAction.label)}</button>`}
           <div class="wz-v3037-detail-guide"><details>
-            <summary>❓ Kayıt ve AFK maç nasıl işliyor?</summary>
+            <summary>❓ Kayıt, AFK maç, fikstür ve tahmin nasıl işliyor?</summary>
             <p><strong>Kaptan:</strong> Takım Kur → katılım şartını tamamla → davet kodunu arkadaşına gönder.</p>
             <p><strong>Oyuncu:</strong> Takıma Katıl → davet kodunu ve Riot ID'ni gir → katılım şartını tamamla.</p>
-            <p><strong>AFK:</strong> Maç daveti → kaptanın VALORANT lobisi → hazır onayları → kadro kanıtları → maç → sonuç. Canlı yayın gerekmiyor.</p>
+            <p><strong>AFK:</strong> Maç daveti → Arena lobisinde herkes Hazırım der → ilk kaptan VALORANT kodunu paylaşır → herkes aynı oyun lobisinde toplanır → kaptanlar ekran görüntülerini yükler ve kadroyu onaylar → maç kuralları ve Arena’ya geri dönüş sorumluluğu onaylanır → VALORANT maçı oynanır → kaptanlar Arena’ya dönüp iki takımın skorunu ve maç sonu Hızlıresim kanıtını bildirir. Sonuç onaylanınca fikstür güncellenir. Canlı yayın gerekmez.</p>
+            <span class="wz-v30641-guide-path">Bu sayfadaki Arena sekmesi → ŞİMDİ ARENA'YA GİT → MAÇLAR / TAHMİNLER</span>
+            <p><strong>⚔️ Fikstür:</strong> Aşağıdaki <strong>Arena</strong> sekmesine basıp <strong>ŞİMDİ ARENA'YA GİT</strong> seçeneğini kullan. Açılan Arena sayfasında <strong>MAÇLAR</strong> bölümünden gerçek eşleşmeleri, üst turları ve kesinleşen skorları takip edebilirsin.</p>
+            <p><strong>🎯 Tahmin:</strong> Aynı Arena sayfasında <strong>TAHMİNLER</strong> bölümüne geç. Kick hesabını doğrula, tahmin süresi kapanmadan maçların kazananlarını seç ve <strong>Tahminleri Onayla</strong> butonuyla kuponunu tamamla. Süre dolduğunda tahminler kilitlenir.</p>
             <button type="button" class="wz-v3037-share-link" onclick="wzV3037CopyTournamentLink('${esc(id)}',this)">🔗 BU TURNUVANIN BAĞLANTISINI KOPYALA</button>
           </details></div>
           <div class="wz-turn-tabs-label">Turnuva Detayları</div>
