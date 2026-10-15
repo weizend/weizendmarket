@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="tr">
 <head>
-<!-- WEİZEND V30.6.31: Sosyal medya Arena paylaşım kartı (yalnızca HTML meta verileri) -->
+<!-- WEİZEND V30.6.32: V30.6.31 sosyal onizleme korunur; Arena Kick dogrulama rehberi eklenir. -->
 <meta name="description" content="WEİZEND ARENA: VALORANT turnuva fikstürünü incele, eşleşmeleri gör ve maçlar başlamadan tahminlerini yap!">
 <link rel="canonical" href="https://www.weizend.com/arena">
 <meta property="og:type" content="website">
@@ -274,6 +274,21 @@ body.arena-dialog-open{overflow:hidden}
 .wz622-team-person small{display:block;color:#b3bac7;margin-top:4px;font-size:12px;overflow-wrap:anywhere}
 @media(max-width:460px){.wz622-team-overlay{padding:8px}.wz622-team-dialog{max-height:92dvh}.wz622-team-header{padding:11px}.wz622-team-content{padding:10px}}
 </style>
+<style id="wz632-arena-verify-style">
+/* V30.6.32 — Arena'ya dogrudan gelen, oturumu dogrulanmamis seyirciler icin gorunur rehber. */
+.arena-verify-guide{margin:0 0 14px;padding:17px 19px;border:1px solid #a94c4c;border-radius:14px;background:linear-gradient(115deg,#341016,#190b0e 64%,#101014);box-shadow:0 9px 30px rgba(0,0,0,.12);color:#ffe9e9}
+.arena-verify-guide-head{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:900;color:#fff;margin-bottom:5px}
+.arena-verify-guide-head span{font-size:23px;line-height:1}
+.arena-verify-guide p{margin:4px 0 10px;color:#f7d2d2;line-height:1.55}
+.arena-verify-guide ol{padding-left:24px;margin:8px 0 14px;display:grid;gap:5px;font-size:13px;color:#ffe3e3}
+.arena-verify-guide code{font-family:inherit;background:#101010;padding:2px 5px;border:1px solid #6a4646;border-radius:5px;color:#fff;font-weight:800}
+.arena-verify-guide-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.arena-verify-guide-actions a{background:#e31b1b;border:1px solid #ef4949;color:white;border-radius:9px;padding:11px 16px;text-decoration:none;font-weight:900;display:inline-flex;align-items:center;justify-content:center;text-align:center}
+.arena-verify-guide-actions a:hover{background:#b91414}
+.arena-verify-guide-actions button{padding:11px 14px}
+.arena-verify-guide-note{margin-top:10px;font-size:12px;color:#d9b7b7}
+@media(max-width:520px){.arena-verify-guide{padding:14px}.arena-verify-guide-head{font-size:16px}.arena-verify-guide-actions>a,.arena-verify-guide-actions>button{width:100%}}
+</style>
 
 <style id="wz619-free-team-clock-style">
 .wz619-clock{display:inline-flex;gap:5px;align-items:center;font-weight:700;font-variant-numeric:tabular-nums;color:#ffcd7c;font-size:12px}
@@ -289,6 +304,21 @@ body.arena-dialog-open{overflow:hidden}
 </div></header>
 <main>
 <section class="hero"><div class="eyebrow">🏆 WEİZEND ARENA</div><h1 id="tournamentTitle">Turnuva bilgileri hazırlanıyor</h1><p id="tournamentSubtitle">Katılımcılar, fikstür, maç sonuçları ve tahminler tek yerde.</p><div class="stats" id="stats"></div></section>
+<section id="arenaVerificationGuide" class="arena-verify-guide" role="region" aria-labelledby="arenaVerificationGuideTitle" hidden>
+  <div class="arena-verify-guide-head"><span aria-hidden="true">🔐</span><strong id="arenaVerificationGuideTitle">Tahmin Yapmak İçin Kick Hesabını Doğrula</strong></div>
+  <p id="arenaVerificationGuideIntro">Fikstürü herkes inceleyebilir. Ancak tahminlerini kaydetmek ve ödül yarışmasına katılmak için WEİZEND Market üzerinden Kick hesabını doğrulamalısın.</p>
+  <ol>
+    <li><b>Kick Hesabımı Doğrula</b> butonuyla WEİZEND Market'i aç.</li>
+    <li>Kick kullanıcı adını girip <b>Doğrulama Kodu Oluştur</b> seçeneğine bas.</li>
+    <li>Verilen <code>!doğrula KOD</code> komutunu <b>kendi Kick hesabından</b> Weizend sohbetine gönder.</li>
+    <li>Market'te <b>Doğrulamayı Kontrol Et</b> de; ardından Arena'ya dön.</li>
+  </ol>
+  <div class="arena-verify-guide-actions">
+    <a id="arenaOpenMarketVerify" href="https://www.weizend.com/?wz_market=1" target="_blank" rel="noopener noreferrer">🔴 Kick Hesabımı Doğrula ↗</a>
+    <button class="btn secondary" type="button" id="arenaVerifyRetry">✓ Doğruladım, Tekrar Kontrol Et</button>
+  </div>
+  <div class="arena-verify-guide-note">Market'i aynı tarayıcıda aç. Doğrulama tamamlanınca bu uyarı otomatik kaybolur veya kontrol düğmesine basabilirsin.</div>
+</section>
 <div id="alert" class="notice" role="status" hidden></div><button class="btn" type="button" id="v30ActiveMatch" style="display:none;margin:0 0 12px">🎮 Aktif Maçıma Dön</button>
 <div class="grid" id="content">
 <section class="panel"><div class="toolbar"><h2>🏆 Turnuva Fikstürü</h2><button class="btn secondary" type="button" id="refreshBtn">↻ Yenile</button></div><p class="hint">Bir maça tıklayarak eşleşmeyi ve tahmin seçeneklerini incele.</p><div id="bracket" class="bracket-viewport"><div class="empty">Fikstür bilgileri alınıyor...</div></div></section>
@@ -491,7 +521,20 @@ function renderPredictionVotes(m,opts){
       '<div class="wz-pred-vote-empty">Bu eşleşme için önce önceki tur seçimleri tamamlanmalı.</div>')+
    (rawTotal>shownTotal?'<div class="wz-pred-vote-empty">Diğer tahmin yollarında '+(rawTotal-shownTotal)+' seçim daha var.</div>':'');
 }
+function renderVerificationGuide(){
+ const guide=$('arenaVerificationGuide');if(!guide)return;
+ const needsHelp=state.authState==='guest'||state.authState==='error';
+ if(guide.hidden===needsHelp)guide.hidden=!needsHelp;
+ if(needsHelp){
+   const expired=state.authState==='error';
+   $('arenaVerificationGuideTitle').textContent=expired?'Kick Oturumunu Kontrol Et':'Tahmin Yapmak İçin Kick Hesabını Doğrula';
+   $('arenaVerificationGuideIntro').textContent=expired
+     ?'Kick oturumun doğrulanamadı. Önce Tekrar Kontrol Et butonunu dene. Gerekirse Market üzerinden Kick hesabını yeniden doğrula.'
+     :'Fikstürü herkes inceleyebilir. Ancak tahminlerini kaydetmek ve ödül yarışmasına katılmak için WEİZEND Market üzerinden Kick hesabını doğrulamalısın.';
+ }
+}
 function renderAuthStatus(){
+ renderVerificationGuide();
  const el=$('authText');if(!el)return;
  if(!token()){
    el.textContent='Tahmin için önce WEİZEND sitesinde Kick hesabına giriş yap.';
@@ -862,7 +905,7 @@ function restorePublic(){
    // Hata olursa refresh catch içinde bu güvenli yedek görüntülenir.
  }catch{}
 }
-async function refresh(initial=false){if(state.loading)return;state.loading=true;state.authState=token()?'checking':'guest';state.authError='';renderAuthStatus();$('refreshBtn').disabled=true;
+async function refresh(initial=false){if(state.loading)return;arenaKnownAuthToken=token();state.loading=true;state.authState=token()?'checking':'guest';state.authError='';renderAuthStatus();$('refreshBtn').disabled=true;
  try{
  // V28.1: Pick'em hata verse de fikstur, takimlar ve mac odasi yuklenebilsin.
  const signedIn=!!token();
@@ -972,10 +1015,24 @@ async function wzCheckPredictionLock(){
  finally{wzLockCheckPending=false;}
 }
 setInterval(()=>{void wzCheckPredictionLock()},60000);
+// Yeni token baska bir Market sekmesinde olustugunda, Arena'ya donulurse tek sefer kontrol et.
+// Aktif kullaniciyi sebepsiz yere yeniden sorgulama; sayfa arka plandayken istek yapma.
+let arenaKnownAuthToken=token();
+document.addEventListener('visibilitychange',()=>{
+ if(document.hidden||state.loading||state.saving)return;
+ const current=token();
+ if(current!==arenaKnownAuthToken){arenaKnownAuthToken=current;refresh();}
+});
+window.addEventListener('storage',event=>{
+ if(event.key===TOKEN_KEY && !document.hidden && !state.loading && !state.saving){
+   const current=token();if(current!==arenaKnownAuthToken){arenaKnownAuthToken=current;refresh();}
+ }
+});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&tid&&!state.loading)void refresh();});
 $('refreshBtn').onclick=()=>refresh();$('pickA').onclick=()=>savePick(0);$('pickB').onclick=()=>savePick(1);
 $('confirmPicks').onclick=()=>confirmCoupon();
 $('editPicks').onclick=()=>{if(state.pred?.prediction?.open!==true)return;state.editMode=!state.editMode;renderMatch();};
+$('arenaVerifyRetry').addEventListener('click',()=>{if(!state.loading)refresh();});
 $('wzPredPrev').onclick=()=>wzMovePrediction(-1);
 $('wzPredNext').onclick=()=>wzMovePrediction(1);
 $('wzGoMissing').onclick=()=>{
