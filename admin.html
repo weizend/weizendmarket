@@ -10571,7 +10571,7 @@ function wzV3047RenderTeamDialog(entry,firstOpen=false){
         }).join('')}
         ${subs.map(p=>`<div class="tournamentV3Payment"><b>🎟️ Abonelik / Gift · ${esc(p.payerUsername||'-')}</b><div class="muted">Durum: ${esc(p.status||'-')} · Normal Abone ${Number(p.receivedDirectSubs||0)}/${Number(p.requiredDirectSubs||0)} · Gift ${Number(p.receivedGifts||0)}/${Number(p.requiredGifts||0)}</div></div>`).join('')}
         ${!payments.length&&!subs.length?'<div class="wz-v3047-empty">Bu takım için ödeme hareketi yok.</div>':''}</div></section>
-      <div class="muted" style="margin-top:13px">Fikstür yayımlandıktan sonra takım adı ve oyuncunun oyun içi adı düzeltilebilir. Ücretsiz üyeler maç çağrısı başlamadan önce doğrulanmış başka bir Kick hesabıyla 🔁 Değiştir üzerinden değiştirilebilir. Kaptan ve gerçek ödemesi/aboneliği olan koltuklar korunur. Takım silme ve oyuncu çıkarma fikstür varken kapalıdır.</div>
+      <div class="muted" style="margin-top:13px">Fikstür yayımlandıktan sonra takım adı ve kaptan dâhil mevcut oyuncuların VALORANT adı ve TAG'ı düzenlenebilir. Oyuncuların Kick hesapları değiştirilemez, takımdan oyuncu çıkarılamaz ve yeni oyuncu eklenemez. Takım silme işlemi de kapalıdır. Mevcut fikstür, ödemeler ve maç kayıtları korunur.</div>
     </div></section>`;
   if(!firstOpen){const scroll=overlay.querySelector('.wz-v54-admin-modal-scroll');if(scroll)scroll.scrollTop=priorScroll;}
   else overlay.querySelector('.wz-v54-admin-close')?.focus({preventScroll:true});
