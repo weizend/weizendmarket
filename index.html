@@ -12096,6 +12096,7 @@ return;
                     <label>${tv2Esc(rule.gameIdLabel || 'Oyun İçi Kullanıcı Adı')}</label>
                     <input id="tv2SoloRiotId" class="tv2-input" maxlength="80" placeholder="${String(rule.gameName||'').toLowerCase().includes('valorant') ? 'Örn: Weizend#WZND' : 'Oyun içi kullanıcı adın'}">
                 </div>
+                ${wzV633InstagramForm('tv2SoloInstagram')}
                 ${subscriptionChoice}
                 <label class="tv2-terms">
                     <input id="tv2SoloTerms" type="checkbox">
@@ -12137,6 +12138,8 @@ return;
         const rule = tv2State.publicData?.rule || {};
         const entryMode = String(rule.entryMode || tv2State.publicData?.tournament?.entryMode || 'free').toLowerCase();
         const selfSubscriptionState = document.getElementById('tv2SoloSubscriptionState')?.value || '';
+        let instagramContact;
+        try{instagramContact=wzV633InstagramInput('tv2SoloInstagram');}catch(error){if(status)status.textContent=error.message;return;}
 
         if (!gameId || !termsAccepted) {
             if (status) status.innerHTML = `<div class="tv2-message error">${tv2Esc(rule.gameIdLabel || 'Oyun içi kullanıcı adı')} gir ve şartları kabul et.</div>`;
@@ -12158,6 +12161,7 @@ return;
                     tournamentId:tv2State.tournamentId,
                     riotId:gameId,
                     gameId,
+                    ...instagramContact,
                     termsAccepted:true,
                     selfSubscriptionState:entryMode === 'subscription' ? selfSubscriptionState : undefined
                 })
@@ -12639,6 +12643,40 @@ return;
         modalBody.scrollTop = previousScroll;
     }
 
+
+    // V30.6.33: Yeni turnuvalarda Instagram iletişim alanı zorunlu; eskilerde isteğe bağlı.
+    function wzV633InstagramForm(inputId) {
+        const required=tv2State.me?.instagramRequired === true || tv2State.publicData?.instagramRequired === true;
+        return `<div class="tv2-field">
+            <label for="${inputId}">📸 Instagram Kullanıcı Adın ${required?'<b style="color:#ff7b7b">(Zorunlu)</b>':'(İsteğe bağlı)'}</label>
+            <input id="${inputId}" class="tv2-input" type="text" maxlength="100" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Örn: @oyuncuadi veya instagram.com/oyuncuadi">
+            <div class="tv2-muted" style="margin-top:6px;">Yalnızca turnuva organizatörü gerektiğinde sana ulaşmak için görür. Diğer oyunculara açık değildir.</div>
+            <label class="tv2-terms" style="margin-top:8px"><input id="${inputId}Consent" type="checkbox"><span>Instagram kullanıcı adımın turnuva iletişimi amacıyla organizatörle paylaşılmasını kabul ediyorum.</span></label>
+        </div>`;
+    }
+    function wzV633InstagramInput(inputId) {
+        const username=String(document.getElementById(inputId)?.value||'').trim();
+        const required=tv2State.me?.instagramRequired === true || tv2State.publicData?.instagramRequired === true;
+        const consent=document.getElementById(inputId+'Consent')?.checked===true;
+        if(required && !username) throw new Error('Instagram kullanıcı adını yazmalısın.');
+        if(username && !consent) throw new Error('Instagram iletişim iznini onayla.');
+        return {instagramUsername:username,instagramConsent:consent};
+    }
+    async function wzV633SaveInstagram() {
+        if(tv2State.busy) return;
+        const value=String(document.getElementById('tv3MyInstagram')?.value||'').trim();
+        const consent=document.getElementById('tv3MyInstagramConsent')?.checked===true;
+        if(!value || !consent){showStatusToast('Instagram adını gir ve iletişim iznini onayla.',4500);return;}
+        tv2State.busy=true;
+        try {
+            const data=await tv2AuthFetch('/tournament/v3/contact/save',{method:'POST',headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({tournamentId:tv2State.tournamentId,instagramUsername:value,instagramConsent:true})});
+            showStatusToast('✅ Instagram iletişim hesabın kaydedildi: @'+data.instagramUsername,3600);
+            await tv2ReloadMe();
+        } catch(error){showStatusToast('❌ '+(error.message||error),5000);}
+        finally{tv2State.busy=false;}
+    }
+
     function tv2ShowCreateForm(keep = false) {
         tv2State.form = 'create';
         // First selection rebuilds the modal without showing the two choice buttons again.
@@ -12683,6 +12721,7 @@ return;
                     <label>${tv2Esc(rule.gameIdLabel || 'Oyun İçi Kullanıcı Adı')}</label>
                     <input id="tv3CreateGameId" class="tv2-input" maxlength="80" placeholder="${String(rule.gameName||'').toLowerCase().includes('valorant') ? 'Örn: Weizend#WZND' : 'Oyun içi kullanıcı adın'}">
                 </div>
+                ${wzV633InstagramForm('tv3CreateInstagram')}
                 ${paymentChoice}
                 <label class="tv2-terms">
                     <input id="tv2TermsCreate" type="checkbox">
@@ -12707,6 +12746,8 @@ return;
         const teamName = solo ? '' : (document.getElementById('tv2TeamName')?.value.trim() || '');
         const gameId = document.getElementById('tv3CreateGameId')?.value.trim() || '';
         const termsAccepted = document.getElementById('tv2TermsCreate')?.checked === true;
+        let instagramContact;
+        try{instagramContact=wzV633InstagramInput('tv3CreateInstagram');}catch(error){tv2SetFormStatus(error.message);return;}
         const paySeats = mode === 'tl' ? Number(document.getElementById('tv3CreatePaySeats')?.value || 1) : 1;
         const selfSubscriptionState = mode === 'subscription'
             ? String(document.getElementById('tv3CreateSubscriptionState')?.value || '')
@@ -12742,6 +12783,7 @@ return;
                     gameId,
                     paySeats,
                     selfSubscriptionState:mode === 'subscription' ? selfSubscriptionState : undefined,
+                    ...instagramContact,
                     termsAccepted:true
                 })
             });
@@ -12777,6 +12819,7 @@ return;
                     <label>${tv2Esc(rule.gameIdLabel || 'Oyun İçi Kullanıcı Adı')}</label>
                     <input id="tv3JoinGameId" class="tv2-input" maxlength="80" placeholder="${String(rule.gameName||'').toLowerCase().includes('valorant') ? 'Örn: Weizend#WZND' : 'Oyun içi kullanıcı adın'}">
                 </div>
+                ${wzV633InstagramForm('tv3JoinInstagram')}
                 <label class="tv2-terms">
                     <input id="tv3JoinTerms" type="checkbox">
                     <span>${entryUX.joinTerms}</span>
@@ -12795,6 +12838,8 @@ return;
         const inviteCode = String(document.getElementById('tv3JoinInviteCode')?.value || '').trim().toUpperCase();
         const gameId = String(document.getElementById('tv3JoinGameId')?.value || '').trim();
         const termsAccepted = document.getElementById('tv3JoinTerms')?.checked === true;
+        let instagramContact;
+        try{instagramContact=wzV633InstagramInput('tv3JoinInstagram');}catch(error){tv2SetFormStatus(error.message);return;}
         if (!inviteCode || !gameId) {
             tv2SetFormStatus('Davet kodunu ve oyun içi kullanıcı adını eksiksiz doldur.');
             return;
@@ -12815,6 +12860,7 @@ return;
                     tournamentId:tv2State.tournamentId,
                     inviteCode,
                     gameId,
+                    ...instagramContact,
                     termsAccepted:true
                 })
             });
@@ -13033,6 +13079,13 @@ return;
                         : (size <= 1 ? `⏳ ${entryUX.label} işleminin tamamlanması bekleniyor.` : `${entryUX.teamPending} (${readyCount}/${size})`)}
                 </div>
                 <div class="tv3-slot-list">${slotHtml}</div>
+                <div class="tv2-panel" style="margin-top:12px">
+                    <h4>📸 İletişim Bilgim</h4>
+                    <div class="tv2-muted" style="margin-bottom:8px">Olası maç saati değişikliklerinde organizatörün sana ulaşabilmesi için Instagram kullanıcı adını ekleyebilir veya güncelleyebilirsin. Yalnızca yönetici görür.</div>
+                    <input id="tv3MyInstagram" class="tv2-input" type="text" maxlength="100" autocapitalize="none" spellcheck="false" placeholder="@instagramadim" value="${tv2Esc(me.instagramUsername||'')}">
+                    <label class="tv2-terms" style="margin-top:9px"><input id="tv3MyInstagramConsent" type="checkbox"><span>Organizatörün bu hesabı turnuva iletişimi için görmesini kabul ediyorum.</span></label>
+                    <div class="tv2-actions"><button class="tv2-btn secondary" onclick="wzV633SaveInstagram()">📸 İletişim Bilgimi Kaydet</button></div>
+                </div>
                 ${!teamReady && team.freeTeamExpiresAt ? `<div class="wz619-deadline-note">⏳ <b>Takım tamamlama süresi:</b> <strong data-wz619-deadline="${tv2Esc(team.freeTeamExpiresAt)}">30:00</strong><br>Ücretsiz takımını 30 dakika içinde tamamlamalısın. Süre sonunda eksik kalırsa takım otomatik iptal edilerek kontenjan açılır. Bu süre sayfayı yenileyince sıfırlanmaz.</div>`:''}
                 ${inviteHtml}
                 ${isCaptain && String((me.rule||rule).entryMode||'')==='tl' && !me.activePayment && String(team.status||'')==='captain_payment_pending' ? `<div class="tv2-panel"><div class="tv2-message">⚠️ Takım oluşturulmuş fakat aktif bağış kodu bulunamadı. Kayıtları silmeden ödeme hazırlamayı yeniden dene.</div><button class="tv2-btn" onclick="tv3RecoverCaptainPayment()">💳 ÖDEME KODUNU YENİDEN HAZIRLA</button></div>` : ''}
