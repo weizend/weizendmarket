@@ -3342,7 +3342,7 @@ body:has(#adminNewMessageModal:not(.hidden)){
         </div>
 
         <div class="row">
-          <span>Ürün ID</span>
+          <span>Ürün</span>
           <strong id="oProduct">-</strong>
         </div>
 
@@ -3395,6 +3395,15 @@ body:has(#adminNewMessageModal:not(.hidden)){
   ❌ SİPARİŞİ İPTAL ET VE PUANI İADE ET
 
 </button>
+
+        <button id="wz47WalletReconcileButton" type="button" class="secondary"
+          style="margin-top:10px;display:none"
+          onclick="wz47ReconcileRefundBalance()">
+          🔄 BotRix'te doğruladığım bakiyeyle eşitle
+        </button>
+        <p id="wz47WalletReconcileNote" class="muted" style="display:none;font-size:12px;line-height:1.45">
+          İade zaten tamamlandıysa ama Market bakiyesi eskiyse kullan. Puan ekleme komutu göndermez; BotRix'teki son toplam bakiyeyi siteye yazar.
+        </p>
 
       </div>
 
@@ -7647,7 +7656,7 @@ function renderAdminOrders(){
 
       <td>
         <span class="badge ${orderStatusBadge(o.status)}">
-          ${esc(o.refund?.status==='completed' ? 'İade Edildi' : o.refund?.status==='pending' ? 'İade Onayı Bekliyor' : orderStatusText(o.status))}${o.manualReviewReason ? '<br><small>'+esc(o.manualReviewReason)+'</small>' : ''}
+          ${esc(o.refund?.status==='completed' ? 'İade Edildi' : o.refund?.status==='pending' ? 'İade Onayı Bekliyor' : orderStatusText(o.status))}${o.manualReviewReason ? '<br><small>'+esc(o.manualReviewReason === 'ADMIN_POINTS_REFUND' ? 'Yönetici tarafından puan iadesi' : o.manualReviewReason)+'</small>' : ''}
         </span>
       </td>
 
@@ -8142,9 +8151,7 @@ function renderOrder(o){
     o.uid || '-';
 
   document.getElementById('oProduct').innerText =
-  o.productName
-    ? `${o.productName} (${o.productId})`
-    : o.productId || '-';
+  o.productName || o.productId || '-';
 
   document.getElementById('oQty').innerText =
     o.quantity ?? '-';
@@ -8186,6 +8193,12 @@ function renderOrder(o){
   }[o.status] || o.status
 )}
     </span>`;
+
+  const vz47Reconcile = document.getElementById('wz47WalletReconcileButton');
+  const vz47Note = document.getElementById('wz47WalletReconcileNote');
+  const vz47CanReconcile = o.paymentType === 'points' && o.refund?.status === 'completed';
+  if (vz47Reconcile) vz47Reconcile.style.display = vz47CanReconcile ? 'block' : 'none';
+  if (vz47Note) vz47Note.style.display = vz47CanReconcile ? 'block' : 'none';
 
   const button =
     document.getElementById(
@@ -8249,6 +8262,37 @@ if(
         : o.status === 'cancelled'
           ? '❌ SİPARİŞ İPTAL EDİLDİ'
           : '✅ TESLİM EDİLDİ';
+}
+
+// V30.6.47: Bir kere doğrulanmış gerçek BotRix TOPLAM bakiyesiyle
+// mevcut D1 bakiyesini düzeltir; !puanver/!puansil çalıştırmaz.
+async function wz47ReconcileRefundBalance(){
+  const orderId = String(currentOrder?.id || '').trim();
+  if (!orderId || currentOrder?.refund?.status !== 'completed') {
+    alert('Yalnızca tamamlanmış puan iadelerinde kullanılabilir.');return;
+  }
+  try {
+    const {r,d} = await api('/admin/order/refund-wallet-status?orderId=' + encodeURIComponent(orderId));
+    if (!r.ok || !d?.success) throw new Error(d?.error || 'Bakiye okunamadı.');
+    const fmt = n => Number(n).toLocaleString('tr-TR');
+    const raw = prompt(`Kullanıcı: ${d.username}\nMarket D1 bakiyesi: ${fmt(d.currentPoints)}\n\nBotRix sohbetinde doğruladığın GÜNCEL TOPLAM bakiyeyi yaz.\nÖrnek: 1000000\n\nBu işlem puan göndermez.`, String(d.currentPoints));
+    if (raw === null) return;
+    const normalized = raw.trim().replace(/[.\s]/g, '');
+    if (!/^\d+$/.test(normalized) || !Number.isSafeInteger(Number(normalized))) {
+      alert('Geçerli tam sayı gir. Örnek: 1000000');return;
+    }
+    const verifiedPoints = Number(normalized);
+    if (verifiedPoints === Number(d.currentPoints)) {
+      alert('Market ve doğruladığın bakiye zaten aynı.');return;
+    }
+    if (!confirm(`BotRix'te ${d.username} için GERÇEK güncel toplam bakiyeyi ${fmt(verifiedPoints)} olarak doğruladın mı?\n\nSite bakiyesi ${fmt(d.currentPoints)} → ${fmt(verifiedPoints)} olacak.\nBotRix'e puan gönderilmeyecek.\n\nDiğer puan işlemleri sırasında yapma.`)) return;
+    const out = await api('/admin/order/reconcile-refund-balance',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({orderId,verifiedPoints,expectedCurrentPoints:Number(d.currentPoints),confirmation:'BOTRIX_BAKIYESINI_DOGRULADIM'})
+    });
+    if (!out.r.ok || !out.d?.success) throw new Error(out.d?.error || 'Eşitleme yapılamadı.');
+    alert(`Market bakiyesi ${fmt(out.d.points)} puan olarak eşitlendi. BotRix'e yeni puan komutu gönderilmedi.`);
+  }catch(e){alert('Bakiye eşitlemesi tamamlanamadı: '+String(e?.message || e));}
 }
 
 function stopRefundWatch(){
