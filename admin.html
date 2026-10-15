@@ -2309,6 +2309,8 @@ html,body{max-width:100%;overflow-x:hidden}
 .wz-v3047-icon{width:38px!important;height:38px!important;min-width:38px!important;padding:0!important;border-radius:10px!important;border:1px solid #41434c!important;background:#202128!important;color:#e8e8e8!important;font-size:18px!important}
 .wz-v3047-icon.danger{background:#301719!important;border-color:#713434!important;color:#ff9696!important}
 .wz-v3047-icon:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.wz-v3047-ig-contact{font-size:12px!important;color:#ffb4c7!important;border:1px solid #61384a!important;background:#281722!important;border-radius:9px!important;padding:8px 9px!important;text-decoration:none!important;white-space:nowrap;font-weight:700!important}
+.wz-v3047-ig-contact:hover{background:#462337!important;color:#fff!important}
 .wz-v54-admin-overlay{position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.84);padding:16px;display:grid;place-items:center;overscroll-behavior:contain}
 .wz-v54-admin-modal{width:min(760px,100%);max-height:min(91dvh,880px);min-height:0;display:flex;flex-direction:column;border:1px solid #45464b;background:#111214;border-radius:18px;overflow:hidden;box-shadow:0 25px 70px #000b}
 .wz-v54-admin-modal-header{flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 15px;border-bottom:1px solid #363638}
@@ -10544,6 +10546,7 @@ function wzV3047RenderTeamDialog(entry,firstOpen=false){
         return `<div class="wz-v3047-slot"><span class="num">${isCaptain?'👑':Number(s.slotNo||i+1)}</span>
           <div><strong>${esc(username||'Oyuncu Bekleniyor')}</strong><small>${isCaptain?'Kaptan · ':''}${esc(tournamentV3SlotText(status,role))} · Oyun: ${esc(game||'-')}</small><small>${esc(tournamentPaymentText(s.paymentStatus||'unpaid',s.paidVia||s.paymentVia||''))}${s.paidForByUsername?' · Ödeyen: '+esc(s.paidForByUsername):''}</small></div>
           <div class="wz-v3047-slot-actions">
+            ${s.instagramUsername&&/^[A-Za-z0-9._]{1,30}$/.test(String(s.instagramUsername))?`<a class="wz-v3047-ig-contact" href="https://www.instagram.com/${encodeURIComponent(s.instagramUsername)}/" target="_blank" rel="noopener noreferrer" title="@${esc(s.instagramUsername)} hesabına git" aria-label="${esc(username)} için Instagram iletişim">📸 İletişim</a>`:''}
             ${canEdit?`<button type="button" class="wz-v3047-icon" aria-label="${isCaptain?'Kaptanı':'Oyuncuyu'} düzenle" title="Düzenle" onclick="editTournamentSlot('${edit}','${encodeURIComponent(username)}','${encodeURIComponent(game)}')">✏️</button>`:''}
             ${isCaptain?`<button type="button" class="wz-v3047-icon danger" aria-label="Kaptanı kaldır" title="Kaptan için takım silme onayı gerekir" onclick="wzV3047CaptainRemove('${ed}')">🗑</button>`:canRemove?`<button type="button" class="wz-v3047-icon danger" aria-label="Oyuncuyu takımdan çıkar" title="Oyuncuyu çıkar" onclick="deleteTournamentSlot('${edit}')">🗑</button>`:''}
           </div></div>`;
