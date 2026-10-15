@@ -80,6 +80,16 @@ header{background:#090909;border-bottom:1px solid #292929} .top{width:min(1360px
 main{width:min(1360px,100%);padding:18px 16px 55px;margin:auto}.hero{background:linear-gradient(115deg,#2b0b0b,#111);border:1px solid #873131;border-radius:15px;padding:18px 20px;margin-bottom:14px}.eyebrow{font-size:11px;font-weight:900;color:#ff9898;letter-spacing:.12em}.hero h1{font-size:clamp(20px,3vw,28px);margin:4px 0 7px}.hero p{margin:0;color:#d3c9c9}.stats{display:flex;gap:7px;flex-wrap:wrap;margin-top:13px}.tag{border:1px solid #424242;background:#1b1b1b;padding:5px 9px;border-radius:8px;color:#ddd;font-size:11px;font-weight:850}.tag.red{border-color:#793030;color:#ffaaaa;background:#280e0e}.grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(290px,.85fr);gap:13px;align-items:start}.panel{background:linear-gradient(145deg,#111,#080808);border:1px solid #303030;padding:16px;border-radius:14px;min-width:0}.panel h2{margin:0 0 10px;font-size:18px}.panel h3{margin:14px 0 8px;font-size:15px}.hint{font-size:12px;color:#aaa;margin:0 0 12px}.notice{background:#1b1410;border:1px solid #6f4f26;color:#ffe1ac;border-radius:9px;padding:12px;margin-bottom:13px}.notice.error{background:#230e0e;border-color:#932a2a;color:#ffd1d1}.notice.ok{background:#101d15;border-color:#34774c;color:#b7ffce}
 .bracket-viewport{overflow-x:auto;scrollbar-color:#872b2b #111}.rounds{display:flex;gap:12px;min-width:max-content;padding:4px 2px 13px}.round{width:214px;flex:none;display:flex;flex-direction:column}.round h3{padding:7px 10px;border-left:3px solid var(--red);background:#210f0f;margin:0 0 9px;font-size:12px}.round-matches{display:flex;flex-direction:column;justify-content:space-around;gap:11px;flex:1;min-height:315px}.match{width:100%;background:#171717;border:1px solid #393939;border-radius:10px;color:#fff;padding:10px;text-align:left;display:grid;gap:5px;min-height:80px}.match:hover,.match.active{border-color:var(--red)}.match-head{display:flex;justify-content:space-between;gap:4px;color:#aaa;font-size:10px}.side{display:flex;justify-content:space-between;gap:5px;font-weight:750;font-size:12px;overflow-wrap:anywhere}.side.winner{color:var(--green)}.side.predicted:not(.winner){color:var(--gold)}.side span{flex-shrink:0}.empty{border:1px dashed #404040;color:#aaa;border-radius:10px;background:#0c0c0c;text-align:center;padding:25px 14px}.match-focus{border:1px solid #3d3d3d;border-radius:10px;padding:12px;background:#0e0e0e;margin:7px 0}.focus-title{font-size:15px;font-weight:900;margin-bottom:9px;overflow-wrap:anywhere}.focus-line{color:#bbb;font-size:12px}.choices{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}.choose{padding:12px 10px;border:1px solid #474747;background:#1e1e1e;border-radius:10px;color:white;font-weight:850;overflow-wrap:anywhere}.choose.selected{background:#462020;border-color:#ff5353;color:#fff}.choose:hover:not(:disabled){border-color:#f55}.pick-status{font-size:12px;color:#b9b9b9;margin:8px 0}.pick-status b{color:#fff}.btn{background:var(--red);border:1px solid var(--red);color:#fff;border-radius:9px;font-weight:900;padding:10px 12px}.btn.secondary{background:#1b1b1b;border-color:#3d3d3d}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:9px;margin:12px 0}.small{font-size:11px;color:#aaa}.members{display:grid;gap:8px}.member{border:1px solid #373737;background:#161616;border-radius:9px;padding:9px 11px}.member strong{display:block}.member small{display:block;color:#a9a9a9;margin-top:3px;overflow-wrap:anywhere}.leaderboard{width:100%;border-collapse:collapse}.leaderboard th,.leaderboard td{border-bottom:1px solid #343434;padding:8px 4px;text-align:left;font-size:12px}.leaderboard th{color:#aaa}.count{font-variant-numeric:tabular-nums}.footer{text-align:center;color:#777;margin-top:23px;font-size:11px}.skeleton{height:10px;margin:11px 0;background:linear-gradient(90deg,#222,#383838,#222);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:10px}@keyframes shimmer{to{background-position:-200% 0}}@media(max-width:960px){.grid{grid-template-columns:1fr}.round{width:200px}.round-matches{min-height:300px}}@media(max-width:520px){main{padding:12px 10px 45px}.panel{padding:12px}.hero{padding:15px}.brand strong{font-size:16px}.brand-logo{width:37px;height:37px;font-size:20px}.return{padding:9px 10px;font-size:12px}}
 
+/* V30.6.37 — Public fixture match phase. Only visual badge colors. */
+.wz637-stage{font-weight:850;white-space:normal;text-align:right}
+.wz637-stage.wz637-called{color:#f3d876}
+.wz637-stage.wz637-preparing{color:#f9ae72}
+.wz637-stage.wz637-starting{color:#84caff}
+.wz637-stage.wz637-playing{color:#70ed9d}
+.wz637-stage.wz637-review{color:#ffd47a}
+.wz637-stage.wz637-pending{color:#ffcd8d}
+.wz637-stage.wz637-completed{color:#a4ffcb}
+.match:has(.wz637-playing){border-color:#28583c}
 /* V26: WEİZEND MARKET ile ortak görsel dil */
 html{scroll-behavior:auto}
 body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:radial-gradient(ellipse 76% 265px at 50% 140px,rgba(79,5,5,.19),transparent 90%),#050505}
@@ -463,6 +473,21 @@ function displayName(m,which){const given=which==='a'?m.participantAName:m.parti
  if((m.matchKind||'main')==='third_place')return 'Yarı final kaybedeni';
  const r=Number(m.roundNumber||0);if(r>1&&(m.matchKind||'main')==='main')return 'Önceki tur galibi';
  return'Bekleniyor';}
+// V30.6.38: Fixture status is a view of the persisted lobby state, not
+// an alternate match control. Pending delivery is not reported as sent.
+function wz637MatchStatus(m){
+ const stage=String(m?.publicPlayState||'');
+ if(String(m?.status||'')==='completed'||stage==='completed')return {text:'🏁 SONUÇLANDI',kind:'completed'};
+ if(stage==='referee_review')return {text:'⚖️ HAKEM İNCELEMESİ',kind:'review'};
+ if(stage==='finalizing')return {text:'⏳ SONUÇ İŞLENİYOR',kind:'pending'};
+ if(stage==='result_pending')return {text:'⏳ SKOR ONAYI BEKLENİYOR',kind:'pending'};
+ if(stage==='playing')return {text:'🟢 MAÇ OYNANIYOR',kind:'playing'};
+ if(stage==='starting')return {text:'🔵 MAÇ BAŞLIYOR',kind:'starting'};
+ if(stage==='preparing')return {text:'🟠 TAKIMLAR HAZIRLANIYOR',kind:'preparing'};
+ if(stage==='called'||stage==='invited'||m?.lobbyCalledAt)return {text:'🟡 ÇAĞRI GÖNDERİLDİ',kind:'called'};
+ // A manually queued but NOT YET DELIVERED invitation must not be called sent.
+ return {text:'⚪ ÇAĞRI BEKLİYOR',kind:'waiting'};
+}
 let wz629BracketSignature='';
 function renderBracket(){
  const bracketEl=$('bracket');
@@ -473,7 +498,8 @@ function renderBracket(){
  const picks=predMap();$('bracket').innerHTML='<div class="rounds">'+rounds(matches).map((r)=>'<section class="round"><h3>'+ (r.kind==='third_place'?'🥉 Üçüncülük':r.round===Math.max(...matches.filter(m=>(m.matchKind||'main')==='main').map(m=>Number(m.roundNumber)))?'🏆 Final':r.round===1?'1. Tur':r.round+'. Tur')+' • '+r.matches.length+' maç</h3><div class="round-matches">'+r.matches.map(m=>{
  const aId=projectedSlot(m,'a'),bId=projectedSlot(m,'b');const s1=picks.get(String(m.id))===String(aId)&&!!aId,s2=picks.get(String(m.id))===String(bId)&&!!bId;
  const a=m.winnerId&&String(m.winnerId)===String(aId),b=m.winnerId&&String(m.winnerId)===String(bId);
- return `<button class="match ${state.selected===m.id?'active':''}" type="button" data-mid="${esc(m.id)}"><div class="match-head"><span>M${Number(m.matchNumber)||'?'} · ${Number(m.roundNumber)||'?'}. tur</span><span>${m.status==='completed'?'SONUÇLANDI':m.lobbyCalledAt?'LOBIYE DAVET':m.manualCallPending?'DAVET GÖNDERİLİYOR':'ÇAĞRI BEKLİYOR'}</span></div><div class="side ${a?'winner':s1?'predicted':''}"><strong>${esc(displayName(m,'a'))}</strong><span>${a?'✓':s1?'★':''}</span></div><div class="side ${b?'winner':s2?'predicted':''}"><strong>${esc(displayName(m,'b'))}</strong><span>${b?'✓':s2?'★':''}</span></div></button>`;
+ const view=wz637MatchStatus(m);
+ return `<button class="match ${state.selected===m.id?'active':''}" type="button" data-mid="${esc(m.id)}"><div class="match-head"><span>M${Number(m.matchNumber)||'?'} · ${Number(m.roundNumber)||'?'}. tur</span><span class="wz637-stage wz637-${view.kind}">${view.text}</span></div><div class="side ${a?'winner':s1?'predicted':''}"><strong>${esc(displayName(m,'a'))}</strong><span>${a?'✓':s1?'★':''}</span></div><div class="side ${b?'winner':s2?'predicted':''}"><strong>${esc(displayName(m,'b'))}</strong><span>${b?'✓':s2?'★':''}</span></div></button>`;
  }).join('')+'</div></section>').join('')+'</div>';
  document.querySelectorAll('[data-mid]').forEach(btn=>btn.addEventListener('click',()=>{state.selected=btn.dataset.mid;renderBracket();renderMatch();})); wz629BracketSignature=bracketSignature;
  bracketEl.scrollLeft=oldBracketScroll;
@@ -549,7 +575,7 @@ function renderAuthStatus(){
  }
 }
 function renderMatch(){renderAuthStatus();const m=activeMatch();if(!m){$('matchInfo').textContent=state.detail?.matches?.length?'Bir maç seç.':'Fikstür bekleniyor.';$('pickA').disabled=$('pickB').disabled=true;$('pickA').textContent='A takımı';$('pickB').textContent='B takımı';renderCouponControls();renderPredictionVotes(null,[]);return;}
- const done=String(m.status||'')==='completed';$('matchInfo').innerHTML=`<div class="focus-title">${esc(displayName(m,'a'))} <span style="color:#a1a1a1">VS</span> ${esc(displayName(m,'b'))}</div><div class="focus-line">${Number(m.roundNumber)||'?'} . Tur · M${Number(m.matchNumber)||'?'} · ${done?'Maç tamamlandı':(lobbyCache?.matchId===m.id&&lobbyCache?.startedAt?'🟢 Maç başladı':'Sonuç bekleniyor')}</div>${m.winnerId?'<div class="pick-status" style="color:var(--green)">✓ Kazanan: '+esc(nameFor(m.winnerId))+'</div>':''}`;
+ const done=String(m.status||'')==='completed',view=wz637MatchStatus(m);$('matchInfo').innerHTML=`<div class="focus-title">${esc(displayName(m,'a'))} <span style="color:#a1a1a1">VS</span> ${esc(displayName(m,'b'))}</div><div class="focus-line">${Number(m.roundNumber)||'?'} . Tur · M${Number(m.matchNumber)||'?'} · <strong class="wz637-stage wz637-${view.kind}">${view.text}</strong></div>${m.winnerId?'<div class="pick-status" style="color:var(--green)">✓ Kazanan: '+esc(nameFor(m.winnerId))+'</div>':''}`;
  const chosen=predMap().get(String(m.id)),opts=optionsFor(m),open=state.pred?.prediction?.open===true,allow=state.authed&&open&&!state.saving&&opts.length===2&&m.status!=='completed'&&(!state.pred?.submission?.submitted||state.editMode);
  for(let i=0;i<2;i++){const el=i===0?$('pickA'):$('pickB'),id=opts[i];el.dataset.winner=id||'';el.textContent=id?nameFor(id):(i?'B tarafı bekleniyor':'A tarafı bekleniyor');el.disabled=!allow||!id;el.classList.toggle('selected',!!id&&chosen===String(id));}
  const dependency=wzMissingDependency(m),hint=$('wzPredDependency');
@@ -874,7 +900,12 @@ async function lobbyAction(action,data={}){
  const m=activeMatch();if(!m||lobbySaving)return;
  if(action==='afk_report'&&!confirm('AFK başvurusu hakeme iletilecek. Hükmen galibiyet otomatik olmaz. Gönderilsin mi?'))return;
  lobbySaving=true;
- try{await api('/tournament/lobby/update',true,{matchId:m.id,action,...data});await loadLobby();lobbyToast('✓ İşlem kaydedildi.','ok');
+ try{await api('/tournament/lobby/update',true,{matchId:m.id,action,...data});await loadLobby();
+   if(action==='start'&&lobbyCache?.v30&&lobbyCache.matchId===m.id&&lobbyCache.phase==='playing'&&lobbyCache.startedAt){
+     const publicMatch=state.detail?.matches?.find(x=>x.id===m.id);
+     if(publicMatch){publicMatch.publicPlayState='playing';renderBracket();renderMatch();}
+   }
+   lobbyToast('✓ İşlem kaydedildi.','ok');
  }catch(e){lobbyToast('İşlem başarısız: '+e.message,'error');}
  finally{lobbySaving=false;}
 }
