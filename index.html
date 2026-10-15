@@ -14371,9 +14371,9 @@ return;
           {
             key:'start',
             cls:'is-live',
-            title:'MAÇLAR BAŞLADI',
+            title:t.earlyMatchStarted && t.manualMatchMode==='manual'?'MAÇLAR ERKEN BAŞLADI':'MAÇLAR BAŞLADI',
             date:formatDate(startAt),
-            state:isTournamentBroadcast(item)?'🔴 CANLI':'MAÇLAR BAŞLADI',
+            state:t.earlyMatchStarted && t.manualMatchMode==='manual'?'Yönetici maçları sırayla çağırıyor · Tahminler kilitlendi':(isTournamentBroadcast(item)?'🔴 CANLI':'MAÇLAR BAŞLADI'),
             actionUrl:isTournamentBroadcast(item)?safeHttpUrl(item?.rule?.streamUrl || t?.streamUrl || 'https://kick.com/weizend'):null
           }
         ]
