@@ -3375,6 +3375,11 @@ body:has(#adminNewMessageModal:not(.hidden)){
           <span>Durum</span>
           <strong id="oStatus">-</strong>
         </div>
+        <p id="wz48OrderConsistencyWarning" class="muted" role="status"
+           style="display:none;color:#ffbd67;font-size:12px;line-height:1.5;margin:10px 0">
+        </p>
+        <button type="button" class="secondary" style="margin-top:10px"
+                onclick="wz48RefreshCurrentOrder()">🔄 Sipariş ve İade Durumunu Yenile</button>
 
         <button
           id="completeButton"
@@ -7517,6 +7522,15 @@ async function loadAdminOrders(){
         ? d.orders
         : [];
 
+    // V30.6.48: Refresh an already open detail card with the same new data.
+    const card = document.getElementById('orderCard');
+    if (currentOrder?.id && card && !card.classList.contains('hidden')) {
+      const synced = adminOrdersCache.find(o => String(o.id) === String(currentOrder.id));
+      if (synced) {
+        currentOrder = synced;
+        renderOrder(currentOrder);
+      }
+    }
     renderAdminOrders();
 
     showStatus(
@@ -8018,6 +8032,32 @@ async function hardDeleteAdminOrder(encodedId){
   }
 }
 
+// V30.6.48: Read-only authoritative detail refresh. Never creates a refund,
+// changes points, sends BotRix commands or mutates D1.
+let wz48OrderRefreshSequence = 0;
+async function wz48RefreshCurrentOrder(silent=false){
+  const id = String(currentOrder?.id || '').trim();
+  if (!id) return;
+  const seq = ++wz48OrderRefreshSequence;
+  if (!silent) showStatus('lookupStatus','⏳ Siparişin güncel durumu kontrol ediliyor...',true);
+  try {
+    const {r,d} = await api('/admin/order?id=' + encodeURIComponent(id) + '&_=' + Date.now());
+    if (seq !== wz48OrderRefreshSequence || String(currentOrder?.id || '') !== id) return;
+    if (!r.ok || !d?.success || !d?.order) throw new Error(d?.error || `HTTP ${r.status}`);
+    currentOrder = d.order;
+    renderOrder(currentOrder);
+    const index = adminOrdersCache.findIndex(o => String(o.id) === id);
+    if (index >= 0) {
+      adminOrdersCache[index] = d.order;
+      renderAdminOrders();
+    }
+    if (!silent) showStatus('lookupStatus','✅ Sipariş ve iade durumu sunucudan güncellendi.',true);
+  } catch(error) {
+    if (seq !== wz48OrderRefreshSequence || String(currentOrder?.id || '') !== id) return;
+    showStatus('lookupStatus','⚠️ Güncel sipariş durumu alınamadı. Gösterilen bilgiler eski olabilir: '+esc(error?.message || String(error)),false);
+  }
+}
+
 function openAdminOrder(encodedId){
 
   const id =
@@ -8047,7 +8087,7 @@ function openAdminOrder(encodedId){
 
   showStatus(
     'lookupStatus',
-    '✅ Sipariş Satın Alınanlar listesinden açıldı.',
+    '⏳ Sipariş listesinden açıldı; güncel durum sunucudan kontrol ediliyor...',
     true
   );
 
@@ -8059,6 +8099,7 @@ function openAdminOrder(encodedId){
       behavior:'smooth',
       block:'start'
     });
+  void wz48RefreshCurrentOrder();
 }
 
 /* =========================================================
@@ -8066,6 +8107,7 @@ function openAdminOrder(encodedId){
 ========================================================= */
 
 async function lookupOrder(){
+  ++wz48OrderRefreshSequence;
 
   const code =
     document
@@ -8172,27 +8214,23 @@ function renderOrder(o){
   document.getElementById('oDeliveredAt').innerText =
     dateText(o.deliveredAt);
 
+  const refundStatus = String(o.refund?.status || '');
+  const effectiveStatus = refundStatus === 'completed'
+    ? 'İade Edildi'
+    : refundStatus === 'pending'
+      ? 'Puan İadesi Bekleniyor'
+      : orderStatusText(o.status);
   document.getElementById('oStatus').innerHTML =
-    `<span class="badge ${
-      o.status === 'delivered'
-        ? 'ok'
-        : 'warn'
-    }">
-      ${esc(
-  {
-    pending:'Bekliyor',
-    payment_pending:'Ödeme Bekliyor',
-    partial_payment:'Eksik Ödeme',
-    paid:'Ödendi',
-    delivery_pending:'Teslimat Bekliyor',
-    delivered:'Teslim Edildi',
-    manual_review:'İnceleme Gerekli',
-    failed:'Başarısız',
-    cancelled:'İptal Edildi',
-    expired:'Süresi Doldu'
-  }[o.status] || o.status
-)}
-    </span>`;
+    `<span class="badge ${refundStatus === 'completed' ? 'bad' : o.status === 'delivered' ? 'ok' : 'warn'}">${esc(effectiveStatus)}</span>`;
+
+  const mismatch = refundStatus === 'completed' && o.status !== 'cancelled';
+  const mismatchNote = document.getElementById('wz48OrderConsistencyWarning');
+  if (mismatchNote) {
+    mismatchNote.style.display = mismatch ? 'block' : 'none';
+    mismatchNote.textContent = mismatch
+      ? '⚠️ İade kaydı tamamlanmış, ancak sipariş durumu hâlâ ' + orderStatusText(o.status) + '. Bu gerçek veritabanı tutarsızlığı olabilir. Yenile; devam ederse yeni iade başlatma ve kayıtları incelet.'
+      : '';
+  }
 
   const vz47Reconcile = document.getElementById('wz47WalletReconcileButton');
   const vz47Note = document.getElementById('wz47WalletReconcileNote');
@@ -8308,11 +8346,9 @@ async function watchRefundCompletion(orderId, attempt = 0){
 
   refundWatchTimer = setTimeout(async () => {
     try{
-      const {r,d} = await api('/admin/orders');
+      const {r,d} = await api('/admin/order?id=' + encodeURIComponent(orderId) + '&_=' + Date.now());
       if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
-
-      const fresh = (Array.isArray(d.orders) ? d.orders : [])
-        .find(o => String(o.id) === String(orderId));
+      const fresh = d.order && String(d.order.id) === String(orderId) ? d.order : null;
 
       if(fresh){
         if(currentOrder?.id === orderId){
@@ -8326,14 +8362,14 @@ async function watchRefundCompletion(orderId, attempt = 0){
             loadAdminOrders(),
             loadProducts()
           ]);
-          showStatus('lookupStatus','✅ Puan iadesi tamamlandı. Sipariş durumu ve stok otomatik güncellendi.',true);
+          if(currentOrder?.id === orderId) showStatus('lookupStatus','✅ Puan iadesi tamamlandı. Sipariş ve iade durumu güncellendi.',true);
           return;
         }
 
         if(['failed','cancelled'].includes(String(fresh.refund?.status || ''))){
           stopRefundWatch();
           await loadAdminOrders();
-          showStatus('lookupStatus','⚠️ İade işlemi tamamlanamadı. Durum güncellendi.',false);
+          if(currentOrder?.id === orderId) showStatus('lookupStatus','⚠️ İade işlemi tamamlanamadı. Durum güncellendi.',false);
           return;
         }
       }
