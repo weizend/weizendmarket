@@ -2346,6 +2346,25 @@ body:has(#adminNewMessageModal:not(.hidden)){
   overscroll-behavior:none;
 }
 </style>
+<style id="wz-v30645-admin-list-windows">
+/* V30.6.45 — Tablo/kart listeleri: ilk 10 satır/karttan sonrası çerçeve içinde kayar. */
+.wz45-list-window {min-width:0;min-height:0;scrollbar-width:thin;scrollbar-color:#a12b32 #151518;}
+.wz45-list-window.wz45-is-scrollable {
+  max-height:min(var(--wz45-measured-height, 640px), 78vh, 830px)!important;
+  overflow-y:auto!important;overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  border-radius:10px;
+}
+.wz45-list-window.wz45-is-scrollable:not(.tableWrap) {padding-right:5px;}
+/* Başlıklar tablo içinde yukarıda sabit kalır; yatay tablo kaydırması korunur. */
+.tableWrap.wz45-is-scrollable thead th {position:sticky;top:0;z-index:2;background:#111;}
+/* Eski geçmiş turnuvalar sabit sınırı: 10 kayıt değilse yükseklik kısıtlanmaz. */
+#pastTournamentList.wz45-list-window:not(.wz45-is-scrollable) {max-height:none!important;overflow-y:visible!important;}
+/* Uzun liste üst/alt sınırını belirgin yap, site temasını koru. */
+.wz45-list-window.wz45-is-scrollable:not(.tableWrap) {border:1px solid #353035;padding:6px 8px;}
+.wz45-list-window.wz45-is-scrollable:focus-visible {outline:2px solid #e62828;outline-offset:2px;}
+@media(max-width:650px){.wz45-list-window.wz45-is-scrollable {max-height:min(var(--wz45-measured-height, 500px), 70vh, 700px)!important;}}
+</style>
 </head>
 
 <body>
@@ -11394,7 +11413,7 @@ function v30AdminRender(d,tid){
    }).join('');
    const startText=d.startedAt?'Turnuva başlatıldı: '+esc(new Date(d.startedAt).toLocaleString('tr-TR')):'Turnuva başlangıç saati beklenecek.';
    const actions=`<div style="margin:10px 0;padding:12px;border:1px solid #6b4a22;border-radius:10px;background:#1b1410"><strong>📺 Canlı Yayın Turnuvası</strong><p class="muted">Oyunculara AFK lobi mesajı gönderilmeyecek. Kayıtlar tamamlanınca turnuva saati hatırlatılacak; başlangıçta da ayrı Turnuva Başladı mesajı gidecek. Fikstür ve tahminler WEİZEND ARENA'da açık kalacak. Skorları mevcut Fikstür / Maç Sonucu yönetiminden gir.</p></div>`;
-   host.innerHTML=actions+`<div class="inlineActions">${d.enabled?'':`<button type="button" class="smallBtn warn" onclick="v30AdminControl('enable')">⚙️ V30 Fikstür Otomasyonunu Etkinleştir</button>`}${v303AdminStartButtons(d)}</div><p class="muted">${startText}</p>`+ (entries||'<div class="tournamentEmpty">Fikstür henüz oluşmadı. Kayıtlar ve kadrolar tamamlanınca otomatik oluşturulacak.</div>');
+   host.innerHTML=actions+`<div class="inlineActions">${d.enabled?'':`<button type="button" class="smallBtn warn" onclick="v30AdminControl('enable')">⚙️ V30 Fikstür Otomasyonunu Etkinleştir</button>`}${v303AdminStartButtons(d)}</div><p class="muted">${startText}</p>`+ (entries?`<div class="wz45-lobby-rows">${entries}</div>`:'<div class="tournamentEmpty">Fikstür henüz oluşmadı. Kayıtlar ve kadrolar tamamlanınca otomatik oluşturulacak.</div>');
    if(status)status.textContent=`✅ Canlı yayın turnuvası · ${matches.length} fikstür maçı · oyuncu lobileri kapalı`;
    return;
  }
@@ -11434,7 +11453,7 @@ function v30AdminRender(d,tid){
   <p class="muted" style="margin:6px 0 10px">İtirazları, skor uyuşmazlıklarını ve hakem kararı bekleyen maçları aşağıdan aç. Kanıtları kontrol etmeden karar verme.</p>
   <div class="inlineActions">${alerts.map(m=>`<button type="button" class="smallBtn warn" onclick="wz44OpenUrgentMatch('${encodeURIComponent(String(m.id))}')">⚖️ ${esc(wz44No(m))} · ${esc(String(teamName(m,'a')))} vs ${esc(String(teamName(m,'b')))}</button>`).join('')}</div>
  </div>`:'';
- host.innerHTML=adminToolbar+sum+urgentPanel+(cards||'<div class="tournamentEmpty">Henüz maç oluşmadı. Kayıtlar tamamlanınca fikstür otomatik oluşturulacak.</div>');
+ host.innerHTML=adminToolbar+sum+urgentPanel+(cards?`<div class="wz45-lobby-rows">${cards}</div>`:'<div class="tournamentEmpty">Henüz maç oluşmadı. Kayıtlar tamamlanınca fikstür otomatik oluşturulacak.</div>');
 }
 function v30AdminToggle(mid){
  const id=decodeURIComponent(mid);v30AdminOpenMatch=v30AdminOpenMatch===id?'':id;
@@ -12683,5 +12702,98 @@ async function invalidateAllUserSessions(){
     </div>
   </div>
 </div>
+<script id="wz-v30645-admin-list-window-js">
+/* Salt görünüm sınırlaması. Sunucu kayıtları, filtre, düzenleme ve silme işlemleri değişmez. */
+(function(){
+ 'use strict';
+ const LIMIT=10;
+ const directLists=[
+  '#userNotesList','#adminConversationList',
+  '#wz41TournamentList','#createTemplateList','#pastTournamentList',
+  '#tournamentEntriesView','#tournamentBracketView',
+  '#tournamentPendingSubscriptions','#tournamentSubscriptionEvents',
+  '#activityList','#subscriberActivityList','#giftSubActivityList',
+  '#kicksActivityList','#followersActivityList','#unfollowersActivityList',
+  '.wz45-lobby-rows'
+ ];
+ const tracked=new WeakMap();
+ const managed=new Set();
+ let scheduled=false;
+ function schedule(){
+  if(scheduled)return;
+  scheduled=true;
+  requestAnimationFrame(()=>{scheduled=false;discover();for(const entry of managed){
+    if(entry.el.isConnected)resize(entry);
+    else managed.delete(entry);
+  }});
+ }
+ function track(el,table){
+  if(!el||tracked.has(el))return;
+  const entry={el,table,originalAria:el.getAttribute('aria-label'),originalTabIndex:el.getAttribute('tabindex')};tracked.set(el,entry);managed.add(entry);
+  el.classList.add('wz45-list-window');
+  // Only observe the current list's direct children; no event handlers are replaced.
+  const owner=table?(el.querySelector('tbody')||el):el;
+  const watch=new MutationObserver(schedule);
+  watch.observe(owner,{childList:true,subtree:false});
+  entry.observer=watch;
+ }
+ function discover(){
+  // Tables in *all* sections, including dynamically inserted tournament tables.
+  document.querySelectorAll('#adminArea .tableWrap').forEach(el=>{if(el.querySelector('table tbody'))track(el,true);});
+  // Cards/lists that render entries directly.
+  document.querySelectorAll(directLists.join(',')).forEach(el=>{
+    if(el.id==='tournamentBracketView')return; // Inner round match lists are handled below.
+    if(el.id==='tournamentPendingSubscriptions'||el.id==='tournamentSubscriptionEvents')return; // Nested tables have their own windows.
+    track(el,false);
+  });
+  // In the bracket, keep the round header visible but scroll its match cards.
+  document.querySelectorAll('#tournamentBracketView .tournamentEntriesView').forEach(el=>track(el,false));
+ }
+ function visibleChildren(container){
+  return Array.from(container.children).filter(el=>el.nodeType===1&&getComputedStyle(el).display!=='none');
+ }
+ function resize(entry){
+  const el=entry.el;
+  const table=entry.table?el.querySelector('table'):null;
+  const source=entry.table?(table?.tBodies?.[0]||null):el;
+  if(!source)return;
+  const items=visibleChildren(source);
+  const total=items.length;
+  el.classList.toggle('wz45-is-scrollable',total>LIMIT);
+  if(total<=LIMIT){
+   el.style.removeProperty('--wz45-measured-height');
+   if(entry.originalTabIndex===null)el.removeAttribute('tabindex');else el.setAttribute('tabindex',entry.originalTabIndex);
+   if(entry.originalAria===null)el.removeAttribute('aria-label');else el.setAttribute('aria-label',entry.originalAria);
+   return;
+  }
+  // Actual first ten heights — table and card rows can have different heights.
+  let height=0;
+  if(entry.table){
+    for(const row of items.slice(0,LIMIT))height+=row.getBoundingClientRect().height;
+    height+=(table?.tHead?.getBoundingClientRect().height||0)+8;
+  }else{
+    // Gerçek 10. kartın konumu: tek sütun, flex veya çok sütunlu grid için aynı hesap.
+    const first=items[0].getBoundingClientRect(),last=items[LIMIT-1].getBoundingClientRect();
+    const style=getComputedStyle(el),firstStyle=getComputedStyle(items[0]),lastStyle=getComputedStyle(items[LIMIT-1]);
+    height=Math.max(0,last.bottom-first.top)+(Number.parseFloat(style.paddingTop)||0)+(Number.parseFloat(style.paddingBottom)||0)
+      +(Number.parseFloat(firstStyle.marginTop)||0)+(Number.parseFloat(lastStyle.marginBottom)||0)+5;
+  }
+  if(height<80)height=650; // Lazy/hidden tabs will be remeasured upon opening.
+  el.style.setProperty('--wz45-measured-height',Math.ceil(height)+'px');
+  el.setAttribute('tabindex','0');
+  el.setAttribute('aria-label',`Kayıt listesi. ${total} kayıt; ilk ${LIMIT} kayıt yüksekliğinde kaydırılabilir alan.`);
+ }
+ function init(){
+  if(!document.getElementById('adminArea'))return;
+  discover();schedule();
+  // Existing AJAX renderers replace list children; the observer never refetches.
+  const root=document.getElementById('adminArea');
+  new MutationObserver(schedule).observe(root,{childList:true,subtree:true});
+  document.addEventListener('click',schedule,true);
+  window.addEventListener('resize',schedule,{passive:true});
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>
 </body>
 </html>
