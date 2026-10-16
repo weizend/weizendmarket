@@ -11576,7 +11576,7 @@ function v30AdminRender(d,tid){
  const alerts=matches.filter(m=>m.v30?.phase==='blocked'||m.v30?.phase==='finalizing'||(m.disputes||[]).some(x=>x.status==='pending'));
  const map=new Map((currentTournamentBracket?.matches||[]).map(m=>[String(m.id),m]));
  const teamName=(m,side)=>wz30656AdminMatchTeamName(m,side,map.get(String(m.id)));
- const phaseLabel={captains:'Kaptanlar bekleniyor',code:'Davet kodu',ready:'Oyuncular hazır veriyor',proof:'Hızlıresim kanıtı',review:'Kadro onayları',start:'Maç başlatma onayı',playing:'🟢 Oynanıyor',result_pending:'⏱️ Rakip sonuç bekleniyor',blocked:'🚨 HAKEM KARARI BEKLENİYOR',finalizing:'⚠️ Sonuç kontrolü',completed:'✅ Tamamlandı'};
+ const phaseLabel={captains:'Kaptanlar bekleniyor',code:'Davet kodu',ready:'Oyuncular hazır veriyor',code_check:'Rakip kaptan kodu doğruluyor',code_fix:'Yanlış kod düzeltiliyor',game_join:'Oyuncular VALORANT lobisine katılıyor',proof:'Hızlıresim kanıtı',review:'Kadro onayları',start:'Maç başlatma onayı',playing:'🟢 Oynanıyor',result_pending:'⏱️ Rakip sonuç bekleniyor',blocked:'🚨 HAKEM KARARI BEKLENİYOR',finalizing:'⚠️ Sonuç kontrolü',completed:'✅ Tamamlandı'};
  if(status)status.textContent=`✅ V30 Hakem Merkezi güncellendi · ${matches.length} maç · ${alerts.length} müdahale · ${new Date().toLocaleTimeString('tr-TR')}`;
  const playingCount=matches.filter(m=>m.status!=='completed'&&m.v30?.phase==='playing').length;
  const completedCount=matches.filter(m=>m.status==='completed'||m.v30?.phase==='completed').length;
@@ -11586,17 +11586,19 @@ function v30AdminRender(d,tid){
   const v=m.v30||{},r=m.room||{},pending=(m.disputes||[]).filter(x=>x.status==='pending');
    const blocked=v.phase==='blocked'||v.phase==='finalizing'||pending.length>0;
   const phase=m.status==='completed'?'completed':v.phase||'captains';
-   const doubleNoShow=phase==='blocked'&&['captains','code','ready'].includes(String(v.blocked_from_phase||''));
+   const doubleNoShow=phase==='blocked'&&['captains','code','ready','code_check','code_fix','game_join'].includes(String(v.blocked_from_phase||''));
   const active=v30AdminOpenMatch===m.id;
   const title=esc(teamName(m,'a'))+' <span style="color:#999">vs</span> '+esc(teamName(m,'b'));
   const rows=(m.results||[]).map(x=>`<p>🏁 ${esc(x.team_side.toUpperCase())}: ${Number(x.score_a)}-${Number(x.score_b)} · <a href="${esc(x.proof_url)}" target="_blank" rel="noopener noreferrer">Sonuç kanıtını aç ↗</a></p>`).join('');
   const ap=m.approvalProgress||{},expA=Math.max(1,Number(ap.expectedA||1)),expB=Math.max(1,Number(ap.expectedB||1));
   const readyA=Math.min(expA,Number(ap.ready?.a||0)),readyB=Math.min(expB,Number(ap.ready?.b||0));
+  const gameA=Math.min(expA,Number(ap.valorantJoined?.a||0)),gameB=Math.min(expB,Number(ap.valorantJoined?.b||0));
   const startA=Math.min(expA,Number(ap.start?.a||0)),startB=Math.min(expB,Number(ap.start?.b||0));
   const iconFor=(yes)=>yes?'✅':'⏳';
   const proofs=`<div class="muted">VALORANT davet kodu: <strong>${esc(r.lobby_code||'Henüz girilmedi')}</strong></div>
     <div class="muted">Kaptan katılımı: A ${iconFor(v.captain_a_joined_at)} · B ${iconFor(v.captain_b_joined_at)}</div>
     <div class="muted">Oyuncular Hazırım: A ${readyA}/${expA} ${iconFor(readyA===expA)} · B ${readyB}/${expB} ${iconFor(readyB===expB)}</div>
+    <div class="muted">VALORANT lobiye katılım: A ${gameA}/${expA} ${iconFor(gameA===expA)} · B ${gameB}/${expB} ${iconFor(gameB===expB)}</div>
     <div class="muted">Lobi kanıtı: A ${iconFor(r.proof_a)} · B ${iconFor(r.proof_b)}</div>
     <div class="muted">Kadro onayı (kaptan): A ${iconFor(v.consent_a_at)} · B ${iconFor(v.consent_b_at)}</div>
     <div class="muted">Maç başlangıç kuralları: ${startA+startB}/${expA+expB} oyuncu onayladı</div>
