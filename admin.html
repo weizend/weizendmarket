@@ -11538,6 +11538,17 @@ function wz30655ApprovalBoard(m,phase,teamName){
  };
  return `<div style="border:1px solid #3b5445;border-radius:11px;background:#111914;padding:12px;margin:12px 0"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;align-items:center;gap:8px"><strong>🎮 Oyuncu Bazlı Maç Onayları</strong><span style="font-weight:700;color:${approved===total?'#79dda6':'#f1c87f'}">${approved}/${total} onay</span></div><p class="muted" style="margin:7px 0 10px">${isNow?'Oyuncular kuralları onaylıyor. Bekleyen VALORANT adlarını aşağıda görebilirsin.':alreadyStarted?'Maç başlangıcındaki kayıtlı onayların özeti.':'Oyuncu onayları maç başlatma aşamasında açılacak.'} · ${isNow?'Açık maç ayrıntısı yaklaşık 20 saniyede bir güncellenir.':'Bilgiler Hakem Merkezi yenilendiğinde güncellenir.'}</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,235px),1fr));gap:10px">${sideBox('a',a,expectedA)}${sideBox('b',b,expectedB)}</div></div>`;
 }
+// V30.6.56: Prefer D1-sourced team names. Bracket cache may be empty/stale
+// when a tournament is ongoing; never replace a participant ID in D1.
+function wz30656AdminMatchTeamName(m,side,bracket){
+  const key=side==='a'?'participantAName':'participantBName';
+  const good=name=>{
+    const value=String(name||'').trim();
+    if(!value||value==='Bekleniyor'||/^TV[23]-[A-F0-9]{12,}$/i.test(value))return '';
+    return value;
+  };
+  return good(m?.[key])||good(bracket?.[key])||'Takım adı bulunamadı';
+}
 function v30AdminRender(d,tid){
  const host=document.getElementById('arenaLobbiesAdmin');if(!host)return;
  const status=document.getElementById('arenaLobbiesRefreshStatus');
@@ -11550,8 +11561,8 @@ function v30AdminRender(d,tid){
    const names=new Map((currentTournamentBracket?.matches||[]).map(m=>[String(m.id),m]));
    const entries=matches.map(m=>{
      const bracket=names.get(String(m.id))||{};
-     const a=bracket.participantAName||m.participant_a_id||'Bekleniyor';
-     const b=bracket.participantBName||m.participant_b_id||'Bekleniyor';
+     const a=wz30656AdminMatchTeamName(m,'a',bracket);
+     const b=wz30656AdminMatchTeamName(m,'b',bracket);
      const stage=String(m.status||'ready')==='completed'?'✅ Tamamlandı':'📺 Fikstür açık';
      return `<div class="tournamentTeamCard" style="margin:7px 0">🏆 ${Number(m.round_number)}. Tur · ${esc(wz44No(m))} · <strong>${esc(String(a))} vs ${esc(String(b))}</strong><div class="muted">${stage}</div></div>`;
    }).join('');
@@ -11564,7 +11575,7 @@ function v30AdminRender(d,tid){
 
  const alerts=matches.filter(m=>m.v30?.phase==='blocked'||m.v30?.phase==='finalizing'||(m.disputes||[]).some(x=>x.status==='pending'));
  const map=new Map((currentTournamentBracket?.matches||[]).map(m=>[String(m.id),m]));
- const teamName=(m,side)=>map.get(String(m.id))?.[side==='a'?'participantAName':'participantBName']||(side==='a'?m.participant_a_id:m.participant_b_id);
+ const teamName=(m,side)=>wz30656AdminMatchTeamName(m,side,map.get(String(m.id)));
  const phaseLabel={captains:'Kaptanlar bekleniyor',code:'Davet kodu',ready:'Oyuncular hazır veriyor',proof:'Hızlıresim kanıtı',review:'Kadro onayları',start:'Maç başlatma onayı',playing:'🟢 Oynanıyor',result_pending:'⏱️ Rakip sonuç bekleniyor',blocked:'🚨 HAKEM KARARI BEKLENİYOR',finalizing:'⚠️ Sonuç kontrolü',completed:'✅ Tamamlandı'};
  if(status)status.textContent=`✅ V30 Hakem Merkezi güncellendi · ${matches.length} maç · ${alerts.length} müdahale · ${new Date().toLocaleTimeString('tr-TR')}`;
  const playingCount=matches.filter(m=>m.status!=='completed'&&m.v30?.phase==='playing').length;
