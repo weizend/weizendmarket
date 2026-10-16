@@ -10930,7 +10930,7 @@ return;
             document.getElementById('tv2ModalBody').innerHTML = `
                 ${tv2PublicHeroHtml(t,rule)}
                 ${tv2PublicParticipantsHtml(detail)}
-                ${tv2PublicBracketHtml(detail)}
+                ${tv2ArenaRedirectHtml(t?.id || tournamentId)}
                 <div class="tv2-panel">
                     <div class="tv2-muted">
                         Turnuvaya kayıt olmak veya takım işlemlerini yapmak için Kick hesabını doğrulamalısın.
@@ -10980,15 +10980,39 @@ return;
         `;
     }
 
+    // V30.6.59: Solo V3 registrations are represented by one-player teams.
+    // The old Solo UI expected `participants` only, so full 2/2 tournaments
+    // could appear as 0/2. Merge without changing D1, payments or brackets.
+    function wz30659SoloParticipants(detail){
+        const old=Array.isArray(detail?.participants)
+            ? detail.participants.filter(p=>String(p?.status||'').toLowerCase()!=='cancelled')
+            : [];
+        const ready=Array.isArray(detail?.teams) ? detail.teams : [];
+        const waiting=Array.isArray(detail?.waitingTeams) ? detail.waitingTeams : [];
+        const seen=new Set(old.map(p=>String(p?.username||'').trim().toLocaleLowerCase('tr-TR')).filter(Boolean));
+        const out=[...old];
+        for(const team of [...ready,...waiting]){
+            if(String(team?.status||'').toLowerCase()==='cancelled') continue;
+            if(Number(team?.teamSize||1)!==1) continue;
+            const joined=(Array.isArray(team?.members)?team.members:[])
+                .find(m=>['joined','captain','active'].includes(String(m?.joinStatus||m?.status||'joined').toLowerCase()));
+            const username=String(joined?.username||team?.captainUsername||team?.name||'').trim();
+            if(!username) continue;
+            const key=username.toLocaleLowerCase('tr-TR');
+            if(seen.has(key)) continue;
+            seen.add(key);
+            out.push({id:team.id,username,riotId:joined?.riotId||joined?.gameId||'',
+                status:['ready','locked','active'].includes(String(team?.status||'').toLowerCase())?'active':'pending'});
+        }
+        return out;
+    }
+
     function tv2PublicParticipantsHtml(detail){
         const t = detail?.tournament || {};
         const teamMode = Number(t.teamSize || 1) > 1;
 
         if(!teamMode){
-            const participants =
-                Array.isArray(detail?.participants)
-                    ? detail.participants
-                    : [];
+            const participants = wz30659SoloParticipants(detail);
 
             return `
                 <div class="tv2-panel">
@@ -11008,20 +11032,20 @@ return;
                                 `).join('')}
                             </div>
                         `
-                        : '<div class="tv2-empty">Henüz tamamlanmış kayıt yok.</div>'}
+                        : '<div class="tv2-empty">Henüz kayıtlı oyuncu bulunmuyor.</div>'}
                 </div>
             `;
         }
 
-        const teams =
-            Array.isArray(detail?.teams)
-                ? detail.teams
-                : [];
+        const readyTeams=Array.isArray(detail?.teams) ? detail.teams : [];
+        const pendingTeams=Array.isArray(detail?.waitingTeams) ? detail.waitingTeams : [];
+        const teams=[...readyTeams,...pendingTeams]
+            .filter(team=>String(team?.status||'').toLowerCase()!=='cancelled');
 
         return `
             <div class="tv2-panel">
-                <h4>👥 Kaydı Tamamlanan Takımlar</h4>
-                <div class="tv2-muted" style="margin-bottom:10px;">Yalnızca tüm oyuncuları ve katılım şartları tamamlanan takımlar burada görünür.</div>
+                <h4>👥 Kayıt Olan Takımlar</h4>
+                <div class="tv2-muted" style="margin-bottom:10px;">Hazır ve kadrosu/katılım şartı bekleyen takımlar burada ayrı durumlarıyla görünür.</div>
                 ${teams.length
                     ? teams.map(team=>`
                         <div class="tv2-panel" style="margin-top:10px;">
@@ -11043,6 +11067,24 @@ return;
                         </div>
                     `).join('')
                     : '<div class="tv2-empty">Henüz takım kaydı yok.</div>'}
+            </div>
+        `;
+    }
+
+    // V30.6.58: Kayıt penceresinde fikstür kopyası yerine ilgili Arena bağlantısı.
+    // Maç verileri, tahmin ve fikstür API işlemleri burada değişmez.
+    function tv2ArenaRedirectHtml(tournamentId){
+        const id=String(tournamentId || '').trim();
+        const url=new URL('arena.html', location.href);
+        if(id) url.searchParams.set('tournament', id);
+        return `
+            <div class="tv2-panel wz-v30658-arena-note" style="border-color:rgba(255,255,255,.16);">
+                <h4>🎮 Fikstür, Eşleşmeler ve Tahminler</h4>
+                <div class="tv2-muted">Eşleşmeleri, canlı fikstürü, maç sonuçlarını ve tahminleri <b>WEIZEND ARENA</b> üzerinden takip edebilirsiniz. Kayıt işlemleriniz bu pencereden yapılmaya devam eder.</div>
+                <div class="tv2-actions">
+                    <a class="tv2-btn secondary" href="${tv2Esc(url.href)}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;">🎮 ARENA'YA GİT ↗</a>
+                </div>
+                <div class="tv2-muted" style="margin-top:8px;font-size:.76rem;">Arena yeni sekmede açılır; Market sayfanız açık kalır.</div>
             </div>
         `;
     }
@@ -11286,8 +11328,8 @@ return;
 
         if (tv2State.publicDetail) {
             content += tv2PublicParticipantsHtml(tv2State.publicDetail);
-            content += tv2PublicBracketHtml(tv2State.publicDetail);
         }
+        content += tv2ArenaRedirectHtml(t?.id || tv2State.tournamentId);
 
         document.getElementById('tv2ModalBody').innerHTML = content;
 
@@ -12121,7 +12163,7 @@ return;
                 <div id="tv2SoloStatus"></div>
             `;
         } else {
-            action = `<div class="tv2-message">Bu turnuvada yeni kayıt alınmıyor. Katılanları ve fikstürü aşağıdan takip edebilirsin.</div>`;
+            action = `<div class="tv2-message">Bu turnuvada yeni kayıt alınmıyor. Fikstür ve maç sonuçlarını WEIZEND ARENA’dan takip edebilirsin.</div>`;
         }
 
         document.getElementById('tv2ModalBody').innerHTML = `
@@ -12141,7 +12183,7 @@ return;
             <div class="tv2-panel">${action}</div>
             <div id="tv2PendingTlHost"></div>
             ${detail ? tv2PublicParticipantsHtml(detail) : ''}
-            ${detail ? tv2PublicBracketHtml(detail) : ''}
+            ${tv2ArenaRedirectHtml(t?.id || tv2State.tournamentId)}
         `;
         tv2RestorePendingTl();
     }
@@ -12636,8 +12678,8 @@ return;
 
         if (tv2State.publicDetail) {
             content += tv2PublicParticipantsHtml(tv2State.publicDetail);
-            content += tv2PublicBracketHtml(tv2State.publicDetail);
         }
+        content += tv2ArenaRedirectHtml(t?.id || tv2State.tournamentId);
 
         // V30.3.7: Gerçek ödeme/abonelik/kayıt akışına dokunmadan rehber ekle.
         if(teamSize>1){
@@ -14539,8 +14581,12 @@ return;
   }
   function isHiddenTournamentDraft(item){
     const t=item?.tournament||{};
-    // "Yakında" olarak özellikle yayınlanan turnuva görünür kalır.
-    // Tarihsiz + kayıtları kapalı normal taslaklar kullanıcı tarafında hiç görünmez.
+    // V30.6.59: Do NOT classify concluded/started/full events as unpublished
+    // drafts merely because they have no event date or registration is closed.
+    // Truly empty and unpublished drafts stay invisible.
+    const phase=String(t.lifecycleStatus||'').toLowerCase();
+    if(['completed','in_progress','registration_complete'].includes(phase)) return false;
+    if(Number(t.matchCount||0)>0 || Number(t.registeredCount||0)>0) return false;
     return !comingSoon(item) && !t.eventDate && !t.registrationOpen;
   }
   function visibleCatalog(){
@@ -15416,8 +15462,7 @@ return;
     const capacity=Math.max(0,Number(t.capacity||0));
 
     if(!teamMode){
-      const participants=(Array.isArray(detail?.participants)?detail.participants:[])
-        .filter(p=>String(p?.status||'').toLowerCase()!=='cancelled');
+      const participants=wz30659SoloParticipants(detail);
       const approvedCount=participants.filter(p=>String(p?.status||'').toLowerCase()==='active').length;
 
       return `<div class="wz-turn-box wz-turn-participants-box">
