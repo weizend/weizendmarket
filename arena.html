@@ -893,16 +893,17 @@ function openInvitationRoom(){
 function closeInvitationRoom(){
  roomDialog.hidden=true;document.body.classList.remove('arena-dialog-open');wz629SyncDialogScroll();v306Disconnect();
  if(v30RoomInterval){clearInterval(v30RoomInterval);v30RoomInterval=null;}
- lobbySeq++;lobbyCache=null;
+ lobbySeq++;lobbyCache=null;wz30661BufferedView=false;v30RoomSnapshot='';v306SyncPending=false;
  const params=new URLSearchParams(location.search);params.delete('room');params.delete('match');
  history.replaceState(null,'',location.pathname+'?'+params.toString());
 }
-$('roomExit').addEventListener('click',()=>{if(lobbyCache?.v30&&['playing','result_pending','ready','code','proof','review','start'].includes(lobbyCache.phase)&&!confirm(['playing','result_pending'].includes(lobbyCache.phase)?'⚠️ Maç bittikten sonra mutlaka Arena’ya dönüp skor ve maç sonu görselini bildir. Sonuç gönderilmeden fikstür kesinleşmez. Maç odasından çıkılsın mı?':'Maç odasında işlemlerin sürüyor. Daha sonra Aktif Maçıma Dön üzerinden geri gelebilirsin. Fikstüre dönülsün mü?'))return;closeInvitationRoom();});
+$('roomExit').addEventListener('click',()=>{if(lobbyCache?.v30&&['playing','result_pending','ready','code','code_check','code_fix','game_join','proof','review','start'].includes(lobbyCache.phase)&&!confirm(['playing','result_pending'].includes(lobbyCache.phase)?'⚠️ Maç bittikten sonra mutlaka Arena’ya dönüp skor ve maç sonu görselini bildir. Sonuç gönderilmeden fikstür kesinleşmez. Maç odasından çıkılsın mı?':'Maç odasında işlemlerin sürüyor. Daha sonra Aktif Maçıma Dön üzerinden geri gelebilirsin. Fikstüre dönülsün mü?'))return;closeInvitationRoom();});
 roomDialog.addEventListener('click',e=>{if(e.target===roomDialog&&!lobbyCache?.v30)closeInvitationRoom();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!roomDialog.hidden&&!lobbyCache?.v30)closeInvitationRoom();});
 function lobbyMarkup(text){const el=$('lobbyContent');if(el)el.textContent=text;}
 // V30 isolated UI. The previous V28 view remains for non-enabled tournaments.
 let v30RoomSnapshot='',v30RoomInterval=null,v30PollingBusy=false;
+let wz30661BufferedView=false,wz30661AutoRendering=false;
 let v306Socket=null,v306SocketUser='',v306Reconnect=null,v306SyncPending=false;
 const V306_REALTIME_URL='wss://weizend-realtime.weizendtv.workers.dev/ws';
 function v306Username(){try{return String(localStorage.getItem('weizend_market_username')||'').trim();}catch{return '';}}
@@ -911,22 +912,88 @@ function v306Disconnect(){
  const socket=v306Socket;v306Socket=null;v306SocketUser='';
  if(socket){try{socket.close(1000,'Arena match closed');}catch{}}
 }
+// V30.6.61 — Realtime is opportunistic; state is authoritative on MARKET_DB.
+// Backstop checks run while the V30 room is visible EVEN IF WebSocket looks open.
+// Preserve all unsent field values and user scroll/expanded forms on background changes.
+function wz30661IsEditing(){
+ const el=document.activeElement;
+ return !!(el&&$('lobbyContent')?.contains(el)&&(
+   el.isContentEditable||['TEXTAREA','SELECT'].includes(String(el.tagName||'').toUpperCase())||
+   (String(el.tagName||'').toUpperCase()==='INPUT'&&!['checkbox','radio'].includes(el.type))));
+}
+function wz30661Capture(){
+ const root=$('lobbyContent');if(!root)return null;
+ const fields={};
+ root.querySelectorAll('input[id],textarea[id],select[id]').forEach(el=>{
+   fields[el.id]={value:el.value,checked:!!el.checked};
+ });
+ const panels={};
+ for(const id of ['v30ResultForm','v30DisputeForm','v42CodeEditForm']){
+   const el=$(id);if(el)panels[id]=!el.hidden;
+ }
+ return {fields,panels,scroll:roomDialog.scrollTop,
+   rulesScroll:root.querySelector('.wz30652-rules')?.scrollTop||0};
+}
+function wz30661Restore(draft){
+ if(!draft)return;
+ for(const [id,val] of Object.entries(draft.fields)){
+   const el=$(id);if(!el||!$('lobbyContent')?.contains(el))continue;
+   if(el.type==='checkbox'||el.type==='radio')el.checked=val.checked;
+   else el.value=val.value;
+ }
+ for(const [id,opened] of Object.entries(draft.panels)){
+   const el=$(id);if(el)el.hidden=!opened;
+ }
+ const rules=$('lobbyContent')?.querySelector('.wz30652-rules');
+ if(rules)rules.scrollTop=draft.rulesScroll;
+ // Recalculate rule confirmation button state after restoring checkboxes.
+ if($('v30Start'))$('v30Start').disabled=!$('v30Rules')?.checked||!$('v42Return')?.checked;
+}
+function wz30661DisplayLatest(){
+ if(roomDialog.hidden||!lobbyCache?.v30||lobbySaving)return;
+ if(wz30661IsEditing()){wz30661BufferedView=true;return;}
+ const draft=wz30661Capture();
+ const samePhase=lobbyCache?.phase===wz30651LastPhase;
+ wz30661AutoRendering=true;
+ try{renderLobby();if(samePhase)wz30661Restore(draft);}
+ finally{wz30661AutoRendering=false;}
+ // Background updates may change the step, but do not jump or close the room.
+ roomDialog.scrollTop=draft?.scroll||0;
+ wz30661BufferedView=false;
+}
+$('lobbyContent')?.addEventListener('focusout',()=>{
+ // The next focused element is set after focusout; don't interrupt editing.
+ setTimeout(()=>{if(wz30661BufferedView&&!wz30661IsEditing())wz30661DisplayLatest();},0);
+});
 async function v306SyncOnce(){
- if(roomDialog.hidden||!lobbyCache?.v30||lobbySaving||v30PollingBusy||document.hidden){v306SyncPending=true;return;}
+ if(roomDialog.hidden||!lobbyCache?.v30||document.hidden||!token())return;
+ // A local action refreshes the server state on its own; never collide with it.
+ if(lobbySaving)return;
+ if(v30PollingBusy){v306SyncPending=true;return;}
  const m=activeMatch();if(!m)return;
+ const seq=lobbySeq;
  v30PollingBusy=true;v306SyncPending=false;
- const tag=String(document.activeElement?.tagName||'').toUpperCase();
- const editing=['TEXTAREA','SELECT'].includes(tag)||(tag==='INPUT'&&!['checkbox','radio'].includes(document.activeElement?.type));
  try{
   const data=await api('/tournament/lobby?matchId='+encodeURIComponent(m.id),true);
-  if(roomDialog.hidden||lobbySaving||activeMatch()?.id!==m.id)return;
+  // Discard stale results if the dialog closed, switched matches, or a local
+  // action started its own fetch during this request.
+  if(roomDialog.hidden||lobbySaving||lobbySeq!==seq||activeMatch()?.id!==m.id)return;
   const snapshot=JSON.stringify(data);
   if(snapshot!==v30RoomSnapshot){
-   const samePhase=lobbyCache?.phase===data.phase;
    lobbyCache=data;v30RoomSnapshot=snapshot;
-   if(!editing||!samePhase){renderLobby();if(data.matchStatus==='completed')await refresh();}
+   if(wz30661IsEditing()){
+     wz30661BufferedView=true;
+     const note=$('v30InlineStatus');
+     if(note&&note.hidden){note.hidden=false;note.textContent='🔄 Rakibin işlemleri güncellendi; yazmayı bitirince görünüm yenilenecek.';note.className='notice';}
+   }else wz30661DisplayLatest();
+   if(data.matchStatus==='completed'){
+     const savedScroll=roomDialog.scrollTop;
+     await refresh();
+     if(!roomDialog.hidden)roomDialog.scrollTop=savedScroll;
+   }
   }
  }catch(e){
+   if(roomDialog.hidden||lobbySeq!==seq)return;
    if(/tamamlandı|kapatıldı/i.test(String(e?.message||''))){
      try{sessionStorage.removeItem('wz_v30_active_match_'+tid);}catch{}
      $('v30ActiveMatch').style.display='none';
@@ -934,15 +1001,13 @@ async function v306SyncOnce(){
      lobbyMarkup('🏆 Maç sonucu kesinleşti! Fikstür güncellendi. Yeni tur için sistem mesajını bekle.');
    }else{const status=$('v30InlineStatus');if(status){status.hidden=false;status.textContent='Bağlantı kontrolü: '+e.message;}}
  }
- finally{v30PollingBusy=false;if(v306SyncPending){v306SyncPending=false;queueMicrotask(v306SyncOnce);}}
+ finally{
+   v30PollingBusy=false;
+   if(v306SyncPending&&!roomDialog.hidden&&!lobbySaving){
+     v306SyncPending=false;queueMicrotask(v306SyncOnce);
+   }
+ }
 }
-// V30.6.52: active start-only safety sync when WebSocket is unavailable.
-// Never poll the whole site, completed matches or idle tournament views.
-setInterval(()=>{
- if(roomDialog.hidden||document.hidden||!lobbyCache?.v30||lobbyCache.phase!=='start'||lobbySaving)return;
- if(v306Socket?.readyState===1)return;
- void v306SyncOnce();
-},8000);
 function v306Connect(){
  if(roomDialog.hidden||!lobbyCache?.v30||!token())return;
  const user=v306Username();if(!/^[A-Za-z0-9_]{2,40}$/.test(user))return;
@@ -986,26 +1051,47 @@ function v30RoomHtml(s,m){
   const myStart=side==='a'?s.startA:s.startB;
   const myProof=side==='a'?s.proofA:s.proofB;
   const readyTotal=Number(a.ready||0)+Number(b.ready||0),expectedTotal=Number(a.expected||0)+Number(b.expected||0);
+  const valorantMembers=s.valorantJoinPlayers||{a:[],b:[]};
+  const valorantJoinRoster=['a','b'].map(teamSide=>`<div class="lobby-tile"><b>${esc(displayName(m,teamSide))}</b>${(valorantMembers[teamSide]||[]).map(x=>`<div class="room-player"><span>${esc(x.gameId||'Oyuncu')}</span><span>${x.joined?'✅ VALORANT lobisinde':'⏳ Bekliyor'}</span></div>`).join('')}</div>`).join('');
   const players=[a,b].map((group,i)=>`<div class="lobby-tile"><b>${esc(displayName(m,i===0?'a':'b'))} · ${group.ready}/${group.expected} hazır</b>${(group.members||[]).map(x=>`<div class="room-player"><span>${esc(x.gameId)}</span><span>${x.ready?'✅ Hazır':'⏳ Bekleniyor'}</span></div>`).join('')}</div>`).join('');
   const wz30651Launching=wz30651LaunchRemaining(s)>0;
-  const status={captains:'Kaptanlar Arena odasına katılıyor',ready:'Oyuncuların hazır onayı',code:'VALORANT lobi kodu bekleniyor',proof:'VALORANT lobi kanıtları',review:'Kadroların onayı',start:'Kurallar ve başlatma onayı',playing:'MAÇ OYNANIYOR — SONUÇ BİLDİRİLECEK',result_pending:'SKOR ONAYI BEKLENİYOR',blocked:'HAKEM İNCELEMESİ',finalizing:'Sonuç işleniyor',completed:'MAÇ TAMAMLANDI'};
+  const status={captains:'Kaptanlar Arena odasına katılıyor',ready:'Oyuncuların hazır onayı',code:'VALORANT lobi kodu bekleniyor',code_check:'Rakip kaptan kodu doğruluyor',code_fix:'Yanlış kod yeniden hazırlanıyor',game_join:'Oyuncular VALORANT lobisine katılıyor',proof:'VALORANT lobi kanıtları',review:'Kadroların onayı',start:'Kurallar ve başlatma onayı',playing:'MAÇ OYNANIYOR — SONUÇ BİLDİRİLECEK',result_pending:'SKOR ONAYI BEKLENİYOR',blocked:'HAKEM İNCELEMESİ',finalizing:'Sonuç işleniyor',completed:'MAÇ TAMAMLANDI'};
   const dis=(s.disputes||[]).filter(d=>d.status==='pending');
   const blocked=s.phase==='blocked';
   const doubleNoShow=blocked&&['captains','code','ready'].includes(s.blockedFromPhase);
   const waitLine='<p class="hint">Diğer oyuncuların/kaptanın işlemi bekleniyor. Aşamalar sunucuda saklanır; sayfayı yenilemen gerekmez.</p>';
   const codeCard=s.lobbyCode?`<div class="lobby-note">🔑 Tek geçerli VALORANT davet kodu: <strong>${esc(s.lobbyCode)}</strong><p class="hint">Bu kodla VALORANT özel lobisinde toplanın; eski ya da farklı bir kod kullanmayın.</p></div>`:'';
-  const codeEdit=cap&&s.lobbyCode&&['proof','review','start'].includes(s.phase)?`<div class="v42-code-edit"><p class="v42-locked-caption">⚠️ Kod yanlışsa maç başlamadan iki kaptandan biri düzeltebilir. Yeni kod kaydedildiğinde eski lobi kanıtları ve tüm oyuncuların maç başlatma onayları sıfırlanır; dört oyuncunun Hazırım bilgisi korunur.</p><button class="btn secondary" id="v42CodeEditShow" type="button">✏️ VALORANT Kodunu Düzenle</button><div id="v42CodeEditForm" hidden><label for="v42NewCode">Doğru yeni VALORANT kodu</label><input id="v42NewCode" maxlength="64" autocomplete="off" placeholder="Yeni kod (4-64 karakter)"><button class="btn" id="v42CodeEditSend" type="button">🔄 Yeni Kodu Kaydet</button></div></div>`:'';
+  const codeEdit=cap&&s.lobbyCode&&['proof','review','start'].includes(s.phase)?`<div class="v42-code-edit"><p class="v42-locked-caption">⚠️ Kod yanlışsa maç başlamadan kaptan kodu düzeltebilir. Yeni kod kaydedildiğinde eski lobi kanıtları ve tüm oyuncuların maç başlatma onayları sıfırlanır; ${expectedTotal} oyuncunun Hazırım bilgisi korunur.</p><button class="btn secondary" id="v42CodeEditShow" type="button">✏️ VALORANT Kodunu Düzenle</button><div id="v42CodeEditForm" hidden><label for="v42NewCode">Doğru yeni VALORANT kodu</label><input id="v42NewCode" maxlength="64" autocomplete="off" placeholder="Yeni kod (4-64 karakter)"><button class="btn" id="v42CodeEditSend" type="button">🔄 Yeni Kodu Kaydet</button></div></div>`:'';
   let controls='';
   if(s.phase==='captains')controls=`<div class="room-step"><h3>1. Maç odasına katılın</h3><div class="v42-info">📣 Maç çağrısı geldi! <strong>İki kaptan da Arena odasına katıldığında</strong> tüm oyuncuların Hazırım aşaması açılacak. <strong>VALORANT kodunu veya oyunu henüz başlatmayın.</strong></div><p>${s.captainAJoined?'✅':'⏳'} A kaptanı · ${s.captainBJoined?'✅':'⏳'} B kaptanı</p>${cap&&!myJoin?'<button class="btn" id="v30Join">🎮 Lobiye Katıl</button>':waitLine}</div>`;
   if(s.phase==='ready')controls=`<div class="room-step"><h3>2. Tüm oyuncular Arena'da Hazırım desin</h3><div class="v42-info">✅ <strong>${readyTotal}/${expectedTotal} oyuncu hazır.</strong> Her oyuncu kendi Kick hesabıyla Hazırım demeli. Sonrasında kaptanlardan biri VALORANT özel lobisini kurup tek davet kodunu paylaşacak.</div><div class="lobby-grid">${players}</div><button class="btn ${s.myReady?'secondary':''}" id="v30Ready" type="button">${s.myReady?'↩ Hazır Değilim':'✅ Hazırım'}</button>${cap&&!myJoin?'<button class="btn secondary" id="v30Join">🎮 Kaptan Lobiye Katıl</button>':''}<p class="hint">Hazır vererek henüz VALORANT oyununu başlatmıyorsun. Maç daha sonra iki kaptanın onayıyla başlayacak.</p>${codeCard}</div>`;
   if(s.phase==='code')controls=`<div class="room-step"><h3>3. VALORANT lobisini kurun ve kodunu paylaşın</h3><div class="v42-info">✅ Oyuncular Arena'da hazır. <strong>Hangi kaptan ilk geçerli kodu kaydederse o tek VALORANT lobisi kullanılır.</strong> İkinci kaptanın başka lobi kurmasına gerek yoktur. Herkes paylaşılan koda katılmalı.</div><div class="lobby-grid">${players}</div>${cap&&myJoin?'<label for="v30Code">VALORANT özel lobi davet kodu</label><input id="v30Code" maxlength="64" placeholder="VALORANT davet kodu" autocomplete="off"><button class="btn v42-action" id="v30CodeSave" type="button">🔑 Davet Kodunu Herkesle Paylaş</button>':cap?'<button class="btn" id="v30Join">🎮 Lobiye Katıl</button>':waitLine}</div>`;
-  if(s.phase==='proof')controls=`<div class="room-step"><h3>4. VALORANT lobisinde buluşun ve kanıt yükleyin</h3>${codeCard}<div class="v42-info">🎮 Dört oyuncu da <strong>aynı VALORANT özel oyun lobisine</strong> girsin. Kaptanlar, oyuncu isimleri görünecek şekilde lobi ekran görüntüsünü alıp Hızlıresim'e yüklesin. <strong>Henüz maçı başlatmayın.</strong></div><div class="lobby-grid">${players}</div><p>${s.proofA?'✅':'⏳'} A Takımı kanıtı · ${s.proofB?'✅':'⏳'} B Takımı kanıtı</p>${cap?`<a class="v42-link" href="https://hizliresim.com" target="_blank" rel="noopener noreferrer">📸 Hızlıresim'e görsel yükle ↗</a><label for="v30Proof">Lobi görüntüsü bağlantın</label><input id="v30Proof" type="url" maxlength="500" placeholder="https://hizliresim.com/..." value="${esc(myProof||'')}"><button class="btn v42-action" id="v30ProofSave" type="button">📸 Lobi Kanıtını Kaydet</button>`:waitLine}${codeEdit}</div>`;
-  if(s.phase==='review')controls=`<div class="room-step"><h3>5. Kadroyu kontrol edin ve onaylayın</h3>${codeCard}<p><a class="v42-link" href="${esc(s.proofA)}" rel="noopener noreferrer" target="_blank">📸 A takımının kanıtı ↗</a> · <a class="v42-link" href="${esc(s.proofB)}" rel="noopener noreferrer" target="_blank">📸 B takımının kanıtı ↗</a></p><div class="v42-info">🔍 VALORANT oyuncu adlarıyla turnuvanın kayıtlı kadrosunu karşılaştır. Doğruysa <strong>Devam Et</strong> de. Yanlış oyuncu veya kural ihlali varsa <strong>İtiraz Et</strong> seç. Bu aşamada henüz maçı başlatmayın.</div><div class="lobby-grid">${players}</div>${cap&&!myConsent?'<button class="btn" id="v30Consent">✅ Kadrolar Doğru — Devam Et</button>':waitLine}${cap?'<button class="btn secondary" id="v30DisputeShow">🚩 İtiraz Et</button>':''}<p>${s.consentA?'✅':'⏳'} A kaptanı · ${s.consentB?'✅':'⏳'} B kaptanı</p>${codeEdit}</div>`;
-  if(s.phase==='start')controls=`<div class="room-step"><h3>6. Her oyuncu kuralları okuyup maçı onaylasın</h3>${codeCard}<div class="v42-required">🚨 <strong>MAÇI HENÜZ BAŞLATMAYIN!</strong> Tüm oyuncuların kendi Kick hesaplarıyla kuralları onaylaması gerekiyor. <strong>${Number(s.startApprovedTotal||0)}/${Number(s.startExpectedTotal||expectedTotal)} oyuncu onayladı.</strong> Tümü onayladığında 30 saniyelik VALORANT'a geçiş ekranı herkeste açılacak.</div>${ruleSummary}<div class="v42-info"><strong>📋 Herkesin uyması gereken maç yükümlülükleri</strong><ol class="v42-steps"><li>Yukarıdaki yazılı turnuva kuralları, harita, format ve kadro şartları geçerlidir.</li><li>Yalnızca kayıtlı VALORANT hesaplarıyla aynı özel lobide oynayın. Hile, hesap değişimi ve usulsüz sonuç bildirimi yasaktır.</li><li>Maç bitince sonuç tablosunun ekran görüntüsünü alıp Hızlıresim'e yükleyin.</li><li>Kaptanlar Arena'ya dönerek iki takımın skorunu ve kanıt bağlantısını bildirmek zorundadır. Diğer oyuncular bu sorumluluğu kaptana hatırlatmalıdır.</li><li>İki kaptanın skorları uyuşursa fikstür ilerler. Uyuşmazlık veya itirazda hakem karar verir.</li></ol></div><h3>✅ Oyuncu Onayları · ${Number(s.startApprovedTotal||0)}/${Number(s.startExpectedTotal||expectedTotal)}</h3><div class="wz30652-approval-grid">${approvalTeams}</div>${s.myStartApproved?'<p class="v42-progress">✅ Onayın kaydedildi. Diğer oyuncular bekleniyor. Herkes tamamladığında sayaç açılacak.</p>':`<div class="wz30652-confirm"><h3>⚠️ Maç başlangıcı için onayın</h3><label class="v42-check"><input type="checkbox" id="v30Rules"><span><strong>Yukarıdaki turnuvaya özel yazılı kuralları ve maç şartlarını okudum, kabul ediyorum.</strong> Doğru VALORANT hesabıyla oynayacağım.</span></label><label class="v42-check"><input type="checkbox" id="v42Return"><span><strong>Maç bitince kaptanımın Arena'ya dönüp doğru skor ve ekran görüntüsü göndermesi gerektiğini anladım.</strong> Kaptansam bu bildirimi bizzat yapacağım.</span></label><button class="btn v42-action" id="v30Start" type="button" disabled>✅ Kuralları Onayla ve Maçı Başlat</button></div>`}${codeEdit}</div>`;
+  if(s.phase==='code_check'){
+    const verifying=cap&&side!==s.hostSide;
+    controls=`<div class="room-step"><h3>4. Rakip kaptan VALORANT kodunu kontrol etsin</h3>${codeCard}
+      <div class="v42-info">🔎 <strong>Kodu paylaşmayan takımın kaptanı</strong> VALORANT'a dönerek yukarıdaki kodla özel lobiye girmeli. Kod geçerliyse <strong>✅ Lobiye Katıldım</strong>, yanlışsa <strong>❌ Lobi Kodu Yanlış</strong> seçilmeli. <strong>Henüz ekran görüntüsü yüklemeyin veya maçı başlatmayın.</strong></div>
+      ${verifying?'<div class="lobby-actions"><button class="btn v42-action" id="v30662CodeVerify" type="button">✅ Kod Doğru — Lobiye Katıldım</button><button class="btn secondary" id="v30662CodeReject" type="button">❌ Lobi Kodu Yanlış</button></div>':`<p class="room-progress">⏳ ${cap?'Kodu paylaştın. Rakip kaptanın VALORANT kodunu kontrol etmesi bekleniyor.':'Rakip kaptanın VALORANT lobisini doğrulaması bekleniyor.'}</p>`}</div>`;
+  }
+  if(s.phase==='code_fix'){
+    const fixer=cap&&side!==s.hostSide;
+    controls=`<div class="room-step"><h3>⚠️ Kod yanlış bildirildi — yeni lobi kurulacak</h3>${codeCard}
+      <div class="lobby-warning">🚨 Rakip kaptan kodun çalışmadığını bildirdi. <strong>${fixer?'Yeni VALORANT özel lobisini kurup doğru kodu aşağıya gir.':'Rakip kaptanın yeni VALORANT lobisi kurup kodu paylaşması bekleniyor.'}</strong> Eski kodu kullanmayın, maçı başlatmayın.</div>
+      ${fixer?`<label for="v30662FixCode">Yeni VALORANT lobi kodu</label><input id="v30662FixCode" maxlength="64" autocomplete="off" placeholder="Yeni doğru kod"><button class="btn v42-action" id="v30662FixSend" type="button">🔄 Yeni Lobi Kodunu Kaydet</button>`:waitLine}</div>`;
+  }
+  if(s.phase==='game_join'){
+    controls=`<div class="room-step"><h3>5. ${expectedTotal} oyuncu VALORANT lobisine katılsın</h3>${codeCard}
+      <div class="v42-info">🎮 <strong>${Number(s.valorantJoinCount||0)}/${Number(s.valorantJoinExpected||expectedTotal)} oyuncu gerçek VALORANT lobisine katıldığını onayladı.</strong> Kod rakip kaptan tarafından doğrulandı. Şimdi her oyuncu, VALORANT'ta bu özel lobiye <strong>gerçekten girdikten sonra</strong> aşağıdaki düğmeye bassın. <strong>Herkes onaylayana kadar lobi kanıtı istenmeyecek.</strong></div>
+      <div class="lobby-grid">${valorantJoinRoster}</div>
+      ${s.myValorantJoined?'<p class="v42-progress">✅ VALORANT lobisine katılımın kaydedildi. Diğer oyuncular bekleniyor.</p>':'<button class="btn v42-action" id="v30662GameJoin" type="button">🎮 VALORANT Lobisine Katıldım</button>'}
+      <p class="hint">Bu onay Arena Hazırım onayından ayrıdır. Oyundaki gerçek katılımın kendi beyanındır; sistem VALORANT istemcisini otomatik doğrulamaz.</p></div>`;
+  }
+  if(s.phase==='proof')controls=`<div class="room-step"><h3>6. VALORANT lobi kanıtlarını yükleyin</h3>${codeCard}<div class="v42-info">🎮 <strong>${expectedTotal} oyuncunun tamamının</strong> aynı VALORANT özel oyun lobisine katıldığını Arena üzerinden onayladı. Kaptanlar, oyuncu isimleri görünecek şekilde lobi ekran görüntüsünü alıp Hızlıresim'e yüklesin. <strong>Henüz maçı başlatmayın.</strong></div><div class="lobby-grid">${players}</div><p>${s.proofA?'✅':'⏳'} A Takımı kanıtı · ${s.proofB?'✅':'⏳'} B Takımı kanıtı</p>${cap?`<a class="v42-link" href="https://hizliresim.com" target="_blank" rel="noopener noreferrer">📸 Hızlıresim'e görsel yükle ↗</a><label for="v30Proof">Lobi görüntüsü bağlantın</label><input id="v30Proof" type="url" maxlength="500" placeholder="https://hizliresim.com/..." value="${esc(myProof||'')}"><button class="btn v42-action" id="v30ProofSave" type="button">📸 Lobi Kanıtını Kaydet</button>`:waitLine}${codeEdit}</div>`;
+  if(s.phase==='review')controls=`<div class="room-step"><h3>7. Kadroyu kontrol edin ve onaylayın</h3>${codeCard}<p><a class="v42-link" href="${esc(s.proofA)}" rel="noopener noreferrer" target="_blank">📸 A takımının kanıtı ↗</a> · <a class="v42-link" href="${esc(s.proofB)}" rel="noopener noreferrer" target="_blank">📸 B takımının kanıtı ↗</a></p><div class="v42-info">🔍 VALORANT oyuncu adlarıyla turnuvanın kayıtlı kadrosunu karşılaştır. Doğruysa <strong>Devam Et</strong> de. Yanlış oyuncu veya kural ihlali varsa <strong>İtiraz Et</strong> seç. Bu aşamada henüz maçı başlatmayın.</div><div class="lobby-grid">${players}</div>${cap&&!myConsent?'<button class="btn" id="v30Consent">✅ Kadrolar Doğru — Devam Et</button>':waitLine}${cap?'<button class="btn secondary" id="v30DisputeShow">🚩 İtiraz Et</button>':''}<p>${s.consentA?'✅':'⏳'} A kaptanı · ${s.consentB?'✅':'⏳'} B kaptanı</p>${codeEdit}</div>`;
+  if(s.phase==='start')controls=`<div class="room-step"><h3>8. Her oyuncu kuralları okuyup maçı onaylasın</h3>${codeCard}<div class="v42-required">🚨 <strong>MAÇI HENÜZ BAŞLATMAYIN!</strong> Tüm oyuncuların kendi Kick hesaplarıyla kuralları onaylaması gerekiyor. <strong>${Number(s.startApprovedTotal||0)}/${Number(s.startExpectedTotal||expectedTotal)} oyuncu onayladı.</strong> Tümü onayladığında 30 saniyelik VALORANT'a geçiş ekranı herkeste açılacak.</div>${ruleSummary}<div class="v42-info"><strong>📋 Herkesin uyması gereken maç yükümlülükleri</strong><ol class="v42-steps"><li>Yukarıdaki yazılı turnuva kuralları, harita, format ve kadro şartları geçerlidir.</li><li>Yalnızca kayıtlı VALORANT hesaplarıyla aynı özel lobide oynayın. Hile, hesap değişimi ve usulsüz sonuç bildirimi yasaktır.</li><li>Maç bitince sonuç tablosunun ekran görüntüsünü alıp Hızlıresim'e yükleyin.</li><li>Kaptanlar Arena'ya dönerek iki takımın skorunu ve kanıt bağlantısını bildirmek zorundadır. Diğer oyuncular bu sorumluluğu kaptana hatırlatmalıdır.</li><li>İki kaptanın skorları uyuşursa fikstür ilerler. Uyuşmazlık veya itirazda hakem karar verir.</li></ol></div><h3>✅ Oyuncu Onayları · ${Number(s.startApprovedTotal||0)}/${Number(s.startExpectedTotal||expectedTotal)}</h3><div class="wz30652-approval-grid">${approvalTeams}</div>${s.myStartApproved?'<p class="v42-progress">✅ Onayın kaydedildi. Diğer oyuncular bekleniyor. Herkes tamamladığında sayaç açılacak.</p>':`<div class="wz30652-confirm"><h3>⚠️ Maç başlangıcı için onayın</h3><label class="v42-check"><input type="checkbox" id="v30Rules"><span><strong>Yukarıdaki turnuvaya özel yazılı kuralları ve maç şartlarını okudum, kabul ediyorum.</strong> Doğru VALORANT hesabıyla oynayacağım.</span></label><label class="v42-check"><input type="checkbox" id="v42Return"><span><strong>Maç bitince kaptanımın Arena'ya dönüp doğru skor ve ekran görüntüsü göndermesi gerektiğini anladım.</strong> Kaptansam bu bildirimi bizzat yapacağım.</span></label><button class="btn v42-action" id="v30Start" type="button" disabled>✅ Kuralları Onayla ve Maçı Başlat</button></div>`}${codeEdit}</div>`;
   if(['playing','result_pending'].includes(s.phase)){
     const own=(s.resultSubmissions||[]).find(x=>x.team_side===side);
     const waiting=s.phase==='result_pending'?`<div class="lobby-warning">⏳ Bir kaptan skor ve kanıt gönderdi. Diğer kaptanın cevap son tarihi: <strong>${esc(s.resultDeadline||'')}</strong>. Süre dolarsa otomatik kazanan seçilmez, hakem incelemesi başlar.</div>`:'';
-    controls=`<div class="room-step"><h3>🟢 VALORANT MAÇINIZI OYNAYIN</h3><div class="v42-info v42-playing"><strong>🎮 Her iki kaptan maçı başlatmayı onayladı.</strong><p>ŞİMDİ VALORANT özel lobisine geçin, turnuva kurallarına ve kararlaştırılan harita/format şartlarına göre oyunu başlatıp oynayın.</p><p>Maç bitince sonuç tablosunun ekran görüntüsünü alın. <strong>WEİZEND ARENA'ya geri dönerek skoru ve Hızlıresim kanıt bağlantısını gönderin.</strong> Sadece oyun içinden çıkmak maçı sonuçlandırmaz!</p></div>${codeCard}${waiting}<div class="v42-required">🏁 <strong>MAÇ BİTTİ Mİ?</strong> Lütfen sayfayı kapatıp gitmeyin! Kaptanlar buradaki <strong>Skor &amp; Kanıt Gönder</strong> adımını tamamlamalı. İki kaptanın uyumlu bildirimi gelince fikstür güncellenir.</div>${cap?`<button class="btn secondary" id="v30DisputeShow" type="button">🚩 Kural İhlali / İtiraz Et</button>${own?'<p class="v42-progress">✅ Kendi takımının skoru ve kanıtı gönderildi. Rakip bildirimi veya sonuçlandırma bekleniyor.</p>':'<button class="btn v42-action" id="v30ResultShow" type="button">🏁 Maç Bitti — Skor &amp; Kanıt Gönder</button>'}`:'<p class="hint">Sonuç formunu yalnızca takım kaptanları gönderir. Kaptanına maç bittikten sonra buraya dönmesini hatırlat.</p>'}</div>`;
+    controls=`<div class="room-step"><h3>🟢 VALORANT MAÇINIZI OYNAYIN</h3><div class="v42-info v42-playing"><strong>🎮 Bütün oyuncular maçı başlatmayı onayladı.</strong><p>ŞİMDİ VALORANT özel lobisine geçin, turnuva kurallarına ve kararlaştırılan harita/format şartlarına göre oyunu başlatıp oynayın.</p><p>Maç bitince sonuç tablosunun ekran görüntüsünü alın. <strong>WEİZEND ARENA'ya geri dönerek skoru ve Hızlıresim kanıt bağlantısını gönderin.</strong> Sadece oyun içinden çıkmak maçı sonuçlandırmaz!</p></div>${codeCard}${waiting}<div class="v42-required">🏁 <strong>MAÇ BİTTİ Mİ?</strong> Lütfen sayfayı kapatıp gitmeyin! Kaptanlar buradaki <strong>Skor &amp; Kanıt Gönder</strong> adımını tamamlamalı. İki kaptanın uyumlu bildirimi gelince fikstür güncellenir.</div>${cap?`<button class="btn secondary" id="v30DisputeShow" type="button">🚩 Kural İhlali / İtiraz Et</button>${own?'<p class="v42-progress">✅ Kendi takımının skoru ve kanıtı gönderildi. Rakip bildirimi veya sonuçlandırma bekleniyor.</p>':'<button class="btn v42-action" id="v30ResultShow" type="button">🏁 Maç Bitti — Skor &amp; Kanıt Gönder</button>'}`:'<p class="hint">Sonuç formunu yalnızca takım kaptanları gönderir. Kaptanına maç bittikten sonra buraya dönmesini hatırlat.</p>'}</div>`;
   }
   // Replace the normal playing panel during the first 30 seconds. Never stack it
   // below previous steps. The match is already in 'playing' on the server.
@@ -1041,10 +1127,19 @@ function v30RenderLobby(s,m){
   el.innerHTML=v30RoomHtml(s,m);
   if(s.phase==='start'&&!s.myStartApproved){if($('v30Rules'))$('v30Rules').checked=wz30652Draft.rules;if($('v42Return'))$('v42Return').checked=wz30652Draft.returning;}
   // A new phase starts at the top instead of leaving the user at an old scroll offset.
-  if(changedPhase)roomDialog.scrollTop=0;
+  if(changedPhase&&!wz30661AutoRendering)roomDialog.scrollTop=0;
   const on=(id,fn)=>$(id)?.addEventListener('click',fn);
   on('v30Join',()=>lobbyAction('join'));
   on('v30CodeSave',()=>lobbyAction('code',{code:$('v30Code')?.value||''}));
+  on('v30662CodeVerify',()=>lobbyAction('code_verify'));
+  on('v30662CodeReject',()=>{if(confirm('VALORANT kodunun geçersiz olduğunu onaylıyor musun? Yeni kodu bu kez sen paylaşacaksın.'))lobbyAction('code_reject');});
+  on('v30662FixSend',()=>{
+    const code=String($('v30662FixCode')?.value||'').trim();
+    if(!/^[A-Za-z0-9_-]{4,64}$/.test(code)){lobbyToast('Geçerli bir VALORANT kodu gir (4-64 karakter).','error');return;}
+    if(code===s.lobbyCode){lobbyToast('Yeni kod eskisinden farklı olmalı.','error');return;}
+    lobbyAction('code_edit',{code,previousCode:s.lobbyCode});
+  });
+  on('v30662GameJoin',()=>lobbyAction('game_join'));
   on('v30Ready',()=>lobbyAction(s.myReady?'unready':'ready'));
   on('v30ProofSave',()=>lobbyAction('proof',{proof:$('v30Proof')?.value||''}));
   on('v30Consent',()=>lobbyAction('consent'));
@@ -1077,8 +1172,17 @@ function v30RenderLobby(s,m){
   updateRoomCountdown();
 }
 function v30StartPolling(){
- // Arena state is updated on WebSocket events; do not make idle requests.
+ // Keep WebSocket events for instant refresh. A missing/filtered notification
+ // cannot strand players at the previous phase: every 12 seconds, the open
+ // and visible match room fetches authoritative state as a safety backstop.
  v306Connect();
+ if(!v30RoomInterval){
+   v30RoomInterval=setInterval(()=>{
+     if(!roomDialog.hidden&&!document.hidden&&lobbyCache?.v30&&!lobbySaving){
+       void v306SyncOnce();
+     }
+   },12000);
+ }
 }
 
 function renderLobby(){
@@ -1138,7 +1242,7 @@ function renderLobby(){
  updateRoomCountdown();
 }
 async function loadLobby(){
- const m=activeMatch(),seq=++lobbySeq;lobbyCache=null;lobbySelected=m?.id||'';renderLobby();
+ const m=activeMatch(),seq=++lobbySeq;lobbyCache=null;wz30661BufferedView=false;lobbySelected=m?.id||'';renderLobby();
  if(!m||!m.participantAId||!m.participantBId||!token()||!['ready','completed'].includes(m.status))return;
  try{const result=await api('/tournament/lobby?matchId='+encodeURIComponent(m.id),true);
   if(seq!==lobbySeq)return;lobbyCache=result;v30RoomSnapshot=JSON.stringify(result);renderLobby();renderMatch();
