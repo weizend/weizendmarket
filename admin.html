@@ -3914,7 +3914,7 @@ body:has(#adminNewMessageModal:not(.hidden)){
           <div id="tPredictionStatus" class="status tournamentInlineStatus"></div>
           <div id="tPredictionLeaderboard" class="tPredictionLeaderboard"></div>
         </div>
-        <p class="muted" style="margin-top:12px">Tahminler bir kez kaydedilince fikstür değiştirmek veri kaybına yol açabilir. Tahminleri kapatmak eski kayıtları silmez.</p>
+        <p class="muted" style="margin-top:12px">Tahminleri normal şekilde kapatmak eski kayıtları silmez. Ancak maç çağrısı yapılmadan önce Fikstürü Yeniden Karıştır işlemi onaylanırsa eski tahminler ve kuponlar tamamen sıfırlanır.</p>
       </div>
 
       <div class="card" id="pastTournamentsCard">
@@ -3959,14 +3959,14 @@ body:has(#adminNewMessageModal:not(.hidden)){
           <div>
             <h2>🎮 Fikstür ve Skor Yönetimi</h2>
             <p class="muted">
-              Kontenjan ve katılım şartları tamamlandıktan sonra fikstürü buradan oluştur; maç sonuçlarını yine bu bölümden yönet.
+              Kontenjan ve katılım şartları tamamlandığında fikstür otomatik oluşturulur (5 dakikalık sunucu kontrolü). Maç çağrısı başlamadan önce istersen Karıştır düğmesiyle fikstürü yeniden oluşturabilir, eski tahminleri sıfırlayabilirsin.
             </p>
           </div>
 
           <div class="sectionHeaderActions">
             <button id="tDrawButton"
               class="warn smallButton"
-              onclick="drawTournament()">🎲 Fikstürü Oluştur</button>
+              onclick="drawTournament()">🎲 Fikstürü Karıştır / Yeniden Oluştur</button>
             <button class="secondary smallButton"
               onclick="loadTournamentBracket()">🔄 Yenile</button>
           </div>
@@ -11356,58 +11356,34 @@ async function hideTournamentSupportEvent(encodedTrackingKey){
 }
 
 async function drawTournament(){
-  const tournamentId =
-    document.getElementById('tournamentSelect')?.value || '';
-
-  if(!tournamentId) return;
-
-  if(!confirm(
-    'Kontenjan dolu ve tüm katılım şartları tamamlandıysa kayıtlar kapatılıp fikstür rastgele oluşturulacak. Devam edilsin mi?'
-  )) return;
-
+  const tournamentId=document.getElementById('tournamentSelect')?.value||'';
+  if(!tournamentId)return;
   try{
-    showStatus(
-      'tournamentBracketStatus',
-      '⏳ Katılımcılar karıştırılıyor ve fikstür oluşturuluyor...',
-      true
-    );
-
-    const {r,d} =
-      await api(
-        '/admin/tournament/draw',
-        {
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({tournamentId})
-        }
-      );
-
-    if(!r.ok || !d?.success){
-      throw new Error(d?.error || `HTTP ${r.status}`);
-    }
-
-    tournamentCatalogCache = [];
+    // The latest bracket is read from Worker, not inferred from local cache.
+    const {r:br, d:bd}=await api(`/admin/tournament/bracket?id=${encodeURIComponent(tournamentId)}&_=${Date.now()}`);
+    if(!br.ok||!bd?.success)throw Error(bd?.error||`HTTP ${br.status}`);
+    const hasFixture=Array.isArray(bd.matches)&&bd.matches.length>0;
+    const message=hasFixture
+      ? '⚠️ FİKSTÜRÜ YENİDEN KARIŞTIR\n\nBu turnuvada başlamamış bir fikstür var. Tüm mevcut tahmin seçimleri ve onaylanmış tahmin kuponları GERİ ALINAMAYACAK şekilde sıfırlanacak. Yeni rastgele fikstür yayımlanacak, tahminler tekrar açılacak.\n\nMaç çağrıldıysa veya turnuva başladıysa işlem reddedilir. Devam edilsin mi?'
+      : 'Kontenjan dolu ve tüm katılım şartları tamamlandıysa rastgele fikstür oluşturulacak; tahminler açılacak. Devam edilsin mi?';
+    if(!confirm(message))return;
+    if(hasFixture&&!confirm('SON ONAY: Eski tahminlerin TAMAMI silinip yeni fikstür oluşturulacak. Emin misin?'))return;
+    showStatus('tournamentBracketStatus','⏳ Fikstür hazırlanıyor, lütfen bekle...',true);
+    const {r,d}=await api('/admin/tournament/draw',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({tournamentId,reshuffle:hasFixture,
+        confirmation:hasFixture?'FIKSTURU_YENILE_TAHMINLERI_SIFIRLA':undefined})
+    });
+    if(!r.ok||!d?.success)throw Error(d?.error||`HTTP ${r.status}`);
+    tournamentCatalogCache=[];
     await loadTournamentList(true);
-
-    const select = document.getElementById('tournamentSelect');
-    if(select){
-      select.value = tournamentId;
-    }
-
-    await Promise.all([
-      loadTournamentBracket(true),
-      loadTournamentPredictions(true)
-    ]);
-
-    showStatus(
-      'tournamentBracketStatus',
-      `✅ Fikstür oluşturuldu. ${Number(d.participantCount||0)} katılımcı · ${Number(d.rounds||0)} tur. ${d.predictionsOpened===true?'🎯 Tahminler otomatik açıldı. Tahminler sekmesinden kapatabilirsin.':'⚠️ Tahminler açılamadı: '+esc(String(d.predictionsOpenError||'Tahminler menüsünden durumu kontrol et.'))}`,
-      true
-    );
-
-  }catch(error){
-    showStatus('tournamentBracketStatus','❌ ' + esc(error.message || error),false);
-  }
+    const select=document.getElementById('tournamentSelect');if(select)select.value=tournamentId;
+    await Promise.all([loadTournamentBracket(true),loadTournamentPredictions(true)]);
+    showStatus('tournamentBracketStatus',
+      `✅ ${d.reshuffled?'Fikstür yeniden karıştırıldı. '+Number(d.clearedPredictions||0)+' tahmin temizlendi.':'Fikstür oluşturuldu.'} `+
+      `${Number(d.participantCount||0)} katılımcı · ${Number(d.rounds||0)} tur · `+
+      (d.predictionsOpened===true?'🎯 Tahminler açık.':'⚠️ Tahminler açılamadı: '+esc(String(d.predictionsOpenError||'Durumu Tahminler sekmesinden kontrol et.'))),true);
+  }catch(error){showStatus('tournamentBracketStatus','❌ '+esc(error.message||error),false);}
 }
 
 async function loadTournamentBracket(silent=false){
@@ -11461,9 +11437,25 @@ async function loadTournamentBracket(silent=false){
 // WEİZEND ARENA V30 — compact referee board (works with existing admin auth).
 let v30AdminOpenMatch='';
 let v30AdminLiveInterval=null;
+let v30AdminPollBusy=false;
 function v30AdminEnablePoll(){
-  // V30.4.1: no idle 15-second D1 reads. Manual refresh / tab return only.
+  // V30.6.55: only poll when a START-stage match is expanded and visible.
+  // No idle D1 reads for other tabs, collapsed matches or completed games.
   if(v30AdminLiveInterval){clearInterval(v30AdminLiveInterval);v30AdminLiveInterval=null;}
+  const tid=document.getElementById('tournamentSelect')?.value||'';
+  const snap=wz41CacheV30.get(String(tid));
+  const m=(snap?.data?.matches||[]).find(x=>String(x.id)===String(v30AdminOpenMatch));
+  if(!m||!snap?.data?.enabled||m.v30?.phase!=='start')return;
+  v30AdminLiveInterval=setInterval(async()=>{
+    const host=document.getElementById('arenaLobbiesAdmin');
+    if(v30AdminPollBusy||document.visibilityState!=='visible'||!host?.getClientRects().length)return;
+    if(String(document.getElementById('tournamentSelect')?.value||'')!==String(tid)){
+      v30AdminEnablePoll();return;
+    }
+    v30AdminPollBusy=true;
+    try{await loadArenaLobbiesAdmin(tid);}catch(e){console.warn('V30.6.55 onay görünümü yenilenemedi:',e);}
+    finally{v30AdminPollBusy=false;}
+  },20000);
 }
 
 async function v30AdminFetch(tid){
@@ -11505,8 +11497,46 @@ function wz44OpenUrgentMatch(matchId){
  if(!snap?.data)return;
  v30AdminOpenMatch=decodeURIComponent(String(matchId||''));
  v30AdminRender(snap.data,tid);
+ v30AdminEnablePoll();
  const focused=document.querySelector('[data-wz44-mid="'+CSS.escape(v30AdminOpenMatch)+'"]');
  focused?.scrollIntoView({behavior:'smooth',block:'center'});
+}
+// V30.6.53: Görüntülenen kayıtlar fikstüre bağlı değildir.
+// Oyuncuların ödeme/katılım şartı bitmediyse açıkça bekliyor gösterilir.
+function wz30653AdminRoster(d){
+ const r=d?.registrations||{};
+ const readyStatus=s=>['active','joined','ready','locked'].includes(String(s||'').toLowerCase());
+ let content='',count=0,total=0;
+ if(r.type==='solo'){
+  const players=Array.isArray(r.players)?r.players:[];
+  count=players.filter(p=>readyStatus(p.status)).length;total=players.length;
+  content=players.map(p=>`<div style="padding:7px 0;border-top:1px solid #343434"><b>${esc(p.username||'-')}</b> · ${esc(p.gameId||'-')} <small style="color:${readyStatus(p.status)?'#80d9aa':'#ffd37c'}">${readyStatus(p.status)?'✅ Kayıt onaylı':'⏳ Katılım bekleniyor'}</small></div>`).join('');
+ }else{
+  const teams=Array.isArray(r.teams)?r.teams:[];
+  count=teams.filter(t=>readyStatus(t.status)).length;total=teams.length;
+  content=teams.map(t=>`<details style="margin-top:7px;border:1px solid #3b3b3b;border-radius:8px;padding:9px"><summary><b>${esc(t.name||'-')}</b> · <small style="color:${readyStatus(t.status)?'#80d9aa':'#ffd37c'}">${readyStatus(t.status)?'✅ Hazır':'⏳ Kadro bekleniyor'}</small> · ${(t.members||[]).filter(m=>readyStatus(m.status)).length}/${(t.members||[]).length} oyuncu</summary><div style="padding-top:6px">${(t.members||[]).map(m=>`<div style="padding:4px 0"><b>${esc(m.username||'-')}</b> ${m.gameId?'· '+esc(m.gameId):''} ${readyStatus(m.status)?'✅':'⏳'}</div>`).join('')||'<span class="muted">Oyuncu katılımı bekleniyor.</span>'}</div></details>`).join('');
+ }
+ return `<div style="border:1px solid #365846;border-radius:10px;padding:12px;margin:10px 0;background:#101b16"><strong>👥 Kayıtlı ${r.type==='solo'?'Oyuncular':'Takımlar'} · ${total} kayıt / ${count} hazır</strong><div class="muted" style="margin:6px 0">Fikstür oluşmasa da tüm mevcut kayıtlar görünür. Bekleyenler maç katılımcısı olarak onaylanmış sayılmaz.</div>${content||'<p class="muted">Henüz kayıt bulunmuyor.</p>'}</div>`;
+}
+// V30.6.55: Per-player approval status in the referee view (admin only).
+function wz30655ApprovalBoard(m,phase,teamName){
+ const progress=m.approvalProgress||{},raw=m.approvalPlayers||{};
+ const a=Array.isArray(raw.a)?raw.a:[],b=Array.isArray(raw.b)?raw.b:[];
+ const expectedA=Math.max(1,Number(progress.expectedA||1));
+ const expectedB=Math.max(1,Number(progress.expectedB||1));
+ const approved=a.filter(p=>p.approved).length+b.filter(p=>p.approved).length;
+ const total=expectedA+expectedB;
+ const isNow=phase==='start'||(phase==='blocked'&&m.v30?.blocked_from_phase==='start');
+ const alreadyStarted=['playing','result_pending','finalizing','completed'].includes(phase);
+ const statusLabel=p=>p.approved?'✅ Onayladı':isNow?'⏳ Bekleniyor':alreadyStarted?'— Kayıt bulunamadı':'— Onay aşaması bekleniyor';
+ const sideBox=(side,list,expected)=>{
+   const accepted=list.filter(p=>p.approved).length;
+   const extra=Math.max(0,expected-list.length);
+   const playerRows=list.map(p=>`<div style="display:flex;gap:9px;justify-content:space-between;align-items:center;border-top:1px solid #30363b;padding:9px 0;flex-wrap:wrap"><strong style="overflow-wrap:anywhere">${esc(p.gameId||'Oyuncu')}</strong><span style="font-size:12px;color:${p.approved?'#79dda6':isNow?'#f3c47d':'#a9b0ba'}">${statusLabel(p)}</span></div>`).join('');
+   const missing=extra?`<div style="font-size:12px;color:#f3c47d;padding:8px 0;border-top:1px solid #30363b">⚠️ ${extra} oyuncunun kadro kaydı henüz bulunamadı</div>`:'';
+   return `<div style="border:1px solid #38444a;border-radius:11px;padding:11px;min-width:0;background:#11191c"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:7px"><strong style="overflow-wrap:anywhere">${esc(teamName(m,side)|| (side==='a'?'A Takımı':'B Takımı'))}</strong><small>${accepted}/${expected} ✅</small></div>${playerRows||'<p class="muted">Kadro henüz okunamadı.</p>'}${missing}</div>`;
+ };
+ return `<div style="border:1px solid #3b5445;border-radius:11px;background:#111914;padding:12px;margin:12px 0"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;align-items:center;gap:8px"><strong>🎮 Oyuncu Bazlı Maç Onayları</strong><span style="font-weight:700;color:${approved===total?'#79dda6':'#f1c87f'}">${approved}/${total} onay</span></div><p class="muted" style="margin:7px 0 10px">${isNow?'Oyuncular kuralları onaylıyor. Bekleyen VALORANT adlarını aşağıda görebilirsin.':alreadyStarted?'Maç başlangıcındaki kayıtlı onayların özeti.':'Oyuncu onayları maç başlatma aşamasında açılacak.'} · ${isNow?'Açık maç ayrıntısı yaklaşık 20 saniyede bir güncellenir.':'Bilgiler Hakem Merkezi yenilendiğinde güncellenir.'}</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,235px),1fr));gap:10px">${sideBox('a',a,expectedA)}${sideBox('b',b,expectedB)}</div></div>`;
 }
 function v30AdminRender(d,tid){
  const host=document.getElementById('arenaLobbiesAdmin');if(!host)return;
@@ -11527,7 +11557,7 @@ function v30AdminRender(d,tid){
    }).join('');
    const startText=d.startedAt?'Turnuva başlatıldı: '+esc(new Date(d.startedAt).toLocaleString('tr-TR')):'Turnuva başlangıç saati beklenecek.';
    const actions=`<div style="margin:10px 0;padding:12px;border:1px solid #6b4a22;border-radius:10px;background:#1b1410"><strong>📺 Canlı Yayın Turnuvası</strong><p class="muted">Oyunculara AFK lobi mesajı gönderilmeyecek. Kayıtlar tamamlanınca turnuva saati hatırlatılacak; başlangıçta da ayrı Turnuva Başladı mesajı gidecek. Fikstür ve tahminler WEİZEND ARENA'da açık kalacak. Skorları mevcut Fikstür / Maç Sonucu yönetiminden gir.</p></div>`;
-   host.innerHTML=actions+`<div class="inlineActions">${d.enabled?'':`<button type="button" class="smallBtn warn" onclick="v30AdminControl('enable')">⚙️ V30 Fikstür Otomasyonunu Etkinleştir</button>`}${v303AdminStartButtons(d)}</div><p class="muted">${startText}</p>`+ (entries?`<div class="wz45-lobby-rows">${entries}</div>`:'<div class="tournamentEmpty">Fikstür henüz oluşmadı. Kayıtlar ve kadrolar tamamlanınca otomatik oluşturulacak.</div>');
+   host.innerHTML=wz30653AdminRoster(d)+actions+`<div class="inlineActions">${v303AdminStartButtons(d)}</div><p class="muted">${startText}</p>`+ (entries?`<div class="wz45-lobby-rows">${entries}</div>`:'<div class="tournamentEmpty">Fikstür henüz oluşmadı. Kayıtlar ve kadrolar tamamlanınca otomatik oluşturulacak.</div>');
    if(status)status.textContent=`✅ Canlı yayın turnuvası · ${matches.length} fikstür maçı · oyuncu lobileri kapalı`;
    return;
  }
@@ -11540,7 +11570,7 @@ function v30AdminRender(d,tid){
  const playingCount=matches.filter(m=>m.status!=='completed'&&m.v30?.phase==='playing').length;
  const completedCount=matches.filter(m=>m.status==='completed'||m.v30?.phase==='completed').length;
  const sum=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:12px 0"><div class="tournamentTeamCard">🏆 <strong>${matches.length}</strong> Eşleşme</div><div class="tournamentTeamCard">🟢 <strong>${playingCount}</strong> Devam Eden</div><div class="tournamentTeamCard">✅ <strong>${completedCount}</strong> Tamamlanan</div><div class="tournamentTeamCard" style="border-color:${alerts.length?'#a71919':'#333'}">${alerts.length?'🚨':'⚖️'} <strong>${alerts.length}</strong> Hakem Bekleyen</div></div>`;
- const adminToolbar=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0">${d.enabled?'':`<button type="button" class="smallBtn warn" onclick="v30AdminControl('enable')">⚙️ V30 Sistemini Etkinleştir</button>`}${v303AdminStartButtons(d)}</div><p class="muted">${d.manualMode==='manual'?'⏱️ Manuel mod: sıradaki karşılaşmalar için sizin davetiniz bekleniyor.':d.startedAt?'✅ Turnuva başladı: '+esc(new Date(d.startedAt).toLocaleString('tr-TR')):'⏳ Planlanan turnuva saati beklenecek.'}</p>${d.fixtureError?`<p class="muted">⏳ Fikstür bekleniyor: ${esc(d.fixtureError)}</p>`:''}`;
+ const adminToolbar=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0">${v303AdminStartButtons(d)}</div><p class="muted">${d.manualMode==='manual'?'⏱️ Manuel mod: sıradaki karşılaşmalar için sizin davetiniz bekleniyor.':d.startedAt?'✅ Turnuva başladı: '+esc(new Date(d.startedAt).toLocaleString('tr-TR')):'⏳ Planlanan turnuva saati beklenecek.'}</p>${d.fixtureError?`<p class="muted">⏳ Fikstür bekleniyor: ${esc(d.fixtureError)}</p>`:''}`;
  const cards=matches.map(m=>{
   const v=m.v30||{},r=m.room||{},pending=(m.disputes||[]).filter(x=>x.status==='pending');
    const blocked=v.phase==='blocked'||v.phase==='finalizing'||pending.length>0;
@@ -11549,12 +11579,25 @@ function v30AdminRender(d,tid){
   const active=v30AdminOpenMatch===m.id;
   const title=esc(teamName(m,'a'))+' <span style="color:#999">vs</span> '+esc(teamName(m,'b'));
   const rows=(m.results||[]).map(x=>`<p>🏁 ${esc(x.team_side.toUpperCase())}: ${Number(x.score_a)}-${Number(x.score_b)} · <a href="${esc(x.proof_url)}" target="_blank" rel="noopener noreferrer">Sonuç kanıtını aç ↗</a></p>`).join('');
-  const proofs=`<div class="muted">VALORANT davet kodu: <strong>${esc(r.lobby_code||'Henüz girilmedi')}</strong></div><div class="muted">Kaptan katılımı: A ${v.captain_a_joined_at?'✅':'⏳'} · B ${v.captain_b_joined_at?'✅':'⏳'}</div><div class="muted">Hazır / Devam / Başlat: A ${v.consent_a_at?'✅':'⏳'} / ${v.start_a_at?'✅':'⏳'} · B ${v.consent_b_at?'✅':'⏳'} / ${v.start_b_at?'✅':'⏳'}</div><p>${r.proof_a?`<a href="${esc(r.proof_a)}" target="_blank" rel="noopener noreferrer">📸 A Kadro Kanıtı ↗</a>`:'A kanıtı bekleniyor'} · ${r.proof_b?`<a href="${esc(r.proof_b)}" target="_blank" rel="noopener noreferrer">📸 B Kadro Kanıtı ↗</a>`:'B kanıtı bekleniyor'}</p>`;
+  const ap=m.approvalProgress||{},expA=Math.max(1,Number(ap.expectedA||1)),expB=Math.max(1,Number(ap.expectedB||1));
+  const readyA=Math.min(expA,Number(ap.ready?.a||0)),readyB=Math.min(expB,Number(ap.ready?.b||0));
+  const startA=Math.min(expA,Number(ap.start?.a||0)),startB=Math.min(expB,Number(ap.start?.b||0));
+  const iconFor=(yes)=>yes?'✅':'⏳';
+  const proofs=`<div class="muted">VALORANT davet kodu: <strong>${esc(r.lobby_code||'Henüz girilmedi')}</strong></div>
+    <div class="muted">Kaptan katılımı: A ${iconFor(v.captain_a_joined_at)} · B ${iconFor(v.captain_b_joined_at)}</div>
+    <div class="muted">Oyuncular Hazırım: A ${readyA}/${expA} ${iconFor(readyA===expA)} · B ${readyB}/${expB} ${iconFor(readyB===expB)}</div>
+    <div class="muted">Lobi kanıtı: A ${iconFor(r.proof_a)} · B ${iconFor(r.proof_b)}</div>
+    <div class="muted">Kadro onayı (kaptan): A ${iconFor(v.consent_a_at)} · B ${iconFor(v.consent_b_at)}</div>
+    <div class="muted">Maç başlangıç kuralları: ${startA+startB}/${expA+expB} oyuncu onayladı</div>
+    <p>${r.proof_a?`<a href="${esc(r.proof_a)}" target="_blank" rel="noopener noreferrer">📸 A Kadro Kanıtı ↗</a>`:'A kanıtı bekleniyor'} · ${r.proof_b?`<a href="${esc(r.proof_b)}" target="_blank" rel="noopener noreferrer">📸 B Kadro Kanıtı ↗</a>`:'B kanıtı bekleniyor'}</p>`;
   const disputes=pending.map(x=>`<div style="padding:10px;border:1px solid #8c2929;border-radius:9px;margin-top:7px"><strong>🚨 ${esc(x.team_side.toUpperCase())} kaptanı itiraz etti</strong><p>${esc(x.reason)}</p><a href="${esc(x.proof_url)}" target="_blank" rel="noopener noreferrer">Kanıt ↗</a></div>`).join('');
    const callStatus=m.status==='completed'?'✅ Tamamlandı':v.lobby_called_at?'🔔 Lobi çağrıldı':m.manuallyCalledAt?'📨 Davetler gönderiliyor':'⏳ Çağrı bekleniyor';
   const allowManualCall=d.enabled&&!d.broadcastEnabled&&!d.runMode?.includes('live')&&m.status==='ready'&&
     !v.lobby_called_at&&!m.manuallyCalledAt&&!!m.participant_a_id&&!!m.participant_b_id&&
     (d.manualMode==='manual'||(!d.manualMode&&!d.startedAt));
+  const listed=[...(m.approvalPlayers?.a||[]),...(m.approvalPlayers?.b||[])];
+  const waitingOnStart=phase==='start' ? listed.filter(p=>!p.approved).map(p=>p.gameId||'Oyuncu') : [];
+  const waitingHint=waitingOnStart.length?` · ⏳ Bekleyen: ${waitingOnStart.slice(0,3).map(n=>esc(n)).join(', ')}${waitingOnStart.length>3?' +'+(waitingOnStart.length-3)+' kişi':''}`:'';
   const manualAction=allowManualCall?`<div class="inlineActions"><button type="button" class="smallBtn warn" onclick="v30AdminManual('${encodeURIComponent(m.id)}','call_match')">▶ Yalnızca Bu Maçı Başlat</button></div>`:'';
   const noShowNotice=doubleNoShow?`<div style="margin:9px 0;padding:10px;border:1px solid #a05f20;border-radius:9px;background:#281c0d;color:#ffe0ac"><b>⏱️ İki takım da hazır katılımını tamamlamadı.</b><br>Hiçbir takıma otomatik galibiyet verilmedi. Davet zamanı: ${esc(v.lobby_called_at?new Date(v.lobby_called_at).toLocaleString('tr-TR'):'Kayıtlı değil')}. Kararı yalnızca hakem verebilir.</div>`:'';
   const scoreTimeout=phase==='blocked'&&String(v.blocked_from_phase||'')==='result_pending'&&
@@ -11563,20 +11606,20 @@ function v30AdminRender(d,tid){
    const controls=phase==='blocked'?(doubleNoShow
      ? `<div class="inlineActions"><button type="button" class="smallBtn secondary" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','reopen')">↺ Maçı Yeniden Aç (15 dk)</button><button type="button" class="smallBtn warn" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','winner','a')">🏆 A Kazansın</button><button type="button" class="smallBtn warn" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','winner','b')">🏆 B Kazansın</button></div>`
      : `<div class="inlineActions"><button type="button" class="smallBtn secondary" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','dismiss')" ${!v.blocked_from_phase?'disabled':''} >${scoreTimeout?'↺ Skor Bildirimini Yeniden Aç (10 dk)':'✅ İtirazı Reddet'}</button><button type="button" class="smallBtn warn" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','winner','a')">🏆 A Kazansın</button><button type="button" class="smallBtn warn" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','winner','b')">🏆 B Kazansın</button></div>`):'';
-  return `<div class="tournamentTeamCard" data-wz44-mid="${esc(String(m.id))}" style="padding:0;margin:7px 0;${blocked?'border-color:#ce2c2c;box-shadow:inset 3px 0 0 #dc2a2a;':''}"><button type="button" class="secondary" style="width:100%;text-align:left;background:none;display:flex;align-items:center;justify-content:space-between;gap:10px" onclick="v30AdminToggle('${encodeURIComponent(m.id)}')"><span><strong>${Number(m.round_number)}. Tur · ${esc(wz44No(m))} · ${title}</strong><br><small class="muted">${esc(phaseLabel[phase]||phase)}</small></span><span>${blocked?'🔴':active?'▴':'▾'}</span></button>${active?`<div style="padding:10px;border-top:1px solid #333">${'<p class="muted">'+esc(callStatus)+'</p>'}${manualAction}${proofs}${rows}${disputes}${noShowNotice}${scoreTimeoutNotice}${controls}<div class="wz41-matchmsg"><button type="button" class="smallBtn secondary" onclick="wz41ComposeReferee('${encodeURIComponent(m.id)}')">💬 Oyunculara Özel Hakem Mesajı</button></div></div>`:''}</div>`;
+  return `<div class="tournamentTeamCard" data-wz44-mid="${esc(String(m.id))}" style="padding:0;margin:7px 0;${blocked?'border-color:#ce2c2c;box-shadow:inset 3px 0 0 #dc2a2a;':''}"><button type="button" class="secondary" style="width:100%;text-align:left;background:none;display:flex;align-items:center;justify-content:space-between;gap:10px" onclick="v30AdminToggle('${encodeURIComponent(m.id)}')"><span><strong>${Number(m.round_number)}. Tur · ${esc(wz44No(m))} · ${title}</strong><br><small class="muted">${esc(phaseLabel[phase]||phase)}${waitingHint}</small></span><span>${blocked?'🔴':active?'▴':'▾'}</span></button>${active?`<div style="padding:10px;border-top:1px solid #333">${'<p class="muted">'+esc(callStatus)+'</p>'}${manualAction}${proofs}${wz30655ApprovalBoard(m,phase,teamName)}${rows}${disputes}${noShowNotice}${scoreTimeoutNotice}${controls}<div class="wz41-matchmsg"><button type="button" class="smallBtn secondary" onclick="wz41ComposeReferee('${encodeURIComponent(m.id)}')">💬 Oyunculara Özel Hakem Mesajı</button></div></div>`:''}</div>`;
  }).join('');
  const urgentPanel=alerts.length?`<div style="border:1px solid #9e3030;background:#210e11;border-radius:10px;padding:12px;margin:12px 0">
   <strong style="color:#ffc0c0">🚨 İncelenecek Maçlar (${alerts.length})</strong>
   <p class="muted" style="margin:6px 0 10px">İtirazları, skor uyuşmazlıklarını ve hakem kararı bekleyen maçları aşağıdan aç. Kanıtları kontrol etmeden karar verme.</p>
   <div class="inlineActions">${alerts.map(m=>`<button type="button" class="smallBtn warn" onclick="wz44OpenUrgentMatch('${encodeURIComponent(String(m.id))}')">⚖️ ${esc(wz44No(m))} · ${esc(String(teamName(m,'a')))} vs ${esc(String(teamName(m,'b')))}</button>`).join('')}</div>
  </div>`:'';
- host.innerHTML=adminToolbar+sum+urgentPanel+(cards?`<div class="wz45-lobby-rows">${cards}</div>`:'<div class="tournamentEmpty">Henüz maç oluşmadı. Kayıtlar tamamlanınca fikstür otomatik oluşturulacak.</div>');
+ host.innerHTML=wz30653AdminRoster(d)+adminToolbar+sum+urgentPanel+(cards?`<div class="wz45-lobby-rows">${cards}</div>`:'<div class="tournamentEmpty">Henüz maç oluşmadı. Kayıtlar tamamlanınca fikstür otomatik oluşturulacak.</div>');
 }
 function v30AdminToggle(mid){
  const id=decodeURIComponent(mid);v30AdminOpenMatch=v30AdminOpenMatch===id?'':id;
  const tid=document.getElementById('tournamentSelect')?.value||'';
  const snap=wz41CacheV30.get(String(tid));
- if(snap?.data) v30AdminRender(snap.data,tid);
+ if(snap?.data){v30AdminRender(snap.data,tid);v30AdminEnablePoll();}
  else loadArenaLobbiesAdmin().catch(()=>{});
 }
 async function v30AdminManual(encodedId,action){
@@ -11640,9 +11683,11 @@ async function loadArenaLobbiesAdmin(forcedId){
   const v30=await v30AdminFetch(tid);
   if(requestNo!==arenaLobbyRefreshRequestNo||String(document.getElementById('tournamentSelect')?.value||'')!==String(tid))return;
   if(v30.enabled){v30AdminRender(v30,tid);v30AdminEnablePoll();return;}
-  if(v30.broadcastEnabled){v30AdminRender(v30,tid);v30AdminEnablePoll();return;}
-  // If not enabled, offer opt-in controls above the working V28 legacy view.
-  const v30Offer=`<div style="margin:10px 0;padding:12px;border:1px solid #503928;border-radius:10px"><b>🏆 WEİZEND ARENA V30</b><p class="muted">Eski maçlar bu sürüme zorla taşınmaz. Yeni aşamalı kaptan sistemi yalnızca seçili turnuvada etkinleştirilir.</p><button class="smallBtn warn" onclick="v30AdminControl('enable')">⚙️ Seçili Turnuvada V30 Etkinleştir</button></div>`;
+  // Broadcast seçeneği, V30'un gerçekten etkin olduğunun kanıtı değildir.
+  // Eski canlı V28 maçları otomatik dönüştürülmez; aşağıda uyarı görünür.
+  // V30.6.53: Eski maçların zorla V30'a taşınması güvenli değildir.
+  // Bu istisna dışında otomatik etkinleştirme yapılır; manuel düğme yoktur.
+  const v30Offer=wz30653AdminRoster(v30)+`<div style="margin:10px 0;padding:12px;border:1px solid #8f6940;border-radius:10px"><b>⚠️ Eski Lobi Koruması</b><p class="muted">${esc(v30.legacyReason||'V30 otomatik etkinleştirilemedi. Worker loglarını kontrol et.')}</p></div>`;
 
   const {r,d}=await api(`/admin/tournament/lobbies?id=${encodeURIComponent(tid)}&_=${Date.now()}`);
   if(!r.ok||!d?.success)throw Error(d?.error||`HTTP ${r.status}`);
@@ -11803,7 +11848,7 @@ function renderTournamentBracket(data){
       '<span class="tournamentPill">Fikstür henüz oluşturulmadı</span>';
 
     host.innerHTML =
-      '<div class="tournamentEmpty">Kontenjan dolduğunda ve tüm katılım şartları tamamlandığında <b>Karıştır ve Fikstürü Oluştur</b> butonunu kullan.</div>';
+      '<div class="tournamentEmpty">Kontenjan dolduğunda ve tüm katılım şartları tamamlandığında fikstür otomatik oluşturulacak; tahminler açılacak. Gerekirse 5 dakikalık Cron kontrolünü bekle.</div>';
 
     return;
   }
