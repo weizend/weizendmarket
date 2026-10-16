@@ -2218,6 +2218,32 @@ body.wz-view-tournament #wzMobileTournamentHero{display:none!important}
 }
 .wz-turn-matchrow small{display:block;color:#8f949c}
 .wz-turn-matchrow b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* V30.6.60 — Prizes and true winners share one compact result card. */
+.wz30660-prize-result{min-width:0}
+.wz30660-prize-result .wz30660-result-name{
+  display:block;font-weight:900;font-size:.91rem;line-height:1.32;color:#f5f6fa;
+  overflow-wrap:anywhere;margin-top:2px;
+}
+.wz30660-prize-result .wz30660-result-sub{display:block;font-size:.7rem;color:#c1c5cf;margin-top:4px}
+.wz30660-prize-fold>summary{list-style:none;cursor:pointer;}
+.wz30660-prize-fold>summary::-webkit-details-marker{display:none}
+.wz30660-prize-fold>summary:focus-visible{outline:2px solid #f1bc48;outline-offset:2px}
+.wz30660-prize-fold>summary .wz30660-result-sub{color:#e5c57e}
+.wz30660-prize-fold[open]>summary{border-radius:14px 14px 0 0;border-bottom:0}
+.wz30660-members{margin-top:-1px;padding:10px 12px 12px;border:1px solid #4a3940;
+  border-radius:0 0 14px 14px;background:#11151c}
+.wz30660-member{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;
+  padding:9px 1px;border-bottom:1px solid #2b2f36}
+.wz30660-member:last-child{border-bottom:0}
+.wz30660-member-main{min-width:0;overflow-wrap:anywhere;font-size:.78rem}
+.wz30660-member-main small{display:block;font-size:.69rem;color:#abb1bd;margin-top:3px}
+.wz30660-member-reward{font-weight:900;color:#f7da90;text-align:right;font-size:.75rem;overflow-wrap:anywhere}
+.wz30660-award-winner{font-weight:900;color:#d9ecff}
+@media(max-width:520px){
+  .wz30660-prize-result .wz30660-result-name{font-size:.8rem}
+  .wz30660-member-reward{font-size:.68rem}
+}
+
 .wz-turn-ranking{
   margin-top:14px;border-top:1px solid #21252d;padding-top:14px
 }
@@ -15400,26 +15426,110 @@ return;
     const rules=defaultRules(item);
     return `<div class="wz-turn-box"><h3>Turnuva Kuralları</h3><div class="wz-turn-acc">${rules.map((r,i)=>`<div class="wz-turn-accitem ${state.openRules.has(i)?'open':''}"><button type="button" class="wz-turn-accbtn" onclick="wzTurnToggleRule(${i})"><span>${esc(r[0])}</span><span>${state.openRules.has(i)?'−':'+'}</span></button><div class="wz-turn-acccontent" style="white-space:pre-line">${esc(r[1])}</div></div>`).join('')}</div></div>`;
   }
+  // V30.6.60: Names and rosters are read from the confirmed match / public
+  // tournament data, never from invented display points or prize payouts.
+  const wz30660PredictionLoading=new Set();
+  const wz30660PredictionRefreshed=new Set();
+  function wz30660CompletedMatch(match){
+    return !!match && String(match.status||'').toLowerCase()==='completed' && !!match.winnerId;
+  }
+  function wz30660PlaceResults(detail){
+    const all=Array.isArray(detail?.matches)?detail.matches:[];
+    const mains=all.filter(m=>String(m.matchKind||'main')==='main');
+    if(!mains.length) return {first:null,second:null,third:null,allDone:false};
+    const maxRound=Math.max(...mains.map(m=>Number(m.roundNumber||0)));
+    const final=mains.find(m=>Number(m.roundNumber||0)===maxRound && Number(m.matchNumber||0)===1)
+      || mains.find(m=>Number(m.roundNumber||0)===maxRound);
+    const complete=wz30660CompletedMatch(final);
+    const first=complete?{id:String(final.winnerId||''),name:String(final.winnerName||'').trim()}:null;
+    const loserId=complete?(String(final.participantAId||'')===String(final.winnerId)?final.participantBId:final.participantAId):null;
+    const loserName=complete?(String(final.participantAId||'')===String(final.winnerId)?final.participantBName:final.participantAName):null;
+    const second=loserId?{id:String(loserId),name:String(loserName||'').trim()}:null;
+    const bronze=all.find(m=>String(m.matchKind||'')==='third_place');
+    // An unplayed third-place match is never guessed from a semi-final loser.
+    const third=wz30660CompletedMatch(bronze)?{id:String(bronze.winnerId||''),name:String(bronze.winnerName||'').trim()}:null;
+    const allDone=complete && all.every(m=>['completed','bye'].includes(String(m.status||'').toLowerCase()));
+    return {first,second,third,allDone};
+  }
+  function wz30660SafeWinnerName(entry){
+    const val=String(entry?.name||'').trim();
+    return val && !['-','Bekleniyor','null'].includes(val)?val:'';
+  }
+  function wz30660Roster(detail,entry){
+    if(!entry) return null;
+    const teams=Array.isArray(detail?.teams)?detail.teams:[];
+    const byId=teams.find(t=>String(t.id||'')===String(entry.id||''));
+    if(byId)return byId;
+    const matches=teams.filter(t=>String(t.name||'').trim()===wz30660SafeWinnerName(entry));
+    return matches.length===1?matches[0]:null;
+  }
+  function wz30660PredictionWinner(data){
+    const board=Array.isArray(data?.leaderboard)?data.leaderboard:[];
+    const winner=board.find(x=>Number(x.rank)===1) || board[0];
+    return String(winner?.username||'').trim();
+  }
+  async function wz30660EnsurePredictionWinner(id){
+    if(!id || wz30660PredictionRefreshed.has(id) || wz30660PredictionLoading.has(id)) return;
+    wz30660PredictionLoading.add(id);
+    try{
+      const data=await loadPredictionState(id,true);
+      if(data && !data.__error)wz30660PredictionRefreshed.add(id);
+      if(state.screen==='detail' && state.tab==='prizes' && String(state.selectedId)===id){
+        const winner=wz30660PredictionWinner(data);
+        const node=document.querySelector('#wzEsportsHub .wz30660-pickem-winner');
+        if(node){ node.textContent=winner|| (data?'Kazanan bulunmuyor':'Tahmin sonucu alınamadı'); }
+      }
+    }finally{wz30660PredictionLoading.delete(id);}
+  }
   function renderPrizes(detail,item){
     const prizes=extractPrizes(detail,item);
     const pickemAward=predictionPrize(item,detail);
-    const fin=finalInfo(detail);
+    const results=wz30660PlaceResults(detail);
     const teamPrize=Number(item?.tournament?.teamSize||detail?.tournament?.teamSize||1)>1;
-    const rankings=[
-      {name: fin.champion || 'Henüz yok', pts: fin.champion ? '320 Puan' : '—'},
-      {name: fin.runner || 'Henüz yok', pts: fin.runner ? '280 Puan' : '—'}
-    ];
-
-    if(thirdPlaceIsEnabled(item,detail)){
-      rankings.push({
-        name: fin.third || 'Henüz yok',
-        pts: fin.third ? '250 Puan' : '—'
-      });
+    const names=[results.first,results.second,results.third];
+    const completed=results.allDone;
+    const id=String(detail?.tournament?.id||item?.tournament?.id||'');
+    // Refresh the final pick'em leaderboard only after the last match ends.
+    if(completed && !wz30660PredictionRefreshed.has(id) && !wz30660PredictionLoading.has(id)){
+      queueMicrotask(()=>{void wz30660EnsurePredictionWinner(id);});
     }
-
-    return `<div class="wz-turn-box"><h3>Ödüller</h3>${teamPrize?'<div class="wz-prize-split-note">🏅 <b>KİŞİ BAŞI ÖDÜL</b> — 1., 2. ve 3. sıradaki takım ödülleri her oyuncuya ayrı ayrı verilir; takım arasında bölünmez.</div>':''}<div class="wz-turn-prizes">${prizes.map(p=>`<div class="wz-turn-prize ${p.className}"><div class="icon">${p.icon}</div><div><b>${p.place}</b><span>${p.label}</span></div><strong>${esc(p.value)}${teamPrize && p.value!=='Açıklanmadı'?'<small class="wz-prize-per-player">KİŞİ BAŞI</small>':''}</strong></div>`).join('')}</div>
-      <div class="wz-turn-pickem-award"><div class="wz-turn-prize"><div class="icon">🎯</div><div><b>En İyi Tahmin Ödülü</b><span>WEİZEND ARENA fikstür tahmini ödülü</span></div><strong>${esc(pickemAward)}</strong></div></div>
-      <div class="wz-turn-ranking"><h4>Sıralama</h4>${rankings.map((r,i)=>`<div class="wz-turn-rankrow"><div class="wz-turn-rankbadge">${i+1}</div><div>${esc(r.name)}</div><div>${esc(r.pts)}</div></div>`).join('')}</div>
+    const pickemData=wz30660PredictionRefreshed.has(id)?state.predictionCache.get(id):null;
+    const predictedWinner=completed?(wz30660PredictionWinner(pickemData)||
+      (pickemData?'Kazanan bulunmuyor':'Tahmin sonucu yükleniyor...')):'Sonuçlar bekleniyor';
+    const prizeCards=prizes.map((p,i)=>{
+      const entry=names[i];
+      const winnerName=wz30660SafeWinnerName(entry);
+      const roster=teamPrize&&winnerName?wz30660Roster(detail,entry):null;
+      const members=Array.isArray(roster?.members)?roster.members:[];
+      const perPlayer=teamPrize && p.value!=='Açıklanmadı';
+      const content=`<div class="wz-turn-prize ${p.className}">
+        <div class="icon">${p.icon}</div>
+        <div class="wz30660-prize-result">
+          <b>${esc(p.place)}</b>
+          <span class="wz30660-result-name">${esc(winnerName||p.label)}</span>
+          ${winnerName?`<small class="wz30660-result-sub">${esc(p.label)}${teamPrize&&members.length?' · Kadroyu görmek için dokun':''}</small>`:''}
+        </div>
+        <strong>${esc(p.value)}${perPlayer?'<small class="wz-prize-per-player">KİŞİ BAŞI</small>':''}</strong>
+      </div>`;
+      if(!teamPrize || !winnerName || !members.length)return content;
+      return `<details class="wz30660-prize-fold"><summary class="wz-turn-prize ${p.className}" aria-label="${esc(winnerName)} takımını ve oyuncu başına ödülleri göster">
+        <div class="icon">${p.icon}</div>
+        <div class="wz30660-prize-result"><b>${esc(p.place)}</b><span class="wz30660-result-name">${esc(winnerName)}</span>
+          <small class="wz30660-result-sub">${esc(p.label)} · 👥 ${members.length} oyuncu · Dokun ve aç ▾</small></div>
+        <strong>${esc(p.value)}${perPlayer?'<small class="wz-prize-per-player">KİŞİ BAŞI</small>':''}</strong>
+      </summary><div class="wz30660-members">${members.map((m,idx)=>`
+        <div class="wz30660-member"><div class="wz30660-member-main">
+          ${String(m.role||'').toLowerCase()==='captain'||idx===0?'👑':'👤'} ${esc(m.gameId||m.riotId||m.username||'Oyuncu')}
+          <small>Kick: ${esc(m.username||'-')} · ${String(m.role||'').toLowerCase()==='captain'?'Kaptan':'Oyuncu'}</small>
+        </div><div class="wz30660-member-reward">${esc(p.value)}${perPlayer?' / kişi':''}</div></div>
+      `).join('')}</div></details>`;
+    }).join('');
+    return `<div class="wz-turn-box"><h3>Ödüller</h3>
+      ${teamPrize?'<div class="wz-prize-split-note">🏅 <b>KİŞİ BAŞI ÖDÜL</b> — 1., 2. ve 3. sıradaki takım ödülleri her oyuncuya ayrı ayrı verilir; takım arasında bölünmez.</div>':''}
+      <div class="wz-turn-prizes">${prizeCards}</div>
+      <div class="wz-turn-pickem-award"><div class="wz-turn-prize"><div class="icon">🎯</div>
+        <div><b>En İyi Tahmin Ödülü</b><span class="wz30660-pickem-winner">${esc(predictedWinner)}</span></div>
+        <strong>${esc(pickemAward)}</strong></div></div>
     </div>`;
   }
   function renderOverview(detail,item){
@@ -16405,6 +16515,7 @@ return;
     // V30.6.18: Her yeni detay acilisinda sunucudan guncel takimi al.
     // Eski sessionStorage'daki sadece hazir takim kaydi, bekleyenleri saklamasin.
     state.details.delete(state.selectedId);
+    wz30660PredictionRefreshed.delete(String(state.selectedId));
     state.screen='detail';
     state.tab='overview';
     state.bracketMode='tree';
