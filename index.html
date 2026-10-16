@@ -14683,7 +14683,11 @@ return;
         if(!token || state.myEntrySession!==token ||
            !['pending','completed'].includes(state.myEntryStatuses.get(String(item?.tournament?.id||'')))) return false;
       }
-      if(!['all','free','subscription','paid','mine'].includes(selected) && tournamentCategory(item)!==selected) return false;
+      // V30.6.53: Oyuna başlanınca 'Aktif' filtresindeki turnuva kaybolmasın.
+      // Canlı/oynanan turnuvalar halen aktiftir; bitenler ayrı TAMAMLANDI'dadır.
+      if(!['all','free','subscription','paid','mine'].includes(selected)
+        && !(selected==='active' && tournamentCategory(item)==='live')
+        && tournamentCategory(item)!==selected) return false;
       if(!q) return true;
       return tournamentSearchText(item).includes(q);
     });
@@ -14693,7 +14697,7 @@ return;
   function activeList(){
     const sourceIndex=tournamentSourceIndex();
     return visibleCatalog()
-      .filter(item=>tournamentCategory(item)==='active')
+      .filter(item=>['active','live'].includes(tournamentCategory(item)))
       .sort((a,b)=>allTournamentSort(a,b,sourceIndex));
   }
   function completedList(){
@@ -15413,20 +15417,21 @@ return;
 
     if(!teamMode){
       const participants=(Array.isArray(detail?.participants)?detail.participants:[])
-        .filter(p=>String(p?.status||'').toLowerCase()==='active');
+        .filter(p=>String(p?.status||'').toLowerCase()!=='cancelled');
+      const approvedCount=participants.filter(p=>String(p?.status||'').toLowerCase()==='active').length;
 
       return `<div class="wz-turn-box wz-turn-participants-box">
         <div class="wz-turn-participants-head">
           <div>
             <h3>👥 Katılımcılar</h3>
             <div class="wz-turn-participants-note">
-              Yalnızca kaydı ve katılım şartı tamamen onaylanan oyuncular burada görünür.
-              Ödeme yöntemi ve ödeme tutarı herkese açık gösterilmez.
+              Kayıt olan oyuncular gösterilir. Onayı bekleyenler ayrıca belirtilir;
+              ödeme yöntemi ve tutarı herkese açık gösterilmez.
             </div>
           </div>
           <div class="wz-turn-participants-count">
             <strong>${participants.length}${capacity?` / ${capacity}`:''}</strong>
-            <span>Oyuncu</span>
+            <span>Oyuncu</span><small>✅ ${approvedCount} hazır · ⏳ ${participants.length-approvedCount} bekliyor</small>
           </div>
         </div>
 
@@ -15439,13 +15444,13 @@ return;
                   <b>${esc(p?.username||'-')}</b>
                   <span>${esc(p?.riotId||p?.gameId||'-')}</span>
                 </div>
-                <div class="wz-turn-confirmed-badge">✓ Kayıt Onaylandı</div>
+                <div class="wz-turn-confirmed-badge">${String(p?.status||'').toLowerCase()==='active'?'✓ Kayıt Onaylandı':'⏳ Katılım Bekliyor'}</div>
               </div>
             `).join('')}
           </div>
         ` : `
           <div class="wz-turn-empty">
-            Henüz kaydı tamamen onaylanan oyuncu yok.
+            Henüz kayıt olan oyuncu bulunmuyor.
           </div>
         `}
       </div>`;
@@ -15495,7 +15500,8 @@ return;
         if(String(fresh?.tournament?.id||'')!==id || state.selectedId!==id || state.screen!=='detail') return false;
         const before=state.details.get(id);
         const signature=data=>JSON.stringify({count:data?.tournament?.registeredCount,
-          ready:data?.tournament?.completedCount,teams:data?.teams,waiting:data?.waitingTeams});
+          ready:data?.tournament?.completedCount,participants:data?.participants,
+          matches:data?.matches,teams:data?.teams,waiting:data?.waitingTeams});
         const changed=signature(before)!==signature(fresh);
         state.details.set(id,fresh);
         persistTournamentDetailCache(state.details);
