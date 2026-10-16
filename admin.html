@@ -7735,7 +7735,9 @@ async function resolvePointReview(encodedId,decision){
   }catch(error){alert(error.message || String(error));}
 }
 
+let wz50RefundConfirmBusy=false;
 async function confirmRefundReceived(encodedId){
+  if(wz50RefundConfirmBusy) return;
   const orderId=decodeURIComponent(encodedId);
   const item=adminOrdersCache.find(o=>String(o.id)===orderId);
   const orderName=item?.username || currentOrder?.username || 'kullanıcı';
@@ -7743,6 +7745,7 @@ async function confirmRefundReceived(encodedId){
   if(!confirm(`${orderName} kullanıcısına ${points(amount)} puanın TAMAMININ BotRix/Kick üzerinden geri verildiğini doğruladın mı?\n\n`+
     'Onay verirsen iade kesinleşecek ve stok yalnızca bir kez artırılacak.\n'+
     'Bu işlem PUAN GÖNDERMEZ. Önce otomatik !puanver komutunun gecikmediğini kontrol et; puan yoksa güvenle manuel gönder ve bakiyeyi doğrula.')) return;
+  wz50RefundConfirmBusy=true;
   const detailButton=document.getElementById('wz49ConfirmRefundDetail');
   if(detailButton && currentOrder?.id===orderId) detailButton.disabled=true;
   try{
@@ -7758,6 +7761,7 @@ async function confirmRefundReceived(encodedId){
     alert('İade onayı tamamlanamadı: '+(error.message || String(error)));
     if(currentOrder?.id===orderId) await wz48RefreshCurrentOrder(true);
   }finally{
+    wz50RefundConfirmBusy=false;
     if(detailButton)detailButton.disabled=false;
   }
 }
@@ -7843,6 +7847,11 @@ async function hideAdminPurchase(encodedId,sourceType='order'){
       });
 
       if(!r.ok || !d?.success){
+        if(d?.code==='REFUND_COMMAND_UNCONFIRMED'){
+          await loadAdminOrders();
+          alert('⚠️ İade kaydı beklemede. !puanver komutunun gönderimi belirsiz; yeniden iade başlatma. BotRix geçmişini kontrol et ve İadeyi Onayla ile tamamla.');
+          return;
+        }
         throw new Error(d?.error || `HTTP ${r.status}`);
       }
     }else if(type === 'order' && paymentType === 'tl' && ['payment_pending','partial_payment'].includes(status)){
@@ -7859,7 +7868,7 @@ async function hideAdminPurchase(encodedId,sourceType='order'){
 
     if(type==='order' && paymentType==='points' && ['paid','delivery_pending'].includes(status)){
       await loadAdminOrders();
-      alert('İade talebi alındı. Bot onayı tamamlanana kadar sipariş görünür kalacak.');
+      alert('İade talebi bekliyor. !puanver gönderimi kesinleşmese de otomatik tekrar deneme; Kick/BotRix üzerinden kontrol edip İadeyi Onayla.');
       return;
     }
 
@@ -8510,21 +8519,15 @@ async function watchRefundCompletion(orderId, attempt = 0){
       false
     );
 
-    // Siparişi tekrar sorgulayarak
-    // gerçek durumunu sunucudan öğren.
-    const code =
-      currentOrder?.deliveryCode;
-
-    if(code){
-
-      document
-        .getElementById(
-          'deliveryCode'
-        )
-        .value = code;
-
-      await lookupOrder();
-
+    // V30.6.50: İade açıldığında delivery_code=NULL yapılır.
+    // Hata/timeout sonrasında eski kodla sorgulama geçersizdir; kalıcı
+    // sipariş ID'siyle son durumu oku. Bir daha !puanver gönderme.
+    const orderId=String(currentOrder?.id||'').trim();
+    if(orderId){
+      await Promise.allSettled([wz48RefreshCurrentOrder(true),loadAdminOrders()]);
+      showStatus('lookupStatus',
+        '⚠️ İade çağrısı kesin doğrulanamadı: '+esc(error.message||String(error))+
+        ' — Güncel sipariş durumunu kontrol et. BotRix/Kick geçmişini görmeden yeniden iade başlatma.',false);
     }
 
   }
