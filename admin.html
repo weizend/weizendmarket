@@ -11672,7 +11672,7 @@ function v30AdminRender(d,tid){
    const controls=phase==='blocked'?(doubleNoShow
      ? `<div class="inlineActions"><button type="button" class="smallBtn secondary" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','reopen')">↺ Maçı Yeniden Aç (15 dk)</button><button type="button" class="smallBtn warn" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','winner','a')">🏆 A Kazansın</button><button type="button" class="smallBtn warn" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','winner','b')">🏆 B Kazansın</button></div>`
      : `<div class="inlineActions"><button type="button" class="smallBtn secondary" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','dismiss')" ${!v.blocked_from_phase?'disabled':''} >${scoreTimeout?'↺ Skor Bildirimini Yeniden Aç (10 dk)':'✅ İtirazı Reddet'}</button><button type="button" class="smallBtn warn" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','winner','a')">🏆 A Kazansın</button><button type="button" class="smallBtn warn" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','winner','b')">🏆 B Kazansın</button></div>`):'';
-  return `<div class="tournamentTeamCard" data-wz44-mid="${esc(String(m.id))}" style="padding:0;margin:7px 0;${blocked?'border-color:#ce2c2c;box-shadow:inset 3px 0 0 #dc2a2a;':''}"><button type="button" class="secondary" style="width:100%;text-align:left;background:none;display:flex;align-items:center;justify-content:space-between;gap:10px" onclick="v30AdminToggle('${encodeURIComponent(m.id)}')"><span><strong>${Number(m.round_number)}. Tur · ${esc(wz44No(m))} · ${title}</strong><br><small class="muted">${esc(phaseLabel[phase]||phase)}${waitingHint}</small></span><span>${blocked?'🔴':active?'▴':'▾'}</span></button>${active?`<div style="padding:10px;border-top:1px solid #333">${'<p class="muted">'+esc(callStatus)+'</p>'}${manualAction}${proofs}${wz30655ApprovalBoard(m,phase,teamName)}${rows}${disputes}${noShowNotice}${scoreTimeoutNotice}${controls}<div class="wz41-matchmsg"><button type="button" class="smallBtn secondary" onclick="wz41ComposeReferee('${encodeURIComponent(m.id)}')">💬 Oyunculara Özel Hakem Mesajı</button></div></div>`:''}</div>`;
+  return `<div class="tournamentTeamCard" data-wz44-mid="${esc(String(m.id))}" style="padding:0;margin:7px 0;${blocked?'border-color:#ce2c2c;box-shadow:inset 3px 0 0 #dc2a2a;':''}"><button type="button" class="secondary" style="width:100%;text-align:left;background:none;display:flex;align-items:center;justify-content:space-between;gap:10px" onclick="v30AdminToggle('${encodeURIComponent(m.id)}')"><span><strong>${Number(m.round_number)}. Tur · ${esc(wz44No(m))} · ${title}</strong><br><small class="muted">${esc(phaseLabel[phase]||phase)}${waitingHint}</small></span><span>${blocked?'🔴':active?'▴':'▾'}</span></button>${active?`<div style="padding:10px;border-top:1px solid #333">${'<p class="muted">'+esc(callStatus)+'</p>'}${manualAction}${proofs}${wz30655ApprovalBoard(m,phase,teamName)}${rows}${disputes}${noShowNotice}${scoreTimeoutNotice}${controls}${wz3103PilotButtons(m)}<div class="wz41-matchmsg"><button type="button" class="smallBtn secondary" onclick="wz41ComposeReferee('${encodeURIComponent(m.id)}')">💬 Oyunculara Özel Hakem Mesajı</button></div></div>`:''}</div>`;
  }).join('');
  const urgentPanel=alerts.length?`<div style="border:1px solid #9e3030;background:#210e11;border-radius:10px;padding:12px;margin:12px 0">
   <strong style="color:#ffc0c0">🚨 İncelenecek Maçlar (${alerts.length})</strong>
@@ -13022,6 +13022,66 @@ async function invalidateAllUserSessions(){
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
+
+
+/* ============================================================
+ V31.0.3 — Admin Hakem Merkezi / Kaptan VALORANT geçmişi
+ API sonucu sadece incelenir; fikstür kaydına dokunulmaz.
+ ============================================================ */
+const wz3103Results=new Map();
+const wz3103Pending=new Set();
+function wz3103PilotButtons(m){
+  const id=String(m.id||'');
+  const result=wz3103Results.get(id);
+  const busy=wz3103Pending.has(id);
+  const detail=result?`<pre style="white-space:pre-wrap;overflow-wrap:anywhere;background:#101014;padding:10px;border-radius:8px;max-height:260px;overflow:auto">${esc(result)}</pre>`:'';
+  return `<div style="border:1px solid #353e51;padding:10px;border-radius:10px;margin:10px 0">
+    <strong>🎮 Kaptan API Kontrolü (Pilot)</strong>
+    <p class="muted">Bir seferde yalnızca seçilen kaptanın en son 8 maçı sorgulanır. Sonuç otomatik kesinleşmez.</p>
+    <div class="inlineActions">
+      <button type="button" class="smallBtn secondary" ${busy?'disabled':''} onclick="wz3103Check('${encodeURIComponent(id)}','a')">A kaptanı sorgula</button>
+      <button type="button" class="smallBtn secondary" ${busy?'disabled':''} onclick="wz3103Check('${encodeURIComponent(id)}','b')">B kaptanı sorgula</button>
+    </div>${detail}</div>`;
+}
+async function wz3103Check(encodedId,side){
+  const id=decodeURIComponent(encodedId);
+  if(wz3103Pending.has(id))return;
+  if(!confirm('Seçilen kaptan, VALORANT maç geçmişinin bu amaçla sorgulanmasına açıkça izin verdi mi? İzin yoksa iptal et.'))return;
+  const region=prompt('Kaptanın VALORANT bölgesi (eu / na / ap / kr / br / latam):','eu');
+  if(region===null)return;
+  const rgn=String(region).trim().toLowerCase();
+  if(!['eu','na','ap','kr','br','latam'].includes(rgn)){alert('Bölge geçersiz.');return;}
+  wz3103Pending.add(id);
+  const tid=String(document.getElementById('tournamentSelect')?.value||'');
+  const render=()=>{const snap=wz41CacheV30.get(tid);if(snap?.data)v30AdminRender(snap.data,tid)};
+  wz3103Results.set(id,'HenrikDev kaptan geçmişi sorgulanıyor...');render();
+  try{
+    const {r,d}=await api('/admin/valorant-api/match-pilot',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({matchId:id,side,region:rgn,permissionConfirmed:true})
+    });
+    if(!r.ok||!d?.success)throw Error(d?.error||'HTTP '+r.status);
+    const winner=d.candidates?.[0];
+    const verdict=d.verdict==='strong_candidate'?'🟢 Güçlü EŞLEŞME ADAYI (hakem onayı gerekiyor)'
+      :d.verdict==='review'?'🟡 Kısmi eşleşme, elle incele':'⚪ Son 8 maç içinde uygun kayıt bulunamadı';
+    const lines=[verdict,'Sorgulanan: '+String(d.captainRiotId||''),
+      'Bulunan maç sayısı: '+Number(d.scanned||0),
+      'Lobi başlangıcı: '+(d.roomStartedAt||'Henüz kayıtlı değil')];
+    for(const c of d.candidates||[]){
+      lines.push('', 'Harita: '+(c.map||'?')+' | API Match ID: '+(c.matchId||'?'),
+        'Başlangıç: '+(c.startedAt||'?'),
+        'Kadrolar: '+Number(c.playerMatches)+'/'+Number(c.expectedPlayers),
+        'Farklı takımlarda mı: '+(c.teamsSeparated?'Evet':'Doğrulanamadı'),
+        'Saat eşleşmesi: '+(c.timeMatches?'Evet':'Hayır / bilinmiyor'),
+        'A–B Skor: '+(c.scoreAvailable?String(c.scoreA)+'–'+String(c.scoreB):'API sunmadı'),
+        'Kaptan bildirimleriyle çelişiyor mu: '+(c.reportedScoreConflict?'EVET':'Tespit edilmedi'));
+    }
+    lines.push('', '⚠️ Bu rapor kazananı değiştirmez. Son kararı hakem verir.');
+    wz3103Results.set(id,lines.join('\n'));
+  }catch(e){wz3103Results.set(id,'API kontrolü başarısız: '+String(e?.message||e));}
+  finally{wz3103Pending.delete(id);render();}
+}
+
 </script>
 </body>
 </html>
