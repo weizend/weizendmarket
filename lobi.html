@@ -40,8 +40,16 @@ body{background:radial-gradient(ellipse at 53% -20%,rgba(110,10,24,.22),transpar
 #joinContent p{margin:11px 0}.muted{color:#aca9b6}
 @media(max-width:850px){#lobbyMain,#lobbyMain.not-owner{grid-template-columns:1fr}.wrap{padding:18px 12px 90px}}
 @media(max-width:540px){.topinner{min-height:67px;padding:10px 12px}.siteLogo{width:38px;height:38px}.top .brand{font-size:16px;gap:7px}.top .me{display:none}.headerBack{font-size:12px;padding:8px 10px}.card{padding:17px}.groupBox{padding:16px}}
-</style></head><body>
+
+/* Initial network fetch: no partial cards/secret placeholder flash. */
+body.wz-lobby-booting main.wrap{visibility:hidden}
+#wzLobbyBoot{display:none;max-width:900px;margin:30px auto;padding:35px 25px;text-align:center;border:1px solid #5c3038;border-radius:20px;background:linear-gradient(130deg,#221119,#101017);color:#f4f0f1}
+body.wz-lobby-booting #wzLobbyBoot{display:block}
+#wzLobbyBoot strong{display:block;letter-spacing:.12em;font-size:24px;margin-bottom:10px}
+#wzLobbyBoot small{color:#c4b9bf}
+</style></head><body class="wz-lobby-booting">
 <header class="top"><div class="topinner"><a class="brand" href="index.html?wz_view=players"><img src="https://i.hizliresim.com/fo5evkh4.png" alt="WEİZEND logosu" class="siteLogo"><span class="brandName">WEİZEND</span></a><span class="me">OYUN LOBİSİ</span><a class="headerBack" href="index.html?wz_view=players">← Oyuncu Ara’ya Dön</a></div></header>
+<div id="wzLobbyBoot" role="status"><strong>WEİZEND</strong><small>Oyun lobisi hazırlanıyor…</small></div>
 <main class="wrap"><div class="extra"><span class="smallprint" id="lobbyState">Lobi durumunu kontrol et</span><button id="refreshBtn" class="btn alt small" type="button">↻ Yenile</button></div>
 <div id="message" role="status" aria-live="polite" class="notice hidden"></div>
 <div id="lobbyMain"><section><div class="card"><div class="extra"><span class="tag" id="gameName">Oyun</span><span class="smallprint" id="capacityCount">—</span></div><h1 id="lobbyTitle" class="detail-title">Lobi yükleniyor…</h1><p id="lobbyMeta" class="muted"></p><p id="lobbyNote"></p><div id="roster" class="roster"></div></div>
@@ -155,13 +163,14 @@ try{
    tok()?api('/player-lobbies/mine').catch(()=>null):Promise.resolve(null)
  ]);
  const state=JSON.stringify([detail.lobby,mine]);if(state!==snapshot){snapshot=state;lobby=detail.lobby;my=mine;if($('modal').classList.contains('hidden'))render()}
+ document.body.classList.remove('wz-lobby-booting');
  if(member() && Date.now()-lastPresenceOk>20000)void sendPresence('heartbeat');
  return true;
-}catch(e){if(!silent)flash('Lobi yüklenemedi: '+e.message,true);return false}finally{refreshing=false}}
+}catch(e){if(!silent){document.body.classList.remove('wz-lobby-booting');flash('Lobi yüklenemedi: '+e.message,true)}return false}finally{refreshing=false}}
 $('copyGroup').addEventListener('click',copyCode);
 $('refreshBtn').addEventListener('click',async()=>{const b=$('refreshBtn');if(b.disabled)return;b.disabled=true;b.textContent='⏳ Kontrol ediliyor...';try{const ok=await refresh();b.textContent=ok?'✓ Güncel':'⚠ Hata'}finally{setTimeout(()=>{b.textContent='↻ Yenile';b.disabled=false},1100)}});
 $('closeModal').addEventListener('click',hideModal);$('modal').addEventListener('click',e=>{if(e.target===$('modal'))hideModal()});document.addEventListener('keydown',e=>{if(e.key==='Escape')hideModal()});
-if(!/^[0-9a-f-]{36}$/.test(ID)){flash('Geçerli bir lobi adresi açmalısın.',true);$('lobbyTitle').textContent='Lobi bulunamadı'}
+if(!/^[0-9a-f-]{36}$/.test(ID)){document.body.classList.remove('wz-lobby-booting');flash('Geçerli bir lobi adresi açmalısın.',true);$('lobbyTitle').textContent='Lobi bulunamadı'}
 else {
  refresh();
  setInterval(()=>{if(!busy&&!document.hidden&&$('modal').classList.contains('hidden'))void refresh(true)},10000);
