@@ -11491,24 +11491,51 @@ async function loadTournamentBracket(silent=false){
 let v30AdminOpenMatch='';
 let v30AdminLiveInterval=null;
 let v30AdminPollBusy=false;
+const v3113LiveSnapshots=new Map();
+function v3113Fingerprint(d){
+ // Do not include server clocks; only material tournament/lobby changes.
+ return JSON.stringify({enabled:d.enabled,broadcast:d.broadcastEnabled,manual:d.manualMode,run:d.runMode,
+  started:d.startedAt,registrations:d.registrations,
+  matches:(d.matches||[]).map(m=>({id:m.id,status:m.status,v30:m.v30,room:m.room,
+   approvalProgress:m.approvalProgress,approvalPlayers:m.approvalPlayers,
+   exemptPlayers:m.exemptPlayers,disputes:m.disputes,results:m.results,
+   manuallyCalledAt:m.manuallyCalledAt}))});
+}
 function v30AdminEnablePoll(){
-  // V30.6.55: only poll when a START-stage match is expanded and visible.
-  // No idle D1 reads for other tabs, collapsed matches or completed games.
-  if(v30AdminLiveInterval){clearInterval(v30AdminLiveInterval);v30AdminLiveInterval=null;}
-  const tid=document.getElementById('tournamentSelect')?.value||'';
-  const snap=wz41CacheV30.get(String(tid));
-  const m=(snap?.data?.matches||[]).find(x=>String(x.id)===String(v30AdminOpenMatch));
-  if(!m||!snap?.data?.enabled||m.v30?.phase!=='start')return;
-  v30AdminLiveInterval=setInterval(async()=>{
-    const host=document.getElementById('arenaLobbiesAdmin');
-    if(v30AdminPollBusy||document.visibilityState!=='visible'||!host?.getClientRects().length)return;
-    if(String(document.getElementById('tournamentSelect')?.value||'')!==String(tid)){
-      v30AdminEnablePoll();return;
-    }
-    v30AdminPollBusy=true;
-    try{await loadArenaLobbiesAdmin(tid);}catch(e){console.warn('V30.6.55 onay görünümü yenilenemedi:',e);}
-    finally{v30AdminPollBusy=false;}
-  },20000);
+ if(v30AdminLiveInterval){clearInterval(v30AdminLiveInterval);v30AdminLiveInterval=null;}
+ const tid=document.getElementById('tournamentSelect')?.value||'';
+ const snap=wz41CacheV30.get(String(tid));
+ if(!tid||!snap?.data?.enabled)return;
+ v30AdminLiveInterval=setInterval(async()=>{
+  const host=document.getElementById('arenaLobbiesAdmin');
+  if(v30AdminPollBusy||document.visibilityState!=='visible'||
+     wz41Panel!=='lobbies'||!document.getElementById('section-tournaments')?.classList.contains('active')||
+     !host?.getClientRects().length)return;
+  if(String(document.getElementById('tournamentSelect')?.value||'')!==String(tid)){
+    v30AdminEnablePoll();return;
+  }
+  v30AdminPollBusy=true;
+  try{
+   const latest=await v30AdminFetch(tid);
+   if(String(document.getElementById('tournamentSelect')?.value||'')!==String(tid)||
+      wz41Panel!=='lobbies'||document.visibilityState!=='visible')return;
+   const next=v3113Fingerprint(latest);
+   const prev=v3113LiveSnapshots.get(String(tid));
+   if(next!==prev){
+    const editing=host.contains(document.activeElement)&&
+       ['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName);
+    if(!editing){v30AdminRender(latest,tid);v30AdminEnablePoll();}
+    // If an editor is focused, defer repaint (never erase a referee's score).
+   }else{
+    const status=document.getElementById('arenaLobbiesRefreshStatus');
+    if(status)status.textContent='✅ Hakem Merkezi canlı · Kontrol '+new Date().toLocaleTimeString('tr-TR')+' · Değişiklik yok';
+   }
+  }catch(e){
+   const status=document.getElementById('arenaLobbiesRefreshStatus');
+   if(status)status.textContent='⚠️ Canlı kontrol gecikti; tekrar denenecek.';
+   console.warn('V31.0.13 referee polling:',e);
+  }finally{v30AdminPollBusy=false;}
+ },7000);
 }
 
 async function v30AdminFetch(tid){
@@ -11609,6 +11636,7 @@ function v30AdminRender(d,tid){
  const wz44Nums=wz44MatchNumbers(d.matches||[]);
  const wz44No=m=>'M'+(wz44Nums.get(String(m.id))||Number(m.match_number)||'?');
  wz41CacheV30.set(String(tid),{data:d,checked:Date.now()});
+ v3113LiveSnapshots.set(String(tid),v3113Fingerprint(d));
  if(typeof wz41RenderDashboard==='function')wz41RenderDashboard();
  if(d.broadcastEnabled){
    const names=new Map((currentTournamentBracket?.matches||[]).map(m=>[String(m.id),m]));
@@ -11652,17 +11680,16 @@ function v30AdminRender(d,tid){
     <div class="muted">Kaptan katılımı: A ${iconFor(v.captain_a_joined_at)} · B ${iconFor(v.captain_b_joined_at)}</div>
     <div class="muted">Oyuncular Hazırım: A ${readyA}/${expA} ${iconFor(readyA===expA)} · B ${readyB}/${expB} ${iconFor(readyB===expB)}</div>
     <div class="muted">VALORANT lobiye katılım: A ${gameA}/${expA} ${iconFor(gameA===expA)} · B ${gameB}/${expB} ${iconFor(gameB===expB)}</div>
-    <div class="muted">Lobi görseli (eski maçlarda zorunlu, hızlı akışta atlandı): ${r.proof_a||r.proof_b?`A ${iconFor(r.proof_a)} · B ${iconFor(r.proof_b)}`:"Hızlı kadro onayı / görsel zorunlu değil"}</div>
     <div class="muted">Kadro onayı (kaptan): A ${iconFor(v.consent_a_at)} · B ${iconFor(v.consent_b_at)}</div>
     <div class="muted">Maç başlangıç kuralları: ${startA+startB}/${expA+expB} oyuncu onayladı</div>
-    <p>${r.proof_a?`<a href="${esc(r.proof_a)}" target="_blank" rel="noopener noreferrer">📸 A Kadro Kanıtı ↗</a>`:'A görseli yok (hızlı akışta normal)'} · ${r.proof_b?`<a href="${esc(r.proof_b)}" target="_blank" rel="noopener noreferrer">📸 B Kadro Kanıtı ↗</a>`:'B görseli yok (hızlı akışta normal)'}</p>`;
+    ${r.proof_a||r.proof_b?`<p>${r.proof_a?`<a href="${esc(r.proof_a)}" target="_blank" rel="noopener noreferrer">📸 A Kadro Kanıtı ↗</a>`:''}${r.proof_a&&r.proof_b?' · ':''}${r.proof_b?`<a href="${esc(r.proof_b)}" target="_blank" rel="noopener noreferrer">📸 B Kadro Kanıtı ↗</a>`:''}</p>`:''}`;
   const disputes=pending.map(x=>`<div style="padding:10px;border:1px solid #8c2929;border-radius:9px;margin-top:7px"><strong>🚨 ${esc(x.team_side.toUpperCase())} kaptanı itiraz etti</strong><p>${esc(x.reason)}</p><a href="${esc(x.proof_url)}" target="_blank" rel="noopener noreferrer">Kanıt ↗</a></div>`).join('');
    const callStatus=m.status==='completed'?'✅ Tamamlandı':v.lobby_called_at?'🔔 Lobi çağrıldı':m.manuallyCalledAt?'📨 Davetler gönderiliyor':'⏳ Çağrı bekleniyor';
   const allowManualCall=d.enabled&&!d.broadcastEnabled&&!d.runMode?.includes('live')&&m.status==='ready'&&
     !v.lobby_called_at&&!m.manuallyCalledAt&&!!m.participant_a_id&&!!m.participant_b_id&&
     (d.manualMode==='manual'||(!d.manualMode&&!d.startedAt));
   const listed=[...(m.approvalPlayers?.a||[]),...(m.approvalPlayers?.b||[])];
-  const waitingOnStart=phase==='start' ? listed.filter(p=>!p.approved).map(p=>p.gameId||'Oyuncu') : [];
+  const waitingOnStart=phase==='start' ? listed.filter(p=>!p.approved&&!p.exempt).map(p=>p.gameId||'Oyuncu') : [];
   const waitingHint=waitingOnStart.length?` · ⏳ Bekleyen: ${waitingOnStart.slice(0,3).map(n=>esc(n)).join(', ')}${waitingOnStart.length>3?' +'+(waitingOnStart.length-3)+' kişi':''}`:'';
   const manualAction=allowManualCall?`<div class="inlineActions"><button type="button" class="smallBtn warn" onclick="v30AdminManual('${encodeURIComponent(m.id)}','call_match')">▶ Yalnızca Bu Maçı Başlat</button></div>`:'';
   const noShowNotice=doubleNoShow?`<div style="margin:9px 0;padding:10px;border:1px solid #a05f20;border-radius:9px;background:#281c0d;color:#ffe0ac"><b>⏱️ İki takım da hazır katılımını tamamlamadı.</b><br>Hiçbir takıma otomatik galibiyet verilmedi. Davet zamanı: ${esc(v.lobby_called_at?new Date(v.lobby_called_at).toLocaleString('tr-TR'):'Kayıtlı değil')}. Kararı yalnızca hakem verebilir.</div>`:'';
@@ -11688,36 +11715,43 @@ function v30AdminRender(d,tid){
 }
 
 // V31.0.11: Hakem karari — eksik oyuncunun yerine ASLA onay yazilmaz.
+// V31.0.13 — Checkbox-based selection (5v5 can exclude 2, 3, or 4 players).
 function wz3111ExemptionControls(m){
- const absent=m.exemptPlayers||[];
+ const absent=Array.isArray(m.exemptPlayers)?m.exemptPlayers:[];
  const phase=String(m.v30?.phase||'captains');
  if(m.status!=='ready')return '';
- const exemptList=absent.map(x=>`${esc(x.teamSide==='a'?'A':'B')} — ${esc(x.gameId||'Oyuncu')}`).join(', ');
- const badge=exemptList?`<div style="color:#f3c778;margin:8px 0">🟠 Muaf: ${exemptList} · Bu oyuncunun adına onay oluşturulmadı.</div>`:'';
- const valid=['captains','ready','code','code_check','code_fix','game_join','proof','review','start'].includes(phase);
- if(!valid||absent.length)return badge;
  const mid=encodeURIComponent(String(m.id));
- const opts=['a','b'].flatMap(side=>(m.approvalPlayers?.[side]||[]).map((p,index)=>
-   `<option value="${side}:${index}">${side.toUpperCase()} — ${esc(p.gameId||'Oyuncu')}</option>`)).join('');
+ const badge=absent.length?`<div style="color:#f3c778;margin:8px 0">⚖️ Bu maçta muaf (${absent.length}): ${absent.map(x=>esc(x.gameId||'Oyuncu')).join(', ')}. Kimsenin adına onay oluşturulmadı.</div>`:'';
+ const valid=['captains','ready','code','code_check','code_fix','game_join','proof','review','start'].includes(phase);
+ if(!valid)return badge;
+ const roster=['a','b'].flatMap(side=>(m.approvalPlayers?.[side]||[]).map((p,index)=>({side,index,...p})));
+ const eligible=roster.filter(p=>!p.exempt);
+ if(!eligible.length)return badge;
+ const teamNames={a:String(m.participantAName||'A Takımı'),b:String(m.participantBName||'B Takımı')};
+ const options=eligible.map(p=>`<label style="display:flex;gap:9px;align-items:center;padding:8px;border-top:1px solid #343434;cursor:pointer">
+ <input type="checkbox" data-wz3113-player="${mid}" value="${p.side}:${p.index}" style="width:auto;min-width:18px">
+ <span><strong>${esc(p.gameId||'Oyuncu')}</strong> <small class="muted">(${esc(teamNames[p.side])})</small></span></label>`).join('');
  return `${badge}<div style="padding:12px;border:1px solid #d6a44d;border-radius:10px;margin:10px 0">
- <strong>⚖️ Eksik Oyuncuyla Devam Et</strong><p class="muted">Sadece bu maçta bir kaptan OLMAYAN oyuncu muaf tutulabilir. İki kaptanın rızası gereklidir.</p>
- <select id="wz3111-player-${mid}" style="width:100%;max-width:340px;margin-bottom:8px">${opts}</select>
- <div><button type="button" class="smallBtn warn" onclick="wz3111Exempt('${mid}')">⚠️ Seçilen Oyuncuyu Bu Maçta Muaf Tut</button></div></div>`;
+ <strong>⚖️ Eksik Oyuncularla Devam Et</strong><p class="muted">Gelmemiş oyuncuların tamamını işaretle. 5v5 maçında aynı takımdan 2 veya 3 kişi seçebilirsin. Her takımda kaptan dâhil en az bir gerçek oyuncu kalmalı, kaptan muaf tutulamaz. İki kaptanın onayı gereklidir.</p>
+ <div style="border:1px solid #444;border-radius:8px;margin-bottom:9px;max-height:260px;overflow:auto">${options}</div>
+ <button type="button" class="smallBtn warn" onclick="wz3111Exempt('${mid}')">⚖️ İşaretlenen Oyuncuları Bu Maçta Muaf Tut</button></div>`;
 }
 async function wz3111Exempt(encodedId){
  const matchId=decodeURIComponent(encodedId);
- const select=document.getElementById('wz3111-player-'+encodedId);
- const [side,n]=String(select?.value||'').split(':');
- if(!['a','b'].includes(side)||!/^\d+$/.test(n))return alert('Oyuncu seçimi eksik.');
- if(!confirm('İKİ KAPTANIN DA 1v2 / eksik kadro ile devam etmeyi kabul ettiğini teyit ediyor musun? Bu sadece seçilen maçı etkiler.'))return;
- const reason=prompt('Hakem gerekçesi (en az 12 karakter):','Oyuncu gelmedi; iki kaptan eksik kadroyla oynamayı kabul etti.');
+ const selected=Array.from(document.querySelectorAll('input[data-wz3113-player="'+encodedId+'"]:checked'));
+ if(!selected.length)return alert('En az bir gelmeyen oyuncu seç.');
+ const players=selected.map(el=>{const [side,n]=String(el.value).split(':');return {side,slotIndex:Number(n)};});
+ if(!players.every(p=>['a','b'].includes(p.side)&&Number.isInteger(p.slotIndex)&&p.slotIndex>=0))
+   return alert('Oyuncu seçimi geçersiz.');
+ if(!confirm(selected.length+' eksik oyuncu için İKİ kaptanın da eksik kadroyla oynamayı kabul ettiğini teyit ediyor musun?'))return;
+ const reason=prompt('Hakem gerekçesi (en az 12 karakter):','Eksik oyuncular katılmadı; iki kaptan eksik kadroyla oynamayı kabul etti.');
  if(!reason||reason.trim().length<12)return alert('En az 12 karakter gerekçe gerekli.');
- if(!confirm('SON ONAY: Seçilen oyuncu Hazırım, VALORANT katılımı ve Kuralları Onayla aşamalarından yalnızca BU MAÇ için muaf tutulacak. Onun adına onay kaydedilmeyecek. Emin misin?'))return;
+ if(!confirm('SON ONAY: '+selected.length+' oyuncu sadece bu maçın Hazırım, VALORANT katılımı ve kurallar onayından muaf tutulacak. Onayları taklit edilmeyecek. Emin misin?'))return;
  try{
   const {r,d}=await api('/admin/tournament/v30/absent-exemption',{method:'POST',headers:{'Content-Type':'application/json'},
-   body:JSON.stringify({matchId,side,slotIndex:Number(n),reason:reason.trim(),opponentCaptainConsent:true,confirmation:'EKSIK_OYUNCU_MUAFIYETI'})});
+   body:JSON.stringify({matchId,players,reason:reason.trim(),opponentCaptainConsent:true,confirmation:'EKSIK_OYUNCU_MUAFIYETI'})});
   if(!r.ok||!d?.success)throw Error(d?.error||`HTTP ${r.status}`);
-  alert('✅ '+(d.gameId||'Oyuncu')+' sadece bu maçta muaf tutuldu. Lobiyi yenilet.');
+  alert('✅ '+Number(d.count||selected.length)+' oyuncu yalnızca bu maçta muaf tutuldu. Arena otomatik güncellenecek.');
   await loadArenaLobbiesAdmin();
  }catch(e){alert('Muafiyet uygulanamadı: '+String(e?.message||e));}
 }
