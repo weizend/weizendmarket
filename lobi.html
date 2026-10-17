@@ -1,0 +1,103 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#09090d"><title>WEIZEND | Lobi</title><link rel="icon" href="favicon.ico"><style>
+:root{color-scheme:dark;--bg:#09090d;--panel:#121217;--outline:#2a2a34;--soft:#1a1a22;--red:#eb292e;--text:#f5f5f7;--muted:#aaaab5}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -20%,#471315 0%,transparent 48%),var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.55;cursor:wait}a{color:inherit;text-decoration:none}.top{border-bottom:1px solid #29232a;background:#0e0e12ed;position:sticky;top:0;z-index:10;backdrop-filter:blur(12px)}.topinner{max-width:1220px;margin:auto;min-height:70px;padding:10px 20px;display:flex;align-items:center;gap:20px}.brand{font-weight:900;letter-spacing:.09em;font-size:21px}.brand b{color:#ff4148}.menu{display:flex;gap:6px;margin-left:auto}.menu a{padding:9px 15px;border-radius:12px;font-weight:750;color:#bbb}.menu a.active{background:linear-gradient(140deg,#ef3439,#991719);color:#fff}.me{font-size:12px;color:#c0bac0;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wrap{max-width:1220px;padding:24px 20px 120px;margin:auto}.hero{border:1px solid #522329;background:linear-gradient(115deg,#291117,#131217);border-radius:22px;padding:30px;margin-bottom:21px}.over{color:#ff777d;font-weight:850;text-transform:uppercase;font-size:11px;letter-spacing:.13em}.hero h1{font-size:clamp(27px,4vw,44px);line-height:1.1;margin:10px 0}.hero p{max-width:680px;color:var(--muted);margin:0}.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}.btn{border:1px solid #5e2429;background:linear-gradient(#f13b42,#af1a24);border-radius:11px;padding:10px 16px;color:#fff;font-weight:800;min-height:42px}.btn.alt{background:#1b1b22;border-color:#353540}.btn.ghost{background:transparent;border-color:#38343b;color:#ddd}.btn.small{padding:6px 11px;min-height:32px;font-size:12px}.btn.danger{background:#532024;border-color:#803139}.toolbar{display:flex;align-items:end;gap:12px;margin:20px 0;flex-wrap:wrap}.field{display:grid;gap:7px;flex:1;min-width:170px}.field label{color:#bfbfc9;font-size:12px;font-weight:800}.field input,.field select,.field textarea{border:1px solid #3a3540;color:#fff;background:#15151b;border-radius:10px;padding:11px 12px;width:100%;outline:none}.field input:focus,.field select:focus,.field textarea:focus{border-color:#e84d53}.field textarea{resize:vertical;min-height:74px}.heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:20px 0 12px}.heading h2{margin:0;font-size:20px}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card{border:1px solid var(--outline);border-radius:17px;background:linear-gradient(#16161b,#101015);padding:17px;min-width:0}.card h3{margin:9px 0 4px;font-size:17px;overflow-wrap:anywhere}.card p{margin:6px 0;color:var(--muted);font-size:13px;overflow-wrap:anywhere}.tag{border-radius:999px;background:#2b1d20;color:#ffc3c5;border:1px solid #59292d;font-size:11px;padding:5px 10px;white-space:nowrap}.headrow{display:flex;gap:8px;align-items:center;justify-content:space-between}.smallprint{font-size:12px;color:var(--muted)}.roster{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}.seat{font-size:12px;padding:5px 9px;border:1px solid #34313a;border-radius:8px;background:#202027;color:#ddd}.seat.empty{color:#777;border-style:dashed;background:transparent}.muted{color:var(--muted)}.warn{color:#ffbca5}.success{color:#96e8b3}.notice{margin:12px 0;border:1px solid #443b37;background:#211c19;padding:12px;border-radius:12px;font-size:13px}.notice.error{border-color:#75363b;background:#2d171a}.hidden{display:none!important}.dialogBackdrop{position:fixed;inset:0;background:#000c;z-index:50;display:grid;place-items:center;padding:16px}.dialog{max-width:500px;width:100%;max-height:90dvh;overflow:auto;background:#14141a;border:1px solid #49404a;border-radius:20px;padding:22px}.dialog h2{margin:0 0 18px}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.formgrid .full{grid-column:1/-1}.line{padding:11px 0;border-bottom:1px solid #303037;display:flex;align-items:center;gap:10px;justify-content:space-between}.line:last-child{border-bottom:0}.line strong{font-size:13px}.line p{font-size:12px;color:var(--muted);margin:3px 0}.lineBtns{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}.foot{padding:20px;text-align:center;font-size:12px;color:#777}.mobileNav{display:none}@media(max-width:940px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:650px){.topinner{min-height:60px;padding:10px 16px}.menu{display:none}.wrap{padding:18px 12px 100px}.hero{padding:23px 17px}.grid{grid-template-columns:1fr}.toolbar{gap:9px}.toolbar .field{min-width:130px}.formgrid{grid-template-columns:1fr}.formgrid .full{grid-column:1}.me{margin-left:auto}.mobileNav{display:flex;justify-content:space-around;gap:5px;position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));background:#15151df5;border:1px solid #38303a;padding:9px;border-radius:16px;z-index:15}.mobileNav a{flex:1;text-align:center;padding:10px 4px;font-size:12px;font-weight:850;border-radius:10px}.mobileNav a.active{background:#ce252b}}
+
+html,body{overflow-x:hidden;overflow-y:hidden;min-height:0;height:auto!important}
+.wrap{max-width:none;width:100%;padding:clamp(14px,2.4vw,32px) clamp(14px,3vw,48px) 96px}
+.grid{grid-template-columns:repeat(auto-fit,minmax(min(310px,100%),1fr))}
+.card a.btn{display:inline-flex;align-items:center;margin-top:8px}
+
+.wrap{max-width:1100px;padding:20px 22px 110px;overflow:visible}
+html,body{height:auto!important;overflow-y:auto}
+#lobbyMain{display:grid;grid-template-columns:1.05fr .95fr;gap:16px;align-items:start}
+#lobbyMain section{min-width:0}
+#lobbyMain .card{margin-bottom:14px}
+.detail-title{font-size:clamp(26px,3vw,36px);font-weight:900;margin:4px 0 10px}
+.extra{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.management{margin-top:18px;border-top:1px solid #34323a;padding-top:14px}
+#lobbyMain.not-owner{grid-template-columns:minmax(0,760px);justify-content:center}
+pre{white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:760px){#lobbyMain{grid-template-columns:1fr}.wrap{padding:16px 12px 110px}}
+</style></head><body>
+<header class="top"><div class="topinner"><a class="brand" href="index.html?wz_view=players"><b>◉</b> WEIZEND</a><span class="me">OYUN LOBİSİ</span><div class="menu"><a href="index.html?wz_view=players">← Oyuncu Ara</a></div></div></header>
+<main class="wrap"><div class="extra"><a class="btn ghost small" id="back" href="index.html?wz_view=players">← Lobi Ara</a><button id="refreshBtn" class="btn alt small" type="button">↻ Yenile</button></div>
+<div id="message" role="status" aria-live="polite" class="notice hidden"></div>
+<div id="lobbyMain"><section><div class="card"><div class="extra"><span class="tag" id="gameName">Oyun</span><span class="smallprint" id="capacityCount">—</span></div><h1 id="lobbyTitle" class="detail-title">Lobi yükleniyor…</h1><p id="lobbyMeta" class="muted"></p><p id="lobbyNote"></p><div id="roster" class="roster"></div></div>
+<div id="joinArea" class="card"><h2>Katılım</h2><div id="joinContent"></div></div></section>
+<section><div class="card"><h2>Lobi Yönetimi</h2><div id="ownerContent"></div></div><div class="card"><h2>Başvurular</h2><div id="applicationsContent"></div></div></section></div></main>
+<div id="modal" class="dialogBackdrop hidden" role="presentation"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle"><div class="headrow"><h2 id="dialogTitle"></h2><button id="closeModal" class="btn alt small" type="button" aria-label="Kapat">✕</button></div><div id="dialogContent"></div></div></div>
+<script>(()=>{'use strict';
+const API='https://weizend-botrix.weizendtv.workers.dev';
+const KEY='weizend_market_session_secure_v2';
+const ID=new URL(location.href).searchParams.get('id')||'';
+const $=id=>document.getElementById(id);
+let lobby=null,my=null,refreshing=false,busy=false,snapshot='';
+const tok=()=>{try{return localStorage.getItem(KEY)||''}catch{return ''}};
+function node(parent,type,cls,txt){const x=document.createElement(type);if(cls)x.className=cls;if(txt!==undefined)x.textContent=String(txt);parent.append(x);return x}
+function btn(parent,label,fn,cls='btn small'){const x=node(parent,'button',cls,label);x.type='button';x.addEventListener('click',fn);return x}
+function clear(n){n.replaceChildren()}
+function flash(msg,error=false){const b=$('message');b.textContent=msg;b.className='notice'+(error?' error':'')}
+function hideFlash(){$('message').classList.add('hidden')}
+function game(g){return ({valorant:'VALORANT',cs2:'Counter-Strike 2',pubg:'PUBG'})[g]||g}
+function showModal(title){$('dialogTitle').textContent=title;clear($('dialogContent'));$('modal').classList.remove('hidden');document.body.style.overflow='hidden'}
+function hideModal(){$('modal').classList.add('hidden');document.body.style.overflow=''}
+function field(form,label,type='text',placeholder='',value='',max=80){const w=node(form,'div','field');const l=node(w,'label','',label);const a=node(w,type==='select'?'select':type==='textarea'?'textarea':'input');a.id='field_'+Math.random().toString(36).slice(2);l.htmlFor=a.id;if(a.tagName==='INPUT')a.type='text';if(type!=='select'){a.placeholder=placeholder;a.value=value;a.maxLength=max}return a}
+function option(input,value,text){const o=node(input,'option','',text);o.value=value}
+async function api(path,body){const headers={'Accept':'application/json'};if(tok())headers.Authorization='Bearer '+tok();if(body)headers['Content-Type']='application/json';const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),14000);
+try{const res=await fetch(API+path,{method:body?'POST':'GET',headers,body:body?JSON.stringify(body):undefined,signal:abort.signal,cache:'no-store'});const data=await res.json();if(!res.ok||!data.success)throw Error(data.error||'Sunucu işlemi başarısız.');return data}finally{clearTimeout(timer)}}
+function member(){return my?.member?.id===ID?my.member:null}
+function isOwner(){return !!(member()&&my.user&&member().owner_uid===my.user.uid)}
+function pending(){return (my?.applications||[]).find(a=>a.lobby_id===ID&&a.status==='pending')}
+async function mutate(body){if(busy||!tok())return;busy=true;try{await api('/player-lobbies/write',{...body,id:ID});hideModal();if(body.action==='close'){location.href='index.html?wz_view=players';return}snapshot='';hideFlash();const ok=await refresh();if(ok)flash('İşlem tamamlandı.');else flash('İşlem kaydedildi ama lobi güncellenemedi. Tekrar Yenile.',true)}catch(e){flash(e.message,true)}finally{busy=false}}
+function applyModal(){if(!tok()){flash('Başvurabilmek için önce Market üzerinden Kick hesabınla giriş yap.',true);return}
+showModal('Lobiye Katılma Başvurusu');const f=node($('dialogContent'),'form','formgrid');const gn=field(f,'Oyun içi adın','text','Oyuncu#TR1',my?.user?.riotId||'',48);gn.parentNode.classList.add('full');const note=field(f,'Lidere not','textarea','Merhaba, katılmak istiyorum','',200);note.parentNode.classList.add('full');const b=node(f,'button','btn full','Başvuru Gönder');b.type='submit';f.addEventListener('submit',e=>{e.preventDefault();mutate({action:'apply',gameName:gn.value,note:note.value})})}
+function codeModal(){showModal('Oyun Davet Kodu');const f=node($('dialogContent'),'form','formgrid');const c=field(f,'Kabul edilen üyelere gösterilecek kod','text','Davet kodu',member()?.invite_code||'',80);c.parentNode.classList.add('full');const b=node(f,'button','btn full','Kodu Kaydet');b.type='submit';f.addEventListener('submit',e=>{e.preventDefault();mutate({action:'code',code:c.value})})}
+function capacityModal(){showModal('Kapasiteyi Düzenle');const f=node($('dialogContent'),'form','formgrid');const c=field(f,'Toplam kişi (lider dâhil)','select');[2,3,4,5].forEach(i=>option(c,String(i),i+' kişi toplam'));c.value=String(lobby.capacity);const hint=node(c.parentNode,'p','smallprint');const update=()=>{hint.textContent=Number(c.value)+' kişilik lobi: 1 kaptan + '+(Number(c.value)-1)+' başka oyuncu.'};c.addEventListener('change',update);update();const b=node(f,'button','btn full','Kaydet');b.type='submit';f.addEventListener('submit',e=>{e.preventDefault();mutate({action:'capacity',capacity:Number(c.value)})})}
+function profileModal(){if(!tok())return;showModal('Oyun İçindeki Adım');const f=node($('dialogContent'),'form','formgrid');const c=field(f,'Riot ID','text','Oyuncu#TR1',my?.user?.riotId||'',65);c.parentNode.classList.add('full');const b=node(f,'button','btn full','Kaydet');b.type='submit';f.addEventListener('submit',e=>{e.preventDefault();mutate({action:'profile',riotId:c.value})})}
+function render(){if(!lobby)return;
+$('lobbyTitle').textContent=lobby.title;$('gameName').textContent=game(lobby.game)+' · '+lobby.region;
+$('capacityCount').textContent=lobby.filled+'/'+lobby.capacity+' oyuncu';
+$('lobbyMeta').textContent='Lider: '+lobby.owner_name+' · '+lobby.mode;
+$('lobbyNote').textContent=lobby.note||'';
+const seats=$('roster');clear(seats);for(const m of lobby.roster||[])node(seats,'span','seat',(m.leader?'👑 ':'')+m.name+(m.gameName?' · '+m.gameName:''));for(let i=(lobby.roster||[]).length;i<lobby.capacity;i++)node(seats,'span','seat empty','+ Boş koltuk');
+const j=$('joinContent'),o=$('ownerContent'),a=$('applicationsContent');clear(j);clear(o);clear(a);
+$('lobbyMain').classList.toggle('not-owner',!isOwner());o.parentElement.hidden=!isOwner();a.parentElement.hidden=!isOwner();
+if(!tok()){
+ node(j,'p','muted','Katılmak için Kick hesabınla giriş yap. Lobi bilgilerini giriş yapmadan görüntüleyebilirsin.');
+ const link=node(j,'a','btn alt small','Market üzerinden giriş yap');link.href='index.html?wz_view=players';
+}else if(member()){
+ node(j,'p','success','✓ Bu lobinin üyesisin.');
+ node(j,'p','',member().invite_code?'🎮 Oyun içi davet kodu: '+member().invite_code:'🎮 Kaptan henüz oyun kodu girmedi.');
+ btn(j,'Oyun Adımı Düzenle',profileModal,'btn alt small');
+ if(!isOwner())btn(j,'Lobiden Ayrıl',()=>{if(confirm('Lobiden ayrılmak istiyor musun?'))mutate({action:'leave'})},'btn danger small');
+}else if(pending()){
+ node(j,'p','warn','⏳ Başvurun kaptan onayını bekliyor.');
+ btn(j,'Başvurumu İptal Et',()=>{if(confirm('Başvurunu iptal etmek istiyor musun?'))mutate({action:'cancel'})},'btn alt small');
+}else if(my?.member){node(j,'p','warn','Başka bir lobinin üyesisin. Yeni lobiye başvurmak için önce mevcut lobiden ayrılmalısın.')}
+else if(lobby.filled>=lobby.capacity){node(j,'p','warn','Bu lobi dolu.')}
+else btn(j,'Katılmak İçin Başvur',applyModal,'btn');
+if(isOwner()){
+ node(o,'p','success','👑 Bu lobinin kaptanısın.');
+ const controls=node(o,'div','actions');btn(controls,'Oyun Kodunu Düzenle',codeModal,'btn alt small');btn(controls,'Kapasiteyi Düzenle',capacityModal,'btn alt small');
+ const members=my.members||[];for(const m of members){const line=node(o,'div','line');const info=node(line,'div');node(info,'strong','',(m.is_leader?'👑 ':'')+m.kick_name);node(info,'p','',m.game_name||'Oyun adı belirtilmedi');if(!m.is_leader){const actions=node(line,'div','lineBtns');btn(actions,'Lider Yap',()=>{if(confirm(m.kick_name+' yeni lider olsun mu?'))mutate({action:'transfer',target:m.kick_uid})},'btn alt small');btn(actions,'Çıkar',()=>{if(confirm(m.kick_name+' çıkarılsın mı?'))mutate({action:'kick',target:m.kick_uid})},'btn danger small')}}
+ const bottom=node(o,'div','actions');btn(bottom,'Lobiyi Kapat',()=>{if(confirm('Lobi ve tüm başvurular kalıcı olarak silinsin mi?'))mutate({action:'close'})},'btn danger');
+ const incoming=my.incoming||[];if(!incoming.length)node(a,'p','muted','Bekleyen başvuru yok.');
+ for(const app of incoming){const line=node(a,'div','line');const info=node(line,'div');node(info,'strong','',app.kick_name);node(info,'p','',app.game_name+(app.note?' · '+app.note:''));const b=node(line,'div','lineBtns');btn(b,'Kabul Et',()=>mutate({action:'accept',target:app.kick_uid}),'btn small');btn(b,'Reddet',()=>mutate({action:'reject',target:app.kick_uid}),'btn alt small')}
+}else{
+ node(o,'p','muted','Yönetim işlemleri yalnızca lobi lideri tarafından yapılabilir.');
+ node(a,'p','muted',pending()?'Başvurun henüz onaylanmadı. Kabul edilince oyun davet kodunu burada görebilirsin.':'Kaptanın bekleyen başvuruları yalnızca kendisine görünür.');
+}
+}
+async function refresh(silent=false){if(refreshing)return null;refreshing=true;
+try{
+ const [detail, mine]=await Promise.all([
+   api('/player-lobbies/detail?id='+encodeURIComponent(ID)),
+   tok()?api('/player-lobbies/mine').catch(()=>null):Promise.resolve(null)
+ ]);
+ const state=JSON.stringify([detail.lobby,mine]);if(state!==snapshot){snapshot=state;lobby=detail.lobby;my=mine;if($('modal').classList.contains('hidden'))render()}
+ return true;
+}catch(e){if(!silent)flash('Lobi yüklenemedi: '+e.message,true);return false}finally{refreshing=false}}
+$('refreshBtn').addEventListener('click',async()=>{const b=$('refreshBtn');if(b.disabled)return;b.disabled=true;b.textContent='⏳ Kontrol ediliyor...';try{const ok=await refresh();b.textContent=ok?'✓ Güncel':'⚠ Hata'}finally{setTimeout(()=>{b.textContent='↻ Yenile';b.disabled=false},1100)}});
+$('closeModal').addEventListener('click',hideModal);$('modal').addEventListener('click',e=>{if(e.target===$('modal'))hideModal()});document.addEventListener('keydown',e=>{if(e.key==='Escape')hideModal()});
+if(!/^[0-9a-f-]{36}$/.test(ID)){flash('Geçerli bir lobi adresi açmalısın.',true);$('lobbyTitle').textContent='Lobi bulunamadı'}
+else {refresh();setInterval(()=>{if(document.hidden||busy||!$('modal').classList.contains('hidden'))return;void refresh(true)},10000)}
+})();</script></body></html>
