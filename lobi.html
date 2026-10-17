@@ -17,13 +17,39 @@ html,body{height:auto!important;overflow-y:auto}
 #lobbyMain.not-owner{grid-template-columns:minmax(0,760px);justify-content:center}
 pre{white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:760px){#lobbyMain{grid-template-columns:1fr}.wrap{padding:16px 12px 110px}}
+
+:root{--bg:#08090c;--panel:#121319;--outline:#34303b;--red:#de2028;--muted:#a6a4b1}
+body{background:radial-gradient(ellipse at 53% -20%,rgba(110,10,24,.22),transparent 56%),linear-gradient(180deg,#08090d,#0c0c13 80%);min-height:100dvh!important}
+.top{background:#0d0d12f5;border-bottom:1px solid #28252f}
+.topinner{max-width:1240px;min-height:78px;gap:12px}
+.top .brand{display:inline-flex;align-items:center;gap:12px;letter-spacing:.12em;font-weight:1000;font-size:22px}
+.siteLogo{width:48px;height:48px;object-fit:cover;border-radius:50%;border:1px solid #b52a37;box-shadow:0 0 22px rgba(231,25,42,.22)}
+.brandName{color:#fff}.top .me{letter-spacing:.12em;font-weight:750;color:#b5b0be;font-size:11px;max-width:none}
+.headerBack{margin-left:auto;border:1px solid #443b46;border-radius:12px;padding:10px 16px;color:#eae8ef;font-weight:800;background:#1a1921;white-space:nowrap}
+.headerBack:hover{background:#28242e}.wrap{max-width:1210px;padding:24px 20px 110px}
+#lobbyMain{grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:20px}
+#lobbyMain.not-owner{grid-template-columns:minmax(0,840px)}
+.card{border:1px solid #33303a;border-radius:20px;background:linear-gradient(145deg,#16161d,#101017);padding:24px;box-shadow:0 15px 35px rgba(0,0,0,.12)}
+.card h2{font-size:18px;letter-spacing:.02em}.detail-title{font-size:clamp(31px,4vw,44px);margin:14px 0 7px;line-height:1.08;color:#fff}
+.groupPanel{border-color:#6c3038;background:linear-gradient(110deg,#281318,#16131a 65%,#13121a)}
+.groupPanel h2{margin:4px 0 0}.groupBox{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;border:1px solid #763239;background:#110d12;border-radius:16px;padding:20px;margin:15px 0}
+.groupCode{font-family:ui-monospace,Consolas,monospace;font-size:clamp(23px,3.5vw,40px);font-weight:1000;letter-spacing:.09em;overflow-wrap:anywhere;color:#fff}
+.groupCode.locked{font-family:inherit;font-size:16px;letter-spacing:0;color:#c1aab0;font-weight:650}
+.over{color:#fb888a}.tag{font-weight:800}.roster{margin:18px 0 4px;gap:10px}.seat{padding:9px 12px;border-radius:11px;background:#222027}
+.actions{margin-top:12px}.btn{border-radius:11px}.btn:hover:not(:disabled){filter:brightness(1.12)}.btn:focus-visible,a:focus-visible{outline:2px solid #f08088;outline-offset:3px}
+#joinContent p{margin:11px 0}.muted{color:#aca9b6}
+@media(max-width:850px){#lobbyMain,#lobbyMain.not-owner{grid-template-columns:1fr}.wrap{padding:18px 12px 90px}}
+@media(max-width:540px){.topinner{min-height:67px;padding:10px 12px}.siteLogo{width:38px;height:38px}.top .brand{font-size:16px;gap:7px}.top .me{display:none}.headerBack{font-size:12px;padding:8px 10px}.card{padding:17px}.groupBox{padding:16px}}
 </style></head><body>
-<header class="top"><div class="topinner"><a class="brand" href="index.html?wz_view=players"><b>◉</b> WEIZEND</a><span class="me">OYUN LOBİSİ</span><div class="menu"><a href="index.html?wz_view=players">← Oyuncu Ara</a></div></div></header>
-<main class="wrap"><div class="extra"><a class="btn ghost small" id="back" href="index.html?wz_view=players">← Lobi Ara</a><button id="refreshBtn" class="btn alt small" type="button">↻ Yenile</button></div>
+<header class="top"><div class="topinner"><a class="brand" href="index.html?wz_view=players"><img src="https://i.hizliresim.com/fo5evkh4.png" alt="WEİZEND logosu" class="siteLogo"><span class="brandName">WEİZEND</span></a><span class="me">OYUN LOBİSİ</span><a class="headerBack" href="index.html?wz_view=players">← Lobiye Geri Dön</a></div></header>
+<main class="wrap"><div class="extra"><span class="smallprint" id="lobbyState">Lobi durumunu kontrol et</span><button id="refreshBtn" class="btn alt small" type="button">↻ Yenile</button></div>
 <div id="message" role="status" aria-live="polite" class="notice hidden"></div>
 <div id="lobbyMain"><section><div class="card"><div class="extra"><span class="tag" id="gameName">Oyun</span><span class="smallprint" id="capacityCount">—</span></div><h1 id="lobbyTitle" class="detail-title">Lobi yükleniyor…</h1><p id="lobbyMeta" class="muted"></p><p id="lobbyNote"></p><div id="roster" class="roster"></div></div>
-<div id="joinArea" class="card"><h2>Katılım</h2><div id="joinContent"></div></div></section>
-<section><div class="card"><h2>Lobi Yönetimi</h2><div id="ownerContent"></div></div><div class="card"><h2>Başvurular</h2><div id="applicationsContent"></div></div></section></div></main>
+<div id="joinArea" class="card groupPanel"><div class="extra"><div><span class="over">OYUN İÇİ GRUP KODU</span><h2>Takımına katıl</h2></div><span id="joinTypeBadge" class="tag">Başvurulu</span></div>
+  <div class="groupBox"><div id="groupCode" class="groupCode">•••• ••••</div><button id="copyGroup" type="button" class="btn alt" hidden>Kopyala</button></div>
+  <div id="joinContent"></div>
+</div></section>
+<section><div class="card"><div class="extra"><h2>Lobi Yönetimi</h2><span class="tag">👑 Lider</span></div><div id="ownerContent"></div></div><div class="card"><h2>Başvurular</h2><div id="applicationsContent"></div></div></section></div></main>
 <div id="modal" class="dialogBackdrop hidden" role="presentation"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle"><div class="headrow"><h2 id="dialogTitle"></h2><button id="closeModal" class="btn alt small" type="button" aria-label="Kapat">✕</button></div><div id="dialogContent"></div></div></div>
 <script>(()=>{'use strict';
 const API='https://weizend-botrix.weizendtv.workers.dev';
@@ -47,10 +73,20 @@ try{const res=await fetch(API+path,{method:body?'POST':'GET',headers,body:body?J
 function member(){return my?.member?.id===ID?my.member:null}
 function isOwner(){return !!(member()&&my.user&&member().owner_uid===my.user.uid)}
 function pending(){return (my?.applications||[]).find(a=>a.lobby_id===ID&&a.status==='pending')}
+function joinType(){return lobby?.join_mode==='direct'?'direct':'apply'}
+function copyCode(){const c=member()?.invite_code;if(!c)return;const result=navigator.clipboard?.writeText(c);if(result)result.then(()=>flash('Grup kodu kopyalandı.')).catch(()=>flash('Kodu seçip kopyalayabilirsin.',true));else flash('Kod panoya kopyalanamadı.',true)}
+
 async function mutate(body){if(busy||!tok())return;busy=true;try{await api('/player-lobbies/write',{...body,id:ID});hideModal();if(body.action==='close'){location.href='index.html?wz_view=players';return}snapshot='';hideFlash();const ok=await refresh();if(ok)flash('İşlem tamamlandı.');else flash('İşlem kaydedildi ama lobi güncellenemedi. Tekrar Yenile.',true)}catch(e){flash(e.message,true)}finally{busy=false}}
 function applyModal(){if(!tok()){flash('Başvurabilmek için önce Market üzerinden Kick hesabınla giriş yap.',true);return}
-showModal('Lobiye Katılma Başvurusu');const f=node($('dialogContent'),'form','formgrid');const gn=field(f,'Oyun içi adın','text','Oyuncu#TR1',my?.user?.riotId||'',48);gn.parentNode.classList.add('full');const note=field(f,'Lidere not','textarea','Merhaba, katılmak istiyorum','',200);note.parentNode.classList.add('full');const b=node(f,'button','btn full','Başvuru Gönder');b.type='submit';f.addEventListener('submit',e=>{e.preventDefault();mutate({action:'apply',gameName:gn.value,note:note.value})})}
+showModal(joinType()==='direct'?'Lobiye Direkt Katıl':'Lobiye Katılma Başvurusu');const f=node($('dialogContent'),'form','formgrid');const gn=field(f,'Oyun içi adın','text','Oyuncu#TR1',my?.user?.riotId||'',48);gn.parentNode.classList.add('full');let note=null;if(joinType()==='apply'){note=field(f,'Lidere not','textarea','Merhaba, katılmak istiyorum','',200);note.parentNode.classList.add('full')}
+const b=node(f,'button','btn full',joinType()==='direct'?'Lobiye Katıl':'Başvuru Gönder');b.type='submit';
+f.addEventListener('submit',e=>{e.preventDefault();if(!gn.value.trim()){flash('Oyun içi adın zorunlu.',true);gn.focus();return}
+mutate({action:joinType()==='direct'?'join':'apply',gameName:gn.value.trim(),note:note?.value||''})})}
 function codeModal(){showModal('Oyun Davet Kodu');const f=node($('dialogContent'),'form','formgrid');const c=field(f,'Kabul edilen üyelere gösterilecek kod','text','Davet kodu',member()?.invite_code||'',80);c.parentNode.classList.add('full');const b=node(f,'button','btn full','Kodu Kaydet');b.type='submit';f.addEventListener('submit',e=>{e.preventDefault();mutate({action:'code',code:c.value})})}
+function joinModeModal(){showModal('Katılım Şeklini Düzenle');const f=node($('dialogContent'),'form','formgrid');const m=field(f,'Katılım şekli','select');
+option(m,'apply','Başvurulu — lider onayı gerekir');option(m,'direct','Direkt — boş koltuk varsa anında katılır');m.value=joinType();
+m.parentNode.classList.add('full');node(f,'p','muted','Direkt katılımda Kick ile oturum açmış oyuncular boş koltuğa hemen yerleşir. Grup kodu yalnızca katılan üyelere gösterilir.').classList.add('full');
+const b=node(f,'button','btn full','Katılım Şeklini Kaydet');b.type='submit';f.addEventListener('submit',e=>{e.preventDefault();mutate({action:'join_mode',joinMode:m.value})})}
 function capacityModal(){showModal('Kapasiteyi Düzenle');const f=node($('dialogContent'),'form','formgrid');const c=field(f,'Toplam kişi (lider dâhil)','select');[2,3,4,5].forEach(i=>option(c,String(i),i+' kişi toplam'));c.value=String(lobby.capacity);const hint=node(c.parentNode,'p','smallprint');const update=()=>{hint.textContent=Number(c.value)+' kişilik lobi: 1 kaptan + '+(Number(c.value)-1)+' başka oyuncu.'};c.addEventListener('change',update);update();const b=node(f,'button','btn full','Kaydet');b.type='submit';f.addEventListener('submit',e=>{e.preventDefault();mutate({action:'capacity',capacity:Number(c.value)})})}
 function profileModal(){if(!tok())return;showModal('Oyun İçindeki Adım');const f=node($('dialogContent'),'form','formgrid');const c=field(f,'Riot ID','text','Oyuncu#TR1',my?.user?.riotId||'',65);c.parentNode.classList.add('full');const b=node(f,'button','btn full','Kaydet');b.type='submit';f.addEventListener('submit',e=>{e.preventDefault();mutate({action:'profile',riotId:c.value})})}
 function render(){if(!lobby)return;
@@ -58,6 +94,11 @@ $('lobbyTitle').textContent=lobby.title;$('gameName').textContent=game(lobby.gam
 $('capacityCount').textContent=lobby.filled+'/'+lobby.capacity+' oyuncu';
 $('lobbyMeta').textContent='Lider: '+lobby.owner_name+' · '+lobby.mode;
 $('lobbyNote').textContent=lobby.note||'';
+$('joinTypeBadge').textContent=joinType()==='direct'?'Direkt Katılım':'Başvurulu Katılım';
+const code=member()?.invite_code||'';
+$('groupCode').textContent=code||'Üyelere özel';$('groupCode').classList.toggle('locked',!code);
+$('copyGroup').hidden=!code;
+
 const seats=$('roster');clear(seats);for(const m of lobby.roster||[])node(seats,'span','seat',(m.leader?'👑 ':'')+m.name+(m.gameName?' · '+m.gameName:''));for(let i=(lobby.roster||[]).length;i<lobby.capacity;i++)node(seats,'span','seat empty','+ Boş koltuk');
 const j=$('joinContent'),o=$('ownerContent'),a=$('applicationsContent');clear(j);clear(o);clear(a);
 $('lobbyMain').classList.toggle('not-owner',!isOwner());o.parentElement.hidden=!isOwner();a.parentElement.hidden=!isOwner();
@@ -66,7 +107,7 @@ if(!tok()){
  const link=node(j,'a','btn alt small','Market üzerinden giriş yap');link.href='index.html?wz_view=players';
 }else if(member()){
  node(j,'p','success','✓ Bu lobinin üyesisin.');
- node(j,'p','',member().invite_code?'🎮 Oyun içi davet kodu: '+member().invite_code:'🎮 Kaptan henüz oyun kodu girmedi.');
+ node(j,'p','muted',code?'Grup kodunu kopyalayıp oyuna katılabilirsin.':'Grup kodu henüz girilmedi.');
  btn(j,'Oyun Adımı Düzenle',profileModal,'btn alt small');
  if(!isOwner())btn(j,'Lobiden Ayrıl',()=>{if(confirm('Lobiden ayrılmak istiyor musun?'))mutate({action:'leave'})},'btn danger small');
 }else if(pending()){
@@ -74,13 +115,13 @@ if(!tok()){
  btn(j,'Başvurumu İptal Et',()=>{if(confirm('Başvurunu iptal etmek istiyor musun?'))mutate({action:'cancel'})},'btn alt small');
 }else if(my?.member){node(j,'p','warn','Başka bir lobinin üyesisin. Yeni lobiye başvurmak için önce mevcut lobiden ayrılmalısın.')}
 else if(lobby.filled>=lobby.capacity){node(j,'p','warn','Bu lobi dolu.')}
-else btn(j,'Katılmak İçin Başvur',applyModal,'btn');
+else {node(j,'p','muted',joinType()==='direct'?'Boş koltuk varsa lider onayı olmadan katılabilirsin.':'Başvurun lider tarafından onaylandığında grup kodunu göreceksin.');btn(j,joinType()==='direct'?'Lobiye Direkt Katıl':'Katılmak İçin Başvur',applyModal,'btn')}
 if(isOwner()){
  node(o,'p','success','👑 Bu lobinin kaptanısın.');
- const controls=node(o,'div','actions');btn(controls,'Oyun Kodunu Düzenle',codeModal,'btn alt small');btn(controls,'Kapasiteyi Düzenle',capacityModal,'btn alt small');
+ const controls=node(o,'div','actions');btn(controls,'Oyun Kodunu Düzenle',codeModal,'btn alt small');btn(controls,'Kapasiteyi Düzenle',capacityModal,'btn alt small');btn(controls,'Katılım Şeklini Düzenle',joinModeModal,'btn alt small');
  const members=my.members||[];for(const m of members){const line=node(o,'div','line');const info=node(line,'div');node(info,'strong','',(m.is_leader?'👑 ':'')+m.kick_name);node(info,'p','',m.game_name||'Oyun adı belirtilmedi');if(!m.is_leader){const actions=node(line,'div','lineBtns');btn(actions,'Lider Yap',()=>{if(confirm(m.kick_name+' yeni lider olsun mu?'))mutate({action:'transfer',target:m.kick_uid})},'btn alt small');btn(actions,'Çıkar',()=>{if(confirm(m.kick_name+' çıkarılsın mı?'))mutate({action:'kick',target:m.kick_uid})},'btn danger small')}}
  const bottom=node(o,'div','actions');btn(bottom,'Lobiyi Kapat',()=>{if(confirm('Lobi ve tüm başvurular kalıcı olarak silinsin mi?'))mutate({action:'close'})},'btn danger');
- const incoming=my.incoming||[];if(!incoming.length)node(a,'p','muted','Bekleyen başvuru yok.');
+ const incoming=my.incoming||[];if(!incoming.length)node(a,'p','muted',joinType()==='direct'?'Direkt katılım açık; üyeler boş koltuklara kendileri katılıyor.':'Bekleyen başvuru yok.');
  for(const app of incoming){const line=node(a,'div','line');const info=node(line,'div');node(info,'strong','',app.kick_name);node(info,'p','',app.game_name+(app.note?' · '+app.note:''));const b=node(line,'div','lineBtns');btn(b,'Kabul Et',()=>mutate({action:'accept',target:app.kick_uid}),'btn small');btn(b,'Reddet',()=>mutate({action:'reject',target:app.kick_uid}),'btn alt small')}
 }else{
  node(o,'p','muted','Yönetim işlemleri yalnızca lobi lideri tarafından yapılabilir.');
@@ -96,6 +137,7 @@ try{
  const state=JSON.stringify([detail.lobby,mine]);if(state!==snapshot){snapshot=state;lobby=detail.lobby;my=mine;if($('modal').classList.contains('hidden'))render()}
  return true;
 }catch(e){if(!silent)flash('Lobi yüklenemedi: '+e.message,true);return false}finally{refreshing=false}}
+$('copyGroup').addEventListener('click',copyCode);
 $('refreshBtn').addEventListener('click',async()=>{const b=$('refreshBtn');if(b.disabled)return;b.disabled=true;b.textContent='⏳ Kontrol ediliyor...';try{const ok=await refresh();b.textContent=ok?'✓ Güncel':'⚠ Hata'}finally{setTimeout(()=>{b.textContent='↻ Yenile';b.disabled=false},1100)}});
 $('closeModal').addEventListener('click',hideModal);$('modal').addEventListener('click',e=>{if(e.target===$('modal'))hideModal()});document.addEventListener('keydown',e=>{if(e.key==='Escape')hideModal()});
 if(!/^[0-9a-f-]{36}$/.test(ID)){flash('Geçerli bir lobi adresi açmalısın.',true);$('lobbyTitle').textContent='Lobi bulunamadı'}
