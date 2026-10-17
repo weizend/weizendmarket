@@ -13025,8 +13025,8 @@ async function invalidateAllUserSessions(){
 
 
 /* ============================================================
- V31.0.3 — Admin Hakem Merkezi / Kaptan VALORANT geçmişi
- API sonucu sadece incelenir; fikstür kaydına dokunulmaz.
+ V31.0.6 — Admin Hakem Merkezi: sadece VALORANT lobi sahibi
+ HOST SIDE DAIMA Worker'in D1 kaydindan gelir.
  ============================================================ */
 const wz3103Results=new Map();
 const wz3103Pending=new Set();
@@ -13034,49 +13034,54 @@ function wz3103PilotButtons(m){
   const id=String(m.id||'');
   const result=wz3103Results.get(id);
   const busy=wz3103Pending.has(id);
-  const detail=result?`<pre style="white-space:pre-wrap;overflow-wrap:anywhere;background:#101014;padding:10px;border-radius:8px;max-height:260px;overflow:auto">${esc(result)}</pre>`:'';
+  const detail=result?`<pre style="white-space:pre-wrap;overflow-wrap:anywhere;background:#101014;padding:10px;border-radius:8px;max-height:270px;overflow:auto">${esc(result)}</pre>`:'';
   return `<div style="border:1px solid #353e51;padding:10px;border-radius:10px;margin:10px 0">
-    <strong>🎮 Kaptan API Kontrolü (Pilot)</strong>
-    <p class="muted">Bir seferde yalnızca seçilen kaptanın en son 8 maçı sorgulanır. Sonuç otomatik kesinleşmez.</p>
+    <strong>🎮 Lobi Sahibi API Kontrolü (Pilot)</strong>
+    <p class="muted">Yalnızca geçerli VALORANT kodunu paylaşan kaptanın en son 5 maçı incelenir. Kod sahibi değiştiyse yeni kaptan sorgulanır. Sadece son 48 saatte başlamış, skor bildirimi gelmiş maçlarda çalışır. Sonuç otomatik kesinleşmez.</p>
     <div class="inlineActions">
-      <button type="button" class="smallBtn secondary" ${busy?'disabled':''} onclick="wz3103Check('${encodeURIComponent(id)}','a')">A kaptanı sorgula</button>
-      <button type="button" class="smallBtn secondary" ${busy?'disabled':''} onclick="wz3103Check('${encodeURIComponent(id)}','b')">B kaptanı sorgula</button>
+      <button type="button" class="smallBtn secondary" ${busy?'disabled':''} onclick="wz3103Check('${encodeURIComponent(id)}')">🎮 Lobi Sahibini Sorgula</button>
     </div>${detail}</div>`;
 }
-async function wz3103Check(encodedId,side){
+async function wz3103Check(encodedId){
   const id=decodeURIComponent(encodedId);
   if(wz3103Pending.has(id))return;
-  if(!confirm('Seçilen kaptan, VALORANT maç geçmişinin bu amaçla sorgulanmasına açıkça izin verdi mi? İzin yoksa iptal et.'))return;
-  const region=prompt('Kaptanın VALORANT bölgesi (eu / na / ap / kr / br / latam):','eu');
+  if(!confirm('Geçerli VALORANT davet kodunu paylaşan kaptan, maç geçmişinin bu amaçla sorgulanmasına açıkça izin verdi mi?'))return;
+  const region=prompt('Lobi sahibi kaptanın VALORANT bölgesi (İstanbul için eu):','eu');
   if(region===null)return;
   const rgn=String(region).trim().toLowerCase();
   if(!['eu','na','ap','kr','br','latam'].includes(rgn)){alert('Bölge geçersiz.');return;}
   wz3103Pending.add(id);
   const tid=String(document.getElementById('tournamentSelect')?.value||'');
   const render=()=>{const snap=wz41CacheV30.get(tid);if(snap?.data)v30AdminRender(snap.data,tid)};
-  wz3103Results.set(id,'HenrikDev kaptan geçmişi sorgulanıyor...');render();
+  wz3103Results.set(id,'VALORANT lobi sahibinin geçmişi sorgulanıyor...');render();
   try{
     const {r,d}=await api('/admin/valorant-api/match-pilot',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({matchId:id,side,region:rgn,permissionConfirmed:true})
+      body:JSON.stringify({matchId:id,region:rgn,permissionConfirmed:true})
     });
     if(!r.ok||!d?.success)throw Error(d?.error||'HTTP '+r.status);
-    const winner=d.candidates?.[0];
-    const verdict=d.verdict==='strong_candidate'?'🟢 Güçlü EŞLEŞME ADAYI (hakem onayı gerekiyor)'
-      :d.verdict==='review'?'🟡 Kısmi eşleşme, elle incele':'⚪ Son 8 maç içinde uygun kayıt bulunamadı';
-    const lines=[verdict,'Sorgulanan: '+String(d.captainRiotId||''),
-      'Bulunan maç sayısı: '+Number(d.scanned||0),
-      'Lobi başlangıcı: '+(d.roomStartedAt||'Henüz kayıtlı değil')];
+    const verdict=d.verdict==='strong_candidate'?'🟢 Güçlü EŞLEŞME ADAYI (hakem incelemesi gerekli)'
+      :d.verdict==='review'?'🟡 Aynı saat diliminde kısmi kadro eşleşmesi'
+      :'⚪ Yeni turnuva maçına uygun eşleşme bulunamadı';
+    const lines=[verdict,
+      'Kod sahibi: '+(d.hostSide==='a'?'A Takımı kaptanı':d.hostSide==='b'?'B Takımı kaptanı':'Belirsiz'),
+      'Sorgulanan kaptan: '+String(d.captainRiotId||''),
+      'Taranan son maç sayısı: '+Number(d.scanned||0),
+      'Arena maç başlangıcı: '+(d.roomStartedAt||'Bilinmiyor'),
+      'İlk kayıt: '+(d.oldestScannedMatchAt||'Bilinmiyor'),
+      'Son kayıt: '+(d.newestScannedMatchAt||'Bilinmiyor'),
+      'Zamanı uyuşan maçlar: '+Number(d.timeWindowCount||0),
+      'Maç detayı kontrolü: '+({checked:'Kontrol edildi',unavailable:'API verisi bulunamadı',rate_limited:'Kota doldu',invalid_match_id:'Maç ID uyuşmadı',not_needed:'Ek sorgu gerekmiyor'}[d.detailState]||'Bilinmiyor')];
     for(const c of d.candidates||[]){
       lines.push('', 'Harita: '+(c.map||'?')+' | API Match ID: '+(c.matchId||'?'),
         'Başlangıç: '+(c.startedAt||'?'),
         'Kadrolar: '+Number(c.playerMatches)+'/'+Number(c.expectedPlayers),
-        'Farklı takımlarda mı: '+(c.teamsSeparated?'Evet':'Doğrulanamadı'),
-        'Saat eşleşmesi: '+(c.timeMatches?'Evet':'Hayır / bilinmiyor'),
-        'A–B Skor: '+(c.scoreAvailable?String(c.scoreA)+'–'+String(c.scoreB):'API sunmadı'),
-        'Kaptan bildirimleriyle çelişiyor mu: '+(c.reportedScoreConflict?'EVET':'Tespit edilmedi'));
+        'Takımlar karşılıklı mı: '+(c.teamsSeparated?'Evet':'Doğrulanamadı'),
+        'Zaman eşleşmesi: '+(c.timeMatches?'Evet':'Hayır / bilinmiyor'),
+        'A–B Skor: '+(c.scoreAvailable?String(c.scoreA)+'–'+String(c.scoreB):'API verisinden ayrıştırılamadı'),
+        'Kaptan skorlarıyla çelişiyor mu: '+(!c.scoreAvailable?'Karşılaştırılamadı':(c.reportedScoreConflict?'EVET':'Tespit edilmedi')));
     }
-    lines.push('', '⚠️ Bu rapor kazananı değiştirmez. Son kararı hakem verir.');
+    lines.push('', '⚠️ Bu rapor kazananı, ödülü veya fikstürü değiştirmez. Mevcut kanıt ve hakem onayları geçerlidir.');
     wz3103Results.set(id,lines.join('\n'));
   }catch(e){wz3103Results.set(id,'API kontrolü başarısız: '+String(e?.message||e));}
   finally{wz3103Pending.delete(id);render();}
