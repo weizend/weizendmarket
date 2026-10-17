@@ -188,6 +188,8 @@
     if(window.__WZ_TOURNAMENT_DEEP_LINK__) view='tournament';
 
     const token=localStorage.getItem('weizend_market_session_secure_v2') || '';
+    // A valid-looking stored session may take time to verify. Never flash the guest verification form first.
+    if(token) document.documentElement.dataset.wzAuthHydrating='1';
     // V30.6.11: Yeni ziyaret veya Bilgi Merkezi'nden Market'e donus Market'ten baslar.
     // F5 mevcut sekmeyi/scroll'u korur; paylasilan turnuva baglantisi onceliklidir.
     // Kick dogrulamasi basarili oldugunda mevcut wzOpenProfileAfterVerification()
@@ -219,6 +221,20 @@
     }catch(_){}
 
     window.__WZ_INITIAL_VIEW__=view;
+    // Product photos are external and may still take time. Prioritize only the
+    // first visible Market thumbnails to reduce blank cards during a hard refresh.
+    if(view==='market'){
+      for(const href of [
+        'https://i.hizliresim.com/uynn5ttt.jpg',
+        'https://i.hizliresim.com/guvmcwq4.jpg',
+        'https://i.hizliresim.com/npqe9gqv.png',
+        'https://i.hizliresim.com/beb4m3ta.jpg'
+      ]){
+        const link=document.createElement('link');
+        link.rel='preload';link.as='image';link.href=href;link.fetchPriority='high';
+        document.head.appendChild(link);
+      }
+    }
     // Eski gelen kutusu bağlantısı bu fonksiyonu çağırabilir; kasıtlı olarak
     // işlem yapmaz. Arena'ya gitmek artık Market durumunu değiştirmez.
     window.__WZ_ARM_ARENA_RETURN__=()=>{};
@@ -292,17 +308,17 @@
     document.documentElement.dataset.wzCurrentView='market';
   }
 
-  // Failsafe only.
+  // Failsafe only: allow login if a stored session cannot be verified (offline/network error).
+  setTimeout(()=>document.documentElement.removeAttribute('data-wz-auth-hydrating'),4500);
   setTimeout(()=>document.documentElement.classList.remove('wz-boot'),2500);
 })();
 </script>
 <style id="wz-v15-boot-css">
-/* FINAL V65:
-   Body artık refresh sırasında gizlenmez. Doğru görünüm <html> üzerinde
-   CSS çizilmeden önce işaretlendiği için siyah boot ekranına gerek yok. */
-html.wz-boot body{
-  visibility:visible!important;
-}
+/* Keep the appbar and last selected view visible from the first paint.
+   Only suppress the TEMPORARY guest login when an existing session is being checked. */
+html.wz-boot body{visibility:visible!important;}
+html[data-wz-auth-hydrating='1'] #accessCard{visibility:hidden!important;pointer-events:none!important;}
+
 
 html.wz-boot *,
 body.wz-initializing *{
@@ -4482,14 +4498,14 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
 </style>
 <style id="wz31-nav">#wzNavPlayers svg{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}#wzNavPlayers{flex:1;min-width:0}.wz-mobile-bottom-nav{grid-template-columns:repeat(3,minmax(0,1fr))!important;justify-content:space-around!important}.wz-mobile-bottom-nav>.wz-mobile-nav-btn{min-width:0!important;flex:1 1 0!important}#wzDesktopPlayers{white-space:nowrap}</style>
 <style id="wz31-15-players-css">
-#wzPlayersView{display:none;width:100%;margin:0;overflow:visible}
+#wzPlayersView{display:none;width:min(1200px,calc(100% - 36px));max-width:1200px;margin:0 auto;overflow:visible}
 #wzPlayersFrame{width:100%;height:720px;min-height:0;border:0;display:block;background:#09090d;overflow:hidden}
 body.wz-view-players{padding-left:0!important;padding-right:0!important}
 body.wz-view-players>.container{display:none!important}
 body.wz-view-players #wzPlayersView{display:block!important}
 body.wz-view-players #wzDesktopPlayers,body.wz-view-players #wzNavPlayers{color:#fff!important;background:linear-gradient(180deg,#ed2727,#a71117)!important}
 body.wz-view-players #wzDesktopMarket,body.wz-view-players #wzDesktopTournament,body.wz-view-players #wzNavMarket,body.wz-view-players #wzNavTournament{background:transparent!important;color:#a2a2ac!important}
-@media(max-width:768px){#wzPlayersView{width:100%;margin:0}#wzPlayersFrame{height:720px;min-height:0;border-radius:0}}
+@media(max-width:768px){#wzPlayersView{width:calc(100% - 24px);margin:0 auto}#wzPlayersFrame{height:720px;min-height:0;border-radius:0}}
 </style>
 </head>
 <body>
@@ -6401,6 +6417,7 @@ body.wz-view-players #wzDesktopMarket,body.wz-view-players #wzDesktopTournament,
         }
 
         function showAccessBase() {
+            document.documentElement.removeAttribute('data-wz-auth-hydrating');
             marketAuthenticated = false;
             currentAccountStatus = 'active';
             currentBlockedReason = '';
@@ -6444,6 +6461,7 @@ body.wz-view-players #wzDesktopMarket,body.wz-view-players #wzDesktopTournament,
         }
 
         function showAccount(profile) {
+            document.documentElement.removeAttribute('data-wz-auth-hydrating');
             const username = normalizeUsername(profile.username);
             const points = readNumber(profile.points);
             const level = readNumber(profile.level);
@@ -17305,6 +17323,9 @@ return;
     resizePlayers();
   };
   window.wzSetMobileView=window.wzSetView;
+  // On F5 the base view restorer runs BEFORE this adapter. Hydrate the players iframe
+  // even if no user clicks the tab; otherwise the view can appear empty after reload.
+  if(document.body.classList.contains('wz-view-players')){loadOnce();resizePlayers();}
   // This link comes from the lobby detail tab; return to the directory, not Market home.
   if(new URL(location.href).searchParams.get('wz_view')==='players'){
     try{sessionStorage.setItem('wz_current_view','players')}catch(_){}
