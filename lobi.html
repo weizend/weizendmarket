@@ -41,7 +41,7 @@ body{background:radial-gradient(ellipse at 53% -20%,rgba(110,10,24,.22),transpar
 @media(max-width:850px){#lobbyMain,#lobbyMain.not-owner{grid-template-columns:1fr}.wrap{padding:18px 12px 90px}}
 @media(max-width:540px){.topinner{min-height:67px;padding:10px 12px}.siteLogo{width:38px;height:38px}.top .brand{font-size:16px;gap:7px}.top .me{display:none}.headerBack{font-size:12px;padding:8px 10px}.card{padding:17px}.groupBox{padding:16px}}
 </style></head><body>
-<header class="top"><div class="topinner"><a class="brand" href="index.html?wz_view=players"><img src="https://i.hizliresim.com/fo5evkh4.png" alt="WEİZEND logosu" class="siteLogo"><span class="brandName">WEİZEND</span></a><span class="me">OYUN LOBİSİ</span><a class="headerBack" href="index.html?wz_view=players">← Lobiye Geri Dön</a></div></header>
+<header class="top"><div class="topinner"><a class="brand" href="index.html?wz_view=players"><img src="https://i.hizliresim.com/fo5evkh4.png" alt="WEİZEND logosu" class="siteLogo"><span class="brandName">WEİZEND</span></a><span class="me">OYUN LOBİSİ</span><a class="headerBack" href="index.html?wz_view=players">← Oyuncu Ara’ya Dön</a></div></header>
 <main class="wrap"><div class="extra"><span class="smallprint" id="lobbyState">Lobi durumunu kontrol et</span><button id="refreshBtn" class="btn alt small" type="button">↻ Yenile</button></div>
 <div id="message" role="status" aria-live="polite" class="notice hidden"></div>
 <div id="lobbyMain"><section><div class="card"><div class="extra"><span class="tag" id="gameName">Oyun</span><span class="smallprint" id="capacityCount">—</span></div><h1 id="lobbyTitle" class="detail-title">Lobi yükleniyor…</h1><p id="lobbyMeta" class="muted"></p><p id="lobbyNote"></p><div id="roster" class="roster"></div></div>
@@ -57,6 +57,25 @@ const KEY='weizend_market_session_secure_v2';
 const ID=new URL(location.href).searchParams.get('id')||'';
 const $=id=>document.getElementById(id);
 let lobby=null,my=null,refreshing=false,busy=false,snapshot='';
+// Independent per-tab ID; survives F5 but not an unrelated new tab.
+const PRESENCE_SESSION_KEY='wz31_presence_session_v3121';
+let presenceSessionId='';
+try{presenceSessionId=sessionStorage.getItem(PRESENCE_SESSION_KEY)||'';
+ if(!/^[0-9a-f-]{36}$/.test(presenceSessionId)){presenceSessionId=crypto.randomUUID();sessionStorage.setItem(PRESENCE_SESSION_KEY,presenceSessionId)}}
+catch(_){presenceSessionId=crypto.randomUUID()}
+let presenceBusy=false,lastPresenceOk=0;
+async function sendPresence(action='heartbeat',leaving=false){
+ if(!tok()||!member()||!presenceSessionId)return;
+ if(presenceBusy && !leaving)return;
+ const body=JSON.stringify({id:ID,sessionId:presenceSessionId,action});
+ const headers={'Content-Type':'application/json','Authorization':'Bearer '+tok()};
+ if(leaving){try{fetch(API+'/player-lobbies/presence',{method:'POST',headers,body,keepalive:true,cache:'no-store'}).catch(()=>{});}catch(_){}return}
+ presenceBusy=true;
+ try{const r=await fetch(API+'/player-lobbies/presence',{method:'POST',headers,body,cache:'no-store'});
+   if(r.ok)lastPresenceOk=Date.now();
+ }catch(_){/* retry on next heartbeat */}finally{presenceBusy=false}
+}
+
 const tok=()=>{try{return localStorage.getItem(KEY)||''}catch{return ''}};
 function node(parent,type,cls,txt){const x=document.createElement(type);if(cls)x.className=cls;if(txt!==undefined)x.textContent=String(txt);parent.append(x);return x}
 function btn(parent,label,fn,cls='btn small'){const x=node(parent,'button',cls,label);x.type='button';x.addEventListener('click',fn);return x}
@@ -104,10 +123,11 @@ const j=$('joinContent'),o=$('ownerContent'),a=$('applicationsContent');clear(j)
 $('lobbyMain').classList.toggle('not-owner',!isOwner());o.parentElement.hidden=!isOwner();a.parentElement.hidden=!isOwner();
 if(!tok()){
  node(j,'p','muted','Katılmak için Kick hesabınla giriş yap. Lobi bilgilerini giriş yapmadan görüntüleyebilirsin.');
- const link=node(j,'a','btn alt small','Market üzerinden giriş yap');link.href='index.html?wz_view=players';
+ const link=node(j,'a','btn alt small','🔒 Doğrulama Gerekiyor');link.href='index.html?wz_auth=1';
 }else if(member()){
  node(j,'p','success','✓ Bu lobinin üyesisin.');
  node(j,'p','muted',code?'Grup kodunu kopyalayıp oyuna katılabilirsin.':'Grup kodu henüz girilmedi.');
+ if(lobby.presence_enabled)node(j,'p','smallprint','Canlı lobi: Bu sekmeyi açık tut. Kapanınca kısa bir yeniden bağlanma süresi sonrasında üyelik sonlandırılır.');
  btn(j,'Oyun Adımı Düzenle',profileModal,'btn alt small');
  if(!isOwner())btn(j,'Lobiden Ayrıl',()=>{if(confirm('Lobiden ayrılmak istiyor musun?'))mutate({action:'leave'})},'btn danger small');
 }else if(pending()){
@@ -135,11 +155,19 @@ try{
    tok()?api('/player-lobbies/mine').catch(()=>null):Promise.resolve(null)
  ]);
  const state=JSON.stringify([detail.lobby,mine]);if(state!==snapshot){snapshot=state;lobby=detail.lobby;my=mine;if($('modal').classList.contains('hidden'))render()}
+ if(member() && Date.now()-lastPresenceOk>20000)void sendPresence('heartbeat');
  return true;
 }catch(e){if(!silent)flash('Lobi yüklenemedi: '+e.message,true);return false}finally{refreshing=false}}
 $('copyGroup').addEventListener('click',copyCode);
 $('refreshBtn').addEventListener('click',async()=>{const b=$('refreshBtn');if(b.disabled)return;b.disabled=true;b.textContent='⏳ Kontrol ediliyor...';try{const ok=await refresh();b.textContent=ok?'✓ Güncel':'⚠ Hata'}finally{setTimeout(()=>{b.textContent='↻ Yenile';b.disabled=false},1100)}});
 $('closeModal').addEventListener('click',hideModal);$('modal').addEventListener('click',e=>{if(e.target===$('modal'))hideModal()});document.addEventListener('keydown',e=>{if(e.key==='Escape')hideModal()});
 if(!/^[0-9a-f-]{36}$/.test(ID)){flash('Geçerli bir lobi adresi açmalısın.',true);$('lobbyTitle').textContent='Lobi bulunamadı'}
-else {refresh();setInterval(()=>{if(document.hidden||busy||!$('modal').classList.contains('hidden'))return;void refresh(true)},10000)}
+else {
+ refresh();
+ setInterval(()=>{if(!busy&&!document.hidden&&$('modal').classList.contains('hidden'))void refresh(true)},10000);
+ // Background tabs are throttled by browsers; 25 seconds + generous 3-minute TTL.
+ setInterval(()=>{if(member())void sendPresence('heartbeat')},25000);
+ window.addEventListener('pagehide',()=>sendPresence('close',true));
+ window.addEventListener('pageshow',()=>{if(member())void sendPresence('heartbeat')});
+} 
 })();</script></body></html>
