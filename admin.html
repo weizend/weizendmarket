@@ -2455,10 +2455,39 @@ body:has(#adminNewMessageModal:not(.hidden)){
   <button id="tab-missxss" onclick="openTab('missxss')">
     🤖 MissXss
   </button>
+  <button id="tab-valorant-test" onclick="openTab('valorant-test')">
+    🎮 VALORANT API Test
+  </button>
 
 </div>
 
     <!-- ===================================================== -->
+    <!-- V31.0.1: Yöneticiye özel VALORANT API pilot testi -->
+    <div id="section-valorant-test" class="section">
+      <div class="card" style="max-width:740px">
+        <h2>🎮 VALORANT API Bağlantı Testi</h2>
+        <p class="muted">Sadece yöneticiler kullanabilir. Bu araç oyuncu verilerini herkese açmaz ve turnuva sonuçlarını değiştirmez.</p>
+        <div class="field">
+          <label class="title" for="wz3101RiotId">Kendine ait Riot ID</label>
+          <input id="wz3101RiotId" type="text" maxlength="45" placeholder="Oyuncu#TR1" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label class="title" for="wz3101Region">VALORANT Bölgesi</label>
+          <select id="wz3101Region"><option value="eu">EU (Türkiye)</option><option value="na">NA</option><option value="ap">AP</option><option value="kr">KR</option><option value="br">BR</option><option value="latam">LATAM</option></select>
+        </div>
+        <label style="display:flex;align-items:center;gap:9px;margin:12px 0">
+          <input id="wz3101Confirm" type="checkbox" style="width:auto;flex:0 0 auto" />
+          <span>Bu Riot hesabı bana ait veya sahibinden açık veri sorgulama iznim var.</span>
+        </label>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button type="button" onclick="wz3101TestApi('account')" style="width:auto">Hesap / PUUID Test Et</button>
+          <button type="button" class="secondary" onclick="wz3101TestApi('matches')" style="width:auto">Son 2 Maçı Test Et</button>
+        </div>
+        <pre id="wz3101Result" style="white-space:pre-wrap;overflow-wrap:anywhere;background:#111;padding:14px;border-radius:12px;margin-top:14px;max-height:460px;overflow:auto" role="status" aria-live="polite">Henüz sorgu yapılmadı.</pre>
+        <div class="muted">Görülen sonuçlar yalnızca bu oturumda gösterilir; siteye veya D1'e kaydedilmez. Riot hesabı sahipliği burada doğrulanmaz.</div>
+      </div>
+    </div>
+
     <!-- PRODUCTS -->
     <!-- ===================================================== -->
 
@@ -4745,6 +4774,30 @@ async function api(path,options={}){
   return {r,d};
 }
 
+
+
+/* V31.0.1 — Admin HenrikDev test ekranı */
+let wz3101Testing=false;
+async function wz3101TestApi(kind){
+  const view=document.getElementById('wz3101Result');
+  if(!view||wz3101Testing)return;
+  const riotId=String(document.getElementById('wz3101RiotId')?.value||'').trim();
+  const region=String(document.getElementById('wz3101Region')?.value||'eu');
+  const ownAccount=Boolean(document.getElementById('wz3101Confirm')?.checked);
+  if(!ownAccount){view.textContent='Önce hesap sahipliği / izin kutusunu işaretle.';return;}
+  if(!/^.{2,32}#[A-Za-z0-9]{2,8}$/.test(riotId)){view.textContent='Riot ID ad#etiket şeklinde olmalı.';return;}
+  wz3101Testing=true;
+  view.textContent='HenrikDev sorgulanıyor...';
+  try{
+    const {r,d}=await api('/admin/valorant-api/test',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({riotId,region,kind,ownAccount})
+    });
+    if(!r.ok||!d?.success) throw new Error(d?.error||'API testi başarısız (HTTP '+r.status+').');
+    view.textContent=JSON.stringify(d,null,2);
+  }catch(error){view.textContent='Test başarısız: '+String(error?.message||error)}
+  finally{wz3101Testing=false;}
+}
 
 /* =========================================================
    GIFT CODES
