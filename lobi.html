@@ -58,7 +58,29 @@ body.wz-lobby-booting #wzLobbyBoot{display:block}
 #wzLobbyBoot strong{font-size:14px;letter-spacing:.1em}
 #wzLobbyBoot small{font-size:12px}
 
-</style></head><body class="wz-lobby-booting">
+</style><style id="wz-v3128-unified-dark-theme">
+
+/* V31.0.28 • WEIZEND ortak siyah tema — sadece görsel kurallar. */
+:root{--bg:#07080b;--panel:#101218;--outline:#2c2e38;--soft:#17191f;--muted:#a8abb7}
+html{background:#07080b!important;background-image:none!important;min-height:100%}
+body{background:#07080b!important;background-image:none!important;min-height:100vh;min-height:100dvh}
+header.top{background:#060709!important;background-image:none!important;border-bottom:1px solid #24252b!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+header.top .topinner{width:min(1200px,calc(100% - 32px));max-width:1200px;min-height:72px;padding:9px 0}
+header.top .brand{color:#f5f6fa!important;text-decoration:none}
+header.top .brandName{font-size:18px!important;line-height:1.1!important;letter-spacing:.11em!important}
+header.top .brandCopy small{color:#989ba6!important;font-size:10px!important;letter-spacing:.16em!important}
+header.top .headerBack{background:#15171d!important;border-color:#343640!important;color:#f5f5f7!important;box-shadow:none!important}
+header.top .headerBack:hover{background:#1e2028!important}
+main.wrap{max-width:1200px!important;width:min(1200px,calc(100% - 32px));padding:20px 0 70px!important}
+.card{background:#111319!important;background-image:none!important;border-color:#2d303a!important;box-shadow:none!important}
+.detail-card,.detailPanel,.panel{background-color:#111319!important;background-image:none!important;border-color:#2d303a!important}
+/* Group-code area stays distinctive but drops ambient red glow. */
+.code-panel,.groupCodeCard{box-shadow:none!important}
+.dialog{background:#13151b!important;border-color:#383a45!important}
+@media(max-width:650px){header.top .topinner{width:calc(100% - 24px);min-height:64px}main.wrap{width:calc(100% - 24px);padding:14px 0 46px!important}header.top .brandName{font-size:16px!important}}
+
+</style>
+</head><body class="wz-lobby-booting">
 <header class="top"><div class="topinner"><a class="brand" href="index.html?wz_view=players"><img src="https://i.hizliresim.com/fo5evkh4.png" alt="WEİZEND logosu" class="siteLogo"><span class="brandCopy"><span class="brandName">WEİZEND</span><small>OYUN LOBİSİ</small></span></a><a class="headerBack" href="index.html?wz_view=players">← Oyuncu Ara’ya Dön</a></div></header>
 <div id="wzLobbyBoot" role="status"><strong>WEİZEND · OYUN LOBİSİ</strong><small>Bağlantı kontrol ediliyor…</small></div>
 <main class="wrap"><div class="extra"><span class="smallprint" id="lobbyState">Lobi durumunu kontrol et</span><button id="refreshBtn" class="btn alt small" type="button">↻ Yenile</button></div>
