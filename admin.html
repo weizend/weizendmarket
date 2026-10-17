@@ -11577,15 +11577,15 @@ function wz30655ApprovalBoard(m,phase,teamName){
  const a=Array.isArray(raw.a)?raw.a:[],b=Array.isArray(raw.b)?raw.b:[];
  const expectedA=Math.max(1,Number(progress.expectedA||1));
  const expectedB=Math.max(1,Number(progress.expectedB||1));
- const approved=a.filter(p=>p.approved).length+b.filter(p=>p.approved).length;
+ const approved=a.filter(p=>p.approved&&!p.exempt).length+b.filter(p=>p.approved&&!p.exempt).length;
  const total=expectedA+expectedB;
  const isNow=phase==='start'||(phase==='blocked'&&m.v30?.blocked_from_phase==='start');
  const alreadyStarted=['playing','result_pending','finalizing','completed'].includes(phase);
- const statusLabel=p=>p.approved?'✅ Onayladı':isNow?'⏳ Bekleniyor':alreadyStarted?'— Kayıt bulunamadı':'— Onay aşaması bekleniyor';
+ const statusLabel=p=>p.exempt?'⚖️ Hakem muafiyeti':p.approved?'✅ Onayladı':isNow?'⏳ Bekleniyor':alreadyStarted?'— Kayıt bulunamadı':'— Onay aşaması bekleniyor';
  const sideBox=(side,list,expected)=>{
-   const accepted=list.filter(p=>p.approved).length;
+   const accepted=list.filter(p=>p.approved&&!p.exempt).length;
    const extra=Math.max(0,expected-list.length);
-   const playerRows=list.map(p=>`<div style="display:flex;gap:9px;justify-content:space-between;align-items:center;border-top:1px solid #30363b;padding:9px 0;flex-wrap:wrap"><strong style="overflow-wrap:anywhere">${esc(p.gameId||'Oyuncu')}</strong><span style="font-size:12px;color:${p.approved?'#79dda6':isNow?'#f3c47d':'#a9b0ba'}">${statusLabel(p)}</span></div>`).join('');
+   const playerRows=list.map(p=>`<div style="display:flex;gap:9px;justify-content:space-between;align-items:center;border-top:1px solid #30363b;padding:9px 0;flex-wrap:wrap"><strong style="overflow-wrap:anywhere">${esc(p.gameId||'Oyuncu')}</strong><span style="font-size:12px;color:${p.exempt?'#f3c47d':p.approved?'#79dda6':isNow?'#f3c47d':'#a9b0ba'}">${statusLabel(p)}</span></div>`).join('');
    const missing=extra?`<div style="font-size:12px;color:#f3c47d;padding:8px 0;border-top:1px solid #30363b">⚠️ ${extra} oyuncunun kadro kaydı henüz bulunamadı</div>`:'';
    return `<div style="border:1px solid #38444a;border-radius:11px;padding:11px;min-width:0;background:#11191c"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:7px"><strong style="overflow-wrap:anywhere">${esc(teamName(m,side)|| (side==='a'?'A Takımı':'B Takımı'))}</strong><small>${accepted}/${expected} ✅</small></div>${playerRows||'<p class="muted">Kadro henüz okunamadı.</p>'}${missing}</div>`;
  };
@@ -11642,7 +11642,7 @@ function v30AdminRender(d,tid){
    const doubleNoShow=phase==='blocked'&&['captains','code','ready','code_check','code_fix','game_join'].includes(String(v.blocked_from_phase||''));
   const active=v30AdminOpenMatch===m.id;
   const title=esc(teamName(m,'a'))+' <span style="color:#999">vs</span> '+esc(teamName(m,'b'));
-  const rows=(m.results||[]).map(x=>`<p>🏁 ${esc(x.team_side.toUpperCase())}: ${Number(x.score_a)}-${Number(x.score_b)} · <a href="${esc(x.proof_url)}" target="_blank" rel="noopener noreferrer">Sonuç kanıtını aç ↗</a></p>`).join('');
+  const rows=(m.results||[]).map(x=>`<p>🏁 <strong>${esc(teamName(m,x.team_side))}</strong> kaptanı bildirdi: ${esc(teamName(m,'a'))} <strong>${Number(x.score_a)}-${Number(x.score_b)}</strong> ${esc(teamName(m,'b'))}${x.proof_url?` · <a href="${esc(x.proof_url)}" target="_blank" rel="noopener noreferrer">Kanıt ↗</a>`:' · Görsel eklenmedi (isteğe bağlı)'}</p>`).join('');
   const ap=m.approvalProgress||{},expA=Math.max(1,Number(ap.expectedA||1)),expB=Math.max(1,Number(ap.expectedB||1));
   const readyA=Math.min(expA,Number(ap.ready?.a||0)),readyB=Math.min(expB,Number(ap.ready?.b||0));
   const gameA=Math.min(expA,Number(ap.valorantJoined?.a||0)),gameB=Math.min(expB,Number(ap.valorantJoined?.b||0));
@@ -11652,10 +11652,10 @@ function v30AdminRender(d,tid){
     <div class="muted">Kaptan katılımı: A ${iconFor(v.captain_a_joined_at)} · B ${iconFor(v.captain_b_joined_at)}</div>
     <div class="muted">Oyuncular Hazırım: A ${readyA}/${expA} ${iconFor(readyA===expA)} · B ${readyB}/${expB} ${iconFor(readyB===expB)}</div>
     <div class="muted">VALORANT lobiye katılım: A ${gameA}/${expA} ${iconFor(gameA===expA)} · B ${gameB}/${expB} ${iconFor(gameB===expB)}</div>
-    <div class="muted">Lobi kanıtı: A ${iconFor(r.proof_a)} · B ${iconFor(r.proof_b)}</div>
+    <div class="muted">Lobi görseli (eski maçlarda zorunlu, hızlı akışta atlandı): ${r.proof_a||r.proof_b?`A ${iconFor(r.proof_a)} · B ${iconFor(r.proof_b)}`:"Hızlı kadro onayı / görsel zorunlu değil"}</div>
     <div class="muted">Kadro onayı (kaptan): A ${iconFor(v.consent_a_at)} · B ${iconFor(v.consent_b_at)}</div>
     <div class="muted">Maç başlangıç kuralları: ${startA+startB}/${expA+expB} oyuncu onayladı</div>
-    <p>${r.proof_a?`<a href="${esc(r.proof_a)}" target="_blank" rel="noopener noreferrer">📸 A Kadro Kanıtı ↗</a>`:'A kanıtı bekleniyor'} · ${r.proof_b?`<a href="${esc(r.proof_b)}" target="_blank" rel="noopener noreferrer">📸 B Kadro Kanıtı ↗</a>`:'B kanıtı bekleniyor'}</p>`;
+    <p>${r.proof_a?`<a href="${esc(r.proof_a)}" target="_blank" rel="noopener noreferrer">📸 A Kadro Kanıtı ↗</a>`:'A görseli yok (hızlı akışta normal)'} · ${r.proof_b?`<a href="${esc(r.proof_b)}" target="_blank" rel="noopener noreferrer">📸 B Kadro Kanıtı ↗</a>`:'B görseli yok (hızlı akışta normal)'}</p>`;
   const disputes=pending.map(x=>`<div style="padding:10px;border:1px solid #8c2929;border-radius:9px;margin-top:7px"><strong>🚨 ${esc(x.team_side.toUpperCase())} kaptanı itiraz etti</strong><p>${esc(x.reason)}</p><a href="${esc(x.proof_url)}" target="_blank" rel="noopener noreferrer">Kanıt ↗</a></div>`).join('');
    const callStatus=m.status==='completed'?'✅ Tamamlandı':v.lobby_called_at?'🔔 Lobi çağrıldı':m.manuallyCalledAt?'📨 Davetler gönderiliyor':'⏳ Çağrı bekleniyor';
   const allowManualCall=d.enabled&&!d.broadcastEnabled&&!d.runMode?.includes('live')&&m.status==='ready'&&
@@ -11668,11 +11668,16 @@ function v30AdminRender(d,tid){
   const noShowNotice=doubleNoShow?`<div style="margin:9px 0;padding:10px;border:1px solid #a05f20;border-radius:9px;background:#281c0d;color:#ffe0ac"><b>⏱️ İki takım da hazır katılımını tamamlamadı.</b><br>Hiçbir takıma otomatik galibiyet verilmedi. Davet zamanı: ${esc(v.lobby_called_at?new Date(v.lobby_called_at).toLocaleString('tr-TR'):'Kayıtlı değil')}. Kararı yalnızca hakem verebilir.</div>`:'';
   const scoreTimeout=phase==='blocked'&&String(v.blocked_from_phase||'')==='result_pending'&&
     (m.results||[]).length===1&&!pending.length;
-  const scoreTimeoutNotice=scoreTimeout?`<div style="margin:9px 0;padding:10px;border:1px solid #a05f20;border-radius:9px;background:#281c0d;color:#ffe0ac"><b>⚖️ Rakip kaptan 10 dakikada skor bildirmedi.</b><br>Otomatik galibiyet verilmedi. İlk kaptanın skorunu ve ekran görüntüsünü kontrol et. Hakem kazananı seçebilir veya skor bildirimini yeniden açabilir.</div>`:'';
+  const scoreTimeoutNotice=scoreTimeout?`<div style="margin:9px 0;padding:10px;border:1px solid #a05f20;border-radius:9px;background:#281c0d;color:#ffe0ac"><b>⚖️ Rakip kaptan 10 dakikada skor bildirmedi.</b><br>Otomatik galibiyet verilmedi. İlk kaptanın skorunu, varsa görselini ve API aday eşleşmesini kontrol et. Hakem kazananı seçebilir veya skor bildirimini yeniden açabilir.</div>`:'';
+   const midKey=encodeURIComponent(String(m.id));
+   const earlier=(m.results||[])[0]||{};
+   const defaultA=Number.isInteger(Number(earlier.score_a))&&earlier.score_a!=null?Number(earlier.score_a):'';
+   const defaultB=Number.isInteger(Number(earlier.score_b))&&earlier.score_b!=null?Number(earlier.score_b):'';
+   const refereeScores=`<div style="padding:12px;border:1px solid #69613d;border-radius:9px;margin:10px 0"><strong>⚖️ Hakem Sonuç Paneli</strong><p class="muted">Skorları mutlaka takım isimlerine göre gir. 10-2 / 2-10 bildirim uyuşmazlığını burada düzelt. AFK/hükmen kararda skorları boş bırakabilirsin; gerekçe zorunludur.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px"><label>${esc(teamName(m,'a'))} skoru<input type="number" min="0" max="99" inputmode="numeric" id="wz3112-a-${midKey}" value="${defaultA}"></label><label>${esc(teamName(m,'b'))} skoru<input type="number" min="0" max="99" inputmode="numeric" id="wz3112-b-${midKey}" value="${defaultB}"></label></div><div class="inlineActions"><button type="button" class="smallBtn warn" onclick="v30AdminResolve('${midKey}','winner','a')">🏆 ${esc(teamName(m,'a'))} Kazandı</button><button type="button" class="smallBtn warn" onclick="v30AdminResolve('${midKey}','winner','b')">🏆 ${esc(teamName(m,'b'))} Kazandı</button></div></div>`;
    const controls=phase==='blocked'?(doubleNoShow
-     ? `<div class="inlineActions"><button type="button" class="smallBtn secondary" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','reopen')">↺ Maçı Yeniden Aç (15 dk)</button><button type="button" class="smallBtn warn" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','winner','a')">🏆 A Kazansın</button><button type="button" class="smallBtn warn" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','winner','b')">🏆 B Kazansın</button></div>`
-     : `<div class="inlineActions"><button type="button" class="smallBtn secondary" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','dismiss')" ${!v.blocked_from_phase?'disabled':''} >${scoreTimeout?'↺ Skor Bildirimini Yeniden Aç (10 dk)':'✅ İtirazı Reddet'}</button><button type="button" class="smallBtn warn" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','winner','a')">🏆 A Kazansın</button><button type="button" class="smallBtn warn" onclick="v30AdminResolve('${encodeURIComponent(m.id)}','winner','b')">🏆 B Kazansın</button></div>`):'';
-  return `<div class="tournamentTeamCard" data-wz44-mid="${esc(String(m.id))}" style="padding:0;margin:7px 0;${blocked?'border-color:#ce2c2c;box-shadow:inset 3px 0 0 #dc2a2a;':''}"><button type="button" class="secondary" style="width:100%;text-align:left;background:none;display:flex;align-items:center;justify-content:space-between;gap:10px" onclick="v30AdminToggle('${encodeURIComponent(m.id)}')"><span><strong>${Number(m.round_number)}. Tur · ${esc(wz44No(m))} · ${title}</strong><br><small class="muted">${esc(phaseLabel[phase]||phase)}${waitingHint}</small></span><span>${blocked?'🔴':active?'▴':'▾'}</span></button>${active?`<div style="padding:10px;border-top:1px solid #333">${'<p class="muted">'+esc(callStatus)+'</p>'}${manualAction}${proofs}${wz30655ApprovalBoard(m,phase,teamName)}${rows}${disputes}${noShowNotice}${scoreTimeoutNotice}${controls}${wz3103PilotButtons(m)}<div class="wz41-matchmsg"><button type="button" class="smallBtn secondary" onclick="wz41ComposeReferee('${encodeURIComponent(m.id)}')">💬 Oyunculara Özel Hakem Mesajı</button></div></div>`:''}</div>`;
+     ? `<div class="inlineActions"><button type="button" class="smallBtn secondary" onclick="v30AdminResolve('${midKey}','reopen')">↺ Maçı Yeniden Aç (15 dk)</button></div>${refereeScores}`
+     : `<div class="inlineActions"><button type="button" class="smallBtn secondary" onclick="v30AdminResolve('${midKey}','dismiss')" ${!v.blocked_from_phase?'disabled':''} >${scoreTimeout?'↺ Skor Bildirimini Yeniden Aç (10 dk)':'✅ İtirazı Reddet'}</button></div>${refereeScores}`):'';
+  return `<div class="tournamentTeamCard" data-wz44-mid="${esc(String(m.id))}" style="padding:0;margin:7px 0;${blocked?'border-color:#ce2c2c;box-shadow:inset 3px 0 0 #dc2a2a;':''}"><button type="button" class="secondary" style="width:100%;text-align:left;background:none;display:flex;align-items:center;justify-content:space-between;gap:10px" onclick="v30AdminToggle('${encodeURIComponent(m.id)}')"><span><strong>${Number(m.round_number)}. Tur · ${esc(wz44No(m))} · ${title}</strong><br><small class="muted">${esc(phaseLabel[phase]||phase)}${waitingHint}</small></span><span>${blocked?'🔴':active?'▴':'▾'}</span></button>${active?`<div style="padding:10px;border-top:1px solid #333">${'<p class="muted">'+esc(callStatus)+'</p>'}${manualAction}${proofs}${wz30655ApprovalBoard(m,phase,teamName)}${rows}${disputes}${noShowNotice}${scoreTimeoutNotice}${controls}${wz3111ExemptionControls(m)}${wz3103PilotButtons(m)}<div class="wz41-matchmsg"><button type="button" class="smallBtn secondary" onclick="wz41ComposeReferee('${encodeURIComponent(m.id)}')">💬 Oyunculara Özel Hakem Mesajı</button></div></div>`:''}</div>`;
  }).join('');
  const urgentPanel=alerts.length?`<div style="border:1px solid #9e3030;background:#210e11;border-radius:10px;padding:12px;margin:12px 0">
   <strong style="color:#ffc0c0">🚨 İncelenecek Maçlar (${alerts.length})</strong>
@@ -11680,6 +11685,41 @@ function v30AdminRender(d,tid){
   <div class="inlineActions">${alerts.map(m=>`<button type="button" class="smallBtn warn" onclick="wz44OpenUrgentMatch('${encodeURIComponent(String(m.id))}')">⚖️ ${esc(wz44No(m))} · ${esc(String(teamName(m,'a')))} vs ${esc(String(teamName(m,'b')))}</button>`).join('')}</div>
  </div>`:'';
  host.innerHTML=wz30653AdminRoster(d)+adminToolbar+sum+urgentPanel+(cards?`<div class="wz45-lobby-rows">${cards}</div>`:'<div class="tournamentEmpty">Henüz maç oluşmadı. Kayıtlar tamamlanınca fikstür otomatik oluşturulacak.</div>');
+}
+
+// V31.0.11: Hakem karari — eksik oyuncunun yerine ASLA onay yazilmaz.
+function wz3111ExemptionControls(m){
+ const absent=m.exemptPlayers||[];
+ const phase=String(m.v30?.phase||'captains');
+ if(m.status!=='ready')return '';
+ const exemptList=absent.map(x=>`${esc(x.teamSide==='a'?'A':'B')} — ${esc(x.gameId||'Oyuncu')}`).join(', ');
+ const badge=exemptList?`<div style="color:#f3c778;margin:8px 0">🟠 Muaf: ${exemptList} · Bu oyuncunun adına onay oluşturulmadı.</div>`:'';
+ const valid=['captains','ready','code','code_check','code_fix','game_join','proof','review','start'].includes(phase);
+ if(!valid||absent.length)return badge;
+ const mid=encodeURIComponent(String(m.id));
+ const opts=['a','b'].flatMap(side=>(m.approvalPlayers?.[side]||[]).map((p,index)=>
+   `<option value="${side}:${index}">${side.toUpperCase()} — ${esc(p.gameId||'Oyuncu')}</option>`)).join('');
+ return `${badge}<div style="padding:12px;border:1px solid #d6a44d;border-radius:10px;margin:10px 0">
+ <strong>⚖️ Eksik Oyuncuyla Devam Et</strong><p class="muted">Sadece bu maçta bir kaptan OLMAYAN oyuncu muaf tutulabilir. İki kaptanın rızası gereklidir.</p>
+ <select id="wz3111-player-${mid}" style="width:100%;max-width:340px;margin-bottom:8px">${opts}</select>
+ <div><button type="button" class="smallBtn warn" onclick="wz3111Exempt('${mid}')">⚠️ Seçilen Oyuncuyu Bu Maçta Muaf Tut</button></div></div>`;
+}
+async function wz3111Exempt(encodedId){
+ const matchId=decodeURIComponent(encodedId);
+ const select=document.getElementById('wz3111-player-'+encodedId);
+ const [side,n]=String(select?.value||'').split(':');
+ if(!['a','b'].includes(side)||!/^\d+$/.test(n))return alert('Oyuncu seçimi eksik.');
+ if(!confirm('İKİ KAPTANIN DA 1v2 / eksik kadro ile devam etmeyi kabul ettiğini teyit ediyor musun? Bu sadece seçilen maçı etkiler.'))return;
+ const reason=prompt('Hakem gerekçesi (en az 12 karakter):','Oyuncu gelmedi; iki kaptan eksik kadroyla oynamayı kabul etti.');
+ if(!reason||reason.trim().length<12)return alert('En az 12 karakter gerekçe gerekli.');
+ if(!confirm('SON ONAY: Seçilen oyuncu Hazırım, VALORANT katılımı ve Kuralları Onayla aşamalarından yalnızca BU MAÇ için muaf tutulacak. Onun adına onay kaydedilmeyecek. Emin misin?'))return;
+ try{
+  const {r,d}=await api('/admin/tournament/v30/absent-exemption',{method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({matchId,side,slotIndex:Number(n),reason:reason.trim(),opponentCaptainConsent:true,confirmation:'EKSIK_OYUNCU_MUAFIYETI'})});
+  if(!r.ok||!d?.success)throw Error(d?.error||`HTTP ${r.status}`);
+  alert('✅ '+(d.gameId||'Oyuncu')+' sadece bu maçta muaf tutuldu. Lobiyi yenilet.');
+  await loadArenaLobbiesAdmin();
+ }catch(e){alert('Muafiyet uygulanamadı: '+String(e?.message||e));}
 }
 function v30AdminToggle(mid){
  const id=decodeURIComponent(mid);v30AdminOpenMatch=v30AdminOpenMatch===id?'':id;
@@ -11724,11 +11764,20 @@ async function v30AdminControl(action){
 }
 async function v30AdminResolve(mid,decision,winnerSide){
  const matchId=decodeURIComponent(mid);
- if(!confirm('Bu hakem kararı gerçek fikstürü etkileyebilir. Kanıtları kontrol ettin mi?'))return;
+ let scoreA,scoreB;
+ if(decision==='winner'){
+   scoreA=String(document.getElementById('wz3112-a-'+mid)?.value??'').trim();
+   scoreB=String(document.getElementById('wz3112-b-'+mid)?.value??'').trim();
+   if((scoreA!=='')!==(scoreB!==''))return alert('Her iki takımın skorunu da gir ya da AFK/hükmen kararda ikisini de boş bırak.');
+   if(scoreA!==''&&(!/^\d{1,2}$/.test(scoreA)||!/^\d{1,2}$/.test(scoreB)||Number(scoreA)===Number(scoreB)))return alert('Geçerli ve eşit olmayan skorları gir.');
+   if(scoreA!==''&&(Number(scoreA)>Number(scoreB)?'a':'b')!==winnerSide)return alert('Seçtiğin kazanan takım girilen skorla uyuşmuyor.');
+ }
+ if(!confirm('Bu hakem kararı gerçek fikstürü etkileyebilir. Skorları ve varsa kanıtları kontrol ettin mi?'))return;
  const note=prompt('Hakem gerekçesi (en az 8 karakter):');if(note==null)return;
  if(note.trim().length<8){alert('En az 8 karakter gerekçe yaz.');return;}
- try{const {r,d}=await api('/admin/tournament/v30/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({matchId,decision,winnerSide,note:note.trim()})});if(!r.ok||!d?.success)throw Error(d?.error||`HTTP ${r.status}`);
+ try{const {r,d}=await api('/admin/tournament/v30/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({matchId,decision,winnerSide,note:note.trim(),...(decision==='winner'?{scoreA,scoreB}:{})})});if(!r.ok||!d?.success)throw Error(d?.error||`HTTP ${r.status}`);
   await loadTournamentBracket(true);
+  await loadArenaLobbiesAdmin();
  }catch(e){alert('Hakem kararı kaydedilemedi: '+e.message);}
 }
 
@@ -11980,8 +12029,15 @@ function renderAdminMatchCard(match){
   const matchKind = String(match.matchKind || 'main');
   const score =
     typeof match.result === 'object' && match.result
-      ? (match.result.score || '')
+      ? (match.result.score || ((match.result.scoreA !== undefined && match.result.scoreB !== undefined)
+          ? `${match.result.scoreA}-${match.result.scoreB}` : ''))
       : '';
+  const pair = String(score).match(/^(\d{1,2})\s*[-:]\s*(\d{1,2})$/);
+  const scoreA = pair ? Number(pair[1]) : NaN;
+  const scoreB = pair ? Number(pair[2]) : NaN;
+  const expectedWinner = pair && scoreA!==scoreB
+    ? String(scoreA>scoreB ? match.participantAId : match.participantBId) : '';
+  const inconsistentScore = !!expectedWinner && !!match.winnerId && expectedWinner !== String(match.winnerId);
 
   let controls = '';
 
@@ -11990,24 +12046,30 @@ function renderAdminMatchCard(match){
 
     controls = `
       <div class="grid2" style="margin-top:10px;">
-        <div class="field" style="margin:0;">
-          <label class="title">Kazanan</label>
-          <select id="winner-${esc(match.id)}">
-            <option value="">Kazananı seç</option>
-            <option value="${esc(match.participantAId)}" ${currentWinner===String(match.participantAId||'')?'selected':''}>${esc(a)}</option>
-            <option value="${esc(match.participantBId)}" ${currentWinner===String(match.participantBId||'')?'selected':''}>${esc(b)}</option>
-          </select>
+        <div class="field" style="margin:0;min-width:0;">
+          <label class="title" for="score-a-${esc(match.id)}">${esc(a)} · Skor</label>
+          <input id="score-a-${esc(match.id)}" type="number" min="0" max="99" step="1" inputmode="numeric"
+            value="${pair?scoreA:''}" placeholder="0"
+            oninput="updateTournamentMatchWinnerPreview('${encodeURIComponent(match.id)}')">
         </div>
-        <div class="field" style="margin:0;">
-          <label class="title">Skor</label>
-          <input id="score-${esc(match.id)}" type="text" maxlength="40"
-            value="${esc(score)}" placeholder="Örn: 13-8">
+        <div class="field" style="margin:0;min-width:0;">
+          <label class="title" for="score-b-${esc(match.id)}">${esc(b)} · Skor</label>
+          <input id="score-b-${esc(match.id)}" type="number" min="0" max="99" step="1" inputmode="numeric"
+            value="${pair?scoreB:''}" placeholder="0"
+            oninput="updateTournamentMatchWinnerPreview('${encodeURIComponent(match.id)}')">
         </div>
+      </div>
+      <div id="winner-preview-${esc(match.id)}" data-a-id="${esc(match.participantAId||'')}"
+           data-b-id="${esc(match.participantBId||'')}" data-a-name="${esc(a)}" data-b-name="${esc(b)}"
+           data-original-winner="${esc(currentWinner)}" data-original-status="${esc(status)}"
+           aria-live="polite" style="margin-top:8px;padding:9px 11px;border:1px solid var(--border);border-radius:9px;">
+        ${pair && scoreA!==scoreB ? `🏆 Skora göre kazanan: <b>${esc(scoreA>scoreB?a:b)}</b>` : 'İki takımın skorlarını gir; kazanan otomatik belirlenecek.'}
       </div>
       <button class="smallBtn ${status==='completed'?'warn':'success'}" style="margin-top:10px;"
         onclick="saveTournamentMatchResult('${encodeURIComponent(match.id)}')">
         ${status==='completed'?'♻️ Sonucu Güncelle':'✅ Sonucu Kaydet'}
       </button>
+      ${inconsistentScore ? `<div style="color:#ffba69;border:1px solid #ba5d19;border-radius:8px;padding:10px;margin-top:8px;">⚠️ Kayıtlı skor ile kazanan UYUŞMUYOR! Bu maçın gerçek sonucunu kanıtlardan kontrol etmeden başka turu başlatma. Skoru A-B sırasına göre düzelt.</div>` : ''}
       ${status==='completed'
         ? `<div class="muted" style="margin-top:7px;">Mevcut kazanan: <b>${esc(match.winnerName || '-')}</b>. Sonraki tur tamamlandıysa kazanan değişikliği güvenlik için engellenir.</div>`
         : ''}
@@ -12035,53 +12097,75 @@ function renderAdminMatchCard(match){
   `;
 }
 
+// V31.0.8 — Her takım için ayrı skor kutusu, otomatik kazanan.
+// Bu hesap sadece arayüz kolaylığı sağlar; Worker kazanan/skor uyumunu tekrar doğrular.
+function readTournamentMatchScores(matchId){
+  const rawA=document.getElementById(`score-a-${matchId}`)?.value.trim() ?? '';
+  const rawB=document.getElementById(`score-b-${matchId}`)?.value.trim() ?? '';
+  const valid=/^\d{1,2}$/.test(rawA) && /^\d{1,2}$/.test(rawB);
+  const a=valid?Number(rawA):NaN;
+  const b=valid?Number(rawB):NaN;
+  return {a,b,valid,unequal:valid&&a!==b};
+}
+
+function updateTournamentMatchWinnerPreview(encodedMatchId){
+  const matchId=decodeURIComponent(encodedMatchId||'');
+  const preview=document.getElementById(`winner-preview-${matchId}`);
+  if(!preview)return;
+  const {a,b,valid,unequal}=readTournamentMatchScores(matchId);
+  if(!valid){
+    preview.textContent='İki takım için 0–99 arasında tam sayı gir.';
+    return;
+  }
+  if(!unequal){
+    preview.textContent='⚠️ Skorlar eşit olamaz; bir takım kazanmalı.';
+    return;
+  }
+  const name=a>b?preview.dataset.aName:preview.dataset.bName;
+  preview.textContent='🏆 Skora göre kazanan: '+name;
+}
+
 async function saveTournamentMatchResult(encodedMatchId){
-  const matchId = decodeURIComponent(encodedMatchId || '');
-  if(!matchId) return;
+  const matchId=decodeURIComponent(encodedMatchId||'');
+  if(!matchId)return;
 
-  const winnerId =
-    document.getElementById(`winner-${matchId}`)?.value || '';
+  const preview=document.getElementById(`winner-preview-${matchId}`);
+  if(!preview){showStatus('tournamentBracketStatus','❌ Maç alanı bulunamadı; sayfayı yenile.',false);return;}
 
-  const score =
-    document.getElementById(`score-${matchId}`)?.value.trim() || '';
-
-  if(!winnerId){
-    showStatus('tournamentBracketStatus','❌ Önce kazananı seç.',false);
+  const {a,b,valid,unequal}=readTournamentMatchScores(matchId);
+  if(!valid){
+    showStatus('tournamentBracketStatus','❌ Her iki takımın skorunu 0–99 arasında tam sayı olarak gir.',false);
+    return;
+  }
+  if(!unequal){
+    showStatus('tournamentBracketStatus','❌ Eşit skor kaydedilemez.',false);
     return;
   }
 
+  const winnerId=a>b?preview.dataset.aId:preview.dataset.bId;
+  if(!winnerId){
+    showStatus('tournamentBracketStatus','❌ Takım bilgileri eksik, fikstürü yenile.',false);
+    return;
+  }
+  // Tamamlanmış bir maçın kazananını değiştirmek üst turları etkileyebilir.
+  const previousWinner=String(preview.dataset.originalWinner||'');
+  if(preview.dataset.originalStatus==='completed' && previousWinner && previousWinner!==String(winnerId)){
+    const winnerName=a>b?preview.dataset.aName:preview.dataset.bName;
+    if(!confirm(`Bu maç daha önce sonuçlandırılmış. Kazananı ${winnerName} olarak DEĞİŞTİRMEK istiyor musun? Sonraki tur eşleşmeleri etkilenebilir.`))return;
+  }
+
   try{
-    const {r,d} =
-      await api(
-        '/admin/tournament/match/result',
-        {
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({
-            matchId,
-            winnerId,
-            result:score ? {score} : {}
-          })
-        }
-      );
-
-    if(!r.ok || !d?.success){
-      throw new Error(d?.error || `HTTP ${r.status}`);
-    }
-
-    await Promise.all([
-      loadTournamentBracket(true),
-      loadTournamentPredictions(true)
-    ]);
-
-    showStatus(
-      'tournamentBracketStatus',
-      '✅ Maç sonucu kaydedildi, kazanan bir sonraki tura aktarıldı ve tahmin puanları güncellendi.',
-      true
-    );
-
+    const {r,d}=await api('/admin/tournament/match/result',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({matchId,winnerId,result:{score:`${a}-${b}`}})
+    });
+    if(!r.ok||!d?.success)throw new Error(d?.error||`HTTP ${r.status}`);
+    await Promise.all([loadTournamentBracket(true),loadTournamentPredictions(true)]);
+    showStatus('tournamentBracketStatus',
+      '✅ Sonuç kaydedildi. Skordan kazanan belirlendi, fikstür ve tahminler güncellendi.',true);
   }catch(error){
-    showStatus('tournamentBracketStatus','❌ ' + esc(error.message || error),false);
+    showStatus('tournamentBracketStatus','❌ '+esc(error.message||error),false);
   }
 }
 
@@ -13036,8 +13120,8 @@ function wz3103PilotButtons(m){
   const busy=wz3103Pending.has(id);
   const detail=result?`<pre style="white-space:pre-wrap;overflow-wrap:anywhere;background:#101014;padding:10px;border-radius:8px;max-height:270px;overflow:auto">${esc(result)}</pre>`:'';
   return `<div style="border:1px solid #353e51;padding:10px;border-radius:10px;margin:10px 0">
-    <strong>🎮 Lobi Sahibi API Kontrolü (Pilot)</strong>
-    <p class="muted">Yalnızca geçerli VALORANT kodunu paylaşan kaptanın en son 5 maçı incelenir. Kod sahibi değiştiyse yeni kaptan sorgulanır. Sadece son 48 saatte başlamış, skor bildirimi gelmiş maçlarda çalışır. Sonuç otomatik kesinleşmez.</p>
+    <strong>🎮 Lobi Sahibi API Destekli Hakem Kontrolü (Pilot)</strong>
+    <p class="muted">Yalnızca geçerli VALORANT kodunu paylaşan kaptanın en son 5 maçı incelenir. Kod sahibi değiştiyse yeni kaptan sorgulanır. Sadece son 48 saatte başlamış, skor bildirimi gelmiş maçlarda çalışır. Görsel zorunlu değildir. API verisi özel maçlar için eksik olabilir; sonuç otomatik kesinleşmez.</p>
     <div class="inlineActions">
       <button type="button" class="smallBtn secondary" ${busy?'disabled':''} onclick="wz3103Check('${encodeURIComponent(id)}')">🎮 Lobi Sahibini Sorgula</button>
     </div>${detail}</div>`;
