@@ -47,9 +47,20 @@ body.wz-lobby-booting main.wrap{visibility:hidden}
 body.wz-lobby-booting #wzLobbyBoot{display:block}
 #wzLobbyBoot strong{display:block;letter-spacing:.12em;font-size:24px;margin-bottom:10px}
 #wzLobbyBoot small{color:#c4b9bf}
+.top .brand{letter-spacing:normal!important;gap:11px!important}
+.brandCopy{display:flex;flex-direction:column;justify-content:center;gap:0;line-height:1.15}
+.brandCopy .brandName{font-size:18px!important;font-weight:950!important;letter-spacing:.12em!important}
+.brandCopy small{font-size:9px;letter-spacing:.19em;color:#9ca0b0;margin-top:5px;font-weight:800}
+@media(max-width:540px){.brandCopy .brandName{font-size:14px!important}.brandCopy small{font-size:8px}}
+/* One stable dark canvas while fetching; reveal status only if a request is slow. */
+#wzLobbyBoot{min-height:100px!important;border:0!important;background:transparent!important;animation:wzLobbyDelayed .001s 550ms both}
+@keyframes wzLobbyDelayed{from{opacity:0}to{opacity:1}}
+#wzLobbyBoot strong{font-size:14px;letter-spacing:.1em}
+#wzLobbyBoot small{font-size:12px}
+
 </style></head><body class="wz-lobby-booting">
-<header class="top"><div class="topinner"><a class="brand" href="index.html?wz_view=players"><img src="https://i.hizliresim.com/fo5evkh4.png" alt="WEİZEND logosu" class="siteLogo"><span class="brandName">WEİZEND</span></a><span class="me">OYUN LOBİSİ</span><a class="headerBack" href="index.html?wz_view=players">← Oyuncu Ara’ya Dön</a></div></header>
-<div id="wzLobbyBoot" role="status"><strong>WEİZEND</strong><small>Oyun lobisi hazırlanıyor…</small></div>
+<header class="top"><div class="topinner"><a class="brand" href="index.html?wz_view=players"><img src="https://i.hizliresim.com/fo5evkh4.png" alt="WEİZEND logosu" class="siteLogo"><span class="brandCopy"><span class="brandName">WEİZEND</span><small>OYUN LOBİSİ</small></span></a><a class="headerBack" href="index.html?wz_view=players">← Oyuncu Ara’ya Dön</a></div></header>
+<div id="wzLobbyBoot" role="status"><strong>WEİZEND · OYUN LOBİSİ</strong><small>Bağlantı kontrol ediliyor…</small></div>
 <main class="wrap"><div class="extra"><span class="smallprint" id="lobbyState">Lobi durumunu kontrol et</span><button id="refreshBtn" class="btn alt small" type="button">↻ Yenile</button></div>
 <div id="message" role="status" aria-live="polite" class="notice hidden"></div>
 <div id="lobbyMain"><section><div class="card"><div class="extra"><span class="tag" id="gameName">Oyun</span><span class="smallprint" id="capacityCount">—</span></div><h1 id="lobbyTitle" class="detail-title">Lobi yükleniyor…</h1><p id="lobbyMeta" class="muted"></p><p id="lobbyNote"></p><div id="roster" class="roster"></div></div>
@@ -91,6 +102,8 @@ function clear(n){n.replaceChildren()}
 function flash(msg,error=false){const b=$('message');b.textContent=msg;b.className='notice'+(error?' error':'')}
 function hideFlash(){$('message').classList.add('hidden')}
 function game(g){return ({valorant:'VALORANT',cs2:'Counter-Strike 2',pubg:'PUBG'})[g]||g}
+function gameLabels(g){return ({valorant:{player:'VALORANT oyuncu adın (Riot ID)',placeholder:'Oyuncu#TR1',group:'VALORANT grup kodu'},cs2:{player:'CS2 / Steam oyuncu adın',placeholder:'Steam takma adın',group:'CS2 grup/davet kodu'},pubg:{player:'PUBG oyuncu adın',placeholder:'PUBG takma adın',group:'PUBG grup kodu'}})[g]||{player:'Oyun içi adın',placeholder:'Oyuncu adın',group:'Oyun grup kodu'}}
+
 function showModal(title){$('dialogTitle').textContent=title;clear($('dialogContent'));$('modal').classList.remove('hidden');document.body.style.overflow='hidden'}
 function hideModal(){$('modal').classList.add('hidden');document.body.style.overflow=''}
 function field(form,label,type='text',placeholder='',value='',max=80){const w=node(form,'div','field');const l=node(w,'label','',label);const a=node(w,type==='select'?'select':type==='textarea'?'textarea':'input');a.id='field_'+Math.random().toString(36).slice(2);l.htmlFor=a.id;if(a.tagName==='INPUT')a.type='text';if(type!=='select'){a.placeholder=placeholder;a.value=value;a.maxLength=max}return a}
@@ -105,17 +118,17 @@ function copyCode(){const c=member()?.invite_code;if(!c)return;const result=navi
 
 async function mutate(body){if(busy||!tok())return;busy=true;try{await api('/player-lobbies/write',{...body,id:ID});hideModal();if(body.action==='close'){location.href='index.html?wz_view=players';return}snapshot='';hideFlash();const ok=await refresh();if(ok)flash('İşlem tamamlandı.');else flash('İşlem kaydedildi ama lobi güncellenemedi. Tekrar Yenile.',true)}catch(e){flash(e.message,true)}finally{busy=false}}
 function applyModal(){if(!tok()){flash('Başvurabilmek için önce Market üzerinden Kick hesabınla giriş yap.',true);return}
-showModal(joinType()==='direct'?'Lobiye Direkt Katıl':'Lobiye Katılma Başvurusu');const f=node($('dialogContent'),'form','formgrid');const gn=field(f,'Oyun içi adın','text','Oyuncu#TR1',my?.user?.riotId||'',48);gn.parentNode.classList.add('full');let note=null;if(joinType()==='apply'){note=field(f,'Lidere not','textarea','Merhaba, katılmak istiyorum','',200);note.parentNode.classList.add('full')}
+showModal(joinType()==='direct'?'Lobiye Direkt Katıl':'Lobiye Katılma Başvurusu');const f=node($('dialogContent'),'form','formgrid');const gn=field(f,gameLabels(lobby?.game).player,'text',gameLabels(lobby?.game).placeholder,my?.user?.riotId||'',48);gn.parentNode.classList.add('full');let note=null;if(joinType()==='apply'){note=field(f,'Lidere not','textarea','Merhaba, katılmak istiyorum','',200);note.parentNode.classList.add('full')}
 const b=node(f,'button','btn full',joinType()==='direct'?'Lobiye Katıl':'Başvuru Gönder');b.type='submit';
 f.addEventListener('submit',e=>{e.preventDefault();if(!gn.value.trim()){flash('Oyun içi adın zorunlu.',true);gn.focus();return}
 mutate({action:joinType()==='direct'?'join':'apply',gameName:gn.value.trim(),note:note?.value||''})})}
-function codeModal(){showModal('Oyun Davet Kodu');const f=node($('dialogContent'),'form','formgrid');const c=field(f,'Kabul edilen üyelere gösterilecek kod','text','Davet kodu',member()?.invite_code||'',80);c.parentNode.classList.add('full');const b=node(f,'button','btn full','Kodu Kaydet');b.type='submit';f.addEventListener('submit',e=>{e.preventDefault();mutate({action:'code',code:c.value})})}
+function codeModal(){showModal('Oyun Davet Kodu');const f=node($('dialogContent'),'form','formgrid');const c=field(f,gameLabels(lobby?.game).group,'text','Oyun davet kodu',member()?.invite_code||'',80);c.parentNode.classList.add('full');const b=node(f,'button','btn full','Kodu Kaydet');b.type='submit';f.addEventListener('submit',e=>{e.preventDefault();mutate({action:'code',code:c.value})})}
 function joinModeModal(){showModal('Katılım Şeklini Düzenle');const f=node($('dialogContent'),'form','formgrid');const m=field(f,'Katılım şekli','select');
 option(m,'apply','Başvurulu — lider onayı gerekir');option(m,'direct','Direkt — boş koltuk varsa anında katılır');m.value=joinType();
 m.parentNode.classList.add('full');node(f,'p','muted','Direkt katılımda Kick ile oturum açmış oyuncular boş koltuğa hemen yerleşir. Grup kodu yalnızca katılan üyelere gösterilir.').classList.add('full');
 const b=node(f,'button','btn full','Katılım Şeklini Kaydet');b.type='submit';f.addEventListener('submit',e=>{e.preventDefault();mutate({action:'join_mode',joinMode:m.value})})}
 function capacityModal(){showModal('Kapasiteyi Düzenle');const f=node($('dialogContent'),'form','formgrid');const c=field(f,'Toplam kişi (lider dâhil)','select');[2,3,4,5].forEach(i=>option(c,String(i),i+' kişi toplam'));c.value=String(lobby.capacity);const hint=node(c.parentNode,'p','smallprint');const update=()=>{hint.textContent=Number(c.value)+' kişilik lobi: 1 kaptan + '+(Number(c.value)-1)+' başka oyuncu.'};c.addEventListener('change',update);update();const b=node(f,'button','btn full','Kaydet');b.type='submit';f.addEventListener('submit',e=>{e.preventDefault();mutate({action:'capacity',capacity:Number(c.value)})})}
-function profileModal(){if(!tok())return;showModal('Oyun İçindeki Adım');const f=node($('dialogContent'),'form','formgrid');const c=field(f,'Riot ID','text','Oyuncu#TR1',my?.user?.riotId||'',65);c.parentNode.classList.add('full');const b=node(f,'button','btn full','Kaydet');b.type='submit';f.addEventListener('submit',e=>{e.preventDefault();mutate({action:'profile',riotId:c.value})})}
+function profileModal(){if(!tok())return;showModal('Oyun İçindeki Adım');const f=node($('dialogContent'),'form','formgrid');const c=field(f,gameLabels(lobby?.game).player,'text',gameLabels(lobby?.game).placeholder,my?.user?.riotId||'',65);c.parentNode.classList.add('full');const b=node(f,'button','btn full','Kaydet');b.type='submit';f.addEventListener('submit',e=>{e.preventDefault();mutate({action:'profile',riotId:c.value})})}
 function render(){if(!lobby)return;
 $('lobbyTitle').textContent=lobby.title;$('gameName').textContent=game(lobby.game)+' · '+lobby.region;
 $('capacityCount').textContent=lobby.filled+'/'+lobby.capacity+' oyuncu';
