@@ -330,6 +330,7 @@ body.arena-dialog-open{overflow:hidden}
 .wz30652-confirm{border:1px solid #437255;border-radius:12px;padding:15px;margin-top:12px;background:#10241b}
 .wz30652-confirm .v42-check{margin:10px 0}
 @media(max-width:520px){.wz30652-approval-grid{grid-template-columns:1fr}.wz30652-rules{max-height:200px}}
+.wz3114-completed{background:#102d20!important;border:1px solid #2b8a58!important;color:#a5f5c7!important;font-weight:850}
 </style>
 
 <style id="wz622-team-dialog-style">
@@ -516,8 +517,23 @@ function renderPredictionAward(){
   const teamPrizeNote=$('arenaTeamPrizeNote');
   if(teamPrizeNote)teamPrizeNote.hidden=!state.detail || Number(t.teamSize||1)<=1;
 }
+// V31.0.14: A finished fixture outranks stale early-start metadata.
+// Never infer a completed tournament from capacity, date, or a single finished match.
+function wz3114TournamentComplete(){
+  const detail=state.detail||{};
+  const t=detail.tournament||state.t||{};
+  if(String(t.lifecycleStatus||'').toLowerCase()==='completed')return true;
+  const matches=Array.isArray(detail.matches)?detail.matches:[];
+  const mains=matches.filter(m=>String(m.matchKind||'main')==='main');
+  if(!mains.length)return false;
+  const last=Math.max(...mains.map(m=>Number(m.roundNumber||0)));
+  const final=mains.find(m=>Number(m.roundNumber||0)===last&&Number(m.matchNumber||0)===1)
+    || mains.find(m=>Number(m.roundNumber||0)===last);
+  return !!final && String(final.status||'').toLowerCase()==='completed' && !!final.winnerId
+    && matches.every(m=>['completed','bye'].includes(String(m.status||'').toLowerCase()));
+}
 function renderHero(){const t=state.t||{},loaded=!!state.detail;$('tournamentTitle').textContent=loaded?t.name||t.gameName||'Turnuva':'Turnuva bilgileri hazırlanıyor';$('tournamentSubtitle').textContent=loaded?`${t.gameName||'Oyun'} • ${t.mode==='solo'?'Solo':(t.teamSize||'?')+'v'+(t.teamSize||'?')} • ${t.bestOf||'BO1'}`:'Katılımcılar, fikstür, maç sonuçları ve tahminler tek yerde.';
- $('stats').innerHTML=loaded?`<span class="tag">${esc(t.gameName||'Oyun')}</span><span class="tag">${esc(t.bestOf||'BO1')}</span><span class="tag">${Number(t.registeredCount||0)} / ${Number(t.capacity||0)} ${t.mode==='solo'?'oyuncu':'takım'}</span><span class="tag red">${t.earlyMatchStarted&&t.manualMatchMode==='manual'?'Maçlar Erken Başladı · Tahminler Kilitli':state.detail.matches.length?'Fikstür Yayında':'Fikstür Bekleniyor'}</span>`:'';}
+ $('stats').innerHTML=loaded?`<span class="tag">${esc(t.gameName||'Oyun')}</span><span class="tag">${esc(t.bestOf||'BO1')}</span><span class="tag">${Number(t.registeredCount||0)} / ${Number(t.capacity||0)} ${t.mode==='solo'?'oyuncu':'takım'}</span><span class="tag ${wz3114TournamentComplete()?'wz3114-completed':'red'}">${wz3114TournamentComplete()?'🏆 TURNUVA TAMAMLANDI · Tüm maçlar sonuçlandı':t.earlyMatchStarted&&t.manualMatchMode==='manual'?'Maçlar Erken Başladı · Tahminler Kilitli':state.detail.matches.length?'Fikstür Yayında':'Fikstür Bekleniyor'}</span>`:'';}
 // MAÇLAR: yalnızca D1'de gerçekten atanmış takımlar; tahminlerden ASLA ilerletme yok.
 // TAHMİNLER: her kullanıcının kendi işaretlediği olası yolu; gerçek sonuçlarla karıştırma yok.
 function wzFixtureOrderedMatches(matches=state.detail?.matches||[]){return matches.filter(m=>String(m?.status||'')!=='bye').slice().sort((a,b)=>{const ax=(a.matchKind||'main')==='third_place'?1:0,bx=(b.matchKind||'main')==='third_place'?1:0;return ax-bx||Number(a.roundNumber||0)-Number(b.roundNumber||0)||Number(a.matchNumber||0)-Number(b.matchNumber||0);});}
