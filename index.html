@@ -4480,6 +4480,7 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
 .wz619-deadline-note{border:1px solid #5e441f;background:#1b160f;border-radius:8px;padding:9px 11px;color:#f6d4a0;font-size:12px;line-height:1.55;margin-top:8px}
 .wz619-deadline-note strong{font-variant-numeric:tabular-nums;color:#fff}
 </style>
+<style id="wz31-nav">#wzNavPlayers svg{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}#wzNavPlayers{flex:1;min-width:0}.wz-mobile-bottom-nav{grid-template-columns:repeat(3,minmax(0,1fr))!important;justify-content:space-around!important}.wz-mobile-bottom-nav>.wz-mobile-nav-btn{min-width:0!important;flex:1 1 0!important}#wzDesktopPlayers{white-space:nowrap}</style>
 </head>
 <body>
 <script id="wz-v58-prepaint-view">
@@ -4515,6 +4516,7 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
       <button id="wzDesktopMarket" class="wz-desktop-nav-btn active" type="button" onclick="wzSetView('market')">
         <span>Market</span>
       </button>
+      <button id="wzDesktopPlayers" class="wz-desktop-nav-btn" type="button" onclick="location.href='oyuncu-ara.html'" aria-label="Oyuncu Ara"><span>Oyuncu Ara</span></button>
       <button id="wzDesktopTournament" class="wz-desktop-nav-btn" type="button" onclick="wzSetView('tournament')">
         <span>Turnuvalar</span>
       </button>
@@ -4549,6 +4551,10 @@ body.wz-view-profile #wzTopInboxNotice{display:none!important;}
   <button class="wz-mobile-nav-btn" id="wzNavMarket" type="button" onclick="wzSetView('market')" aria-label="Market">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18l-1.5 9h-15z"/><path d="M8 7a4 4 0 0 1 8 0"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg>
     <span>Market</span>
+  </button>
+  <button class="wz-mobile-nav-btn" id="wzNavPlayers" type="button" onclick="location.href='oyuncu-ara.html'" aria-label="Oyuncu Ara">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><circle cx="18" cy="9" r="2"/><path d="M3 21v-2a6 6 0 0 1 12 0v2M16 15a5 5 0 0 1 5 5v1"/></svg>
+    <span>Oyuncu Ara</span>
   </button>
   <button class="wz-mobile-nav-btn" id="wzNavTournament" type="button" onclick="wzSetView('tournament')" aria-label="Turnuvalar">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M12 13v4"/><path d="M8 21h8"/><path d="M6 6H3v1a4 4 0 0 0 4 4"/><path d="M18 6h3v1a4 4 0 0 1-4 4"/></svg>
@@ -15521,7 +15527,7 @@ return;
         <div class="wz30660-member"><div class="wz30660-member-main">
           ${String(m.role||'').toLowerCase()==='captain'||idx===0?'👑':'👤'} ${esc(m.gameId||m.riotId||m.username||'Oyuncu')}
           <small>Kick: ${esc(m.username||'-')} · ${String(m.role||'').toLowerCase()==='captain'?'Kaptan':'Oyuncu'}</small>
-        </div><div class="wz30660-member-reward">${esc(p.value)}${perPlayer?' / kişi':''}</div></div>
+        </div><div class="wz30660-member-reward">${esc(p.value)}</div></div>
       `).join('')}</div></details>`;
     }).join('');
     return `<div class="wz-turn-box"><h3>Ödüller</h3>
@@ -17214,5 +17220,6 @@ return;
   tick();setInterval(tick,1000);
 })();
 </script>
+<script id="wz31-return-to-tournament">(function(){try{const u=new URL(location.href);if(u.searchParams.get('wz_view')==='tournament'){sessionStorage.setItem('wz_current_view','tournament');u.searchParams.delete('wz_view');history.replaceState({},'',u.pathname+u.search+u.hash);window.addEventListener('load',()=>{window.wzSetView?.('tournament')},{once:true})}}catch(_){}})();</script>
 </body>
 </html>
