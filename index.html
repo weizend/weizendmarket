@@ -181,12 +181,14 @@
   if(v==='players'){
     // V31.0.46: reserve the PREVIOUS iframe height, not a tall empty document.
     const lastFrame=Number(sessionStorage.getItem('wz_players_height_v3146')||0);
-    const h=Math.max(720,Number.isFinite(lastFrame)?lastFrame:0,y+innerHeight-90);
+    // V31.0.48: enough scrollable height BEFORE first visual frame, not 90px short.
+    const h=Math.max(720,Number.isFinite(lastFrame)?lastFrame:0,y+innerHeight+96);
     window.__WZ_V3146_PLAYERS_REFRESH__={active:true,y,height:Math.ceil(h),ready:false,userMoved:false};
     document.documentElement.classList.add('wz-v3146-player-refresh');
     // V31.0.47: hold only the directory's FIRST paint until the saved scroll is applied.
     // Header and bottom navigation remain visible; no artificial document height.
     document.documentElement.classList.add('wz-v3147-player-paint-hold');
+    document.documentElement.classList.add('wz-v3148-player-restoring');
     document.documentElement.style.setProperty('--wz-v3146-frame-height',Math.ceil(h)+'px');
   }else{
     window.__WZ_V3142_RESTORE__={view:v,y,ready:false,started:Date.now()};
@@ -198,6 +200,9 @@
 <style id="wz-v3147-player-first-paint">
 /* Suppress the brief directory-at-top flash on F5, not the whole site. */
 html.wz-v3147-player-paint-hold body.wz-view-players #wzPlayersView{visibility:hidden!important}
+/* V31.0.48: the header was still painting at top, then disappearing on scroll. */
+html.wz-v3148-player-restoring body.wz-view-players #wzAppbar,
+html.wz-v3148-player-restoring body.wz-view-players #wzPlayersView{visibility:hidden!important}
 </style>
 <script id="wz-v15-boot">
 (function(){
@@ -17560,24 +17565,30 @@ return;
   // V31.0.46: restore once, from the cached frame height, BEFORE the API finishes.
   // Later network callbacks may resize content but never force a second jump.
   let playersInitialPositionSet=false;
-  let firstPaintReleased=false;
+  let firstPaintReleased=false,paintReleaseScheduled=false;
+  function clearFirstPaintHold(){
+    document.documentElement.classList.remove('wz-v3147-player-paint-hold','wz-v3148-player-restoring');
+  }
   function releaseFirstPlayerPaint(){
-    if(firstPaintReleased)return;
-    firstPaintReleased=true;
-    // Wait one layout frame after applying scrollTo, so the first visible
-    // directory frame is already at the intended position.
+    if(firstPaintReleased || paintReleaseScheduled)return;
+    // V31.0.48: don't reveal the page until the embedded directory has
+    // created its real layout. Revealing at initial scrollTo caused a flash.
+    if(reloadRestoringPlayers && !panel.classList.contains('wz-iframe-ready'))return;
+    paintReleaseScheduled=true;
     requestAnimationFrame(()=>{
-      if(reloadRestoringPlayers && !playerRefresh?.userMoved && restoreTarget>0 &&
-         Math.abs((window.scrollY||0)-restoreTarget)>12){
+      paintReleaseScheduled=false;
+      if(firstPaintReleased)return;
+      if(reloadRestoringPlayers && !playerRefresh?.userMoved && restoreTarget>0){
         const root=document.documentElement,prior=root.style.scrollBehavior;
         try{root.style.scrollBehavior='auto';window.scrollTo(0,restoreTarget)}catch(_){}
         root.style.scrollBehavior=prior;
       }
-      document.documentElement.classList.remove('wz-v3147-player-paint-hold');
+      firstPaintReleased=true;
+      clearFirstPaintHold();
     });
   }
-  // Fail open if an unexpected old device/browser blocks iframe initialization.
-  if(reloadRestoringPlayers)setTimeout(()=>document.documentElement.classList.remove('wz-v3147-player-paint-hold'),3000);
+  // Fail open: no blank screen if the embedded page fails to load.
+  if(reloadRestoringPlayers)setTimeout(clearFirstPaintHold,3000);
   function rememberPlayerScroll(){
     if(!document.body.classList.contains('wz-view-players'))return;
     if(reloadRestoringPlayers && !restoreReady)return;
@@ -17594,7 +17605,7 @@ return;
     if(!reloadRestoringPlayers||playersInitialPositionSet||!document.body.classList.contains('wz-view-players'))return;
     const target=Math.max(0,restoreTarget);
     if(!target){playersInitialPositionSet=true;releaseFirstPlayerPaint();return;}
-    const h=Math.max(720,Number(playerRefresh?.height||0),target+innerHeight-90);
+    const h=Math.max(720,Number(playerRefresh?.height||0),target+innerHeight+96);
     if((parseFloat(frame.style.height)||0)<h)frame.style.height=Math.ceil(h)+'px';
     // Force an instant layout scroll even if another stylesheet enables smooth scroll.
     const root=document.documentElement,prior=root.style.scrollBehavior;
@@ -17620,7 +17631,7 @@ return;
     window.addEventListener(evt,()=>{
       if(playerRefresh?.active)playerRefresh.userMoved=true;
       // The user deliberately interacted before initial restore: unblock view.
-      if(playerRefresh?.active)document.documentElement.classList.remove('wz-v3147-player-paint-hold');
+      if(playerRefresh?.active)clearFirstPaintHold();
       // Already at saved coordinate: do not undo a new user scroll later.
     },{passive:true});
   }
@@ -17665,6 +17676,7 @@ return;
       if(content)observer.observe(content);
       iframeDoc.defaultView?.addEventListener('resize',resizePlayers);
       resizePlayers();
+      releaseFirstPlayerPaint();
     }catch(e){console.warn('Oyuncu Ara otomatik yükseklik:',e)}
   });
   window.addEventListener('resize',resizePlayers);
