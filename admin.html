@@ -4502,6 +4502,21 @@ function dateText(value){
     : d.toLocaleString('tr-TR');
 }
 
+// V31.0.39: D1 CURRENT_TIMESTAMP UTC kaydeder fakat saat dilimi bilgisi
+// eklemez ("YYYY-MM-DD HH:mm:ss"). Yalnizca mesaj tarihlerinde bu
+// damgayi UTC kabul edip tum cihazlarda Turkiye saatini gosteriyoruz.
+// Bu fonksiyon genel turnuva/takvim tarihlerine uygulanmaz.
+function dmTurkeyDateText(value){
+  if(!value) return '-';
+  const raw = String(value).trim();
+  const sqliteUtc = /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,9})?)?$/.test(raw);
+  const parsed = sqliteUtc ? raw.replace(' ', 'T')+'Z' : raw;
+  const date = new Date(parsed);
+  return Number.isNaN(date.getTime())
+    ? raw
+    : date.toLocaleString('tr-TR',{timeZone:'Europe/Istanbul'});
+}
+
 function points(value){
   return `${Number(value || 0).toLocaleString('tr-TR')} Puan`;
 }
@@ -7037,7 +7052,7 @@ function renderAdminConversationList(){
             <span class="dmConversationPreview">${esc(preview)}</span>
           </span>
           <span class="dmConversationSide">
-            <span class="dmConversationTime">${esc(dateText(c.last_message_at || ''))}</span>
+            <span class="dmConversationTime">${esc(dmTurkeyDateText(c.last_message_at || ''))}</span>
             ${unread > 0 ? `<span class="dmUnreadBadge">${unread > 99 ? '99+' : unread}</span>` : ''}
           </span>
         </button>`;
@@ -7209,7 +7224,7 @@ function renderAdminConversation(){
               </svg>
             </button>
           </div>
-          <div class="dmBubbleMeta">${esc(dateText(m.created_at))} · ${esc(readText)}</div>
+          <div class="dmBubbleMeta">${esc(dmTurkeyDateText(m.created_at))} · ${esc(readText)}</div>
         </div>`;
     }).join('');
   }
