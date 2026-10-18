@@ -13678,6 +13678,12 @@ return;
   }
 
   function wzRestoreViewScroll(view){
+    // V31.0.40: Players has a nested, async-height iframe. Its dedicated
+    // restore runs only after that iframe finished rendering its API results.
+    // Do not clamp or overwrite the saved coordinate while the iframe is short.
+    if(view==='players' && window.__WZ_INITIAL_VIEW__==='players'){
+      try{if(performance.getEntriesByType('navigation')[0]?.type==='reload')return}catch(_){}
+    }
     let y=Math.max(0,Number(wzViewScroll[view] || 0));
 
     try{
@@ -17487,23 +17493,46 @@ return;
   let loaded=false, observer=null, iframeDoc=null;
   const restoreKey='wz_players_saved_scroll_v3125';
   let reloadRestoringPlayers=false,restoredPlayers=false,restoreLockUntil=0;
+  let restoreReady=false,restoreTarget=0,restoreBegin=0;
   try{reloadRestoringPlayers=performance.getEntriesByType('navigation')[0]?.type==='reload'&&
       (sessionStorage.getItem('wz_current_view')==='players'||window.__WZ_INITIAL_VIEW__==='players')}catch(_){ }
-  window.addEventListener('scroll',()=>{
-    if(document.body.classList.contains('wz-view-players')){
-      if(reloadRestoringPlayers && (!restoredPlayers||Date.now()<restoreLockUntil))return;
+  if(reloadRestoringPlayers){
+    try{
+      const dedicated=Number(sessionStorage.getItem(restoreKey));
+      const legacy=Number(sessionStorage.getItem('wz_v23_scroll_players'));
+      restoreTarget=Math.max(0,Number.isFinite(dedicated)&&sessionStorage.getItem(restoreKey)!==null?dedicated:(Number.isFinite(legacy)?legacy:0));
+    }catch(_){ }
+    // Until the iframe API result has painted, no listener may replace the
+    // saved coordinate with the temporary 0 from a short, loading page.
+    restoreLockUntil=Number.MAX_SAFE_INTEGER;
+  }
+  function rememberPlayerScroll(){
+    if(!document.body.classList.contains('wz-view-players'))return;
+    if(reloadRestoringPlayers && (!restoredPlayers||Date.now()<restoreLockUntil))return;
+    try{sessionStorage.setItem(restoreKey,String(Math.round(window.scrollY||0)))}catch(_){ }
+  }
+  window.addEventListener('scroll',rememberPlayerScroll,{passive:true});
+  window.addEventListener('pagehide',rememberPlayerScroll,{capture:true});
+  window.addEventListener('beforeunload',rememberPlayerScroll,{capture:true});
+  function tryRestorePlayerScroll(){
+    if(!reloadRestoringPlayers||restoredPlayers||!restoreReady)return;
+    const maxY=Math.max(0,Math.max(document.body.scrollHeight,document.documentElement.scrollHeight)-window.innerHeight);
+    // Give the iframe time to grow to its final height before clamping.
+    if(maxY+2<restoreTarget && Date.now()-restoreBegin<4200)return;
+    const y=Math.min(restoreTarget,maxY);
+    try{window.scrollTo({top:y,left:0,behavior:'instant'})}catch(_){window.scrollTo(0,y)}
+    if(Math.abs((window.scrollY||0)-y)<=3 || Date.now()-restoreBegin>4200){
+      restoredPlayers=true;
+      restoreLockUntil=Date.now()+250;
       try{sessionStorage.setItem(restoreKey,String(Math.round(window.scrollY||0)))}catch(_){ }
     }
-  },{passive:true});
+  }
   function restorePlayerScroll(){
-    if(!reloadRestoringPlayers||restoredPlayers)return;
-    restoredPlayers=true;restoreLockUntil=Date.now()+1100;
-    let y=0;try{y=Math.max(0,Number(sessionStorage.getItem(restoreKey)||0))}catch(_){ }
-    // DOM height changes once the fetched lobby list is painted; restore after layout settles.
-    const go=()=>{resizePlayers();if(y>0)window.scrollTo({top:y,behavior:'instant'})};
+    if(!reloadRestoringPlayers||restoredPlayers||restoreReady)return;
+    restoreReady=true;restoreBegin=Date.now();
+    const go=()=>{resizePlayers();tryRestorePlayerScroll()};
     requestAnimationFrame(()=>requestAnimationFrame(go));
-    setTimeout(go,180);
-    setTimeout(go,700);
+    for(const ms of [180,450,850,1400,2200,3400,4300])setTimeout(go,ms);
   }
   window.addEventListener('message',event=>{
     if(event.source===frame.contentWindow && event.origin===location.origin && event.data?.type==='weizend-players-ready'){
@@ -17519,6 +17548,7 @@ return;
       const measured=Math.max(d?.scrollHeight||0,b?.scrollHeight||0,b?.offsetHeight||0);
       if(measured>0){const newHeight=Math.ceil(measured)+2;
         if(Math.abs((parseFloat(frame.style.height)||0)-newHeight)>3)frame.style.height=newHeight+'px';}
+      if(restoreReady&&!restoredPlayers)requestAnimationFrame(tryRestorePlayerScroll);
     }catch(e){console.warn('Oyuncu Ara boyutlandırma:',e)}
   }
   frame.addEventListener('load',()=>{
@@ -17556,7 +17586,9 @@ return;
       document.body.classList.remove('wz-view-market','wz-view-tournament','wz-view-profile');
       document.body.classList.add('wz-view-players');
       // Never reset scroll during a reload of the active Players tab.
-      if(!reloadRestoringPlayers)try{window.scrollTo(0,0)}catch(_){}
+      if(!reloadRestoringPlayers){
+        try{sessionStorage.setItem(restoreKey,'0');window.scrollTo(0,0)}catch(_){}
+      }
     }
     // Keep the same session/history persistence the original Market views use.
     try{sessionStorage.setItem('wz_current_view','players')}catch(_){}
@@ -17574,6 +17606,7 @@ return;
   // On F5 the base view restorer runs BEFORE this adapter. Hydrate the players iframe
   // even if no user clicks the tab; otherwise the view can appear empty after reload.
   if(document.body.classList.contains('wz-view-players')){loadOnce();resizePlayers();}
+  if(reloadRestoringPlayers)setTimeout(restorePlayerScroll,6000);
   // This link comes from the lobby detail tab; return to the directory, not Market home.
   if(new URL(location.href).searchParams.get('wz_view')==='players'){
     try{sessionStorage.setItem('wz_current_view','players')}catch(_){}
