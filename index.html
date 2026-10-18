@@ -168,7 +168,7 @@
  try{
   const nav=performance.getEntriesByType('navigation')[0];
   if(nav?.type!=='reload')return;
-  const valid=new Set(['profile','players']);
+  const valid=new Set(['profile']); // V31.0.45: Players uses the iframe-ready restore only; no ghost page.
   const v=sessionStorage.getItem('wz_current_view')||history.state?.wzView||'';
   if(!valid.has(v))return;
   const key=v==='players'?'wz_players_saved_scroll_v3125':'wz_v23_scroll_profile';
@@ -17540,6 +17540,16 @@ return;
     // saved coordinate with the temporary 0 from a short, loading page.
     restoreLockUntil=Number.MAX_SAFE_INTEGER;
   }
+  // Never drag the page back after a deliberate user gesture during reload.
+  function interruptPlayerRestore(){
+    if(!reloadRestoringPlayers||restoredPlayers)return;
+    reloadRestoringPlayers=false;
+    restoredPlayers=true;
+    restoreLockUntil=0;
+  }
+  for(const evt of ['wheel','touchstart','pointerdown','keydown']){
+    window.addEventListener(evt,interruptPlayerRestore,{passive:true});
+  }
   function rememberPlayerScroll(){
     if(!document.body.classList.contains('wz-view-players'))return;
     if(reloadRestoringPlayers && (!restoredPlayers||Date.now()<restoreLockUntil))return;
@@ -17578,10 +17588,18 @@ return;
     if(!iframeDoc)return;
     if(document.body.classList.contains('wz-player-form-open'))return;
     try{
-      const d=iframeDoc.documentElement,b=iframeDoc.body;
-      const measured=Math.max(d?.scrollHeight||0,b?.scrollHeight||0,b?.offsetHeight||0);
-      if(measured>0){const newHeight=Math.ceil(measured)+2;
-        if(Math.abs((parseFloat(frame.style.height)||0)-newHeight)>3)frame.style.height=newHeight+'px';}
+      // V31.0.45: measure the content, NEVER html/body.scrollHeight.
+      // Those values can follow the iframe viewport; height=scrollHeight+2
+      // creates an unbounded ResizeObserver feedback loop on mobile.
+      const main=iframeDoc.querySelector('main.wrap');
+      if(!main)return;
+      const rect=main.getBoundingClientRect();
+      const contentBottom=Math.max(0,rect.bottom+(iframeDoc.defaultView?.scrollY||0));
+      const required=Math.ceil(Math.max(main.offsetTop+main.offsetHeight,contentBottom));
+      const viewportFloor=Math.ceil(Math.max(280,window.innerHeight-120));
+      const newHeight=Math.max(required,viewportFloor);
+      // Avoid subpixel oscillations: update only on an actual content change.
+      if(Math.abs((parseFloat(frame.style.height)||0)-newHeight)>3)frame.style.height=newHeight+'px';
       if(restoreReady&&!restoredPlayers)requestAnimationFrame(tryRestorePlayerScroll);
     }catch(e){console.warn('Oyuncu Ara boyutlandırma:',e)}
   }
@@ -17590,7 +17608,9 @@ return;
       panel.classList.add('wz-iframe-ready');
       if(observer)observer.disconnect();
       observer=new ResizeObserver(resizePlayers);
-      observer.observe(iframeDoc.body);observer.observe(iframeDoc.documentElement);
+      // Observe the actual directory, not the root viewport whose size we set.
+      const content=iframeDoc.querySelector('main.wrap');
+      if(content)observer.observe(content);
       iframeDoc.defaultView?.addEventListener('resize',resizePlayers);
       resizePlayers();
     }catch(e){console.warn('Oyuncu Ara otomatik yükseklik:',e)}
@@ -17640,7 +17660,7 @@ return;
   // On F5 the base view restorer runs BEFORE this adapter. Hydrate the players iframe
   // even if no user clicks the tab; otherwise the view can appear empty after reload.
   if(document.body.classList.contains('wz-view-players')){loadOnce();resizePlayers();}
-  if(reloadRestoringPlayers)setTimeout(restorePlayerScroll,6000);
+  if(reloadRestoringPlayers)setTimeout(()=>{if(document.body.classList.contains('wz-view-players'))restorePlayerScroll()},6000);
   // This link comes from the lobby detail tab; return to the directory, not Market home.
   if(new URL(location.href).searchParams.get('wz_view')==='players'){
     try{sessionStorage.setItem('wz_current_view','players')}catch(_){}
@@ -17803,7 +17823,7 @@ return;
     if(!(restoreIsActive&&snap?.view===v))store(v,0);
    }
   }
-  if(restoreIsActive||!['profile','players'].includes(v))return;
+  if(restoreIsActive||v!=='profile')return; // Players scroll is recorded by the integrated iframe handler.
   if(document.body.classList.contains('wz-player-form-open')||
      document.body.classList.contains('wz-game-dialog-open')||
      document.documentElement.classList.contains('wz-game-dialog-open'))return;
