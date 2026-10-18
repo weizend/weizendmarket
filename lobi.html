@@ -80,9 +80,23 @@ main.wrap{max-width:1200px!important;width:min(1200px,calc(100% - 32px));padding
 @media(max-width:650px){header.top .topinner{width:calc(100% - 24px);min-height:64px}main.wrap{width:calc(100% - 24px);padding:14px 0 46px!important}header.top .brandName{font-size:16px!important}}
 
 </style>
+<style id="wz-v3136-lobby-mobile-load">
+/* No giant loading splash; the real page header remains and a quiet skeleton fills the delay. */
+body.wz-lobby-booting #wzLobbyBoot{display:block!important;box-sizing:border-box;max-width:1200px!important;width:calc(100% - 32px)!important;margin:14px auto!important;padding:0!important;min-height:0!important;animation:wz3136Delay .001s 340ms both!important}
+@keyframes wz3136Delay{from{opacity:0}to{opacity:1}}
+#wzLobbyBoot .wz3136-loader-card{width:100%;box-sizing:border-box;padding:18px;border:1px solid #30333d;border-radius:18px;background:#111319;min-height:160px;text-align:left}
+#wzLobbyBoot .wz3136-skeleton{height:18px;max-width:100%;background:linear-gradient(105deg,#21242e 8%,#2d303b 20%,#21242e 36%);background-size:200% 100%;border-radius:8px;animation:wz3136Shimmer 1.5s linear infinite;margin:0 0 14px}
+#wzLobbyBoot .wz3136-skeleton-wide{width:28%;height:19px}
+#wzLobbyBoot .wz3136-skeleton-heading{width:62%;height:27px}
+#wzLobbyBoot .wz3136-skeleton-short{width:40%;height:15px}
+#wzLobbyBoot #wz3136LoadingText{font-size:12px!important;color:#a8aab4}
+@keyframes wz3136Shimmer{to{background-position-x:-200%}}
+@media(max-width:540px){body.wz-lobby-booting #wzLobbyBoot{width:calc(100% - 24px)!important;margin-top:12px!important}#wzLobbyBoot .wz3136-loader-card{padding:14px;min-height:144px}}
+@media(prefers-reduced-motion:reduce){#wzLobbyBoot .wz3136-skeleton{animation:none}}
+</style>
 </head><body class="wz-lobby-booting">
 <header class="top"><div class="topinner"><a class="brand" href="index.html?wz_view=players"><img src="https://i.hizliresim.com/fo5evkh4.png" alt="WEİZEND logosu" class="siteLogo"><span class="brandCopy"><span class="brandName">WEİZEND</span><small>OYUN LOBİSİ</small></span></a><a class="headerBack" href="index.html?wz_view=players">← Oyuncu Ara’ya Dön</a></div></header>
-<div id="wzLobbyBoot" role="status"><strong>WEİZEND · OYUN LOBİSİ</strong><small>Bağlantı kontrol ediliyor…</small></div>
+<div id="wzLobbyBoot" role="status" aria-live="polite"><div class="wz3136-loader-card"><div class="wz3136-skeleton wz3136-skeleton-wide"></div><div class="wz3136-skeleton wz3136-skeleton-heading"></div><div class="wz3136-skeleton wz3136-skeleton-short"></div><small id="wz3136LoadingText">Lobi bilgileri alınıyor…</small></div></div>
 <main class="wrap"><div class="extra"><span class="smallprint" id="lobbyState">Lobi durumunu kontrol et</span><button id="refreshBtn" class="btn alt small" type="button">↻ Yenile</button></div>
 <div id="message" role="status" aria-live="polite" class="notice hidden"></div>
 <div id="lobbyMain"><section><div class="card"><div class="extra"><span class="tag" id="gameName">Oyun</span><span class="smallprint" id="capacityCount">—</span></div><h1 id="lobbyTitle" class="detail-title">Lobi yükleniyor…</h1><p id="lobbyMeta" class="muted"></p><p id="lobbyNote"></p><div id="roster" class="roster"></div></div>
@@ -136,7 +150,18 @@ function member(){return my?.member?.id===ID?my.member:null}
 function isOwner(){return !!(member()&&my.user&&member().owner_uid===my.user.uid)}
 function pending(){return (my?.applications||[]).find(a=>a.lobby_id===ID&&a.status==='pending')}
 function joinType(){return lobby?.join_mode==='direct'?'direct':'apply'}
-function copyCode(){const c=member()?.invite_code;if(!c)return;const result=navigator.clipboard?.writeText(c);if(result)result.then(()=>flash('Grup kodu kopyalandı.')).catch(()=>flash('Kodu seçip kopyalayabilirsin.',true));else flash('Kod panoya kopyalanamadı.',true)}
+let wz3136CopyReset=null;
+function wz3136CopyLabel(label){
+ const btn=$('copyGroup');if(!btn)return;
+ btn.textContent=label;clearTimeout(wz3136CopyReset);
+ wz3136CopyReset=setTimeout(()=>{if(btn.isConnected)btn.textContent='Kopyala'},1700);
+}
+async function copyCode(){
+ const c=member()?.invite_code;if(!c)return;
+ try{if(!navigator.clipboard?.writeText)throw Error('Panoya erişilemiyor');
+ await navigator.clipboard.writeText(c);wz3136CopyLabel('✓ Kopyalandı');
+ }catch(_){wz3136CopyLabel('⚠ Kopyalanamadı');}
+}
 
 async function mutate(body){if(busy||!tok())return;busy=true;try{await api('/player-lobbies/write',{...body,id:ID});hideModal();if(body.action==='close'){location.href='index.html?wz_view=players';return}snapshot='';hideFlash();const ok=await refresh();if(ok)flash('İşlem tamamlandı.');else flash('İşlem kaydedildi ama lobi güncellenemedi. Tekrar Yenile.',true)}catch(e){flash(e.message,true)}finally{busy=false}}
 async function applyModal(){if(!tok()){flash('Önce Market üzerinden Kick hesabını doğrula.',true);return}
@@ -210,7 +235,12 @@ try{
 $('copyGroup').addEventListener('click',copyCode);
 $('refreshBtn').addEventListener('click',async()=>{const b=$('refreshBtn');if(b.disabled)return;b.disabled=true;b.textContent='⏳ Kontrol ediliyor...';try{const ok=await refresh();b.textContent=ok?'✓ Güncel':'⚠ Hata'}finally{setTimeout(()=>{b.textContent='↻ Yenile';b.disabled=false},1100)}});
 $('closeModal').addEventListener('click',hideModal);$('modal').addEventListener('click',e=>{if(e.target===$('modal'))hideModal()});document.addEventListener('keydown',e=>{if(e.key==='Escape')hideModal()});
-if(!/^[0-9a-f-]{36}$/.test(ID)){document.body.classList.remove('wz-lobby-booting');flash('Geçerli bir lobi adresi açmalısın.',true);$('lobbyTitle').textContent='Lobi bulunamadı'}
+if(new URL(location.href).searchParams.get('pending')==='1'){
+ // Opened synchronously by the create button: show the full themed page while
+ // the real lobby id is being created. Parent tab replaces this URL on success.
+ $('wz3136LoadingText').textContent='Yeni oyun lobin oluşturuluyor…';
+ setTimeout(()=>{if(location.search.includes('pending=1'))$('wz3136LoadingText').textContent='Oluşturma işlemi sürüyor. İşlem uzarsa önceki sekmeye dönerek kontrol et.'},16000);
+}else if(!/^[0-9a-f-]{36}$/.test(ID)){document.body.classList.remove('wz-lobby-booting');flash('Geçerli bir lobi adresi açmalısın.',true);$('lobbyTitle').textContent='Lobi bulunamadı'}
 else {
  refresh();
  setInterval(()=>{if(!busy&&!document.hidden&&$('modal').classList.contains('hidden'))void refresh(true)},10000);
