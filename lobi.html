@@ -139,18 +139,23 @@ function joinType(){return lobby?.join_mode==='direct'?'direct':'apply'}
 function copyCode(){const c=member()?.invite_code;if(!c)return;const result=navigator.clipboard?.writeText(c);if(result)result.then(()=>flash('Grup kodu kopyalandı.')).catch(()=>flash('Kodu seçip kopyalayabilirsin.',true));else flash('Kod panoya kopyalanamadı.',true)}
 
 async function mutate(body){if(busy||!tok())return;busy=true;try{await api('/player-lobbies/write',{...body,id:ID});hideModal();if(body.action==='close'){location.href='index.html?wz_view=players';return}snapshot='';hideFlash();const ok=await refresh();if(ok)flash('İşlem tamamlandı.');else flash('İşlem kaydedildi ama lobi güncellenemedi. Tekrar Yenile.',true)}catch(e){flash(e.message,true)}finally{busy=false}}
-function applyModal(){if(!tok()){flash('Başvurabilmek için önce Market üzerinden Kick hesabınla giriş yap.',true);return}
-showModal(joinType()==='direct'?'Lobiye Direkt Katıl':'Lobiye Katılma Başvurusu');const f=node($('dialogContent'),'form','formgrid');const gn=field(f,gameLabels(lobby?.game).player,'text',gameLabels(lobby?.game).placeholder,my?.user?.riotId||'',48);gn.parentNode.classList.add('full');let note=null;if(joinType()==='apply'){note=field(f,'Lidere not','textarea','Merhaba, katılmak istiyorum','',200);note.parentNode.classList.add('full')}
-const b=node(f,'button','btn full',joinType()==='direct'?'Lobiye Katıl':'Başvuru Gönder');b.type='submit';
-f.addEventListener('submit',e=>{e.preventDefault();if(!gn.value.trim()){flash('Oyun içi adın zorunlu.',true);gn.focus();return}
-mutate({action:joinType()==='direct'?'join':'apply',gameName:gn.value.trim(),note:note?.value||''})})}
+async function applyModal(){if(!tok()){flash('Önce Market üzerinden Kick hesabını doğrula.',true);return}
+ let registered='';try{const d=await api('/game-accounts');registered=String((d.accounts||[]).find(a=>a.game_key===lobby?.game)?.account_name||'')}catch(e){flash(e.message,true);return}
+ if(!registered){showModal('Oyun Hesabı Gerekli');const c=$('dialogContent');node(c,'p','',game(lobby?.game)+' hesabını önce WEİZEND Profil > Bağlı Oyun Hesapları bölümüne eklemelisin.');
+ const link=node(c,'a','btn','Profil > Oyun Hesabı Ekle');link.href='index.html?wz_profile_accounts=1';return}
+ showModal(joinType()==='direct'?'Lobiye Direkt Katıl':'Lobiye Katılma Başvurusu');const f=node($('dialogContent'),'form','formgrid');const gn=field(f,gameLabels(lobby?.game).player,'text',gameLabels(lobby?.game).placeholder,registered,65);gn.parentNode.classList.add('full');gn.readOnly=true;
+ let note=null;if(joinType()==='apply'){note=field(f,'Lidere not','textarea','Merhaba, katılmak istiyorum','',200);note.parentNode.classList.add('full')}
+ const b=node(f,'button','btn full',joinType()==='direct'?'Lobiye Katıl':'Başvuru Gönder');b.type='submit';
+ f.addEventListener('submit',e=>{e.preventDefault();mutate({action:joinType()==='direct'?'join':'apply',gameName:registered,note:note?.value||''})})}
+
 function codeModal(){showModal('Oyun Davet Kodu');const f=node($('dialogContent'),'form','formgrid');const c=field(f,gameLabels(lobby?.game).group,'text','Oyun davet kodu',member()?.invite_code||'',80);c.parentNode.classList.add('full');const b=node(f,'button','btn full','Kodu Kaydet');b.type='submit';f.addEventListener('submit',e=>{e.preventDefault();mutate({action:'code',code:c.value})})}
 function joinModeModal(){showModal('Katılım Şeklini Düzenle');const f=node($('dialogContent'),'form','formgrid');const m=field(f,'Katılım şekli','select');
 option(m,'apply','Başvurulu — lider onayı gerekir');option(m,'direct','Direkt — boş koltuk varsa anında katılır');m.value=joinType();
 m.parentNode.classList.add('full');node(f,'p','muted','Direkt katılımda Kick ile oturum açmış oyuncular boş koltuğa hemen yerleşir. Grup kodu yalnızca katılan üyelere gösterilir.').classList.add('full');
 const b=node(f,'button','btn full','Katılım Şeklini Kaydet');b.type='submit';f.addEventListener('submit',e=>{e.preventDefault();mutate({action:'join_mode',joinMode:m.value})})}
 function capacityModal(){showModal('Kapasiteyi Düzenle');const f=node($('dialogContent'),'form','formgrid');const c=field(f,'Toplam kişi (lider dâhil)','select');[2,3,4,5].forEach(i=>option(c,String(i),i+' kişi toplam'));c.value=String(lobby.capacity);const hint=node(c.parentNode,'p','smallprint');const update=()=>{hint.textContent=Number(c.value)+' kişilik lobi: 1 kaptan + '+(Number(c.value)-1)+' başka oyuncu.'};c.addEventListener('change',update);update();const b=node(f,'button','btn full','Kaydet');b.type='submit';f.addEventListener('submit',e=>{e.preventDefault();mutate({action:'capacity',capacity:Number(c.value)})})}
-function profileModal(){if(!tok())return;showModal('Oyun İçindeki Adım');const f=node($('dialogContent'),'form','formgrid');const c=field(f,gameLabels(lobby?.game).player,'text',gameLabels(lobby?.game).placeholder,my?.user?.riotId||'',65);c.parentNode.classList.add('full');const b=node(f,'button','btn full','Kaydet');b.type='submit';f.addEventListener('submit',e=>{e.preventDefault();mutate({action:'profile',riotId:c.value})})}
+function profileModal(){showModal('Oyun Hesabını Düzenle');const c=$('dialogContent');node(c,'p','', 'Oyun içi adını artık WEİZEND Profil bölümünden yönetebilirsin. Kaydın lobiye katılımlarda otomatik kullanılır.');const a=node(c,'a','btn','Profilde Düzenle');a.href='index.html?wz_profile_accounts=1'}
+
 function render(){if(!lobby)return;
 $('lobbyTitle').textContent=lobby.title;$('gameName').textContent=game(lobby.game)+' · '+lobby.region;
 $('capacityCount').textContent=lobby.filled+'/'+lobby.capacity+' oyuncu';
