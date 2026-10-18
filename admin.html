@@ -5254,10 +5254,13 @@ function renderSupportRewardEvents(){
   for(const item of items){
     const [statusText,statusBadge]=supportRewardStatusInfo(item.status);
     const eventStatus=String(item.status||'');
-    const canCancel=['pending_identity','issuing','code_issued'].includes(eventStatus);
-    const canDelete=eventStatus==='cancelled';
-    const codeLast4=String(item.redeem_code_last4||'').trim();
     const giftStatus=String(item.gift_code_status||'').trim();
+    // A redeemed gift code has already awarded the user. Never offer cancellation then.
+    const usedCode=giftStatus==='redeemed';
+    const canCancel=!usedCode && ['pending_identity','issuing'].includes(eventStatus)
+      || (!usedCode && eventStatus==='code_issued' && giftStatus==='unused');
+    const canDelete=eventStatus==='cancelled' || usedCode;
+    const codeLast4=String(item.redeem_code_last4||'').trim();
     const codeText=codeLast4 ? `••••-${codeLast4}` : '-';
     const usedBy=String(item.gift_code_redeemed_by_username||'').trim();
     // Kullanilmamis kod kirmizi; kullanilan kodda yalnizca GERCEK kullanan.
@@ -5282,7 +5285,7 @@ function renderSupportRewardEvents(){
       <td>${canCancel
         ? `<button class="smallBtn danger" onclick="cancelSupportRewardEvent('${encodeURIComponent(item.id)}')">🚫 İptal Et</button>`
         : canDelete
-          ? `<button class="iconDanger" title="Bu iptal kaydını listeden sil" aria-label="Kaydı sil" onclick="deleteSupportRewardEvent('${encodeURIComponent(item.id)}')">🗑️</button>`
+          ? `<button class="iconDanger" title="Destek ödülünü listeden kaldır; kullanılmış kod ve puan korunur" aria-label="Destek kaydını sil" onclick="deleteSupportRewardEvent('${encodeURIComponent(item.id)}')">🗑️</button>`
           : '<span class="muted">-</span>'}</td>`;
     body.appendChild(tr);
   }
@@ -5352,14 +5355,14 @@ async function cancelSupportRewardEvent(encodedId){
 async function deleteSupportRewardEvent(encodedId){
   const id=decodeURIComponent(encodedId||'');
   if(!id) return;
-  if(!confirm('Bu iptal edilmiş destek kaydı listeden kalıcı olarak silinsin mi?\n\nİptal edilen hediye kodu tekrar aktif olmaz.')) return;
+  if(!confirm('Bu destek ödülü kaydı listeden kaldırılsın mı?\n\nKullanılmış hediye kodu, verilmiş puan ve işlem geçmişi değişmez.')) return;
 
   try{
     const {r,d}=await api('/admin/support-rewards/event/delete',{
       method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})
     });
     if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
-    showStatus('supportRewardEventsStatus','✅ İptal edilmiş destek kaydı listeden silindi.',true);
+    showStatus('supportRewardEventsStatus','✅ Destek kaydı listeden kaldırıldı. Kullanılmış kodlar ve puanlar korunuyor.',true);
     await loadSupportRewardEvents();
   }catch(error){
     showStatus('supportRewardEventsStatus','❌ '+esc(error.message || error),false);
