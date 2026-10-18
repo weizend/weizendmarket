@@ -163,6 +163,27 @@
   window.__WZ_CACHED_LOGO_SRC__=(src)=>imageMap[src]||src;
 })();
 </script>
+<script id="wz-v3142-early-scroll-snapshot">
+(function(){'use strict';
+ try{
+  const nav=performance.getEntriesByType('navigation')[0];
+  if(nav?.type!=='reload')return;
+  const valid=new Set(['profile','players']);
+  const v=sessionStorage.getItem('wz_current_view')||history.state?.wzView||'';
+  if(!valid.has(v))return;
+  const key=v==='players'?'wz_players_saved_scroll_v3125':'wz_v23_scroll_profile';
+  const previous=sessionStorage.getItem('wz_v3142_scroll_'+v);
+  // Prefer the value captured by this fix, otherwise use the previous built-in key.
+  const value=previous!==null?previous:sessionStorage.getItem(key);
+  const y=Number(value);
+  if(!Number.isFinite(y)||y<8)return;
+  window.__WZ_V3142_RESTORE__={view:v,y,ready:false,started:Date.now()};
+  if('scrollRestoration' in history)history.scrollRestoration='manual';
+  // Prevent a short loading skeleton from clamping the browser's old scroll position.
+  document.documentElement.style.minHeight=Math.ceil(y+innerHeight+24)+'px';
+ }catch(_){}
+})();
+</script>
 <script id="wz-v15-boot">
 (function(){
   document.documentElement.classList.add('wz-boot');
@@ -7084,10 +7105,18 @@ body.wz-game-dialog-open .wz-mobile-bottom-nav{visibility:hidden!important;point
             return true;
         }
 
+        // V31.0.44: D1'in UTC, saat dilimsiz mesaj damgalari
+        // her cihazda Europe/Istanbul olarak goruntulenir.
+        // Veritabani kayitlari ve diger etkinlik tarihleri degistirilmez.
         function inboxDateText(value) {
             if (!value) return '-';
-            const d = new Date(value);
-            return Number.isNaN(d.getTime()) ? String(value) : d.toLocaleString('tr-TR');
+            const raw = String(value).trim();
+            const sqliteUtc = /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,9})?)?$/.test(raw);
+            const parsed = sqliteUtc ? raw.replace(' ', 'T') + 'Z' : raw;
+            const d = new Date(parsed);
+            return Number.isNaN(d.getTime())
+                ? raw
+                : d.toLocaleString('tr-TR', {timeZone:'Europe/Istanbul'});
         }
 
         function inboxUnreadCount() {
@@ -13666,6 +13695,7 @@ return;
   }
 
   function wzRememberCurrentScroll(){
+    if(window.__WZ_V3142_RESTORE__ && !window.__WZ_V3142_RESTORE__.ready)return;
     if(wzRestoringScroll) return;
     if(!wzViewIsActuallyVisible(currentView)) return;
 
@@ -13678,6 +13708,9 @@ return;
   }
 
   function wzRestoreViewScroll(view){
+    // V31.0.42: Profile and Players are hydrated asynchronously. The new
+    // page-level restorer waits until real content exists before clamping.
+    if(window.__WZ_V3142_RESTORE__?.view===view)return;
     // V31.0.40: Players has a nested, async-height iframe. Its dedicated
     // restore runs only after that iframe finished rendering its API results.
     // Do not clamp or overwrite the saved coordinate while the iframe is short.
@@ -17496,6 +17529,7 @@ return;
   let restoreReady=false,restoreTarget=0,restoreBegin=0;
   try{reloadRestoringPlayers=performance.getEntriesByType('navigation')[0]?.type==='reload'&&
       (sessionStorage.getItem('wz_current_view')==='players'||window.__WZ_INITIAL_VIEW__==='players')}catch(_){ }
+  if(window.__WZ_V3142_RESTORE__?.view==='players')reloadRestoringPlayers=false;
   if(reloadRestoringPlayers){
     try{
       const dedicated=Number(sessionStorage.getItem(restoreKey));
@@ -17740,6 +17774,118 @@ return;
  observer.observe(document.body,{attributes:true,attributeFilter:['class'],childList:true,subtree:true});
  window.addEventListener('focus',()=>void load());window.addEventListener('wz-game-account-saved',()=>void load(true));
  void load();
+})();
+</script>
+<script id="wz-v3142-profile-players-scroll-fix">
+(function(){'use strict';
+ const snap=window.__WZ_V3142_RESTORE__||null;
+ let lastView=(document.body.className.match(/wz-view-(market|tournament|profile|players)/)||[])[1]||'';
+ let restoreIsActive=!!snap;
+ let playersApiReady=false;
+ let userInterrupted=false;
+ const store=(view,y)=>{
+  try{
+   const clean=Math.max(0,Math.round(y||0));
+   sessionStorage.setItem('wz_v3142_scroll_'+view,String(clean));
+   // Keep older consumers working with the current saved coordinate.
+   sessionStorage.setItem(view==='players'?'wz_players_saved_scroll_v3125':'wz_v23_scroll_profile',String(clean));
+  }catch(_){}
+ };
+ const selected=()=>{
+  const m=document.body.className.match(/wz-view-(players|profile|tournament|market)/);
+  return m?.[1]||'';
+ };
+ function capture(){
+  const v=selected();
+  if(v!==lastView){
+   lastView=v;
+   if(v==='players'||v==='profile'){
+    if(!(restoreIsActive&&snap?.view===v))store(v,0);
+   }
+  }
+  if(restoreIsActive||!['profile','players'].includes(v))return;
+  if(document.body.classList.contains('wz-player-form-open')||
+     document.body.classList.contains('wz-game-dialog-open')||
+     document.documentElement.classList.contains('wz-game-dialog-open'))return;
+  if(getComputedStyle(document.body).position==='fixed')return;
+  store(v,window.scrollY||document.documentElement.scrollTop||0);
+ }
+ window.addEventListener('scroll',capture,{passive:true});
+ window.addEventListener('pagehide',()=>{
+  if(restoreIsActive&&snap)store(snap.view,snap.y);else capture();
+ },{capture:true});
+ window.addEventListener('beforeunload',()=>{
+  if(restoreIsActive&&snap)store(snap.view,snap.y);else capture();
+ },{capture:true});
+ if(!snap)return;
+ const release=(abandon=false)=>{
+  restoreIsActive=false;
+  snap.ready=true;
+  document.documentElement.style.removeProperty('min-height');
+  if(abandon)return;
+  requestAnimationFrame(()=>{
+   const actual=Math.max(0,Math.max(document.body.scrollHeight,document.documentElement.scrollHeight)-innerHeight);
+   const y=Math.min(snap.y,actual);
+   try{window.scrollTo({top:y,left:0,behavior:'instant'})}catch(_){window.scrollTo(0,y)}
+   store(snap.view,window.scrollY);
+  });
+ };
+ function isReady(){
+  if(snap.view==='profile'){
+   const root=document.getElementById('wzMobileProfileView');
+   return Boolean(root && document.body.classList.contains('wz-view-profile') &&
+     (document.body.classList.contains('wz-profile-ready')||
+       root.querySelector('#wzProfileAuthenticated:not([hidden])')));
+  }
+  if(snap.view==='players'){
+   const frame=document.getElementById('wzPlayersFrame');
+   let childDone=false;
+   try{childDone=!!(frame?.contentDocument?.body &&
+     !frame.contentDocument.body.classList.contains('wz-directory-loading'))}catch(_){}
+   return Boolean(frame && document.body.classList.contains('wz-view-players') &&
+      (playersApiReady||childDone));
+  }
+  return false;
+ }
+ let count=0;
+ function restore(){
+  if(!restoreIsActive||userInterrupted)return;
+  // If the profile is now hidden, do not push users to the old profile position.
+  if(selected()!==snap.view){release(true);return}
+  const ready=isReady();
+  const elapsed=Date.now()-snap.started;
+  if(!ready && elapsed<10000)return;
+  const scrollTarget=Math.max(0,Math.round(snap.y));
+  try{window.scrollTo({top:scrollTarget,left:0,behavior:'instant'})}catch(_){window.scrollTo(0,scrollTarget)}
+  count++;
+  // Keep the original reserved height until the real async content has filled in.
+  if((ready&&count>=4&&elapsed>1250)||elapsed>10000){
+   if(ready || elapsed>10000)release();
+  }
+ }
+ window.addEventListener('message',e=>{
+  if(snap.view!=='players'||e.data?.type!=='weizend-players-ready')return;
+  if(e.source!==document.getElementById('wzPlayersFrame')?.contentWindow)return;
+  playersApiReady=true;restore();
+ });
+ // Never override new intentional input while a refresh is still loading.
+ for(const event of ['wheel','touchstart','pointerdown']){
+  window.addEventListener(event,()=>{
+   if(!restoreIsActive)return;
+   userInterrupted=true;
+   release(true);
+  },{passive:true,once:true});
+ }
+ let observer=null;
+ try{
+  observer=new ResizeObserver(()=>restore());
+  const root=snap.view==='players'?document.getElementById('wzPlayersFrame'):
+    document.getElementById('wzMobileProfileView');
+  if(root)observer.observe(root);
+ }catch(_){}
+ window.addEventListener('load',restore);
+ requestAnimationFrame(()=>requestAnimationFrame(restore));
+ for(const ms of [120,350,700,1100,1550,2300,3200,4800,6500,9000,10400])setTimeout(restore,ms);
 })();
 </script>
 </body>
