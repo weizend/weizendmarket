@@ -184,6 +184,9 @@
     const h=Math.max(720,Number.isFinite(lastFrame)?lastFrame:0,y+innerHeight-90);
     window.__WZ_V3146_PLAYERS_REFRESH__={active:true,y,height:Math.ceil(h),ready:false,userMoved:false};
     document.documentElement.classList.add('wz-v3146-player-refresh');
+    // V31.0.47: hold only the directory's FIRST paint until the saved scroll is applied.
+    // Header and bottom navigation remain visible; no artificial document height.
+    document.documentElement.classList.add('wz-v3147-player-paint-hold');
     document.documentElement.style.setProperty('--wz-v3146-frame-height',Math.ceil(h)+'px');
   }else{
     window.__WZ_V3142_RESTORE__={view:v,y,ready:false,started:Date.now()};
@@ -192,6 +195,10 @@
  }catch(_){}
 })();
 </script>
+<style id="wz-v3147-player-first-paint">
+/* Suppress the brief directory-at-top flash on F5, not the whole site. */
+html.wz-v3147-player-paint-hold body.wz-view-players #wzPlayersView{visibility:hidden!important}
+</style>
 <script id="wz-v15-boot">
 (function(){
   document.documentElement.classList.add('wz-boot');
@@ -17553,6 +17560,24 @@ return;
   // V31.0.46: restore once, from the cached frame height, BEFORE the API finishes.
   // Later network callbacks may resize content but never force a second jump.
   let playersInitialPositionSet=false;
+  let firstPaintReleased=false;
+  function releaseFirstPlayerPaint(){
+    if(firstPaintReleased)return;
+    firstPaintReleased=true;
+    // Wait one layout frame after applying scrollTo, so the first visible
+    // directory frame is already at the intended position.
+    requestAnimationFrame(()=>{
+      if(reloadRestoringPlayers && !playerRefresh?.userMoved && restoreTarget>0 &&
+         Math.abs((window.scrollY||0)-restoreTarget)>12){
+        const root=document.documentElement,prior=root.style.scrollBehavior;
+        try{root.style.scrollBehavior='auto';window.scrollTo(0,restoreTarget)}catch(_){}
+        root.style.scrollBehavior=prior;
+      }
+      document.documentElement.classList.remove('wz-v3147-player-paint-hold');
+    });
+  }
+  // Fail open if an unexpected old device/browser blocks iframe initialization.
+  if(reloadRestoringPlayers)setTimeout(()=>document.documentElement.classList.remove('wz-v3147-player-paint-hold'),3000);
   function rememberPlayerScroll(){
     if(!document.body.classList.contains('wz-view-players'))return;
     if(reloadRestoringPlayers && !restoreReady)return;
@@ -17568,12 +17593,15 @@ return;
   function setInitialPlayerPosition(){
     if(!reloadRestoringPlayers||playersInitialPositionSet||!document.body.classList.contains('wz-view-players'))return;
     const target=Math.max(0,restoreTarget);
-    if(!target){playersInitialPositionSet=true;return;}
+    if(!target){playersInitialPositionSet=true;releaseFirstPlayerPaint();return;}
     const h=Math.max(720,Number(playerRefresh?.height||0),target+innerHeight-90);
     if((parseFloat(frame.style.height)||0)<h)frame.style.height=Math.ceil(h)+'px';
-    // The document can now scroll to the saved coordinate without waiting for fetch.
-    try{window.scrollTo({top:target,left:0,behavior:'instant'})}catch(_){window.scrollTo(0,target)}
+    // Force an instant layout scroll even if another stylesheet enables smooth scroll.
+    const root=document.documentElement,prior=root.style.scrollBehavior;
+    try{root.style.scrollBehavior='auto';window.scrollTo(0,target)}catch(_){}
+    root.style.scrollBehavior=prior;
     playersInitialPositionSet=true;
+    releaseFirstPlayerPaint();
   }
   function restorePlayerScroll(){
     if(!reloadRestoringPlayers||restoreReady)return;
@@ -17583,6 +17611,7 @@ return;
     if(!playersInitialPositionSet && !playerRefresh?.userMoved)setInitialPlayerPosition();
     reloadRestoringPlayers=false;
     if(playerRefresh)playerRefresh.active=false;
+    releaseFirstPlayerPaint();
     document.documentElement.classList.remove('wz-v3146-player-refresh');
     document.documentElement.style.removeProperty('--wz-v3146-frame-height');
     rememberPlayerScroll();
@@ -17590,6 +17619,8 @@ return;
   for(const evt of ['wheel','touchstart','pointerdown','keydown']){
     window.addEventListener(evt,()=>{
       if(playerRefresh?.active)playerRefresh.userMoved=true;
+      // The user deliberately interacted before initial restore: unblock view.
+      if(playerRefresh?.active)document.documentElement.classList.remove('wz-v3147-player-paint-hold');
       // Already at saved coordinate: do not undo a new user scroll later.
     },{passive:true});
   }
