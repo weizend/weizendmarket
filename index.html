@@ -4707,21 +4707,44 @@ body.wz-game-dialog-open .wz-mobile-bottom-nav{visibility:hidden!important;point
 }
 </style>
 
-<style id="wz-v3153-header-surface-fix">
-/* V31.0.53 — Market ve Turnuva üst yüzeyleri Oyuncu Ara gibi tam ve dengeli görünsün */
-.wz-appbar-inner{width:min(1380px,calc(100% - 36px))!important;max-width:none!important;}
-body.wz-view-market .wz-mobile-page-intro,
-body.wz-view-tournament .wz-mobile-tournament-hero,
-body.wz-view-market .market-search-wrap,
-body.wz-view-market .category-filters,
-body.wz-view-market .grid,
-body.wz-view-tournament .wz-esports-main,
-body.wz-view-tournament .wz-esports-sidebar{width:100%!important;max-width:none!important;margin-left:0!important;margin-right:0!important;}
-body.wz-view-market .wz-mobile-page-intro,
-body.wz-view-tournament .wz-mobile-tournament-hero{border-radius:24px!important;}
-body.wz-view-market #marketContent,
-body.wz-view-tournament #tournamentMarketSection{padding-left:0!important;padding-right:0!important;}
-@media(max-width:780px){.wz-appbar-inner{width:min(100%,calc(100% - 24px))!important;}}
+<style id="wz-v3154-unified-gray-appbar">
+/* WEIZEND V31.0.54 | Only shared top header. Keep Market/Arena/Oyuncu Ara/Profile content unchanged. */
+/* Original Market body padding-top:20px was leaving a black strip above the header. */
+body{padding-top:0!important}
+/* Pull the header only outside the legacy 20px/10px body side padding.
+   Header contents stay centered within a 1380px layout, identical to cekilis.html. */
+body > #wzAppbar{
+  box-sizing:border-box!important;
+  width:100vw!important;
+  max-width:100vw!important;
+  margin-left:-20px!important;
+  margin-right:0!important;
+  border-radius:0!important;
+  background:#1a1b21!important;
+  background-image:none!important;
+  border-bottom:1px solid #30313a!important;
+  box-shadow:0 1px 0 rgba(255,255,255,.025)!important;
+}
+@media(min-width:769px){
+  body > #wzAppbar{position:sticky!important;top:0!important;}
+  #wzAppbar > .wz-appbar-inner{
+    box-sizing:border-box!important;
+    width:min(1380px,calc(100% - 36px))!important;
+    max-width:1380px!important;
+    padding-left:0!important;
+    padding-right:0!important;
+    margin-inline:auto!important;
+  }
+}
+/* Player Search already removes the old body side padding. */
+body.wz-view-players > #wzAppbar{margin-left:0!important}
+@media(max-width:768px){
+  body:not(.wz-view-players) > #wzAppbar{
+    width:100vw!important;max-width:100vw!important;
+    margin-left:-10px!important;
+    background:#1a1b21!important;
+  }
+}
 </style>
 </head>
 <body>
