@@ -2507,6 +2507,7 @@ body:has(#adminNewMessageModal:not(.hidden)){
         #section-giveaways .wzg-item{padding:15px;background:#15171c;border:1px solid #353843;border-radius:12px}
         #section-giveaways .wzg-item h3{margin:0 0 5px}
         #section-giveaways .wzg-small{font-size:12px;color:#b4b8c2}
+        #wzg2EditPanel[hidden]{display:none!important}
         @media(max-width:690px){#section-giveaways .wzg-grid,#section-giveaways .wzg-options{grid-template-columns:1fr}}
       </style>
       <div class="card">
@@ -2562,6 +2563,25 @@ body:has(#adminNewMessageModal:not(.hidden)){
         <p class="muted">Çekilişi Admin’den hemen başlatabilirsin. Süre dolduğunda katılım otomatik kapanır; ardından kapatıp canlı yayında kayar isim ekranından kazananları seçmeye başlarsın. Sonuç sunucu tarafından güvenli ağırlıklı kurayla belirlenir; düğmeler yalnızca seçimi başlatır ve sonucu görüntüler.</p>
         <button type="button" class="secondary" onclick="wzg2AdminRefresh()">🔄 Canlı çekilişleri ve katılımcıları yenile</button>
         <div id="wzg2AdminStatus" class="muted" role="status"></div>
+        <div id="wzg2EditPanel" class="wzg-item" hidden style="margin:15px 0;border:1px solid #92505b;background:#18151b;border-radius:13px;padding:16px">
+          <h3 style="margin-top:0">✏️ Yayımlanmış çekilişi düzenle</h3>
+          <p class="muted" id="wzg2EditContext">Bu değişiklikler yayınlanmış çekilişe uygulanır, taslağı değiştirmez.</p>
+          <div class="wzg-grid">
+            <label>Çekiliş adı *<input id="wzg2EditTitle" maxlength="100"></label>
+            <label>Ödül adı *<input id="wzg2EditPrizeTitle" maxlength="150"></label>
+            <label>Açıklama<textarea id="wzg2EditDescription" maxlength="1200" rows="3"></textarea></label>
+            <label>Ödül detayları<textarea id="wzg2EditPrizeDetails" maxlength="900" rows="3"></textarea></label>
+            <label>Başlangıç tarihi ve saati<input id="wzg2EditStart" type="datetime-local"></label>
+            <label>Bitiş tarihi ve saati<input id="wzg2EditEnd" type="datetime-local"></label>
+            <label style="grid-column:1/-1">Kapak görseli (HTTPS)<input id="wzg2EditImage" type="url" maxlength="700" placeholder="https://..."></label>
+          </div>
+          <p class="muted">Katılımcı varsa bitiş süresini kısaltamazsın veya başlangıcı geleceğe alamazsın. Katılım kuralları, biletler, abone çarpanı ve kazanan sayısı bu ekranda değiştirilmez. Ödülü değiştirmen mevcut katılımcılara karşı yükümlülüklerini ortadan kaldırmaz; değişiklikleri ayrıca duyur.</p>
+          <div class="wzg-row">
+            <button type="button" id="wzg2EditSave" onclick="wzg2SaveLiveEdit()">💾 Değişiklikleri Kaydet</button>
+            <button type="button" class="secondary" onclick="wzg2CloseLiveEdit()">Vazgeç</button>
+          </div>
+          <p id="wzg2EditStatus" role="status" aria-live="polite"></p>
+        </div>
         <div id="wzg2Campaigns" class="wzg-list"></div>
         <div id="wzg2Entries" class="wzg-list"></div>
       </div>
@@ -13239,9 +13259,9 @@ async function wzgLoad(){
     if(!r.ok||!d?.success)throw Error(d?.error||'HTTP '+r.status);
     wzgCache=d.drafts||[];
     const showArchived=!!document.getElementById('wzgShowArchived')?.checked;
-    const visible=wzgCache.filter(b=>b.status==='draft'||showArchived);
+    const visible=wzgCache.filter(b=>!Number(b.published)&&(b.status==='draft'||showArchived));
     el.innerHTML='';
-    if(!visible.length){el.textContent=showArchived?'Henüz kayıtlı taslak yok.':'Aktif taslak yok. Arşivlenenleri görmek için kutuyu işaretle.';return;}
+    if(!visible.length){el.textContent=showArchived?'Silinebilen arşiv veya taslak yok. Yayımlanmış çekilişlere bağlı arşivler burada gizlenir.':'Aktif taslak yok. Arşivlenenleri görmek için kutuyu işaretle.';return;}
     for(const b of visible){
       const row=document.createElement('div');row.className='wzg-item';
       const h=document.createElement('h3');h.textContent=b.title+' — '+b.prize_title;row.append(h);
@@ -13320,6 +13340,53 @@ async function wzg2Publish(id){
  try{await wzg2AdminCall('/admin/giveaway/publish',{id,startNow:true});wzgMessage('✅ Çekiliş yayımlandı ve hemen başladı.');await Promise.all([wzgLoad(),wzg2AdminRefresh()])}
  catch(e){wzgMessage('❌ '+e.message)}
 }
+let wzg2EditCampaign=null,wzg2EditPending=false;
+function wzg2OpenLiveEdit(c){
+  if(!c||c.status!=='active')return;
+  wzg2EditCampaign={...c};
+  const values={wzg2EditTitle:c.title,wzg2EditPrizeTitle:c.prize_title,
+    wzg2EditDescription:c.description,wzg2EditPrizeDetails:c.prize_details,
+    wzg2EditImage:c.image_url,wzg2EditStart:wzgInputDate(c.start_at),wzg2EditEnd:wzgInputDate(c.end_at)};
+  Object.entries(values).forEach(([id,value])=>{const el=document.getElementById(id);if(el)el.value=value??''});
+  document.getElementById('wzg2EditContext').textContent='Yayımlanmış çekiliş: '+c.title+' • Çekiliş numarası: '+c.id;
+  document.getElementById('wzg2EditStatus').textContent='';
+  const panel=document.getElementById('wzg2EditPanel');panel.hidden=false;
+  panel.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function wzg2CloseLiveEdit(){
+  if(wzg2EditPending)return;
+  wzg2EditCampaign=null;
+  document.getElementById('wzg2EditPanel').hidden=true;
+}
+async function wzg2SaveLiveEdit(){
+  if(!wzg2EditCampaign||wzg2EditPending)return;
+  const val=id=>String(document.getElementById(id)?.value||'').trim();
+  const status=document.getElementById('wzg2EditStatus'),save=document.getElementById('wzg2EditSave');
+  let payload;
+  try{
+    payload={id:wzg2EditCampaign.id,expectedUpdatedAt:wzg2EditCampaign.updated_at,
+      title:val('wzg2EditTitle'),description:val('wzg2EditDescription'),
+      prize_title:val('wzg2EditPrizeTitle'),prize_details:val('wzg2EditPrizeDetails'),
+      image_url:val('wzg2EditImage'),start_at:wzgDateValue(val('wzg2EditStart')),
+      end_at:wzgDateValue(val('wzg2EditEnd'))};
+  }catch(e){status.textContent='❌ Tarih/saat biçimi geçersiz.';return}
+  if(!payload.title||!payload.prize_title||!payload.start_at||!payload.end_at){status.textContent='❌ Başlık, ödül ve tarihler zorunlu.';return}
+  const termsChanged=payload.title!==String(wzg2EditCampaign.title||'')||
+    payload.prize_title!==String(wzg2EditCampaign.prize_title||'')||
+    payload.prize_details!==String(wzg2EditCampaign.prize_details||'');
+  if(termsChanged){
+    if(!confirm('Yayımlanmış çekilişin adı veya ödülü değişecek. Katılmış kişiler varsa bu değişikliği onlara açıkça duyurmalısın. Devam edilsin mi?'))return;
+    payload.confirmTermsChange=true;
+  }else if(!confirm('Yayımlanmış çekilişin bilgilerini ve tarihlerini güncellemek istiyor musun?'))return;
+  wzg2EditPending=true;save.disabled=true;status.textContent='Değişiklikler kaydediliyor...';
+  try{
+    await wzg2AdminCall('/admin/giveaway/update',payload);
+    status.textContent='✅ Çekiliş başarıyla güncellendi.';
+    wzg2EditCampaign=null;document.getElementById('wzg2EditPanel').hidden=true;
+    await Promise.all([wzg2AdminRefresh(),wzgLoad()]);
+  }catch(e){status.textContent='❌ '+String(e.message||e)}
+  finally{wzg2EditPending=false;save.disabled=false}
+}
 async function wzg2AdminRefresh(){
  const status=document.getElementById('wzg2AdminStatus'),campaigns=document.getElementById('wzg2Campaigns'),entries=document.getElementById('wzg2Entries');
  if(!status||!campaigns||!entries)return;
@@ -13340,6 +13407,10 @@ async function wzg2AdminRefresh(){
     if(scheduled){
       const nowBtn=document.createElement('button');nowBtn.textContent='🚀 Şimdi Başlat';
       nowBtn.onclick=()=>{if(confirm('Bu çekilişi planlanan başlangıç tarihini beklemeden hemen başlatmak istiyor musun?'))wzg2AdminAction('/admin/giveaway/start-now',{id:c.id,confirmation:'SIMDI_BASLAT'})};action.append(nowBtn);
+    }
+    if(c.status==='active'&&Date.parse(c.end_at)>Date.now()){
+      const edit=document.createElement('button');edit.type='button';edit.textContent='✏️ Düzenle';
+      edit.onclick=()=>wzg2OpenLiveEdit(c);action.append(edit);
     }
     if(c.status==='active'){
       const b=document.createElement('button');b.textContent='⏱️ Süre bittiyse kapat';b.className='secondary';b.onclick=()=>wzg2AdminAction('/admin/giveaway/close',{id:c.id});action.append(b);
