@@ -2676,11 +2676,13 @@ body:has(#adminNewMessageModal:not(.hidden)){
         <div class="field">
           <label class="title">Teslimat Türü</label>
 
-          <select id="pDeliveryType">
+          <select id="pDeliveryType" onchange="wzTicketDeliveryChanged()">
             <option value="physical">Fiziksel Ürün</option>
             <option value="digital_code">Dijital Kod</option>
             <option value="manual">Manuel Teslimat</option>
+            <option value="giveaway_ticket">🎟️ Çekiliş Bileti (Otomatik)</option>
           </select>
+          <div class="muted hidden" id="wzTicketDeliveryHint" style="margin-top:7px;">🎟️ Çekiliş Bileti seçildiğinde ödeme türü Puan olmalıdır. Onaylanan her ürün adedi doğrudan Profil bilet bakiyesine eklenir; teslimat kodu oluşturulmaz.</div>
         </div>
 
         <div class="field">
@@ -4539,7 +4541,8 @@ function deliveryTypeText(type){
   const map = {
     physical:'Fiziksel Ürün',
     digital_code:'Dijital Kod',
-    manual:'Manuel Teslimat'
+    manual:'Manuel Teslimat',
+    giveaway_ticket:'🎟️ Çekiliş Bileti (Otomatik)'
   };
 
   return map[type] || type || '-';
@@ -5594,7 +5597,7 @@ function renderProducts(){
     tr.innerHTML = `
       <td>${esc(p.id)}</td>
 
-      <td>${esc(p.name)}</td>
+      <td>${esc(p.name)}${p.deliveryType==='giveaway_ticket' ? '<div class="muted" style="color:#8be4a3">🎟️ Otomatik Çekiliş Bileti</div>' : ''}</td>
 
       <td>${esc(p.category)}</td>
 
@@ -5677,6 +5680,18 @@ function isTournamentProductCategory(){
   return String(document.getElementById('pCategory')?.value || '')
     .trim()
     .toLocaleLowerCase('tr-TR') === 'turnuva';
+}
+
+function wzTicketDeliveryChanged(){
+  const isTicket=document.getElementById('pDeliveryType')?.value==='giveaway_ticket';
+  document.getElementById('wzTicketDeliveryHint')?.classList.toggle('hidden',!isTicket);
+  if(!isTicket) return;
+  // Çekiliş bileti site üzerinden PUAN ile alınır; abonelik/ödeme türleri değişmez.
+  document.getElementById('pPaymentType').value='points';
+  document.getElementById('pWebPurchase').checked=true;
+  // Ürünü önce pasif oluşturup BotRix doğrulamasından sonra etkinleştir.
+  if(!editingProductId) document.getElementById('pActive').checked=false;
+  updatePriceFields();
 }
 
 function updateProductCategoryFields(){
@@ -5786,6 +5801,7 @@ document.getElementById(
   document.getElementById('pDescription').value = '';
   document.getElementById('pImages').value = '';
   updateProductCategoryFields();
+  wzTicketDeliveryChanged();
 
   hideStatus('productFormStatus');
 }
@@ -5861,6 +5877,7 @@ document.getElementById(
       : '';
 
   updateProductCategoryFields();
+  wzTicketDeliveryChanged();
 
   window.scrollTo({
     top:0,
@@ -5899,6 +5916,12 @@ async function saveProduct(){
 
   const wasEditing =
     Boolean(editingProductId);
+
+  if(document.getElementById('pDeliveryType').value==='giveaway_ticket' &&
+     (paymentType!=='points'||!document.getElementById('pWebPurchase').checked)){
+    showStatus('productFormStatus','🎟️ Çekiliş Bileti için ödeme türü Puan ve siteden satın alma açık olmalıdır.',false);
+    return;
+  }
 
   const product = {
 
