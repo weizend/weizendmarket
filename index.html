@@ -4706,6 +4706,23 @@ body.wz-game-dialog-open .wz-mobile-bottom-nav{visibility:hidden!important;point
   }
 }
 </style>
+
+<style id="wz-v3153-header-surface-fix">
+/* V31.0.53 — Market ve Turnuva üst yüzeyleri Oyuncu Ara gibi tam ve dengeli görünsün */
+.wz-appbar-inner{width:min(1380px,calc(100% - 36px))!important;max-width:none!important;}
+body.wz-view-market .wz-mobile-page-intro,
+body.wz-view-tournament .wz-mobile-tournament-hero,
+body.wz-view-market .market-search-wrap,
+body.wz-view-market .category-filters,
+body.wz-view-market .grid,
+body.wz-view-tournament .wz-esports-main,
+body.wz-view-tournament .wz-esports-sidebar{width:100%!important;max-width:none!important;margin-left:0!important;margin-right:0!important;}
+body.wz-view-market .wz-mobile-page-intro,
+body.wz-view-tournament .wz-mobile-tournament-hero{border-radius:24px!important;}
+body.wz-view-market #marketContent,
+body.wz-view-tournament #tournamentMarketSection{padding-left:0!important;padding-right:0!important;}
+@media(max-width:780px){.wz-appbar-inner{width:min(100%,calc(100% - 24px))!important;}}
+</style>
 </head>
 <body>
 <script id="wz-v58-prepaint-view">
@@ -5441,8 +5458,8 @@ body.wz-game-dialog-open .wz-mobile-bottom-nav{visibility:hidden!important;point
           <i>›</i>
         </button>
         <a class="wz-profile-action" href="https://www.weizend.com/cekilis.html">
-          <span class="wz-action-icon">🎉</span>
-          <span><b>Çekilişler</b><small>Ücretsiz katıl, çekilişlerini ve biletlerini gör</small></span>
+          <span class="wz-action-icon">🎁</span>
+          <span><b>🎁 Çekilişler</b><small>Ücretsiz katıl, çekilişlerini ve biletlerini gör</small></span>
           <i>›</i>
         </a>
         <a class="wz-profile-action" href="https://www.weizend.com/bilgi.html" target="_blank" rel="noopener noreferrer">
