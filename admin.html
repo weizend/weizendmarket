@@ -2523,7 +2523,7 @@ body:has(#adminNewMessageModal:not(.hidden)){
           <label>Çekiliş açıklaması<textarea id="wzgDescription" maxlength="1200" rows="3" placeholder="Katılımcıya gösterilecek açıklama"></textarea></label>
           <label>Ödül detayları<textarea id="wzgPrizeDetails" maxlength="900" rows="3" placeholder="Ödül adedi, teslimat, şartlar"></textarea></label>
           <label>Görsel bağlantısı (HTTPS)<input id="wzgImage" maxlength="700" type="url" placeholder="https://..."></label>
-          <label>İzin / resmî başvuru notu<input id="wzgLegalNote" maxlength="300" placeholder="İzin durumu ve referans notu (yalnızca admin)"></label>
+          <label>İzin / uygunluk notu (isteğe bağlı, yalnızca admin)<input id="wzgLegalNote" maxlength="300" placeholder="Varsa izin veya değerlendirme referansı"></label>
           <label>Başlangıç (taslak)<input id="wzgStart" type="datetime-local"></label>
           <label>Bitiş (taslak)<input id="wzgEnd" type="datetime-local"></label>
           <label>Kazanan adedi<input id="wzgWinners" type="number" min="1" max="50" value="1"></label>
@@ -2559,7 +2559,7 @@ body:has(#adminNewMessageModal:not(.hidden)){
         <p id="wzgStatus" role="status" aria-live="polite" class="muted"></p>
       </div>
       <div class="card"><h2>🎥 Canlı Çekilişler / Katılımcı Denetimi</h2>
-        <p class="muted">Süre bitince katılım otomatik kapanır. Kazanan seçimini yalnızca canlı yayında, süre bittikten sonra sen başlatırsın. Sosyal ağ koşulları manuel incelenir. Kendi ödemeli abone bonusu için bağımsız doğrulama gerek.</p>
+        <p class="muted">Çekilişi Admin’den hemen başlatabilirsin. Süre dolduğunda katılım otomatik kapanır; ardından kapatıp canlı yayında kayar isim ekranından kazananları seçmeye başlarsın. Sonuç sunucu tarafından güvenli ağırlıklı kurayla belirlenir; düğmeler yalnızca seçimi başlatır ve sonucu görüntüler.</p>
         <button type="button" class="secondary" onclick="wzg2AdminRefresh()">🔄 Canlı çekilişleri ve katılımcıları yenile</button>
         <div id="wzg2AdminStatus" class="muted" role="status"></div>
         <div id="wzg2Campaigns" class="wzg-list"></div>
@@ -2567,6 +2567,7 @@ body:has(#adminNewMessageModal:not(.hidden)){
       </div>
       <div class="card">
         <h2>📋 Çekiliş Taslakları</h2>
+        <label class="wzg-show-archived"><input type="checkbox" id="wzgShowArchived" onchange="wzgLoad()"> 📁 Arşivlenen taslakları da göster</label>
         <div id="wzgList" class="wzg-list">Bu bölüm açıldığında taslaklar yüklenecek.</div>
       </div>
     </div>
@@ -13237,9 +13238,11 @@ async function wzgLoad(){
     const {r,d}=await api('/admin/giveaway-drafts');
     if(!r.ok||!d?.success)throw Error(d?.error||'HTTP '+r.status);
     wzgCache=d.drafts||[];
+    const showArchived=!!document.getElementById('wzgShowArchived')?.checked;
+    const visible=wzgCache.filter(b=>b.status==='draft'||showArchived);
     el.innerHTML='';
-    if(!wzgCache.length){el.textContent='Henüz taslak oluşturulmadı.';return;}
-    for(const b of wzgCache){
+    if(!visible.length){el.textContent=showArchived?'Henüz kayıtlı taslak yok.':'Aktif taslak yok. Arşivlenenleri görmek için kutuyu işaretle.';return;}
+    for(const b of visible){
       const row=document.createElement('div');row.className='wzg-item';
       const h=document.createElement('h3');h.textContent=b.title+' — '+b.prize_title;row.append(h);
       const inf=document.createElement('div');inf.className='wzg-small';
@@ -13254,9 +13257,14 @@ async function wzgLoad(){
         const edit=document.createElement('button');edit.type='button';edit.textContent='✏️ Düzenle';edit.addEventListener('click',()=>wzgEdit(b.id));
         const archive=document.createElement('button');archive.type='button';archive.className='secondary';archive.textContent='📁 Arşivle';
         archive.addEventListener('click',()=>wzgArchive(b.id));
-        const publish=document.createElement('button');publish.type='button';publish.className='secondary';publish.textContent='🚀 Yayınla (yetki gerekli)';publish.addEventListener('click',()=>wzg2Publish(b.id));
+        const publish=document.createElement('button');publish.type='button';publish.className='secondary';publish.textContent='🚀 Yayınla ve Şimdi Başlat';publish.addEventListener('click',()=>wzg2Publish(b.id));
         actions.append(edit,archive,publish);row.append(actions);
       }
+      // Deletion is restricted on the Worker: published campaigns, participants and draw history can never be removed here.
+      const deleteBtn=document.createElement('button');deleteBtn.type='button';deleteBtn.className='secondary';deleteBtn.textContent='🗑️ Kalıcı Sil';
+      deleteBtn.addEventListener('click',()=>wzgDeleteDraft(b.id,b.title));
+      const line=row.querySelector('.wzg-row')||document.createElement('div');line.classList.add('wzg-row');
+      line.append(deleteBtn);if(!line.parentNode)row.append(line);
       el.append(row);
     }
   }catch(e){el.textContent='Taslaklar yüklenemedi: '+String(e?.message||e)}
@@ -13297,9 +13305,19 @@ async function wzg2AdminCall(path,payload){
  const {r,d}=await api(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
  if(!r.ok||!d?.success)throw Error(d?.error||'HTTP '+r.status);return d;
 }
+async function wzgDeleteDraft(id,title){
+ if(wzgPending)return;
+ const typed=prompt('“'+title+'” taslağını KALICI olarak silmek için SIL yaz. Yayımlanmış çekilişler silinemez.');
+ if(typed!=='SIL')return;
+ wzgPending=true;
+ try{await wzg2AdminCall('/admin/giveaway-drafts/delete',{id,confirmation:'SIL'});
+     if(wzgVal('wzgId')===id)wzgClear();wzgMessage('✅ Taslak kalıcı olarak silindi.');}
+ catch(e){wzgMessage('❌ '+e.message)}
+ finally{wzgPending=false;await wzgLoad()}
+}
 async function wzg2Publish(id){
- if(!confirm('Bu çekilişi yayına almak istiyor musun? Çekiliş izni ve tüm koşulları doğruladığından emin ol.'))return;
- try{await wzg2AdminCall('/admin/giveaway/publish',{id});wzgMessage('✅ Çekiliş yayımlandı.');await wzg2AdminRefresh()}
+ if(!confirm('Çekiliş şimdi yayımlanıp katılıma açılsın mı? Bitiş tarihi taslakta seçtiğin gibi kalır. İlgili yasal koşulları önceden değerlendirdiğinden emin ol.'))return;
+ try{await wzg2AdminCall('/admin/giveaway/publish',{id,startNow:true});wzgMessage('✅ Çekiliş yayımlandı ve hemen başladı.');await Promise.all([wzgLoad(),wzg2AdminRefresh()])}
  catch(e){wzgMessage('❌ '+e.message)}
 }
 async function wzg2AdminRefresh(){
@@ -13314,14 +13332,21 @@ async function wzg2AdminRefresh(){
   for(const c of d.campaigns||[]){
     const item=document.createElement('div');item.className='wzg-item';
     const h=document.createElement('h3');h.textContent=c.title+' — '+c.prize_title+' ('+c.status+')';item.append(h);
-    const p=document.createElement('div');p.className='muted';p.textContent='Bitiş: '+(c.end_at||'-')+' • Kazanan: '+c.winners_count+' • Kapak: '+(c.image_url?'Var':'Yok');item.append(p);
+    const p=document.createElement('div');p.className='muted';
+    const scheduled=c.status==='active'&&Date.parse(c.start_at)>Date.now();
+    const label=scheduled?'📅 YAKINDA':c.status==='active'?'🔴 KATILIMA AÇIK':c.status==='closed'?'⏱️ KAPANDI':c.status==='drawn'?'🏆 SONUÇLANDI':c.status==='cancelled'?'⛔ İPTAL':'—';
+    p.textContent=label+' • Başlangıç: '+new Date(c.start_at).toLocaleString('tr-TR')+' • Bitiş: '+new Date(c.end_at).toLocaleString('tr-TR')+' • Kazanan: '+c.winners_count+' • Kapak: '+(c.image_url?'Var':'Yok');item.append(p);
     const action=document.createElement('div');action.className='wzg-row';
+    if(scheduled){
+      const nowBtn=document.createElement('button');nowBtn.textContent='🚀 Şimdi Başlat';
+      nowBtn.onclick=()=>{if(confirm('Bu çekilişi planlanan başlangıç tarihini beklemeden hemen başlatmak istiyor musun?'))wzg2AdminAction('/admin/giveaway/start-now',{id:c.id,confirmation:'SIMDI_BASLAT'})};action.append(nowBtn);
+    }
     if(c.status==='active'){
       const b=document.createElement('button');b.textContent='⏱️ Süre bittiyse kapat';b.className='secondary';b.onclick=()=>wzg2AdminAction('/admin/giveaway/close',{id:c.id});action.append(b);
     }
     if(c.status==='closed'){
-      const b=document.createElement('button');b.textContent='🎥 Canlı yayında kazananları seç';b.onclick=()=>{
-        if(confirm('Canlı yayında mısın? Seçim tekrarlanamaz.'))wzg2AdminAction('/admin/giveaway/draw',{id:c.id})};action.append(b);
+      const b=document.createElement('button');b.textContent='🎥 İsimleri Kaydır · Kazananı Seç';
+      b.onclick=()=>wzg2OpenReel(c.id,c.title);action.append(b);
     }
     if(['active','closed'].includes(c.status)){
       const b=document.createElement('button');b.textContent='🖼️ Kapak görselini değiştir';b.className='secondary';
@@ -13354,6 +13379,112 @@ async function wzg2AdminRefresh(){
 async function wzg2AdminAction(path,payload){
  try{const d=await wzg2AdminCall(path,payload);alert(d.winners?.length?'Kazananlar: '+d.winners.map(w=>w.rank+'. '+w.username).join(', '):'İşlem tamamlandı.');await wzg2AdminRefresh()}
  catch(e){alert('❌ '+e.message)}
+}
+
+/* WEIZEND V31.0.59 - Hosted live winner reveal. Animation does NOT decide or alter the winner. */
+let wzg2ReelTimer=null,wzg2ReelNames=[],wzg2ReelWinners=[],wzg2ReelPosition=0,wzg2ReelId='',wzg2ReelPending=false;
+function wzg2ReelUI(){
+ let root=document.getElementById('wzg2ReelOverlay');if(root)return root;
+ const css=document.createElement('style');css.id='wzg2-reel-styles';css.textContent=`
+ #wzg2ReelOverlay[hidden]{display:none!important}
+ #wzg2ReelOverlay{position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.94);display:flex;align-items:center;justify-content:center;overflow:auto;padding:16px}
+ #wzg2ReelBox{position:relative;width:min(860px,100%);color:#fff;text-align:center;border:1px solid #6d333b;border-radius:24px;background:radial-gradient(ellipse at top,#3a141f,#121018 62%);padding:clamp(18px,4vw,38px);box-shadow:0 0 70px #c8163138}
+ #wzg2ReelBox h2{font-size:clamp(1.35rem,4vw,2.1rem);margin:8px 0;color:#fff}
+ #wzg2ReelStage{height:240px;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;border:2px solid #bb344c;border-radius:22px;background:#0e0d13;margin:23px 0;box-shadow:inset 0 0 52px #5e172a4d}
+ #wzg2ReelTop,#wzg2ReelBottom{font-size:clamp(15px,2.5vw,26px);color:#777788;filter:blur(1.4px);max-width:98%;overflow:hidden;text-overflow:ellipsis}
+ #wzg2ReelCenter{font-size:clamp(30px,7vw,70px);font-weight:950;color:#fff;text-shadow:0 0 30px #fa2a50a6;max-width:98%;overflow-wrap:anywhere}
+ #wzg2ReelControls{display:flex;justify-content:center;flex-wrap:wrap;gap:10px}
+ #wzg2ReelControls button{width:auto!important;padding:13px 17px;min-width:150px;border-radius:11px;font-weight:850}
+ #wzg2ReelStop{background:#d31830;color:#fff}#wzg2ReelStop:disabled{opacity:.35;cursor:not-allowed}
+ #wzg2ReelResult{font-weight:900;min-height:32px;color:#ffdc89;font-size:1.22rem;overflow-wrap:anywhere}
+ #wzg2ReelHint{color:#b6b8c4;font-size:12px;line-height:1.5;margin:10px auto;max-width:660px}
+ #wzg2ReelClose{position:absolute;right:12px;top:10px;width:38px!important;height:38px!important;min-width:38px!important;padding:0!important;border-radius:50%;background:#27212b;color:#fff}
+ `;document.head.append(css);
+ root=document.createElement('div');root.id='wzg2ReelOverlay';root.hidden=true;
+ root.innerHTML=`<div id="wzg2ReelBox" role="dialog" aria-modal="true" aria-labelledby="wzg2ReelTitle">
+ <button type="button" id="wzg2ReelClose" title="Kapat">✕</button>
+ <div style="color:#ff687f;font-weight:950;letter-spacing:2px">🎥 WEİZEND CANLI ÇEKİLİŞ</div>
+ <h2 id="wzg2ReelTitle">Kazanan Seçimi</h2>
+ <div id="wzg2ReelMeta" style="color:#bfc2cb"></div>
+ <div id="wzg2ReelStage" aria-live="off"><div id="wzg2ReelTop">· · ·</div><div id="wzg2ReelCenter">HAZIR</div><div id="wzg2ReelBottom">· · ·</div></div>
+ <div id="wzg2ReelResult" aria-live="polite"></div>
+ <div id="wzg2ReelControls"><button type="button" id="wzg2ReelStart">▶️ İsimleri Kaydır</button><button type="button" id="wzg2ReelStop" disabled>⏹️ Durdur ve Kazananı Açıkla</button><button type="button" id="wzg2ReelNext" hidden>🏆 Sonraki Kazananı Göster</button></div>
+ <p id="wzg2ReelHint">İsimlerin kayması sadece canlı yayın görselidir; kazanan, Admin düğmesine basıldığında Worker tarafından güvenli ve bilet/abonelik ağırlıklarına uygun şekilde belirlenir. Seçim geri alınamaz.</p>
+ </div>`;
+ document.body.append(root);
+ root.querySelector('#wzg2ReelClose').onclick=wzg2CloseReel;
+ root.querySelector('#wzg2ReelStart').onclick=wzg2StartReel;
+ root.querySelector('#wzg2ReelStop').onclick=wzg2StopReel;
+ root.querySelector('#wzg2ReelNext').onclick=wzg2ShowNextWinner;
+ return root;
+}
+function wzg2ReelEl(id){return document.getElementById(id)}
+function wzg2CloseReel(){
+ if(wzg2ReelPending)return alert('Sunucu kura sonucu bekleniyor; işlem tamamlanana kadar pencereyi açık tut.');
+ clearInterval(wzg2ReelTimer);wzg2ReelTimer=null;
+ const el=wzg2ReelEl('wzg2ReelOverlay');if(el)el.hidden=true;
+}
+async function wzg2OpenReel(id,title){
+ if(wzg2ReelPending)return;
+ const root=wzg2ReelUI();root.hidden=false;wzg2ReelId=id;wzg2ReelNames=[];wzg2ReelWinners=[];wzg2ReelPosition=0;
+ wzg2ReelEl('wzg2ReelTitle').textContent=title||'Kazanan Seçimi';
+ wzg2ReelEl('wzg2ReelMeta').textContent='Onaylı katılımcılar yükleniyor…';
+ wzg2ReelEl('wzg2ReelCenter').textContent='YÜKLENİYOR';
+ wzg2ReelEl('wzg2ReelTop').textContent='· · ·';wzg2ReelEl('wzg2ReelBottom').textContent='· · ·';
+ wzg2ReelEl('wzg2ReelResult').textContent='';
+ wzg2ReelEl('wzg2ReelStart').disabled=true;wzg2ReelEl('wzg2ReelStop').disabled=true;
+ wzg2ReelEl('wzg2ReelNext').hidden=true;
+ try{
+  const {r,d}=await api('/admin/giveaway/reel?id='+encodeURIComponent(id));
+  if(!r.ok||!d?.success)throw Error(d?.error||'Katılımcılar alınamadı.');
+  wzg2ReelNames=Array.isArray(d.names)?d.names.filter(Boolean):[];
+  if(!wzg2ReelNames.length)throw Error('Uygun katılımcı yok.');
+  wzg2ReelEl('wzg2ReelMeta').textContent=d.eligibleCount+' uygun katılımcı • '+d.winnersCount+' kazanan'+(d.displayedCount<d.eligibleCount?' • Ekranda ilk '+d.displayedCount+' isim akacak; kura tüm katılımcılarla yapılır.':'');
+  wzg2ReelEl('wzg2ReelCenter').textContent='🎉 HAZIR';wzg2ReelEl('wzg2ReelStart').disabled=false;
+ }catch(e){wzg2ReelEl('wzg2ReelCenter').textContent='⚠️';wzg2ReelEl('wzg2ReelResult').textContent=e.message}
+}
+function wzg2StartReel(){
+ if(!wzg2ReelNames.length||wzg2ReelPending||wzg2ReelWinners.length)return;
+ wzg2ReelEl('wzg2ReelStart').disabled=true;wzg2ReelEl('wzg2ReelStop').disabled=false;
+ wzg2ReelEl('wzg2ReelResult').textContent='İsimler kayıyor… Durdurmak için butona bas.';
+ const len=wzg2ReelNames.length;
+ let i=0;
+ function tick(){
+  // Display motion is illustrative; actual winner is calculated on the server only after Stop.
+  const idx=i++ % len;
+  wzg2ReelEl('wzg2ReelTop').textContent=wzg2ReelNames[(idx+len-1)%len];
+  wzg2ReelEl('wzg2ReelCenter').textContent=wzg2ReelNames[idx];
+  wzg2ReelEl('wzg2ReelBottom').textContent=wzg2ReelNames[(idx+1)%len];
+ }
+ tick();wzg2ReelTimer=setInterval(tick,75);
+}
+async function wzg2StopReel(){
+ if(wzg2ReelPending||!wzg2ReelTimer)return;
+ if(!confirm('Kazananları şimdi geri alınamaz şekilde sunucuda belirleyelim mi?'))return;
+ wzg2ReelPending=true;wzg2ReelEl('wzg2ReelStop').disabled=true;
+ wzg2ReelEl('wzg2ReelResult').textContent='🔐 Güvenli kura sonucu alınıyor…';
+ try{
+  const d=await wzg2AdminCall('/admin/giveaway/draw',{id:wzg2ReelId});
+  clearInterval(wzg2ReelTimer);wzg2ReelTimer=null;
+  wzg2ReelWinners=Array.isArray(d.winners)?d.winners:[];wzg2ReelPosition=0;
+  if(!wzg2ReelWinners.length)throw Error('Kura kazanan döndürmedi.');
+  wzg2ReelEl('wzg2ReelTop').textContent='🏆 KAZANAN';wzg2ReelEl('wzg2ReelBottom').textContent='🎉 TEBRİKLER';
+  wzg2ReelEl('wzg2ReelCenter').textContent=wzg2ReelWinners[0].username;
+  wzg2ReelEl('wzg2ReelResult').textContent='🥇 1. kazanan: '+wzg2ReelWinners[0].username;
+  wzg2ReelEl('wzg2ReelNext').hidden=wzg2ReelWinners.length<2;
+  await wzg2AdminRefresh();
+ }catch(e){
+  clearInterval(wzg2ReelTimer);wzg2ReelTimer=null;
+  wzg2ReelEl('wzg2ReelResult').textContent='❌ '+e.message+' • Kura durumunu Admin listesinden kontrol et.';
+  wzg2ReelEl('wzg2ReelCenter').textContent='HATA';
+ }finally{wzg2ReelPending=false}
+}
+function wzg2ShowNextWinner(){
+ if(wzg2ReelPosition>=wzg2ReelWinners.length-1)return;
+ const win=wzg2ReelWinners[++wzg2ReelPosition];
+ wzg2ReelEl('wzg2ReelCenter').textContent=win.username;
+ wzg2ReelEl('wzg2ReelResult').textContent='🏆 '+win.rank+'. kazanan: '+win.username;
+ wzg2ReelEl('wzg2ReelNext').hidden=wzg2ReelPosition>=wzg2ReelWinners.length-1;
 }
 
 </script>
