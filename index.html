@@ -246,9 +246,11 @@
     // Previous versions applied this only after the large Market script loaded,
     // briefly showing Market/verification instead.
     const linkView=(new URLSearchParams(location.search)).get('wz_view');
-    if(linkView==='players' && !window.__WZ_TOURNAMENT_DEEP_LINK__){
-      view='players';
-      try{sessionStorage.setItem('wz_current_view','players')}catch(_){}
+    if((linkView==='players'||linkView==='tournament'||linkView==='market') &&
+       !window.__WZ_TOURNAMENT_DEEP_LINK__ && !guideMarketRequest){
+      // A copied tab URL overrides the visitor's saved last tab, including after F5.
+      view=linkView;
+      try{sessionStorage.setItem('wz_current_view',view)}catch(_){}
     }
 
 
@@ -1529,7 +1531,8 @@ body.wz-view-profile #wzMobileProfileView{display:block}
 .wz-profile-name{font-size:1.45rem;font-weight:1000}
 .wz-profile-state{display:flex;align-items:center;gap:7px;color:#9999a3;font-size:.78rem;margin-top:5px}
 .wz-profile-state i{width:7px;height:7px;border-radius:50%;background:#35d979;box-shadow:0 0 10px rgba(53,217,121,.5)}
-.wz-profile-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+.wz-profile-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:18px}
+@media(max-width:440px){.wz-profile-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.wz-ticket-stat{grid-column:1/-1}}
 .wz-profile-stat{background:rgba(0,0,0,.28);border:1px solid #28282e;border-radius:14px;padding:14px}
 .wz-profile-stat span{display:block;color:#8e8e98;font-size:.76rem;margin-bottom:6px}
 .wz-profile-stat strong{font-size:1.12rem}
@@ -5185,19 +5188,7 @@ body.wz-game-dialog-open .wz-mobile-bottom-nav{visibility:hidden!important;point
                     <li>Kazandığında ödülünü teslim alabilmek için İnstagram <a href="https://instagram.com/weizendtv" target="_blank" rel="noopener noreferrer" style="color:var(--weizend-red); font-weight:bold; text-decoration:none;">@weizendtv</a> adresinden bizimle iletişime geçmelisin!</li>
                 </ul>`
             },
-            {
-                durum: "on", stok: "Sınırsız", kategori: "Şans Oyunları",
-                ad: "Bar Çekiliş Bileti",
-                puan: "10.000 Puan", komut: "!albilet",
-                tukenmeZamani: "2024-05-15",
-                gorseller: ["https://i.hizliresim.com/guvmcwq4.jpg"],
-                ozellikler: `<ul>
-                    <li>Kick canlı yayınlarımızdaki BAR çekilişlerine katılım hakkı sağlar.</li>
-                    <li>Dilediğin kadar bilet alabilirsin, tüm biletlerin envanterine eklenir.</li>
-                    <li>Sahip olduğun biletleri kontrol etmek için Kick sohbetimize <b>!envanter</b> yazabilirsin.</li>
-                    <li>Çekilişi kazandığında ödülünü teslim alabilmek için İnstagram <a href="https://instagram.com/weizendtv" target="_blank" rel="noopener noreferrer" style="color:var(--weizend-red); font-weight:bold; text-decoration:none;">@weizendtv</a> adresinden bizimle iletişime geçmelisin!</li>
-                </ul>`
-            }
+
         ];
         
         URUNLER.forEach((urun, index) => {
@@ -5415,6 +5406,7 @@ body.wz-game-dialog-open .wz-mobile-bottom-nav{visibility:hidden!important;point
       <div class="wz-profile-stats">
         <div class="wz-profile-stat"><span>🪙 Bakiye</span><strong id="wzProfilePoints">-</strong></div>
         <div class="wz-profile-stat"><span>⭐ Level</span><strong id="wzProfileLevel">-</strong></div>
+        <div class="wz-profile-stat wz-ticket-stat"><span>🎟️ Çekiliş Biletlerim</span><strong id="wzTicketProfileCount">-</strong><small id="wzTicketProfilePending" style="display:block;color:#9b9ba4;font-size:.7rem"></small></div>
       </div>
     </div>
 
@@ -5448,6 +5440,11 @@ body.wz-game-dialog-open .wz-mobile-bottom-nav{visibility:hidden!important;point
           <span><b>Hediye Kodu</b><small>Tek kullanımlık kodunu hesabına tanımla</small></span>
           <i>›</i>
         </button>
+        <a class="wz-profile-action" href="https://www.weizend.com/cekilis.html">
+          <span class="wz-action-icon">🎁</span>
+          <span><b>🎁 Çekilişler</b><small>Ücretsiz katıl, çekilişlerini ve biletlerini gör</small></span>
+          <i>›</i>
+        </a>
         <a class="wz-profile-action" href="https://www.weizend.com/bilgi.html" target="_blank" rel="noopener noreferrer">
           <span class="wz-action-icon">?</span>
           <span><b>Bilgi Merkezi</b><small>Puan, Market, turnuva ve Arena rehberi</small></span>
@@ -5477,6 +5474,41 @@ body.wz-game-dialog-open .wz-mobile-bottom-nav{visibility:hidden!important;point
     <button type="button" onclick="wzGoToLogin()">Kick Hesabını Doğrula</button>
   </div>
 </section>
+<script id="wz-v3152-ticket-profile">
+(function(){
+  'use strict';
+  let activePromise=null,last=0;
+  const storageKey='weizend_market_session_secure_v2';
+  const worker='https://weizend-botrix.weizendtv.workers.dev';
+  async function refresh(force=false){
+    const count=document.getElementById('wzTicketProfileCount');
+    if(!count)return;
+    const token=localStorage.getItem(storageKey)||'';
+    if(!token){count.textContent='-';return;}
+    if(activePromise)return activePromise;
+    if(!force && Date.now()-last<12000)return;
+    last=Date.now();
+    activePromise=(async()=>{
+      try{
+        const res=await fetch(worker+'/giveaway/tickets',{headers:{Authorization:'Bearer '+token,Accept:'application/json'},cache:'no-store'});
+        if(!res.ok)throw new Error('HTTP '+res.status);
+        const data=await res.json();
+        if(!data.success)throw new Error('Bilet bilgisi alinamadi');
+        if(localStorage.getItem(storageKey)!==token)return;
+        count.textContent=Number(data.available||0).toLocaleString('tr-TR');
+        const pending=document.getElementById('wzTicketProfilePending');
+        if(pending)pending.textContent=Number(data.pending||0)>0 ? Number(data.pending).toLocaleString('tr-TR')+' bilet onay bekliyor' : '';
+      }catch(e){if(count.textContent==='-')count.textContent='Yüklenemedi';}
+    })().finally(()=>{activePromise=null;});
+    return activePromise;
+  }
+  window.wzTicketRefresh=refresh;
+  const trigger=()=>{if(document.body.classList.contains('wz-view-profile'))refresh();};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',trigger,{once:true});else trigger();
+  new MutationObserver(trigger).observe(document.body,{attributes:true,attributeFilter:['class']});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)trigger();});
+})();
+</script>
 <script id="wz-final-v65-profile-hydrate">
 (function(){
   try{
@@ -8796,7 +8828,7 @@ body.wz-game-dialog-open .wz-mobile-bottom-nav{visibility:hidden!important;point
 
 
         function marketSurfaceItemsFromState() {
-            let items = URUNLER.filter(urun => urun && urun.durum === 'on');
+            let items = URUNLER.filter(urun => urun && urun.durum === 'on' && String(urun.productId||'').toLowerCase()!=='albilet' && !/bar çekiliş bileti/i.test(String(urun.ad||'')));
             const category = String(aktifKategori || 'Tümü');
 
             if (category === 'Tükendi') {
@@ -10175,10 +10207,15 @@ return;
                         `✅ <b>Sipariş oluşturuldu!</b><br>${escapeHtml(urunAdi)} × ${Number(order.quantity) || 1}`;
                 }
 
+                const isTicket=String(order.productId||'')==='wz_giveaway_ticket_v1' || String(order.deliveryType||'')==='giveaway_ticket';
+                if(isTicket){
+                    window.wzTicketRefresh?.(true);
+                    document.getElementById('purchaseStatusText').innerHTML += '<br>🎟️ Biletler Profil hesabına eklendi.';
+                }
                 const codeBox = document.getElementById('purchaseDeliveryCode');
-                codeBox.innerText = order.deliveryCode || '';
-                codeBox.style.display = order.deliveryCode ? 'block' : 'none';
-                document.getElementById('purchaseDeliveryNote').style.display = order.deliveryCode ? 'block' : 'none';
+                codeBox.innerText = isTicket ? '' : (order.deliveryCode || '');
+                codeBox.style.display = !isTicket && order.deliveryCode ? 'block' : 'none';
+                document.getElementById('purchaseDeliveryNote').style.display = !isTicket && order.deliveryCode ? 'block' : 'none';
 
                 if (paymentType === 'points') {
                     openActionResultModal({
@@ -10188,14 +10225,16 @@ return;
                             `<b>${escapeHtml(urunAdi)}</b> × ${Number(order.quantity) || 1}<br>` +
                             `Harcanan: <b>${formatPoints(order.totalPoints)}</b><br>` +
                             `Kalan bakiye: <b>${formatPoints(order.pointsAfter)}</b><br>` +
-                            `<span style="color:var(--text-muted);">BotRix puan düşümünü onayladığında bakiyen otomatik olarak güncellenecek.</span>` +
+                            (isTicket
+                              ? `<span style="color:var(--text-muted);">🎟️ Biletlerin Profil hesabına tanımlandı; teslimat kodu gerekmez.</span>`
+                              : `<span style="color:var(--text-muted);">BotRix puan düşümünü onayladığında bakiyen otomatik olarak güncellenecek.</span>`) +
                             `</div>`,
                         refreshProfile: true,
                         expectedPoints: Number(order.pointsAfter),
                         baselinePoints: currentMarketPoints,
                         closePurchase: true,
                         refreshCatalog: true,
-                        deliveryCode: order.deliveryCode || ''
+                        deliveryCode: isTicket ? '' : (order.deliveryCode || '')
                     });
                 } else {
                     checkSession({ silent: true }).catch(() => {});
@@ -17584,7 +17623,7 @@ return;
   tick();setInterval(tick,1000);
 })();
 </script>
-<script id="wz31-return-to-tournament">(function(){try{const u=new URL(location.href);if(u.searchParams.get('wz_view')==='tournament'){sessionStorage.setItem('wz_current_view','tournament');u.searchParams.delete('wz_view');history.replaceState({},'',u.pathname+u.search+u.hash);window.addEventListener('load',()=>{window.wzSetView?.('tournament')},{once:true})}}catch(_){}})();</script>
+<!-- V31.0.51: the public tournament-tab URL is selected during the early boot; no late redirect/removal. -->
 <script id="wz31-15-players-integrated">
 (function(){'use strict';
   const frame=document.getElementById('wzPlayersFrame');
@@ -17814,7 +17853,7 @@ return;
   if(new URL(location.href).searchParams.get('wz_view')==='players'){
     try{sessionStorage.setItem('wz_current_view','players')}catch(_){}
     window.wzSetView('players');
-    try{const u=new URL(location.href);u.searchParams.delete('wz_view');history.replaceState(history.state,'',u.pathname+u.search+u.hash)}catch(_){}
+    // V31.0.51: preserve ?wz_view=players so copying the address shares Players.
   }
 })();
 </script>
@@ -18055,6 +18094,41 @@ return;
  window.addEventListener('load',restore);
  requestAnimationFrame(()=>requestAnimationFrame(restore));
  for(const ms of [120,350,700,1100,1550,2300,3200,4800,6500,9000,10400])setTimeout(restore,ms);
+})();
+</script>
+<script id="wz-v3151-public-tab-links">
+(function(){'use strict';
+  // Keep the browser address aligned with the actual tab for simple Copy Link/Share.
+  // replaceState is intentional: changing a tab does not create a history entry.
+  const previous=window.wzSetView;
+  if(typeof previous!=='function')return;
+  function updateAddress(view){
+    if(!['market','players','tournament','profile'].includes(view))return;
+    try{
+      const u=new URL(location.href);
+      if(view==='players'||view==='tournament')u.searchParams.set('wz_view',view);
+      else u.searchParams.delete('wz_view');
+      // A single event deep link must not leak into copied Market/Players URLs.
+      if(view!=='tournament'){
+        u.searchParams.delete('turnuva');
+        u.searchParams.delete('wz_arena_return');
+      }
+      // Never expose an old login/profile shortcut when sharing another tab.
+      if(view!=='profile')u.searchParams.delete('wz_profile_accounts');
+      const next=u.pathname+u.search+u.hash;
+      if(next!==location.pathname+location.search+location.hash){
+        history.replaceState(Object.assign({},history.state||{},{wzView:view}),'',next);
+      }
+    }catch(e){console.warn('WEIZEND tab URL sync:',e)}
+  }
+  window.wzSetView=function(view){
+    const result=previous.apply(this,arguments);
+    // Derive final tab from DOM (account verification might force a different view).
+    const finalView=(document.body.className.match(/(?:^|\s)wz-view-(market|players|tournament|profile)(?:\s|$)/)||[])[1]||view;
+    updateAddress(finalView);
+    return result;
+  };
+  window.wzSetMobileView=window.wzSetView;
 })();
 </script>
 </body>
