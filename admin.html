@@ -4676,10 +4676,16 @@ function hideStatus(id){
 
 
 /* =========================================================
-   TABS
+   TABS — V31.0.70 reload persistence
 ========================================================= */
-
+const WZ70_ADMIN_TAB_KEY='wz_admin_last_tab_v3170';
+const WZ70_ADMIN_TABS=new Set(['products','giveaways','giftcodes','supportrewards','payments','purchases','users','messages','orders','tournaments','missxss','valorant-test']);
+function wz70RememberAdminTab(name){try{sessionStorage.setItem(WZ70_ADMIN_TAB_KEY,name)}catch(_){}}
+function wz70RestoreAdminTab(){try{const tab=sessionStorage.getItem(WZ70_ADMIN_TAB_KEY);return WZ70_ADMIN_TABS.has(tab)?tab:'products'}catch(_){return 'products'}}
 function openTab(name){
+  if(!WZ70_ADMIN_TABS.has(name))return;
+  wz70RememberAdminTab(name);
+
 
   document
     .querySelectorAll('.section')
@@ -4854,7 +4860,7 @@ function openAdmin(){
     .getElementById('adminArea')
     .style.display = 'block';
 
-  loadProducts();
+  openTab(wz70RestoreAdminTab());
   startAdminMessagesPolling();
 }
 
@@ -13273,7 +13279,7 @@ function wzgEdit(id){
 async function wzgLoad(){
   const el=document.getElementById('wzgList');
   if(wzgPending)return;
-  el.textContent='Taslaklar yükleniyor...';
+  if(!wzgCache.length && !el.querySelector('.wzg-item'))el.textContent='Taslaklar yükleniyor...';
   try{
     const {r,d}=await api('/admin/giveaway-drafts');
     if(!r.ok||!d?.success)throw Error(d?.error||'HTTP '+r.status);
@@ -13313,7 +13319,7 @@ async function wzgLoad(){
       el.append(row);
     }
     return true;
-  }catch(e){el.textContent='Taslaklar yüklenemedi: '+String(e?.message||e);return false}
+  }catch(e){wzgMessage('⚠️ Taslak listesi yenilenemedi: '+String(e?.message||e));if(!wzgCache.length)el.textContent='Taslaklar yüklenemedi: '+String(e?.message||e);return false}
 }
 async function wzgSave(){
   if(wzgPending)return;
@@ -13444,9 +13450,10 @@ async function wzg69CopyCancelled(c){
 async function wzg2AdminRefresh(){
  const status=document.getElementById('wzg2AdminStatus'),campaigns=document.getElementById('wzg2Campaigns'),entries=document.getElementById('wzg2Entries');
  if(!status||!campaigns||!entries)return;
- status.textContent='Kayıtlar yükleniyor...';campaigns.replaceChildren();entries.replaceChildren();
+ if(!campaigns.childElementCount&&!entries.childElementCount)status.textContent='Kayıtlar yükleniyor...';
  try{
   const {r,d}=await api('/admin/giveaway-live');if(!r.ok||!d.success)throw Error(d?.error||'HTTP '+r.status);
+  const nextCampaigns=document.createDocumentFragment(),nextEntries=document.createDocumentFragment();
   const activeCount=(d.campaigns||[]).filter(c=>c.status==='active'&&Date.parse(c.start_at)<=Date.now()&&Date.parse(c.end_at)>Date.now()).length;
   status.textContent=activeCount?'🟢 Katılıma açık çekiliş: '+activeCount+' • Admin üzerinden yönetiliyor.':'📋 Şu anda katılıma açık çekiliş yok. Taslağı Yayınla ile açabilirsin.';
   const get=(obj,key)=>String(obj?.[key]??'');
@@ -13497,9 +13504,9 @@ async function wzg2AdminRefresh(){
       const cancel=document.createElement('button');cancel.className='secondary';cancel.textContent='⛔ İptal et / biletleri geri ver';
       cancel.onclick=()=>{if(confirm('Çekiliş iptal edilecek ve ayrılan biletler yeniden kullanılabilir olacak. Emin misin?'))wzg2AdminAction('/admin/giveaway/cancel',{id:c.id})};action.append(cancel);
     }
-    item.append(action);campaigns.append(item);
+    item.append(action);nextCampaigns.append(item);
   }
-  if(!d.campaigns?.length)campaigns.textContent='Henüz yayınlanmış çekiliş yok.';
+  if(!d.campaigns?.length)nextCampaigns.append(document.createTextNode('Henüz yayınlanmış çekiliş yok.'));
   for(const e of d.entries||[]){
     const row=document.createElement('div');row.className='wzg-item';
     const name=document.createElement('h3');name.textContent=e.username+' • '+((d.campaigns||[]).find(c=>c.id===e.giveaway_id)?.title||'Çekiliş');row.append(name);
@@ -13523,11 +13530,12 @@ async function wzg2AdminRefresh(){
       const b=document.createElement('button');b.className='secondary';b.textContent=e.paid_verified?'👑 Abone avantajını kaldır':'👑 Kendi ödemeli Kick abonesi olduğunu onayla';
       b.onclick=async()=>{const proof=e.paid_verified?'':prompt('Gift değil, kişinin kendi ödediği aktif Kick aboneliğini hangi kaynaktan ve ne zaman kontrol ettin? (Bu tuş otomatik kontrol yapmaz.)');if(proof===null)return;await wzg2AdminAction('/admin/giveaway/entry',{id:e.giveaway_id,uid:e.kick_uid,action:'subscriber',verified:!e.paid_verified,proof})};buttons.append(b);
     }
-    row.append(buttons);entries.append(row);
+    row.append(buttons);nextEntries.append(row);
   }
-  if(!d.entries?.length)entries.textContent='Henüz katılımcı yok.';
+  if(!d.entries?.length)nextEntries.append(document.createTextNode('Henüz katılımcı yok.'));
+  campaigns.replaceChildren(nextCampaigns);entries.replaceChildren(nextEntries);
   return true;
- }catch(e){status.textContent='❌ '+e.message;return false}
+ }catch(e){status.textContent='❌ Liste güncellenemedi, son bilgiler korunuyor: '+e.message;return false}
 }
 async function wzg2AdminAction(path,payload){
  try{const d=await wzg2AdminCall(path,payload);alert(d.winners?.length?'Kazananlar: '+d.winners.map(w=>w.rank+'. '+w.username).join(', '):'İşlem tamamlandı.');await wzg2AdminRefresh()}
