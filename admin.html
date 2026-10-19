@@ -2511,7 +2511,7 @@ body:has(#adminNewMessageModal:not(.hidden)){
       </style>
       <div class="card">
         <h2>🎁 WEİZEND Çekiliş Yönetimi</h2>
-        <p class="muted">Her çekilişi ayrı taslak olarak oluşturabilir; yasal/teknik kontroller tamamlandığında yayınlayabilirsin. Gerçek sistem, Worker ortamındaki GIVEAWAY_LIVE_ENABLED anahtarı açık değilse katılım almaz.</p>
+        <p class="muted">Her çekilişi önce taslak olarak hazırla. Yayınla butonuyla aç; katılım, süre ve sonuçları buradan yönet. Yayınlamadan önce gerekli izin ve koşulları kontrol et.</p>
         <div style="padding:12px;border:1px solid #8b7231;background:#292313;border-radius:10px;margin-bottom:16px;color:#ffdf99">
           ⚠️ Türkiye'de şansa dayalı ödüllü çekilişler izin gerektirebilir. Resmî izin/uygun görüş netleşmeden çekilişi açma.
           Instagram, Discord, YouTube ve TikTok koşulları şu an otomatik doğrulanmaz; manuel kontrol gerektirir. Ücretli aboneye artırılmış şans tanımak hukuki inceleme gerektirir; canlı yayına açıldığında yalnızca doğrulanmış kendi ödemeli abonelere ağırlık uygulanır.
@@ -13308,7 +13308,8 @@ async function wzg2AdminRefresh(){
  status.textContent='Kayıtlar yükleniyor...';campaigns.replaceChildren();entries.replaceChildren();
  try{
   const {r,d}=await api('/admin/giveaway-live');if(!r.ok||!d.success)throw Error(d?.error||'HTTP '+r.status);
-  status.textContent=d.enabled?'🟢 Katılım yetkisi açık (GIVEAWAY_LIVE_ENABLED)':'🔒 Katılım yetkisi kapalı (GIVEAWAY_LIVE_ENABLED ayarlanmamış)';
+  const activeCount=(d.campaigns||[]).filter(c=>c.status==='active'&&Date.parse(c.start_at)<=Date.now()&&Date.parse(c.end_at)>Date.now()).length;
+  status.textContent=activeCount?'🟢 Katılıma açık çekiliş: '+activeCount+' • Admin üzerinden yönetiliyor.':'📋 Şu anda katılıma açık çekiliş yok. Taslağı Yayınla ile açabilirsin.';
   const get=(obj,key)=>String(obj?.[key]??'');
   for(const c of d.campaigns||[]){
     const item=document.createElement('div');item.className='wzg-item';
