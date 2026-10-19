@@ -2570,7 +2570,7 @@ body:has(#adminNewMessageModal:not(.hidden)){
         <p id="wzgStatus" role="status" aria-live="polite" class="muted"></p>
       </div>
       <div class="card"><h2>🎥 Canlı Çekilişler / Katılımcı Denetimi</h2>
-        <p class="muted">Çekiliş bitiş saatinde sunucuda otomatik kapanır. Ardından canlı yayında katılımcı listesini açıp kayan isim ekranından kazananları seçmeye başlayabilirsin. Sonuç sunucu tarafından güvenli ağırlıklı kurayla belirlenir; düğmeler yalnızca seçimi başlatır ve sonucu görüntüler.</p>
+        <p class="muted">Çekiliş bitiş saatinde yeni katılım otomatik kapanır. Canlı kura açıldığında Worker süresi bitmiş çekilişi de kapalı duruma geçirir; ayrı bir kapatma butonuna gerek yoktur. Eski bekleyen kayıtları gerekiyorsa tek seferde topluca işleyebilirsin. Ardından canlı yayında kazananları seçebilirsin. Sonuç sunucu tarafından güvenli ağırlıklı kurayla belirlenir; düğmeler yalnızca seçimi başlatır ve sonucu görüntüler.</p>
         <button type="button" class="secondary" onclick="wzg2AdminRefresh()">🔄 Canlı çekilişleri ve katılımcıları yenile</button>
         <div id="wzg2AdminStatus" class="muted" role="status"></div>
         <div id="wzg2EditPanel" class="wzg-item" hidden style="margin:15px 0;border:1px solid #92505b;background:#18151b;border-radius:13px;padding:16px">
@@ -13428,8 +13428,19 @@ async function wzg2AdminRefresh(){
     const p=document.createElement('div');p.className='muted';
     const scheduled=c.status==='active'&&Date.parse(c.start_at)>Date.now();
     const label=scheduled?'📅 YAKINDA':c.status==='active'?'🔴 KATILIMA AÇIK':c.status==='closed'?'⏱️ KAPANDI':c.status==='drawing'?'🎥 KURA DEVAM EDİYOR':c.status==='drawn'?'🏆 SONUÇLANDI':c.status==='cancelled'?'⛔ İPTAL':'—';
-    p.textContent=label+' • Başlangıç: '+new Date(c.start_at).toLocaleString('tr-TR')+' • Bitiş: '+new Date(c.end_at).toLocaleString('tr-TR')+' • Kazanan: '+c.winners_count+' • Kapak: '+(c.image_url?'Var':'Yok');item.append(p);
+    p.textContent=label+' • Başlangıç: '+new Date(c.start_at).toLocaleString('tr-TR')+' • Bitiş: '+new Date(c.end_at).toLocaleString('tr-TR')+' • Kazanan: '+c.winners_count+' • Kapak: '+(c.image_url?'Var':'Yok')+' • Eski bekleyen: '+Number(c.legacy_pending_count||0)+' • Reddedilmiş: '+Number(c.disqualified_count||0);item.append(p);
     const action=document.createElement('div');action.className='wzg-row';
+    if(Number(c.legacy_pending_count||0)>0&&['active','closed'].includes(c.status)){
+      const legacy=document.createElement('button');legacy.type='button';legacy.className='secondary';
+      legacy.textContent='✅ '+Number(c.legacy_pending_count)+' eski bekleyeni topluca kabul et';
+      legacy.title='Yalnızca geçmişte manuel kontrolde beklemiş kayıtlar içindir; harici takip doğrulanmaz.';
+      legacy.onclick=async()=>{
+        if(!confirm('Bu işlem '+Number(c.legacy_pending_count)+' ESKİ bekleyen katılımı tek işlemde uygun yapar. Eski kayıtlar gerçek sosyal takip doğrulaması içermez. Reddedilmiş kişilere ve yeni otomatik katılıma dokunulmaz. Devam edilsin mi?'))return;
+        try{const r=await wzg2AdminCall('/admin/giveaway/entry',{id:c.id,action:'approve_legacy_pending',confirmation:'ONAY'});
+          alert('✅ '+Number(r.updatedCount||0)+' eski kayıt uygun katılımcıya dönüştürüldü.');await wzg2AdminRefresh();}
+        catch(e){alert('❌ '+e.message)}
+      };action.append(legacy);
+    }
     if(scheduled){
       const nowBtn=document.createElement('button');nowBtn.textContent='🚀 Şimdi Başlat';
       nowBtn.onclick=()=>{if(confirm('Bu çekilişi planlanan başlangıç tarihini beklemeden hemen başlatmak istiyor musun?'))wzg2AdminAction('/admin/giveaway/start-now',{id:c.id,confirmation:'SIMDI_BASLAT'})};action.append(nowBtn);
@@ -13460,10 +13471,21 @@ async function wzg2AdminRefresh(){
   for(const e of d.entries||[]){
     const row=document.createElement('div');row.className='wzg-item';
     const name=document.createElement('h3');name.textContent=e.username+' • '+e.giveaway_id;row.append(name);
-    const p=document.createElement('div');p.className='muted';p.textContent='Durum: '+e.status+' • Ayrılan bilet: '+e.tickets+' • Kendi ödemeli abone onayı: '+(e.paid_verified?'EVET':'Hayır');row.append(p);
+    const p=document.createElement('div');p.className='muted';
+    const statusMap={eligible:'✅ Katılım otomatik tamamlandı',pending_review:'⏳ Eski manuel kontrol kaydı — yeni görev akışından tekrar katılabilir',disqualified:'⛔ Yönetici tarafından reddedilmiş — otomatik açılmaz'};
+    p.textContent='Durum: '+(statusMap[e.status]||e.status)+' • Ayrılan bilet: '+e.tickets+' • Kendi ödemeli abone onayı: '+(e.paid_verified?'EVET':'Hayır');row.append(p);
     const buttons=document.createElement('div');buttons.className='wzg-row';
-    if(e.status==='pending_review')for(const [label,act] of [['✅ Sosyal şartları onayla','approve'],['⛔ Reddet','reject']]){
-      const b=document.createElement('button');b.className='secondary';b.textContent=label;b.onclick=()=>wzg2AdminAction('/admin/giveaway/entry',{id:e.giveaway_id,uid:e.kick_uid,action:act});buttons.append(b);
+    if(e.status==='disqualified'){
+      const camp=(d.campaigns||[]).find(c=>c.id===e.giveaway_id);
+      if(camp?.status==='active'&&Date.parse(camp.start_at)<=Date.now()&&Date.parse(camp.end_at)>Date.now()){
+        const fix=document.createElement('button');fix.className='secondary';fix.textContent='↩️ Hatalı reddi sıfırla';
+        fix.title='Kullanıcıya doğrudan ödül veya uygunluk vermez; sosyal görevleri yeniden yapması gerekir.';
+        fix.onclick=async()=>{
+          if(!confirm('Bu kişinin eski reddini sıfırlayıp sosyal görevleri tekrar yapmasına izin verilsin mi? Otomatik onay verilmez.'))return;
+          try{await wzg2AdminCall('/admin/giveaway/entry',{id:e.giveaway_id,uid:e.kick_uid,action:'reset_disqualification',confirmation:'TEKRAR_GOREV'});await wzg2AdminRefresh();}
+          catch(err){alert('❌ '+err.message)}
+        };buttons.append(fix);
+      }
     }
     if(e.status==='eligible'){
       const b=document.createElement('button');b.className='secondary';b.textContent=e.paid_verified?'×1 Abone avantajını kaldır':'👑 Kendi ödemeli aboneliği doğrula';
