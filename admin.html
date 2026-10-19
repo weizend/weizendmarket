@@ -2682,6 +2682,7 @@ body:has(#adminNewMessageModal:not(.hidden)){
             <option value="manual">Manuel Teslimat</option>
             <option value="giveaway_ticket">🎟️ Çekiliş Bileti (Otomatik)</option>
           </select>
+          <div class="muted" style="margin-top:7px;line-height:1.55">ℹ️ <strong>Manuel Teslimat:</strong> İşlem tamamlandıktan sonra ödül veya ürün yönetici tarafından teslim edilir. Siteden alınan siparişlerde teslimat kodu oluşturulabilir; bu, otomatik ürün teslim edildiği anlamına gelmez. Yayın / Kick Komutu ürünlerinde işlem Kick sohbetinden gerçekleşir.</div>
           <div class="muted hidden" id="wzTicketDeliveryHint" style="margin-top:7px;">🎟️ Çekiliş Bileti seçildiğinde ödeme türü Puan olmalıdır. Onaylanan her ürün adedi doğrudan Profil bilet bakiyesine eklenir; teslimat kodu oluşturulmaz.</div>
         </div>
 
@@ -5610,7 +5611,7 @@ function renderProducts(){
     tr.innerHTML = `
       <td>${esc(p.id)}</td>
 
-      <td>${esc(p.name)}${p.__wzLegacyCardGame ? '<div class="muted" style="color:#e3b867">Market sabit ürünü • 10.000 puan • Kick komutu</div>' : ''}${p.deliveryType==='giveaway_ticket' ? '<div class="muted" style="color:#8be4a3">🎟️ Otomatik Çekiliş Bileti</div>' : ''}</td>
+      <td>${esc(p.name)}${p.__wzLegacyCardGame ? '<div class="muted" style="color:#e3b867">Önce D1 ürün kaydı kurulmalı • Kick komutu</div>' : ''}${p.deliveryType==='giveaway_ticket' ? '<div class="muted" style="color:#8be4a3">🎟️ Otomatik Çekiliş Bileti</div>' : ''}</td>
 
       <td>${esc(p.category)}</td>
 
@@ -5624,7 +5625,7 @@ function renderProducts(){
 
       <td>
         ${p.__wzLegacyCardGame ?
-          '<span class="badge warn">Sabit / Kick</span><div class="muted" style="margin-top:7px;max-width:260px">Bu ürün index.html içinde tanımlıdır. Admin panelindeki Düzenle/Sil işlemleri bu ürüne uygulanmaz.</div>' : `
+          '<span class="badge warn">Sabit / Kick</span><div class="muted" style="margin-top:7px;max-width:260px">D1 kaydı eklenene kadar bu kart bilgilendirme amaçlıdır. Kurulum SQL’inden sonra standart Sil ve Pasife Al seçenekleri açılır.</div>' : `
         <button
           class="smallBtn secondary"
           onclick="editProduct('${encodeURIComponent(p.id)}')">
@@ -5675,7 +5676,7 @@ function updateCategoryList(){
 
     if(
       p.category &&
-      String(p.category).trim().toLocaleLowerCase('tr-TR') !== 'turnuva'
+      !['turnuva','deneme'].includes(String(p.category).trim().toLocaleLowerCase('tr-TR'))
     ){
       categories.add(p.category);
     }
@@ -6174,9 +6175,12 @@ async function toggleProduct(
 async function deleteProduct(encodedId,isTournament=false){
   const id = decodeURIComponent(encodedId);
 
+  const productForDeletion=productsCache.find(p=>String(p.id)===String(id));
   const message = isTournament
     ? 'Bu turnuva ürünlerden kaldırılacak, kayıtları kapatılacak ve Turnuva sekmesinden gizlenecek. Geçmiş turnuva kayıtları güvenlik için veritabanında korunur. Devam edilsin mi?'
-    : 'Bu ürün marketten kaldırılsın mı? Eski sipariş geçmişi korunacaktır.';
+    : String(productForDeletion?.paymentType||'')==='stream'
+      ? 'Bu Yayın / Kick Komutu ürünü Market vitrinden kaldırılacak. BotRix/MissXss sohbet komutu otomatik silinmez; onu ayrıca kapatmalısın. Devam edilsin mi?'
+      : 'Bu ürün marketten kaldırılsın mı? Eski sipariş geçmişi korunacaktır.';
 
   if(!confirm(message)) return;
 
