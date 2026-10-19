@@ -5548,6 +5548,19 @@ function renderProducts(){
       p.deleted !== true
     );
 
+  // Kart Oyunu, eski Market index.html dosyasinda sabit bir Kick komutudur.
+  // products/D1 listesinde bulunmaz: ayni urunu ikinci defa olusturmayiz.
+  const kartInD1=normalProducts.some(p=>
+    String(p.id||'').toLocaleLowerCase('tr-TR')==='alkartoyunu' ||
+    String(p.name||'').trim().toLocaleLowerCase('tr-TR')==='kart oyunu'
+  );
+  if(!kartInD1)normalProducts.push({
+    id:'alkartoyunu',name:'Kart Oyunu',category:'Şans Oyunları',
+    paymentType:'stream',deliveryType:'manual',
+    metadata:{streamCommand:'!alkartoyunu'},active:true,unlimited:true,
+    __wzLegacyCardGame:true
+  });
+
   const items =
     normalProducts.filter(p => {
       if(!search) return true;
@@ -5597,7 +5610,7 @@ function renderProducts(){
     tr.innerHTML = `
       <td>${esc(p.id)}</td>
 
-      <td>${esc(p.name)}${p.deliveryType==='giveaway_ticket' ? '<div class="muted" style="color:#8be4a3">🎟️ Otomatik Çekiliş Bileti</div>' : ''}</td>
+      <td>${esc(p.name)}${p.__wzLegacyCardGame ? '<div class="muted" style="color:#e3b867">Market sabit ürünü • 10.000 puan • Kick komutu</div>' : ''}${p.deliveryType==='giveaway_ticket' ? '<div class="muted" style="color:#8be4a3">🎟️ Otomatik Çekiliş Bileti</div>' : ''}</td>
 
       <td>${esc(p.category)}</td>
 
@@ -5610,6 +5623,8 @@ function renderProducts(){
       <td>${active}</td>
 
       <td>
+        ${p.__wzLegacyCardGame ?
+          '<span class="badge warn">Sabit / Kick</span><div class="muted" style="margin-top:7px;max-width:260px">Bu ürün index.html içinde tanımlıdır. Admin panelindeki Düzenle/Sil işlemleri bu ürüne uygulanmaz.</div>' : `
         <button
           class="smallBtn secondary"
           onclick="editProduct('${encodeURIComponent(p.id)}')">
@@ -5632,7 +5647,7 @@ function renderProducts(){
           onclick="deleteProduct('${encodeURIComponent(p.id)}',false)">
           🗑 Sil
         </button>
-
+        `}
       </td>
     `;
 
