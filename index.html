@@ -5354,8 +5354,9 @@ body.wz-view-giveaway #wzNavMarket,body.wz-view-giveaway #wzNavTournament,body.w
 
                 <div id="verificationActivation" style="display:none;">
                     <div id="accountNameHint" class="account-name-hint"></div>
-                    <button id="verifyCommandButton" class="access-command" onclick="copyVerifyAndRedirect()" title="Doğrulama komutunu kopyala ve Kick sohbete git">📋 !doğrula KOD</button>
-                    <p class="access-help"><b>1.</b> Yukarıdaki doğrulama komutuna dokun; komut kopyalanır ve Kick sohbeti yeni sekmede açılır. <b>2.</b> Komutu sitede yazdığın Kick hesabından sohbete gönder. <b>3.</b> Market sekmesine dönüp <b>Doğrulamayı Kontrol Et</b> butonuna bas; 60 saniyelik kontrol süresi ancak o zaman başlar.</p>
+                    <button id="verifyCommandButton" type="button" class="access-command" onclick="copyVerifyAndRedirect()" title="!doğrula komutunu kopyala">📋 !doğrula KOD</button>
+                    <p class="access-help" id="verifyFlowHelp"><b>1.</b> <b>!doğrula KOD</b> alanına dokunarak komutun tamamını kopyala. <b>2.</b> <b>Kick Sohbete Git</b> butonuna bas, komutu sohbet alanına yapıştırıp gönder. <b>3.</b> Bu sayfaya geri dön ve <b>Doğrulamayı Kontrol Et</b> butonuna bas. Kontrol ancak sen başlattığında çalışır.</p>
+                    <div class="access-form"><a id="verifyKickChatLink" class="access-btn" href="https://kick.com/weizend/chat" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;">💬 Kick Sohbete Git <span aria-hidden="true">↗</span></a></div>
                     <div class="access-form">
                         <button class="access-btn secondary" onclick="checkSavedAccount()">🔄 Doğrulamayı Kontrol Et</button>
                         <button class="access-btn secondary" onclick="changeUsername()">Kullanıcı Adını Değiştir</button>
@@ -6818,7 +6819,7 @@ body.wz-view-giveaway #wzNavMarket,body.wz-view-giveaway #wzNavTournament,body.w
             showAccessBase();
             const command = `!doğrula ${code}`;
             document.getElementById('accessTitle').innerText = '🔐 Kick Hesabını Doğrula';
-            document.getElementById('accessText').innerHTML = `Kick sohbetine <b>${escapeHtml(command)}</b> yaz. Komutu <b>${escapeHtml(username)}</b> hesabının göndermesi gerekiyor.`;
+            document.getElementById('accessText').innerHTML = `Aşağıdaki <b>${escapeHtml(command)}</b> komutuna dokunup kopyala. Ardından <b>Kick Sohbete Git</b> butonuyla sohbeti aç, komutu <b>${escapeHtml(username)}</b> hesabından gönder. Geri döndüğünde <b>Doğrulamayı Kontrol Et</b> butonuna bas.`;
             document.getElementById('usernameForm').style.display = 'none';
             document.getElementById('verificationActivation').style.display = 'block';
             document.getElementById('accountNameHint').innerHTML = `Doğrulanacak Kick hesabı: <b>${escapeHtml(username)}</b>`;
@@ -6995,7 +6996,7 @@ body.wz-view-giveaway #wzNavMarket,body.wz-view-giveaway #wzNavTournament,body.w
 
                     const command = `!doğrula ${authState.code}`;
                     document.getElementById('accessTitle').innerText = '👆 Önce Doğrulama Kodunu Kick Sohbetine Gönder';
-                    document.getElementById('accessText').innerHTML = `Önce yukarıdaki <b>${escapeHtml(command)}</b> alanına dokun. Kod kopyalanacak ve Kick sohbeti yeni sekmede açılacak. Kodu <b>${escapeHtml(authState.username)}</b> hesabından sohbete gönderdikten sonra market sekmesine dönüp <b>Doğrulamayı Kontrol Et</b> butonuna tekrar bas.`;
+                    document.getElementById('accessText').innerHTML = `Önce <b>${escapeHtml(command)}</b> alanına dokunup komutu kopyala. Ardından <b>Kick Sohbete Git</b> butonuna bas, <b>${escapeHtml(authState.username)}</b> hesabından komutu gönder. Bu sayfaya dönüp <b>Doğrulamayı Kontrol Et</b> butonuna bas.`;
 
                     const verifyButton = document.getElementById('verifyCommandButton');
                     verifyButton.classList.remove('needs-action');
@@ -8598,53 +8599,31 @@ body.wz-view-giveaway #wzNavMarket,body.wz-view-giveaway #wzNavTournament,body.w
             requestAnimationFrame(syncMarketModalScrollLock);
         }
 
-        function copyVerifyAndRedirect() {
+        // V31.0.73: Kick doğrulama yalnızca kullanıcının seçtiği adımlarla yapılır.
+        // Eski işlev adı diğer kodlarla uyumluluk için korunur; otomatik yönlendirme yoktur.
+        async function copyVerifyAndRedirect() {
             const authState = getAuthState();
             if (!authState) {
                 showUsernameForm('Doğrulama kodu bulunamadı. Kullanıcı adını tekrar gönder.');
                 return;
             }
-
             const command = `!doğrula ${authState.code}`;
-
-            // Bu doğrulama isteği için kullanıcı komut alanına gerçekten dokundu.
             markVerifyCommandClicked(authState);
-            document.getElementById('verifyCommandButton').classList.remove('needs-action');
-
-            // Komutu hemen kopyala.
-            copyTextFallback(command);
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(command).catch(() => {});
+            const verifyButton = document.getElementById('verifyCommandButton');
+            verifyButton?.classList.remove('needs-action');
+            const help = document.getElementById('verifyFlowHelp');
+            try {
+                await copyTextReliable(command);
+                if (getAuthState()?.challengeId !== authState.challengeId) return;
+                if (verifyButton) verifyButton.innerText = `✅ Kopyalandı: ${command}`;
+                document.getElementById('accessTitle').innerText = '📨 Şimdi Kodu Kick Sohbetine Gönder';
+                document.getElementById('accessText').innerHTML = `✅ <b>${escapeHtml(command)}</b> kopyalandı. <b>Kick Sohbete Git</b> butonunu kullan, komutu <b>${escapeHtml(authState.username)}</b> hesabından sohbete yapıştırıp gönder. Sonra buraya dönüp <b>Doğrulamayı Kontrol Et</b> butonuna bas.`;
+                if (help) help.innerHTML = '<b>1.</b> ✅ Komut kopyalandı. <b>2.</b> 💬 Kick Sohbete Git → Yapıştır → Gönder. <b>3.</b> ↩️ Bu sayfaya dön → <b>Doğrulamayı Kontrol Et</b>.';
+            } catch (_) {
+                if (verifyButton) verifyButton.innerText = `📋 ${command}`;
+                document.getElementById('accessText').innerHTML = `Kopyalama otomatik yapılamadı. <b>${escapeHtml(command)}</b> metnini seçip kopyala; <b>Kick Sohbete Git</b> butonuyla sohbeti aç. Komutu gönderdikten sonra <b>Doğrulamayı Kontrol Et</b> butonuna bas.`;
+                if (help) help.innerHTML = '<b>1.</b> Komuta basılı tutup kopyala. <b>2.</b> Kick Sohbete Git → Yapıştır → Gönder. <b>3.</b> Geri dön → Doğrulamayı Kontrol Et.';
             }
-
-            // Önce 3 saniyelik yönlendirme ekranını göster; süre dolunca Kick'i yeni sekmede aç.
-            const kickButton = document.getElementById('wzKickChatManualButton');
-            if (kickButton) kickButton.style.display = 'none';
-            document.getElementById('redirectModalTitle').innerText = 'Doğrulama Onayı';
-            document.getElementById('redirectStatusText').innerText = 'Doğrulama kodu kopyalandı, Kick sohbete yönlendiriliyorsunuz:';
-            document.getElementById('modalCommandText').innerText = command;
-            document.getElementById('redirectModal').style.display = 'flex';
-
-            let kalanSaniye = 3;
-            document.getElementById('timerText').innerText = `${kalanSaniye} saniye içinde Kick sohbetine yönlendirileceksiniz...`;
-
-            if (redirectTimer) clearInterval(redirectTimer);
-            redirectTimer = setInterval(() => {
-                kalanSaniye--;
-
-                if (kalanSaniye > 0) {
-                    document.getElementById('timerText').innerText = `${kalanSaniye} saniye içinde Kick sohbetine yönlendirileceksiniz...`;
-                } else {
-                    clearInterval(redirectTimer);
-                    redirectTimer = null;
-                    document.getElementById('redirectModal').style.display = 'none';
-                    openKickChatInNewTab();
-                    showStatusToast(`✅ ${command} kopyalandı · Kick sohbetine yönlendiriliyorsunuz`, 4500);
-                }
-            }, 1000);
-
-            document.getElementById('accessTitle').innerText = '📨 Kodu Kick Sohbetine Gönder';
-            document.getElementById('accessText').innerHTML = `<b>${escapeHtml(authState.username)}</b> hesabından Kick sohbetine <b>${escapeHtml(command)}</b> komutunu gönder. Gönderdikten sonra market sekmesine dönüp <b>Doğrulamayı Kontrol Et</b> butonuna bas; 60 saniyelik kontrol süresi o zaman başlayacak.`;
         }
 
         // Alt tarafta çıkan toast bildirimleri kaldırıldı.
