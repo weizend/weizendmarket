@@ -50,6 +50,21 @@
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- V31.0.77: Kaydedilmiş Admin oturumu varsa, ilk HTML çiziminde
+     geçici giriş kartını gizle. Bu yalnızca görsel bir önlemdir;
+     gerçek erişim hâlâ Worker oturum doğrulamasıyla kontrol edilir. -->
+<script id="wz-v3177-admin-initial-view">
+(function(){
+  try {
+    if (sessionStorage.getItem('weizend_market_admin_token_v3')) {
+      document.documentElement.classList.add('wz77-admin-restoring');
+    }
+  } catch (_) {}
+})();
+</script>
+<style id="wz-v3177-admin-login-flash-fix">
+html.wz77-admin-restoring #loginCard { display:none!important; }
+</style>
 <meta name="robots" content="noindex,nofollow">
 <title>WEİZEND Market Admin</title>
 
@@ -4860,6 +4875,9 @@ function openAdmin(){
     .getElementById('adminArea')
     .style.display = 'block';
 
+  // Yönetim alanı hazır; geçici ilk çizim korumasını kapat.
+  document.documentElement.classList.remove('wz77-admin-restoring');
+
   openTab(wz70RestoreAdminTab());
   startAdminMessagesPolling();
 }
@@ -4908,6 +4926,9 @@ async function api(path,options={}){
     sessionStorage.removeItem(
       ADMIN_TOKEN_KEY
     );
+
+    // Gerçek 401'de giriş ekranını görünür yap; saklanmış token tek başına yetki değildir.
+    document.documentElement.classList.remove('wz77-admin-restoring');
 
     document
       .getElementById('loginCard')
