@@ -2577,20 +2577,18 @@ body:has(#adminNewMessageModal:not(.hidden)){
           <label>YouTube kanal bağlantısı<input id="wzgLinkYoutube" type="url" maxlength="700" placeholder="https://www.youtube.com/@weizend"></label>
           <label>TikTok profil bağlantısı<input id="wzgLinkTiktok" type="url" maxlength="700" placeholder="https://www.tiktok.com/@weizend"></label>
         </div>
-        <h3 style="margin:17px 0 4px">⭐ Abone kura hakkı çarpanı (her çekilişe özel)</h3>
-        <p class="muted">Abonelik <b>katılım şartı değildir</b>. Tüm uygun katılımcılar için normal ağırlık ×1'dir. Seçilen değer, yalnızca kendi ödemesiyle aktif Kick abonesi olan veya kendi aboneliğini yenileyen kullanıcılar için planlanır. <b>Gift abonelik alanlar ×1 kalır.</b> Kendi ödemeli ve süresi dolmamış Kick aboneliği MissXss üzerinden otomatik doğrulanır; Gift aboneliği avantaj sağlamaz. MissXss erişilemezse manuel doğrulama seçeneği korunur.</p>
-        <div class="wzg-grid">
-          <label>Kendi ödemeli abone / yenileme kura hakkı çarpanı
-            <select id="wzgSubscriberWeight">
-              <option value="1">×1 — Avantaj yok</option>
-              <option value="2">×2 — 2 kat kura hakkı</option>
-              <option value="3">×3 — 3 kat kura hakkı</option>
-              <option value="5">×5 — 5 kat kura hakkı</option>
-              <option value="10">×10 — 10 kat kura hakkı</option>
-            </select>
-          </label>
-        </div>
-        <div class="callout" style="margin:10px 0 15px">⚠️ Bu ayar her çekilişin taslağında saklanır ve yalnızca yayımlandıktan sonra, kendi ödemeli aboneliği yönetici tarafından doğrulanmış kişilere uygulanır. Gift abonelik alanlar ×1 kalır. Şansa dayalı ödüllü çekilişlerde izin/uygunluk ve ücretli abone avantajını ayrıca değerlendir.</div>
+        <h3 style="margin:17px 0 4px">⭐ Kendi ödemeli aboneler için başlangıç kura hakkı</h3>
+        <p class="muted">Normal kullanıcı <b>1 başlangıç hakkıyla</b> katılır. Doğrulanmış kendi ödemeli Kick abonesi aşağıda seçtiğin <b>toplam başlangıç hakkını</b> alır: ×3 seçildiyse toplam 3, ücretsiz +1 ayrıca eklenmez. Her kullanılan bilet +1 hak ekler. Gift aboneliklerde bu avantaj yoktur.</p>
+        <label for="wzgSubscriberWeight">Abone başlangıç hakkı
+         <select id="wzgSubscriberWeight">
+          <option value="1">×1 — Ek avantaj yok</option>
+          <option value="2">×2 — Toplam 2 hak</option>
+          <option value="3" selected>×3 — Toplam 3 hak</option>
+          <option value="5">×5 — Toplam 5 hak</option>
+          <option value="10">×10 — Toplam 10 hak</option>
+         </select>
+        </label>
+        <div class="callout" style="margin:10px 0 15px">ℹ️ Abonelik katılım şartı değildir. Ekranda gösterilen yüzdeler <b>sıradaki tek ödül için</b> kullanıcının kura ağırlığının kalan toplam ağırlığa oranıdır. Ödül kazanan kişi sonraki turlardan çıkar. Ücretli avantaj ve çekilişin izin durumunu ayrıca değerlendir.</div>
         <div class="wzg-row">
           <button type="button" onclick="wzgSave()">💾 Taslağı Kaydet</button>
           <button type="button" class="secondary" onclick="wzgClear()">➕ Yeni Taslak</button>
@@ -13348,7 +13346,7 @@ function wzgCheck(id){return !!document.getElementById(id)?.checked}
 function wzgMessage(msg){const el=document.getElementById('wzgStatus');if(el)el.textContent=String(msg)}
 function wzgDateValue(value){return value?new Date(value).toISOString():null}
 function wzgCollect(){
-  const subscriberWeight=Number(wzgVal('wzgSubscriberWeight')||1);
+  const subscriberWeight=3;
   if(![1,2,3,5,10].includes(subscriberWeight))throw Error('Geçersiz abone şans çarpanı.');
   return {
     id:wzgVal('wzgId'), title:wzgVal('wzgTitle'),description:wzgVal('wzgDescription'),
@@ -13369,7 +13367,7 @@ function wzgClear(){
   for(const id of ['wzgId','wzgTitle','wzgDescription','wzgPrizeTitle','wzgPrizeDetails','wzgImage','wzgLegalNote','wzgStart','wzgEnd','wzgLinkKick','wzgLinkInstagram','wzgLinkDiscord','wzgLinkYoutube','wzgLinkTiktok'])
     document.getElementById(id).value='';
   for(const id of ['wzgKickVisit','wzgDiscord','wzgInstagram','wzgYouTube','wzgTikTok'])document.getElementById(id).checked=false;
-  document.getElementById('wzgSubscriberWeight').value='1';
+  document.getElementById('wzgSubscriberWeight').value='3';
   document.getElementById('wzgWinners').value='1';
   document.getElementById('wzgMaxEntries').value='0';
   wzgMessage('Yeni taslak formu hazır.');
@@ -13397,7 +13395,7 @@ function wzgEdit(id){
     .forEach(([key,rule])=>document.getElementById(key).checked=c[rule]===true);
   const oldWeight=c.subscriberBonusX5DraftOnly===true?5:1;
   const chosenWeight=Number(c.subscriberWeight??oldWeight);
-  document.getElementById('wzgSubscriberWeight').value=String([1,2,3,5,10].includes(chosenWeight)?chosenWeight:1);
+  document.getElementById('wzgSubscriberWeight').value='3';
   document.getElementById('section-giveaways').scrollIntoView({block:'start',behavior:'smooth'});
   wzgMessage('Taslak düzenlemeye açıldı: '+b.title);
 }
@@ -13421,7 +13419,7 @@ async function wzgLoad(){
       inf.textContent=(b.status==='draft'?'📝 TASLAK':b.status==='cancelled'?'⛔ İPTAL EDİLEN ÇEKİLİŞ':'📁 ARŞİV')+' • '+b.winners_count+' kazanan • '+
         [c.discordMember?'Discord katılım':'',c.instagramFollow?'Instagram takip':'',
         c.youtubeSubscribe?'YouTube abonelik':'',c.tiktokFollow?'TikTok takip':'',
-        (()=>{const w=Number(c.subscriberWeight??(c.subscriberBonusX5DraftOnly?5:1));return w>1?'Kendi ödemeli abonelere ×'+w+' taslağı (PASİF)':'Herkese ×1 şans taslağı';})()].filter(Boolean).join(', ').concat(' • Kick doğrulama ve 18+ • Henüz yayınlanmadı');
+        (()=>{const w=Number(c.subscriberWeight??(c.subscriberBonusX5DraftOnly?5:1));return w>1?'Kendi ödemeli abonelere +3 bonus':'Abone bonusu +3';})()].filter(Boolean).join(', ').concat(' • Kick doğrulama ve 18+ • Henüz yayınlanmadı');
       row.append(inf);
       if(b.status==='draft'){
         const actions=document.createElement('div');actions.className='wzg-row';
@@ -13871,13 +13869,13 @@ function wzg66Make(){
  .wzg66-name.center{border:2px solid #ff435c;background:linear-gradient(90deg,#541526,#2e101e,#541526);font-size:clamp(24px,4.8vw,49px);color:#fff;box-shadow:0 0 38px #e71b4c44}
  #wzg66Countdown{font-size:18px;font-weight:900;color:#f6c978;margin:14px 0}#wzg66Result{font-size:clamp(17px,2.5vw,27px);font-weight:900;margin:17px auto;color:#ffecae;overflow-wrap:anywhere}
  #wzg66Hint{font-size:12px;line-height:1.65;color:#c1b9c7;text-align:center;margin-top:14px}
- #wzg66Box select{background:#16151d;color:white;padding:10px;border-radius:11px;border:1px solid #514650}
+ #wzg93PrizeRow[hidden]{display:none!important}#wzg66Box select{background:#16151d;color:white;padding:10px;border-radius:11px;border:1px solid #514650}
  @media(max-width:600px){#wzg66Overlay{padding:8px}#wzg66Box{border-radius:14px;padding:17px 10px}#wzg66Five{min-height:290px}}
  `;document.head.append(css);
  const root=document.createElement('div');root.id='wzg66Overlay';root.hidden=true;
  root.innerHTML=`<section id="wzg66Box" role="dialog" aria-modal="true" aria-labelledby="wzg66Title">
  <button id="wzg66Close" type="button">✕ Kapat</button><div style="color:#ff6c7e;letter-spacing:2px;font-weight:950">🎥 WEİZEND CANLI KURA</div>
- <h2 id="wzg66Title">Çekiliş</h2><div id="wzg66Stats" class="wzg66-stats"></div>
+ <h2 id="wzg66Title">Çekiliş</h2><div id="wzg93PrizeRow" style="margin:12px 0;padding:13px;border:1px solid #84612e;border-radius:12px;background:#1e1914"><label for="wzg93Award" style="display:block;margin-bottom:6px;font-weight:900;color:#ffe1a3">🎁 Sıradaki kurada verilecek ödül</label><input id="wzg93Award" maxlength="90" placeholder="Örn: 825 VP veya 375 VP" style="width:100%;padding:11px;border-radius:9px;background:#121116;color:#fff;border:1px solid #786640"><small style="display:block;margin-top:7px">Ödülü isimler dönmeden önce seç. Her kura turunda değiştirilebilir.</small></div><div id="wzg66Stats" class="wzg66-stats"></div>
  <section id="wzg66Pre"><div style="font-weight:900">👥 Katılımcı Listesi <small style="color:#baaeb7">(15 kişiden sonrası kaydırılabilir)</small></div><div id="wzg66Roster"></div>
  <div id="wzg66Controls"><label for="wzg66Duration">İsimlerin akış süresi</label><select id="wzg66Duration"><option value="10">10 saniye</option><option value="30" selected>30 saniye</option><option value="60">60 saniye</option></select>
  <button id="wzg66Start" class="primary" type="button">🎬 Çekilişi Başlat</button></div></section>
@@ -13894,10 +13892,10 @@ async function wzg66Request(path,payload){return wzg2AdminCall(path,payload)}
 async function wzg66Get(path){const {r,d}=await api(path);if(!r.ok||!d?.success)throw Error(d?.error||'API hatası');return d}
 function wzg66Badge(p){
  const badges=[];
- if(p.subscriber)badges.push('⭐ Toplam '+(wzg66.roster?.subscriberMultiplier||3)+' kura hakkı (abonelik)');
- if(Number(p.tickets||0)>0)badges.push('🎟️ +'+p.tickets+' bilet');
+ if(p.subscriber)badges.push('⭐ Abone başlangıcı '+(1+Number(wzg66.roster?.subscriberBonus??0))+' hak');
+ if(Number(p.tickets||0)>0)badges.push('🎟️ +'+p.tickets+' şans (bilet)');
  if(!badges.length)badges.push('🎟️ Normal');
- badges.push('Toplam '+Number(p.weight||1)+' kura hakkı');
+ badges.push('İsim havuzunda '+Number(p.weight||1)+' sıra');
  return badges.join(' · ');
 }
 function wzg66FillRoster(){
@@ -13920,11 +13918,12 @@ function wzg66SetMessage(msg){wzg66$('wzg66Result').textContent=msg}
 async function wzg2OpenReel(id,title){
  wzg66Make();wzg66StopTimer();wzg66.id=id;wzg66.title=title;wzg66.candidate=null;wzg66.busy=true;
  wzg66$('wzg66Overlay').hidden=false;document.body.style.overflow='hidden';
- wzg66$('wzg66Title').textContent=title;wzg66$('wzg66Pre').hidden=false;wzg66$('wzg66Stage').hidden=true;wzg66$('wzg66After').hidden=true;
+ wzg66$('wzg66Title').textContent=title;wzg66$('wzg93PrizeRow').hidden=false;wzg66$('wzg66Pre').hidden=false;wzg66$('wzg66Stage').hidden=true;wzg66$('wzg66After').hidden=true;
  try{
   const [roster,session]=await Promise.all([
    wzg66Get('/admin/giveaway/participants?id='+encodeURIComponent(id)),wzg66Get('/admin/giveaway/draw/session?id='+encodeURIComponent(id))]);
-  wzg66.roster=roster;wzg66.session=session;wzg66FillRoster();
+  wzg66.roster=roster;wzg66.session=session;wzg66.currentAward=session.currentAward||'';wzg66FillRoster();
+  wzg66$('wzg93Award').value=session.currentAward||'';wzg66$('wzg93PrizeRow').hidden=!!session.currentAward&&session.stage==='candidate';
   if(session.stage==='candidate'&&session.candidate){wzg66.candidate=session.candidate;wzg66ShowCandidate(session.candidate,true)}
   else if(roster.status==='drawn'||session.stage==='finished')wzg66Finished();
   else if(roster.status==='drawing')wzg66$('wzg66Start').textContent='▶️ Kaldığın Yerden Başlat';
@@ -13933,8 +13932,24 @@ async function wzg2OpenReel(id,title){
  }catch(e){wzg66$('wzg66Roster').textContent='❌ '+e.message;wzg66$('wzg66Start').disabled=true}
  finally{wzg66.busy=false}
 }
+async function wzg93LockAward(){
+ const award=String(wzg66$('wzg93Award').value||'').trim();
+ if(!award)throw Error('İsimleri döndürmeden önce sıradaki ödülü yazmalısın.');
+ const r=await wzg66Request('/admin/giveaway/draw/award',{id:wzg66.id,award});
+ wzg66.currentAward=r.award;
+}
+async function wzg93StartNext(){
+ if(wzg66.busy||wzg66.spinning)return;
+ wzg66.busy=true;
+ try{await wzg93LockAward();
+   wzg66.roster=await wzg66Get('/admin/giveaway/participants?id='+encodeURIComponent(wzg66.id));
+   wzg66FillRoster();
+   wzg66$('wzg93PrizeRow').hidden=true;wzg66Run()}
+ catch(e){alert('Ödül seçilemedi: '+e.message)}finally{wzg66.busy=false}
+}
 async function wzg66Start(){
  if(wzg66.busy||wzg66.spinning)return;
+ if(!wzg66$('wzg93Award').value.trim())return alert('Önce sıradaki ödülün adını yaz: 825 VP veya 375 VP gibi.');
  wzg66.duration=Number(wzg66$('wzg66Duration').value)||30;wzg66.busy=true;wzg66$('wzg66Start').disabled=true;
  try{
   let s;
@@ -13946,6 +13961,9 @@ async function wzg66Start(){
    s=await wzg66Request('/admin/giveaway/draw/begin',{id:wzg66.id,allowUnverified:true});
   }
   wzg66.session=s;
+  wzg66.roster=await wzg66Get('/admin/giveaway/participants?id='+encodeURIComponent(wzg66.id));
+  wzg66FillRoster();
+  await wzg93LockAward();wzg66$('wzg93PrizeRow').hidden=true;
   wzg66$('wzg66Pre').hidden=true;wzg66$('wzg66Stage').hidden=false;wzg66$('wzg66After').hidden=true;
   wzg66SetMessage('İsimler rastgele akıyor…');wzg66Run();
  }catch(e){alert('Çekiliş başlatılamadı: '+e.message);wzg66$('wzg66Start').disabled=false}
@@ -13957,15 +13975,30 @@ function wzg66Run(){
  const excluded=new Set([...(wzg66.session?.skippedUsernames||[]),...(wzg66.session?.winners||[]).map(w=>w.username)]);
  const names=(wzg66.roster?.participants||[]).filter(p=>p.status==='eligible'&&!excluded.has(p.username));
  if(!names.length){wzg66SetMessage('Katılımcı kalmadı; yönetici kontrolü gerekli.');wzg66.spinning=false;return}
+ // Every display slot is one server-reported chance unit. For small pools we
+ // materialize a shuffled list, e.g. 9 normal + one subscriber = 13 slots.
+ // A capped weighted sampler avoids allocating huge arrays for big giveaways.
+ const total=names.reduce((sum,p)=>sum+Math.max(1,Math.floor(Number(p.weight)||1)),0);
+ let slots=[];
+ if(total<=40000){
+  for(const p of names){for(let k=0;k<Math.max(1,Math.floor(Number(p.weight)||1));k++)slots.push(p)}
+  for(let i=slots.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[slots[i],slots[j]]=[slots[j],slots[i]]}
+ }
+ wzg66.visualSlots=slots;wzg66.visualParticipants=names;wzg66.visualWeightTotal=total;
+ wzg66SetMessage('🎟️ '+names.length+' kişi · '+total+' isim sırası. Abone başlangıç hakkı '+(1+Number(wzg66.roster?.subscriberBonus||0))+', her bilet +1. Ekran yalnızca gösterimdir; kazananı güvenli sunucu belirler.');
  wzg66.deadline=performance.now()+wzg66.duration*1000;
  let counter=0;
  function tick(){if(!wzg66.spinning)return;
   const left=Math.max(0,wzg66.deadline-performance.now());
-  wzg66$('wzg66Countdown').textContent='🎲 Kazanan belirleniyor · '+Math.ceil(left/1000)+' saniye';
-  const idx=Math.floor(Math.random()*names.length);
-  wzg66Five(names,idx);counter++;
+  wzg66$('wzg66Countdown').textContent='🎲 '+total+' isim sırası · '+Math.ceil(left/1000)+' saniye';
+  if(slots.length){wzg66Five(slots,counter%slots.length);wzg66.spinPosition=counter%slots.length}
+  else {
+    let n=Math.floor(Math.random()*total),p=names[names.length-1];
+    for(const member of names){n-=Math.max(1,Math.floor(Number(member.weight)||1));if(n<0){p=member;break}}
+    for(let i=0;i<5;i++)wzg66$('wzg66Five').children[i].textContent=i===2?wzg66VisibleName(p):'✦';
+  }
+  counter++;
   if(left<=0){wzg66.spinning=false;wzg66Reveal();return}
-  // Motion decelerates over the last 10 seconds; the display never determines the winner.
   const delay=left>10000?65:Math.round(65+450*(1-left/10000)**2);
   wzg66.timer=setTimeout(tick,Math.max(20,delay));
  }
@@ -13975,6 +14008,18 @@ async function wzg66Reveal(){
  if(wzg66.busy)return;wzg66.busy=true;
  wzg66$('wzg66Countdown').textContent='🔒 Güvenli sunucu kurası hesaplanıyor…';
  try{const d=await wzg66Request('/admin/giveaway/draw/pick',{id:wzg66.id});wzg66.candidate=d.candidate;
+  const slots=wzg66.visualSlots||[];const pickIndex=slots.findIndex(p=>p.username===d.candidate.username);
+  if(pickIndex>=0 && wzg66$('wzg66Overlay') && !wzg66$('wzg66Overlay').hidden){
+   let pos=Number(wzg66.spinPosition||0),steps=8+((pickIndex-(pos+8))%slots.length+slots.length)%slots.length;
+   // Bound landing animation so a large pool cannot delay winner announcement.
+   steps=Math.min(16,steps);
+   for(let i=0;i<steps;i++){
+    if(wzg66$('wzg66Overlay').hidden)break;
+    wzg66Five(slots,(pos+i)%slots.length);
+    await new Promise(resolve=>setTimeout(resolve,45+Math.round(270*Math.pow(i/Math.max(1,steps-1),2))));
+   }
+   wzg66Five(slots,pickIndex);
+  }
   wzg66ShowCandidate(d.candidate,false)}catch(e){wzg66SetMessage('❌ '+e.message+' · Yeniden denemek için ekranı kapatıp aç.');}
  finally{wzg66.busy=false}
 }
@@ -13982,7 +14027,7 @@ function wzg66ShowCandidate(p,resumed){
  wzg66StopTimer();wzg66$('wzg66Pre').hidden=true;wzg66$('wzg66Stage').hidden=false;wzg66$('wzg66After').hidden=false;
  wzg66$('wzg66Countdown').textContent='🏆 KAZANAN ADAYI'+(resumed?' · Kurtarılan oturum':'');
  for(let i=0;i<5;i++)wzg66$('wzg66Five').children[i].textContent=i===2?wzg66VisibleName(p):'✦ ✦ ✦';
- wzg66SetMessage('🎉 '+p.username+' · '+(p.subscriber?'⭐ Abone ×'+(wzg66.roster?.subscriberMultiplier||3):'Normal katılım')+' · 🎟️ '+p.tickets+' bilet · '+p.weight+' kura hakkı');
+ wzg66SetMessage('🎉 '+p.username+' · Sıradaki ödül: '+(wzg66.currentAward||wzg66.session?.currentAward||'?')+' · '+p.weight+' toplam hak');
  const box=wzg66$('wzg66After');box.replaceChildren();
  const approve=document.createElement('button');approve.className='primary';approve.textContent='✅ Tamamla';approve.onclick=()=>wzg66Confirm();
  const skip=document.createElement('button');skip.textContent='⏭️ Atla / Yeniden Döndür';skip.onclick=()=>wzg66Skip();box.append(approve,skip);
@@ -13990,11 +14035,12 @@ function wzg66ShowCandidate(p,resumed){
 async function wzg66Confirm(){
  if(wzg66.busy||!wzg66.candidate)return;wzg66.busy=true;
  try{const d=await wzg66Request('/admin/giveaway/draw/confirm',{id:wzg66.id,uid:wzg66.candidate.uid});
-  wzg66.candidate=null;wzg66.session.winners=d.winners;
+  wzg66.candidate=null;wzg66.session.winners=d.winners;wzg66$('wzg93PrizeRow').hidden=!!d.finished;
+  if(!d.finished)wzg66$('wzg93Award').value='';
   wzg66$('wzg66Countdown').textContent='✅ KAZANAN ONAYLANDI';
-  wzg66SetMessage('🏆 '+d.winners[d.winners.length-1].username+' · Sonuç kaydedildi');
+  wzg66SetMessage('🏆 '+d.winners[d.winners.length-1].username+' · '+(wzg66.currentAward||'Ödül')+' · Sonuç kaydedildi');
   const box=wzg66$('wzg66After');box.replaceChildren();
-  if(!d.finished){const repeat=document.createElement('button');repeat.className='primary';repeat.textContent='🔄 Tekrar Başlat';repeat.onclick=()=>{wzg66Run()};box.append(repeat)}
+  if(!d.finished){const repeat=document.createElement('button');repeat.className='primary';repeat.textContent='🔄 Tekrar Başlat';repeat.onclick=()=>{wzg66$('wzg93PrizeRow').hidden=false;wzg93StartNext()};box.append(repeat)}
   const end=document.createElement('button');end.textContent='🏁 Bitir';end.onclick=()=>wzg66FinishClick(d.finished);box.append(end);
   await wzg2AdminRefresh();
  }catch(e){wzg66SetMessage('❌ '+e.message+' · Durumu yenileyerek kontrol et.');}
@@ -14025,7 +14071,7 @@ function wzg66Finished(){
 async function wzg66RosterPreview(id,title){
  wzg66Make();wzg66.id=id;wzg66.title=title;
  wzg66$('wzg66Overlay').hidden=false;document.body.style.overflow='hidden';
- wzg66$('wzg66Title').textContent='👥 '+title;
+ wzg66$('wzg66Title').textContent='👥 '+title;wzg66$('wzg93PrizeRow').hidden=true;
  wzg66$('wzg66Pre').hidden=false;wzg66$('wzg66Stage').hidden=true;wzg66$('wzg66Start').hidden=true;
  try{wzg66.roster=await wzg66Get('/admin/giveaway/participants?id='+encodeURIComponent(id));wzg66FillRoster()}
  catch(e){wzg66$('wzg66Roster').textContent='❌ '+e.message}
