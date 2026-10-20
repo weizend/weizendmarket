@@ -94,6 +94,21 @@ body.wz-lobby-booting #wzLobbyBoot{display:block!important;box-sizing:border-box
 @media(max-width:540px){body.wz-lobby-booting #wzLobbyBoot{width:calc(100% - 24px)!important;margin-top:12px!important}#wzLobbyBoot .wz3136-loader-card{padding:14px;min-height:144px}}
 @media(prefers-reduced-motion:reduce){#wzLobbyBoot .wz3136-skeleton{animation:none}}
 </style>
+<style id="wz-v3175-sticky-header">
+/* V31.0.75: The previous overflow-x:hidden on html/body created a
+   separate scroll container and prevented the existing sticky header
+   from sticking to the page viewport. Clip horizontal overflow without
+   creating that scroll container; dialog overflow lock stays functional. */
+html, body {
+  overflow-x: clip;
+  overflow-y: visible;
+}
+header.top {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+</style>
 </head><body class="wz-lobby-booting">
 <header class="top"><div class="topinner"><a class="brand" href="index.html?wz_view=players"><img src="https://i.hizliresim.com/fo5evkh4.png" alt="WEİZEND logosu" class="siteLogo"><span class="brandCopy"><span class="brandName">WEİZEND</span><small>OYUN LOBİSİ</small></span></a><a class="headerBack" href="index.html?wz_view=players">← Oyuncu Ara’ya Dön</a></div></header>
 <div id="wzLobbyBoot" role="status" aria-live="polite"><div class="wz3136-loader-card"><div class="wz3136-skeleton wz3136-skeleton-wide"></div><div class="wz3136-skeleton wz3136-skeleton-heading"></div><div class="wz3136-skeleton wz3136-skeleton-short"></div><small id="wz3136LoadingText">Lobi bilgileri alınıyor…</small></div></div>
