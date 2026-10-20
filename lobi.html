@@ -94,21 +94,6 @@ body.wz-lobby-booting #wzLobbyBoot{display:block!important;box-sizing:border-box
 @media(max-width:540px){body.wz-lobby-booting #wzLobbyBoot{width:calc(100% - 24px)!important;margin-top:12px!important}#wzLobbyBoot .wz3136-loader-card{padding:14px;min-height:144px}}
 @media(prefers-reduced-motion:reduce){#wzLobbyBoot .wz3136-skeleton{animation:none}}
 </style>
-<style id="wz-v3175-sticky-header">
-/* V31.0.75: The previous overflow-x:hidden on html/body created a
-   separate scroll container and prevented the existing sticky header
-   from sticking to the page viewport. Clip horizontal overflow without
-   creating that scroll container; dialog overflow lock stays functional. */
-html, body {
-  overflow-x: clip;
-  overflow-y: visible;
-}
-header.top {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-}
-</style>
 </head><body class="wz-lobby-booting">
 <header class="top"><div class="topinner"><a class="brand" href="index.html?wz_view=players"><img src="https://i.hizliresim.com/fo5evkh4.png" alt="WEİZEND logosu" class="siteLogo"><span class="brandCopy"><span class="brandName">WEİZEND</span><small>OYUN LOBİSİ</small></span></a><a class="headerBack" href="index.html?wz_view=players">← Oyuncu Ara’ya Dön</a></div></header>
 <div id="wzLobbyBoot" role="status" aria-live="polite"><div class="wz3136-loader-card"><div class="wz3136-skeleton wz3136-skeleton-wide"></div><div class="wz3136-skeleton wz3136-skeleton-heading"></div><div class="wz3136-skeleton wz3136-skeleton-short"></div><small id="wz3136LoadingText">Lobi bilgileri alınıyor…</small></div></div>
@@ -264,4 +249,32 @@ else {
  window.addEventListener('pagehide',()=>sendPresence('close',true));
  window.addEventListener('pageshow',()=>{if(member())void sendPresence('heartbeat')});
 } 
-})();</script></body></html>
+})();</script></body></html<script id="wz81BlockButtons">
+(function(){'use strict';
+const API='https://weizend-botrix.weizendtv.workers.dev';
+const KEY='weizend_market_session_secure_v2';
+let blocked=false, reason='', lastToken='', old=new WeakMap();
+const isAction=t=>/^(katıl|başvur|başvuru yap|oyuncu ara|takım ara|takım oluştur|takım kur|kayıt ol|kayıt yaptır|lobi kur|lobi oluştur|lobiye katıl|takıma katıl|katılımı tamamla|ücretsiz katıl|bilet kullan|bilet ekle|satın al|hemen al|maçı başlat|lobiyi aç|lobiye katıldım|hazır(?:ım)?|skor gönder|onayla)$/i.test(t.trim().replace(/\s+/g,' ')) || /^(katıl|başvur|lobi kur|lobi oluştur|satın al|kayıt ol|turnuvaya katıl)\b/i.test(t.trim());
+function paint(){
+ const noticeId='wz81BlockNotice'; let notice=document.getElementById(noticeId);
+ if(blocked){if(!notice){notice=document.createElement('div');notice.id=noticeId;notice.setAttribute('role','status');notice.style.cssText='position:fixed;bottom:15px;left:15px;right:15px;max-width:440px;z-index:2147483000;border:1px solid #dd4e5b;border-radius:12px;padding:12px;background:#270e15;color:#fff;box-shadow:0 0 20px #9b122655;font:600 13px system-ui';document.body.appendChild(notice);}notice.textContent='🔒 CEZALISIN — '+(reason||'Yeni işlemlere katılamazsın.');}
+ else if(notice)notice.remove();
+ for(const b of document.querySelectorAll('button')){
+  if(blocked){if(!old.has(b) && !b.disabled && isAction(b.textContent||'')){
+    old.set(b,{html:b.innerHTML});b.textContent='🔒 CEZALISIN';b.disabled=true;b.setAttribute('aria-disabled','true');
+  }}else if(old.has(b)){const x=old.get(b);b.innerHTML=x.html;b.disabled=false;b.removeAttribute('aria-disabled');old.delete(b);}
+ }
+}
+async function readStatus(){
+ let token='';try{token=localStorage.getItem(KEY)||'';}catch(_){}
+ if(!token){blocked=false;lastToken='';paint();return;}
+ try{const r=await fetch(API+'/profile',{headers:{Authorization:'Bearer '+token,Accept:'application/json'},cache:'no-store'});
+ if(!r.ok)return;const d=await r.json();if((localStorage.getItem(KEY)||'')!==token)return;
+ blocked=String(d.accountStatus||'').toLowerCase()==='blocked';reason=String(d.blockedReason||'').slice(0,160);lastToken=token;paint();
+ }catch(_){} // Worker authorization remains authoritative if network fails
+}
+function start(){readStatus();setInterval(readStatus,30000);setInterval(()=>{if(blocked)paint()},5000);}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();
+</script>
+>
