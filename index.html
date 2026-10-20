@@ -4801,6 +4801,13 @@ body > #wzAppbar {
   z-index:850!important;
 }
 </style>
+<style>
+/* V31.0.81 — market-only popularity stickers; never display sales quantity */
+#urunGrid .card.wz81-top-product{border:2px solid #ff243e!important;box-shadow:0 0 16px rgba(255,20,54,.45),inset 0 0 12px rgba(255,20,54,.1)!important}
+#urunGrid .wz81-popular-label{position:absolute;z-index:4;top:9px;right:9px;padding:7px 10px;border-radius:8px;font-size:11px;font-weight:900;letter-spacing:.45px}
+#urunGrid .wz81-popular-label.wz81-category{background:linear-gradient(135deg,#ffeb91,#c68622);color:#221300;box-shadow:0 2px 12px rgba(255,200,50,.35)}
+#urunGrid .wz81-popular-label.wz81-top{background:linear-gradient(135deg,#ff4360,#a70021);color:#fff;box-shadow:0 0 12px rgba(240,27,58,.75)}
+</style>
 </head>
 <body>
 <script id="wz-v58-prepaint-view">
@@ -8911,7 +8918,9 @@ body > #wzAppbar {
                         priceTlCents:item.priceTlCents ?? null,
                         streamCommand:item.streamCommand || '',
                         gorseller:Array.isArray(item.gorseller) ? item.gorseller : [],
-                        ozellikler:item.ozellikler || ''
+                        ozellikler:item.ozellikler || '',
+                        popularTag:item.popularTag||'',
+                        categoryPopular:!!item.categoryPopular
                     }))
                 );
             } catch (_) {
@@ -8937,6 +8946,9 @@ body > #wzAppbar {
                 }
 
                 items.sort((a,b)=>{
+                    const rank=x=>category==='Tümü'?(x.popularTag==='top'?2:0):
+                      (x.categoryPopular?2:0);
+                    if(rank(a)!==rank(b))return rank(b)-rank(a);
                     const sa = stokDurumu(a.stok) > 0 ? 1 : 0;
                     const sb = stokDurumu(b.stok) > 0 ? 1 : 0;
                     if (sa !== sb) return sb-sa;
@@ -8975,7 +8987,7 @@ body > #wzAppbar {
                 const streamCommand = String(urun.streamCommand || urun.komut || '').trim();
 
                 const actionText = accountRestricted
-                    ? '⛔ HESABIN KISITLANDI'
+                    ? '🔒 CEZALISIN'
                     : soldOut
                         ? 'TÜKENDİ'
                         : marketAuthenticated
@@ -8997,6 +9009,7 @@ body > #wzAppbar {
                         ? 'TÜKENDİ'
                         : (paymentType === 'stream' ? streamCommand : 'SİTE ÜZERİNDEN'),
                     action:actionText,
+                    popularBadge:activeKategori==='Tümü' ? (urun.popularTag==='top'?'top':'') : (urun.categoryPopular?'popular':''),
                     image:String(safeImageUrl(Array.isArray(urun.gorseller) ? urun.gorseller[0] : '') || '').trim()
                 };
             });
@@ -9021,6 +9034,7 @@ body > #wzAppbar {
                 stock:String(card.querySelector('.stock-badge')?.textContent || '').trim(),
                 command:String(card.querySelector('.command')?.textContent || '').trim(),
                 action:String(card.querySelector('.action-btn')?.textContent || '').trim(),
+                popularBadge:card.querySelector('.wz81-popular-label.wz81-top')?'top':(card.querySelector('.wz81-popular-label.wz81-category')?'popular':''),
                 image:String(card.querySelector('.main-card-img')?.getAttribute('src') || '').trim()
             }));
         }
@@ -9035,6 +9049,22 @@ body > #wzAppbar {
             } catch (_) {
                 return false;
             }
+        }
+
+        // V31.0.80: Admin'den eklenen ürünlerin açıklamalarını satır satır göster.
+        // Metni önce HTML olarak escape et; Admin açıklamasından HTML çalıştırma.
+        function wzFormatCatalogDescription(raw) {
+            const lines = String(raw ?? '')
+                .replace(/\\n/g, '\n')
+                .replace(/\r\n?/g, '\n')
+                .split('\n')
+                .map(line => line.trim())
+                .filter(Boolean);
+            if (!lines.length) return '<p>Ürün açıklaması bulunmuyor.</p>';
+            if (lines.length === 1) return `<p>${escapeHtml(lines[0])}</p>`;
+            return `<ul>${lines.map(line =>
+                `<li>${escapeHtml(line.replace(/^[•*\-]\s*/, ''))}</li>`
+            ).join('')}</ul>`;
         }
 
         async function syncCatalogStock() {
@@ -9093,7 +9123,7 @@ body > #wzAppbar {
                             ? serverImages
                             : ['https://i.hizliresim.com/fo5evkh4.png'],
                         ozellikler: metadata.description
-                            ? `<p>${escapeHtml(metadata.description).replaceAll('\\n','<br>')}</p>`
+                            ? wzFormatCatalogDescription(metadata.description)
                             : '<p>Ürün detayları için yöneticiyle iletişime geçebilirsiniz.</p>',
                         orijinalId: nextOriginalId++,
                         productId
@@ -9102,6 +9132,8 @@ body > #wzAppbar {
                 }
 
                 urun.catalogManaged = true;
+                urun.popularTag = serverProduct.popularTag || '';
+                urun.categoryPopular = serverProduct.categoryPopular===true;
                 urun.durum = serverProduct.active === false ? 'off' : 'on';
 urun.ad = serverProduct.name || urun.ad;
 urun.kategori = serverProduct.category || urun.kategori;
@@ -9128,7 +9160,7 @@ urun.paymentType = String(serverProduct.paymentType || '').toLowerCase();
                 }
 
                 if (metadata.description) {
-                    urun.ozellikler = `<p>${escapeHtml(metadata.description).replaceAll('\\n','<br>')}</p>`;
+                    urun.ozellikler = wzFormatCatalogDescription(metadata.description);
                 }
 
                 if (serverProduct.stock === 'Sınırsız') {
@@ -9260,6 +9292,11 @@ urun.paymentType = String(serverProduct.paymentType || '').toLowerCase();
                     gosterilecekUrunler = gosterilecekUrunler.filter(urun => urun.kategori === filtreKategori);
                 }
                 gosterilecekUrunler.sort((a, b) => {
+                    // V31.0.81: one highest-selling site product first in All,
+                    // category leader first within its category. Stream commands excluded by API.
+                    const rank=x=>filtreKategori==='Tümü'?(x.popularTag==='top'?2:0):
+                      (x.categoryPopular?2:0);
+                    if(rank(a)!==rank(b))return rank(b)-rank(a);
                     let stokA = stokDurumu(a.stok) > 0 ? 1 : 0;
                     let stokB = stokDurumu(b.stok) > 0 ? 1 : 0;
                     
@@ -9394,7 +9431,7 @@ else if (deliveryType === 'manual') {
                         : (marketAuthenticated ? "action-btn" : "action-btn auth-required"));
 
                 const actionBtnText = accountRestricted
-                    ? "⛔ HESABIN KISITLANDI"
+                    ? "🔒 CEZALISIN"
                     : (tukendiMi
                         ? "TÜKENDİ"
                         : (marketAuthenticated
@@ -9415,13 +9452,15 @@ else if (deliveryType === 'manual') {
                                 : "")
                         : `onclick="goToVerification()"`);
 
-                const kartClass = tukendiMi ? "card out-of-stock" : "card";
+                const kartClass = (tukendiMi ? 'card out-of-stock' : 'card') + (urun.popularTag==='top' && filtreKategori==='Tümü' ? ' wz81-top-product' : '');
 
                 const kart = `
                     <div class="${kartClass}">
                         <div class="img-container" data-current-index="0" onclick="modaliAc(${urun.orijinalId}, this.dataset.currentIndex)">
                             <span class="category-badge">${escapeHtml(urun.kategori)}</span>
                             ${tukendiOverlayHTML}
+                            ${urun.popularTag==='top' && filtreKategori==='Tümü' ? '<span class="wz81-popular-label wz81-top">🔥 EN POPÜLER</span>' :
+                              (urun.categoryPopular && filtreKategori!=='Tümü' && filtreKategori!=='Tükendi' ? '<span class="wz81-popular-label wz81-category">⭐ POPÜLER</span>' : '')}
                             <img class="main-card-img"
                                  src="${escapeHtml(safeImageUrl(ilkGorsel))}"
                                  alt="${escapeHtml(urun.ad)}"
