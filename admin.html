@@ -2769,7 +2769,13 @@ body:has(#adminNewMessageModal:not(.hidden)){
             <option value="giveaway_ticket">🎟️ Çekiliş Bileti (Otomatik)</option>
           </select>
           <div class="muted" style="margin-top:7px;line-height:1.55">ℹ️ <strong>Manuel Teslimat:</strong> İşlem tamamlandıktan sonra ödül veya ürün yönetici tarafından teslim edilir. Siteden alınan siparişlerde teslimat kodu oluşturulabilir; bu, otomatik ürün teslim edildiği anlamına gelmez. Yayın / Kick Komutu ürünlerinde işlem Kick sohbetinden gerçekleşir.</div>
-          <div class="muted hidden" id="wzTicketDeliveryHint" style="margin-top:7px;">🎟️ Çekiliş Bileti seçildiğinde ödeme türü Puan olmalıdır. Onaylanan her ürün adedi doğrudan Profil bilet bakiyesine eklenir; teslimat kodu oluşturulmaz.</div>
+          <div class="muted hidden" id="wzTicketDeliveryHint" style="margin-top:7px;">🎟️ Çekiliş Bileti yalnızca puanla satılır. Satın alınan ürün adedi × paket bilet miktarı otomatik olarak Profil bilet bakiyesine eklenir; teslimat kodu oluşturulmaz.</div>
+        </div>
+
+        <div class="field hidden" id="wz81TicketUnitsBox">
+          <label class="title">🎟️ Paket Başına Bilet Sayısı</label>
+          <input id="pTicketUnits" type="number" min="1" max="1000" step="1" value="1" placeholder="Örn: 3">
+          <div class="muted">Örn. 3 biletlik paket 30.000 puan: 1 ürün satın alınınca 3 bilet verir. Her paketi ayrı ürün olarak ekle.</div>
         </div>
 
         <div class="field">
@@ -3331,11 +3337,11 @@ body:has(#adminNewMessageModal:not(.hidden)){
         <div class="tableWrap">
           <table>
             <thead><tr>
-              <th>Kick Adı</th><th>Takma Ad</th><th>Puan</th><th>Level</th>
+              <th>Kick Adı</th><th>Takma Ad</th><th>Puan</th><th>🎟️ Bilet</th><th>Level</th>
               <th>İlk Doğrulama</th><th>Son Görülme</th><th>Durum</th><th>İşlem</th>
             </tr></thead>
             <tbody id="usersBody">
-              <tr><td colspan="8" class="muted">Kullanıcılar henüz yüklenmedi.</td></tr>
+              <tr><td colspan="9" class="muted">Kullanıcılar henüz yüklenmedi.</td></tr>
             </tbody>
           </table>
         </div>
@@ -5709,7 +5715,7 @@ function renderProducts(){
     tr.innerHTML = `
       <td>${esc(p.id)}</td>
 
-      <td>${esc(p.name)}${p.__wzLegacyCardGame ? '<div class="muted" style="color:#e3b867">Önce D1 ürün kaydı kurulmalı • Kick komutu</div>' : ''}${p.deliveryType==='giveaway_ticket' ? '<div class="muted" style="color:#8be4a3">🎟️ Otomatik Çekiliş Bileti</div>' : ''}</td>
+      <td>${esc(p.name)}${p.__wzLegacyCardGame ? '<div class="muted" style="color:#e3b867">Önce D1 ürün kaydı kurulmalı • Kick komutu</div>' : ''}${p.deliveryType==='giveaway_ticket' ? `<div class="muted" style="color:#8be4a3">🎟️ ${Number(p.ticketUnits||1)} Bilet / paket</div>` : ''}${p.popularTag ? `<div class="muted" style="color:${p.popularTag==='top'?'#ff697c':'#eeb64b'}">${p.popularTag==='top'?'🔥 EN POPÜLER':'⭐ POPÜLER'} · ${Number(p.soldCount||0)} satış</div>` : ''}</td>
 
       <td>${esc(p.category)}</td>
 
@@ -5746,12 +5752,32 @@ function renderProducts(){
           onclick="deleteProduct('${encodeURIComponent(p.id)}',false)">
           🗑 Sil
         </button>
+        ${(p.webPurchase && p.paymentType!=='stream') ? `
+        <div style="margin-top:6px;display:flex;gap:5px;flex-wrap:wrap;">
+          <button class="smallBtn secondary" onclick="wz81Popularity('${encodeURIComponent(p.id)}','popular')">⭐ Popüler Yap</button>
+          <button class="smallBtn secondary" onclick="wz81Popularity('${encodeURIComponent(p.id)}','top')">🔥 En Popüler Yap</button>
+          <button class="smallBtn secondary" onclick="wz81Popularity('${encodeURIComponent(p.id)}','auto')">↺ Otomatik</button>
+          <button class="smallBtn secondary" onclick="wz81Popularity('${encodeURIComponent(p.id)}','off')">Gizle</button>
+        </div>` : ''}
         `}
       </td>
     `;
 
     body.appendChild(tr);
   }
+}
+
+async function wz81Popularity(encodedId,mode){
+  const id=decodeURIComponent(encodedId||'');
+  if(!id)return;
+  try{
+    const {r,d}=await api('/admin/product/popularity',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,mode})
+    });
+    if(!r.ok||!d?.success)throw Error(d?.error||`HTTP ${r.status}`);
+    await loadProducts();
+    showStatus('productsStatus','✅ Ürün popülerlik tercihi güncellendi.',true);
+  }catch(err){showStatus('productsStatus','❌ '+esc(err.message||err),false)}
 }
 
 function updateCategoryList(){
@@ -5799,6 +5825,7 @@ function isTournamentProductCategory(){
 function wzTicketDeliveryChanged(){
   const isTicket=document.getElementById('pDeliveryType')?.value==='giveaway_ticket';
   document.getElementById('wzTicketDeliveryHint')?.classList.toggle('hidden',!isTicket);
+  document.getElementById('wz81TicketUnitsBox')?.classList.toggle('hidden',!isTicket);
   if(!isTicket) return;
   // Çekiliş bileti site üzerinden PUAN ile alınır; abonelik/ödeme türleri değişmez.
   document.getElementById('pPaymentType').value='points';
@@ -5912,6 +5939,7 @@ document.getElementById(
   document.getElementById('pWebPurchase').checked = true;
   document.getElementById('pActive').checked = true;
   document.getElementById('pDeliveryType').value = 'physical';
+  document.getElementById('pTicketUnits').value = '1';
   document.getElementById('pDescription').value = '';
   document.getElementById('pImages').value = '';
   updateProductCategoryFields();
@@ -5981,6 +6009,7 @@ document.getElementById(
 
   document.getElementById('pDeliveryType').value =
     p.deliveryType || 'manual';
+  document.getElementById('pTicketUnits').value = p.ticketUnits || p.metadata?.ticketUnits || 1;
 
   document.getElementById('pDescription').value =
     p.metadata?.description || '';
@@ -6082,6 +6111,8 @@ async function saveProduct(){
       document
         .getElementById('pDeliveryType')
         .value,
+
+    ticketUnits:Number(document.getElementById('pTicketUnits')?.value || 1),
 
     description:
       document
@@ -6665,7 +6696,7 @@ function renderUsers(){
   body.innerHTML = '';
 
   if(usersCache.length === 0){
-    body.innerHTML = '<tr><td colspan="8" class="muted">Kullanıcı bulunamadı.</td></tr>';
+    body.innerHTML = '<tr><td colspan="9" class="muted">Kullanıcı bulunamadı.</td></tr>';
     return;
   }
 
@@ -6676,6 +6707,7 @@ function renderUsers(){
       <td><strong>${esc(u.username || '-')}</strong></td>
       <td>${esc(u.nickname || '-')}</td>
       <td>${esc(points(u.points))}</td>
+      <td>${esc(String(u.ticketsAvailable??0))}</td>
       <td>${esc(u.level ?? '-')}</td>
       <td>${esc(dateText(u.first_verified_at))}</td>
       <td>${esc(dateText(u.last_seen_at || u.last_activity_at))}</td>
@@ -6746,7 +6778,25 @@ function renderUserDetail(){
   }
 
   renderUserNotes();
+  // V31.0.81: Read-only ticket balance, asynchronous and bound to the current Kick UID.
+  wz81ShowUserTicketBalance(u.kick_uid);
   document.getElementById('userDetailCard')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+async function wz81ShowUserTicketBalance(uid){
+  const summary=document.getElementById('userSummary');
+  if(!summary)return;
+  summary.insertAdjacentHTML('beforeend','<div id="wz81UserTicket" class="userSummaryItem"><span>🎟️ Mevcut Bilet</span><strong>Yükleniyor...</strong></div>');
+  try{
+    const {r,d}=await api('/admin/user/tickets?uid='+encodeURIComponent(uid));
+    if(!r.ok||!d?.success)throw Error(d?.error||`HTTP ${r.status}`);
+    if(currentAdminUser?.kick_uid!==uid)return;
+    const box=document.getElementById('wz81UserTicket');
+    if(box)box.innerHTML='<span>🎟️ Kullanılabilir Bilet</span><strong>'+esc(String(d.wallet.available||0))+'</strong>';
+  }catch(err){
+    if(currentAdminUser?.kick_uid===uid){const box=document.getElementById('wz81UserTicket');
+      if(box)box.textContent='🎟️ Bilet bilgisi yüklenemedi: '+String(err.message||err)}
+  }
 }
 
 function closeUserDetail(){
