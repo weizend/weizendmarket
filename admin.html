@@ -2677,8 +2677,14 @@ body:has(#adminNewMessageModal:not(.hidden)){
   <input id="pId" type="hidden">
 
   <div class="muted" style="margin-top:7px;">
-    Sistem ürün kodu:
+    Sistem ürün kodu (sipariş bağlantısı, değiştirilmez):
     <strong id="productCodePreview">otomatik oluşturulacak</strong>
+  </div>
+  <div style="margin-top:14px">
+    <label class="title" for="pShareSlug">🔗 Paylaşım Bağlantısı Adı (isteğe bağlı)</label>
+    <input id="pShareSlug" type="text" maxlength="60" inputmode="url" autocomplete="off" spellcheck="false"
+      placeholder="Örn: valorant-375-vp">
+    <div class="muted" style="margin-top:6px">Boş bırakılırsa otomatik sistem kodu kullanılır. Bu alanı değiştirmen ürün ID'sini veya önceki siparişleri değiştirmez. Yalnızca küçük harf, sayı ve tire kullan.</div>
   </div>
 </div>
 
@@ -5923,6 +5929,7 @@ function resetProductForm(){
       'Ürünü Kaydet';
 
   document.getElementById('pId').value = '';
+  document.getElementById('pShareSlug').value = '';
 
 document.getElementById(
   'productCodePreview'
@@ -5973,6 +5980,7 @@ function editProduct(encodedId){
       'Değişiklikleri Kaydet';
 
   document.getElementById('pId').value = p.id;
+  document.getElementById('pShareSlug').value = p.metadata?.shareSlug || '';
 
 document.getElementById(
   'productCodePreview'
@@ -6113,6 +6121,7 @@ async function saveProduct(){
         .value,
 
     ticketUnits:Number(document.getElementById('pTicketUnits')?.value || 1),
+    shareSlug:String(document.getElementById('pShareSlug')?.value || '').trim().toLowerCase(),
 
     description:
       document
