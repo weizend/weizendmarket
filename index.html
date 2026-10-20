@@ -275,6 +275,9 @@
       );
     }catch(_){}
 
+    const urlProduct=new URLSearchParams(location.search).get('product')||'';
+    window.__WZ_SHARED_PRODUCT_ID__=/^[A-Za-z0-9_-]{1,110}$/.test(urlProduct)?urlProduct.toLowerCase():'';
+    if(window.__WZ_SHARED_PRODUCT_ID__)view='market';
     window.__WZ_INITIAL_VIEW__=view;
     // Product photos are external and may still take time. Prioritize only the
     // first visible Market thumbnails to reduce blank cards during a hard refresh.
@@ -5427,7 +5430,7 @@ body > #wzAppbar {
 <script id="wz-final-v66-market-shell-hydrate">
 (function(){
   try{
-    if((window.__WZ_INITIAL_VIEW__||'market')!=='market') return;
+    if((window.__WZ_INITIAL_VIEW__||'market')!=='market' || window.__WZ_SHARED_PRODUCT_ID__) return;
 
     const key='weizend_market_shell_refreshfix_v20';
     const raw=sessionStorage.getItem(key);
@@ -6371,6 +6374,15 @@ body > #wzAppbar {
                     productSearchQuery = cachedShell.searchValue.trim().toLocaleLowerCase('tr-TR');
                 }
             }catch(_){}
+
+            // Shared product URLs override the visitor's last category/search.
+            if(window.__WZ_SHARED_PRODUCT_ID__){
+                aktifKategori='Tümü';
+                productSearchQuery='';
+                const search=document.getElementById('productSearchInput');
+                if(search)search.value='';
+                try{sessionStorage.removeItem(MARKET_SHELL_CACHE_KEY)}catch(_){}
+            }
 
             if (bootSessionToken) {
                 try {
@@ -9143,7 +9155,8 @@ urun.deliveryType = String(
     serverProduct.deliveryType || urun.deliveryType || ''
 ).toLowerCase();
 
-urun.paymentType = String(serverProduct.paymentType || '').toLowerCase();
+                urun.shareSlug = String(metadata.shareSlug || '').trim().toLowerCase();
+                urun.paymentType = String(serverProduct.paymentType || '').toLowerCase();
                 urun.pricePoints = serverProduct.pricePoints == null ? null : Number(serverProduct.pricePoints);
                 urun.priceTlCents = serverProduct.priceTlCents == null ? null : Number(serverProduct.priceTlCents);
                 urun.streamCommand = String(metadata.streamCommand || urun.komut || '').trim();
@@ -9482,7 +9495,7 @@ else if (deliveryType === 'manual') {
                         </div>
 
                         <button class="${actionBtnClass}" ${actionBtnClick}>${actionBtnText}</button>
-                        ${isSiteProduct ? `<button type="button" class="wz82-product-share" onclick="wz82ShareContent('urun',${htmlJsString(urun.productId)},${htmlJsString(urun.ad)})">🔗 Ürünü Paylaş</button>` : ''}
+                        ${isSiteProduct ? `<button type="button" class="wz82-product-share" onclick="wz82ShareContent('urun',${htmlJsString(urun.shareSlug || urun.productId)},${htmlJsString(urun.ad)})">🔗 Ürünü Paylaş</button>` : ''}
 
                         <details data-detail-key="urun-${urun.orijinalId}-detaylar">
                             <summary>Detaylar</summary>
@@ -18454,12 +18467,42 @@ return;
   try{if(navigator.share){await navigator.share({title:String(title||'WEİZEND'),url});return;}}catch(e){if(e?.name==='AbortError')return;}
   try{await navigator.clipboard.writeText(url);if(typeof showStatusToast==='function')showStatusToast('✅ Paylaşım bağlantısı kopyalandı.',3000);else alert('Bağlantı kopyalandı.');}catch(e){prompt('Paylaşım bağlantısı:',url);}
  };
- // Shared product links open the Market and point to the actual matching product card.
- const target=new URLSearchParams(location.search).get('product');
- if(!target||!/^[a-zA-Z0-9_-]{1,110}$/.test(target))return;
- let done=false;
- const reveal=()=>{if(done)return true;const card=Array.from(document.querySelectorAll('.card[data-wz82-product-id]')).find(x=>x.getAttribute('data-wz82-product-id')===target);if(!card)return false;done=true;card.classList.add('wz82-product-target');card.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>card.classList.remove('wz82-product-target'),10000);return true;};
- const begin=()=>{if(reveal())return;const obs=new MutationObserver(()=>{if(reveal())obs.disconnect();});obs.observe(document.getElementById('urunGrid')||document.body,{childList:true,subtree:true});setTimeout(()=>obs.disconnect(),20000);};
+ // Direct product links must override saved filters/category, loading and scroll restoration.
+ const target=String(new URLSearchParams(location.search).get('product')||'').toLowerCase();
+ if(!target||!/^[a-z0-9_-]{1,110}$/.test(target))return;
+ let card=null,found=false,attempts=0,userMoved=false;
+ const stopAutoScroll=()=>{userMoved=true};
+ for(const event of ['wheel','touchstart','pointerdown'])
+   document.addEventListener(event,stopAutoScroll,{once:true,passive:true});
+ const getCard=()=>Array.from(document.querySelectorAll('#urunGrid .card[data-wz82-product-id]'))
+   .find(x=>String(x.getAttribute('data-wz82-product-id')||'').toLowerCase()===target);
+ const align=()=>{
+   const latest=getCard();if(!latest)return false;
+   latest.classList.add('wz82-product-target');
+   if(userMoved)return true;
+   // Recenter only when first discovered or a catalog refresh replaced the element.
+   if(!found || latest!==card){
+     card=latest;latest.scrollIntoView({behavior:'instant',block:'center'});
+   }
+   found=true;
+   return true;
+ };
+ const begin=()=>{
+   try{
+     if(typeof window.wzSetView==='function')window.wzSetView('market');
+     if(typeof productSearchQuery==='string')productSearchQuery='';
+     const search=document.getElementById('productSearchInput');if(search)search.value='';
+     if(typeof syncProductSearchClear==='function')syncProductSearchClear();
+     if(typeof urunleriYukle==='function')urunleriYukle('Tümü');
+   }catch(e){console.warn('Ürün bağlantısı hazırlığı:',e)}
+   // Async catalog may render after DOMContentLoaded. Do not fight manual scrolling.
+   const timer=setInterval(()=>{
+     attempts++;
+     align();
+     if(attempts>=45){clearInterval(timer);if(!found)console.warn('Paylaşılan ürün şu anda listede yok:',target)}
+   },180);
+   align();
+ };
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',begin,{once:true});else begin();
 })();
 </script>
