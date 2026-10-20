@@ -9619,6 +9619,7 @@ LmNlaWwobmVlZGVkKSsncHgnOwogfWNhdGNoKF8pe319Owp9KSgpOwo8L3NjcmlwdD4KPC9ib2R5Pjwv
                         streamCommand:item.streamCommand || '',
                         gorseller:Array.isArray(item.gorseller) ? item.gorseller : [],
                         ozellikler:item.ozellikler || '',
+                        shareSlug:item.shareSlug||'',
                         popularTag:item.popularTag||'',
                         categoryPopular:!!item.categoryPopular
                     }))
@@ -9709,6 +9710,7 @@ LmNlaWwobmVlZGVkKSsncHgnOwogfWNhdGNoKF8pe319Owp9KSgpOwo8L3NjcmlwdD4KPC9ib2R5Pjwv
                         ? 'TÜKENDİ'
                         : (paymentType === 'stream' ? streamCommand : 'SİTE ÜZERİNDEN'),
                     action:actionText,
+                    shareSlug:String(urun.shareSlug||urun.productId||'').trim().toLowerCase(),
                     popularBadge:activeKategori==='Tümü' ? (urun.popularTag==='top'?'top':'') : (urun.categoryPopular?'popular':''),
                     image:String(safeImageUrl(Array.isArray(urun.gorseller) ? urun.gorseller[0] : '') || '').trim()
                 };
@@ -9734,6 +9736,7 @@ LmNlaWwobmVlZGVkKSsncHgnOwogfWNhdGNoKF8pe319Owp9KSgpOwo8L3NjcmlwdD4KPC9ib2R5Pjwv
                 stock:String(card.querySelector('.stock-badge')?.textContent || '').trim(),
                 command:String(card.querySelector('.command')?.textContent || '').trim(),
                 action:String(card.querySelector('.action-btn')?.textContent || '').trim(),
+                shareSlug:String(card.dataset.wz82ShareSlug||'').trim().toLowerCase(),
                 popularBadge:card.querySelector('.wz81-popular-label.wz81-top')?'top':(card.querySelector('.wz81-popular-label.wz81-category')?'popular':''),
                 image:String(card.querySelector('.main-card-img')?.getAttribute('src') || '').trim()
             }));
@@ -10156,7 +10159,7 @@ else if (deliveryType === 'manual') {
                 const kartClass = (tukendiMi ? 'card out-of-stock' : 'card') + (urun.popularTag==='top' && filtreKategori==='Tümü' ? ' wz81-top-product' : '');
 
                 const kart = `
-                    <div class="${kartClass}" data-wz82-product-id="${escapeHtml(urun.productId||'')}">
+                    <div class="${kartClass}" data-wz82-product-id="${escapeHtml(urun.productId||'')}" data-wz82-share-slug="${escapeHtml(urun.shareSlug||urun.productId||'')}">
                         <div class="img-container" data-current-index="0" onclick="modaliAc(${urun.orijinalId}, this.dataset.currentIndex)">
                             <span class="category-badge">${escapeHtml(urun.kategori)}</span>
                             ${tukendiOverlayHTML}
@@ -19155,41 +19158,66 @@ return;
   try{if(navigator.share){await navigator.share({title:String(title||'WEİZEND'),url});return;}}catch(e){if(e?.name==='AbortError')return;}
   try{await navigator.clipboard.writeText(url);if(typeof showStatusToast==='function')showStatusToast('✅ Paylaşım bağlantısı kopyalandı.',3000);else alert('Bağlantı kopyalandı.');}catch(e){prompt('Paylaşım bağlantısı:',url);}
  };
- // Direct product links must override saved filters/category, loading and scroll restoration.
+ // V31.0.86: Open a shared product INSIDE ITS REAL MARKET CATEGORY.
+ // Do not change immutable order IDs and do not modify purchase/checkout behavior.
  const target=String(new URLSearchParams(location.search).get('product')||'').toLowerCase();
  if(!target||!/^[a-z0-9_-]{1,110}$/.test(target))return;
- let card=null,found=false,attempts=0,userMoved=false;
+ let highlighted=null, chosenCategory='', attempts=0, userMoved=false, located=false;
  const stopAutoScroll=()=>{userMoved=true};
  for(const event of ['wheel','touchstart','pointerdown'])
    document.addEventListener(event,stopAutoScroll,{once:true,passive:true});
- const getCard=()=>Array.from(document.querySelectorAll('#urunGrid .card[data-wz82-product-id]'))
-   .find(x=>String(x.getAttribute('data-wz82-product-id')||'').toLowerCase()===target);
+ const getProduct=()=>{
+   try{return (Array.isArray(URUNLER)?URUNLER:[]).find(p=>
+     String(p.productId||'').toLowerCase()===target || String(p.shareSlug||'').toLowerCase()===target
+   )||null}catch(_){return null}
+ };
+ const getCard=(id)=>Array.from(document.querySelectorAll('#urunGrid .card[data-wz82-product-id]'))
+   .find(x=>String(x.getAttribute('data-wz82-product-id')||'').toLowerCase()===id);
+ const chooseCategory=(name)=>{
+   if(!name||name==='Turnuva')return false;
+   try{
+     if(typeof filtrele==='function')filtrele(name);
+     else if(typeof urunleriYukle==='function')urunleriYukle(name);
+     if(typeof window.wzSaveMarketCategory==='function')window.wzSaveMarketCategory(name);
+     return true;
+   }catch(e){console.warn('Paylaşılan ürün kategorisi açılamadı:',e);return false}
+ };
  const align=()=>{
-   const latest=getCard();if(!latest)return false;
-   latest.classList.add('wz82-product-target');
-   if(userMoved)return true;
-   // Recenter only when first discovered or a catalog refresh replaced the element.
-   if(!found || latest!==card){
-     card=latest;latest.scrollIntoView({behavior:'instant',block:'center'});
+   if(userMoved)return;
+   const product=getProduct();
+   if(!product || product.durum==='off')return; // Wait for async catalog hydration.
+   const id=String(product.productId||'').toLowerCase();
+   const category=String(product.kategori||'').trim();
+   if(!id||!category)return;
+   const selected=typeof aktifKategori==='string'?aktifKategori:'';
+   if(chosenCategory!==category || selected!==category){
+     if(!chooseCategory(category))return;
+     chosenCategory=category;
+     highlighted=null;
    }
-   found=true;
-   return true;
+   const latest=getCard(id);
+   if(!latest)return; // Catalog may replace cards asynchronously.
+   located=true;
+   latest.classList.add('wz82-product-target');
+   if(latest!==highlighted){
+     highlighted=latest;
+     latest.scrollIntoView({behavior:'instant',block:'center'});
+   }
  };
  const begin=()=>{
    try{
      if(typeof window.wzSetView==='function')window.wzSetView('market');
+     // A shared link must override the visitor's previous search, but NOT force 'Tümü'.
      if(typeof productSearchQuery==='string')productSearchQuery='';
      const search=document.getElementById('productSearchInput');if(search)search.value='';
      if(typeof syncProductSearchClear==='function')syncProductSearchClear();
-     if(typeof urunleriYukle==='function')urunleriYukle('Tümü');
    }catch(e){console.warn('Ürün bağlantısı hazırlığı:',e)}
-   // Async catalog may render after DOMContentLoaded. Do not fight manual scrolling.
+   align();
    const timer=setInterval(()=>{
      attempts++;
      align();
-     if(attempts>=45){clearInterval(timer);if(!found)console.warn('Paylaşılan ürün şu anda listede yok:',target)}
+     if(attempts>=85){clearInterval(timer);if(!located)console.warn('Paylaşılan ürün şu anda listede yok:',target)}
    },180);
-   align();
  };
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',begin,{once:true});else begin();
 })();
