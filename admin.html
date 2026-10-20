@@ -2549,7 +2549,7 @@ body:has(#adminNewMessageModal:not(.hidden)){
           <label>TikTok profil bağlantısı<input id="wzgLinkTiktok" type="url" maxlength="700" placeholder="https://www.tiktok.com/@weizend"></label>
         </div>
         <h3 style="margin:17px 0 4px">⭐ Abone kura hakkı çarpanı (her çekilişe özel)</h3>
-        <p class="muted">Abonelik <b>katılım şartı değildir</b>. Tüm uygun katılımcılar için normal ağırlık ×1'dir. Seçilen değer, yalnızca kendi ödemesiyle aktif Kick abonesi olan veya kendi aboneliğini yenileyen kullanıcılar için planlanır. <b>Gift abonelik alanlar ×1 kalır.</b> Aktif kendi ödemeli abonelik yalnızca doğrulanıp yönetici tarafından onaylanır; Gift aboneliği avantaj sağlamaz.</p>
+        <p class="muted">Abonelik <b>katılım şartı değildir</b>. Tüm uygun katılımcılar için normal ağırlık ×1'dir. Seçilen değer, yalnızca kendi ödemesiyle aktif Kick abonesi olan veya kendi aboneliğini yenileyen kullanıcılar için planlanır. <b>Gift abonelik alanlar ×1 kalır.</b> Kendi ödemeli ve süresi dolmamış Kick aboneliği MissXss üzerinden otomatik doğrulanır; Gift aboneliği avantaj sağlamaz. MissXss erişilemezse manuel doğrulama seçeneği korunur.</p>
         <div class="wzg-grid">
           <label>Kendi ödemeli abone / yenileme kura hakkı çarpanı
             <select id="wzgSubscriberWeight">
@@ -13455,7 +13455,7 @@ async function wzg2AdminRefresh(){
   const {r,d}=await api('/admin/giveaway-live');if(!r.ok||!d.success)throw Error(d?.error||'HTTP '+r.status);
   const nextCampaigns=document.createDocumentFragment(),nextEntries=document.createDocumentFragment();
   const activeCount=(d.campaigns||[]).filter(c=>c.status==='active'&&Date.parse(c.start_at)<=Date.now()&&Date.parse(c.end_at)>Date.now()).length;
-  status.textContent=activeCount?'🟢 Katılıma açık çekiliş: '+activeCount+' • Admin üzerinden yönetiliyor.':'📋 Şu anda katılıma açık çekiliş yok. Taslağı Yayınla ile açabilirsin.';
+  status.textContent=(activeCount?'🟢 Katılıma açık çekiliş: '+activeCount+' • Admin üzerinden yönetiliyor.':'📋 Şu anda katılıma açık çekiliş yok. Taslağı Yayınla ile açabilirsin.')+(d.subscriptionCheck?.success===false?' ⚠️ MissXss abonelik kontrolü yapılamadı; son onaylı haklar korunuyor.':'');
   const get=(obj,key)=>String(obj?.[key]??'');
   for(const c of d.campaigns||[]){
     const item=document.createElement('div');item.className='wzg-item';
@@ -13512,7 +13512,7 @@ async function wzg2AdminRefresh(){
     const name=document.createElement('h3');name.textContent=e.username+' • '+((d.campaigns||[]).find(c=>c.id===e.giveaway_id)?.title||'Çekiliş');row.append(name);
     const p=document.createElement('div');p.className='muted';
     const statusMap={eligible:'✅ Katılım otomatik tamamlandı',pending_review:'⏳ Eski manuel kontrol kaydı — yeni görev akışından tekrar katılabilir',disqualified:'⛔ Yönetici tarafından reddedilmiş — otomatik açılmaz'};
-    p.textContent='Durum: '+(statusMap[e.status]||e.status)+' • Ayrılan bilet: '+e.tickets+' • Kendi ödemeli abonelik doğrulaması: '+(e.paid_verified?'EVET':'Hayır');row.append(p);
+    p.textContent='Durum: '+(statusMap[e.status]||e.status)+' • Ayrılan bilet: '+e.tickets+' • Abone bonusu: '+(e.paid_verified?(String(e.paid_proof||'').startsWith('AUTO_MISSXSS_SELF:')?'✅ MissXss otomatik':'✅ Yönetici doğruladı'):'Yok');row.append(p);
     const buttons=document.createElement('div');buttons.className='wzg-row';
     if(e.status==='disqualified'){
       const camp=(d.campaigns||[]).find(c=>c.id===e.giveaway_id);
@@ -13528,7 +13528,7 @@ async function wzg2AdminRefresh(){
     }
     if(e.status==='eligible'){
       const b=document.createElement('button');b.className='secondary';b.textContent=e.paid_verified?'👑 Abone avantajını kaldır':'👑 Kendi ödemeli Kick abonesi olduğunu onayla';
-      b.onclick=async()=>{const proof=e.paid_verified?'':prompt('Gift değil, kişinin kendi ödediği aktif Kick aboneliğini hangi kaynaktan ve ne zaman kontrol ettin? (Bu tuş otomatik kontrol yapmaz.)');if(proof===null)return;await wzg2AdminAction('/admin/giveaway/entry',{id:e.giveaway_id,uid:e.kick_uid,action:'subscriber',verified:!e.paid_verified,proof})};buttons.append(b);
+      b.onclick=async()=>{const proof=e.paid_verified?'':prompt('MissXss otomatik tespit edemiyorsa, kendi ödemeli aboneliği hangi resmi kaynaktan ve ne zaman kontrol ettin? (Gift için kullanma.)');if(proof===null)return;await wzg2AdminAction('/admin/giveaway/entry',{id:e.giveaway_id,uid:e.kick_uid,action:'subscriber',verified:!e.paid_verified,proof})};buttons.append(b);
     }
     row.append(buttons);nextEntries.append(row);
   }
@@ -13738,7 +13738,15 @@ async function wzg66Start(){
  if(wzg66.busy||wzg66.spinning)return;
  wzg66.duration=Number(wzg66$('wzg66Duration').value)||30;wzg66.busy=true;wzg66$('wzg66Start').disabled=true;
  try{
-  const s=await wzg66Request('/admin/giveaway/draw/begin',{id:wzg66.id});wzg66.session=s;
+  let s;
+  try{s=await wzg66Request('/admin/giveaway/draw/begin',{id:wzg66.id});}
+  catch(e){
+   if(!String(e.message||'').includes('ABONE_KONTROLU_YAPILAMADI'))throw e;
+   if(!confirm('⚠️ MissXss abonelik kontrolü şu anda yapılamadı. Mevcut kaydedilmiş kura haklarıyla BAŞLATMAK istiyor musun? Aktif aboneler eksik bonus alabilir. Önce tekrar denemen önerilir.'))throw Error('Abonelik kontrolü beklendi; kura başlatılmadı.');
+   if(!confirm('SON ONAY: Güncel abonelik kontrolü olmadan kura hakları dondurulacak. Emin misin?'))throw Error('Kura başlatılmadı.');
+   s=await wzg66Request('/admin/giveaway/draw/begin',{id:wzg66.id,allowUnverified:true});
+  }
+  wzg66.session=s;
   wzg66$('wzg66Pre').hidden=true;wzg66$('wzg66Stage').hidden=false;wzg66$('wzg66After').hidden=true;
   wzg66SetMessage('İsimler rastgele akıyor…');wzg66Run();
  }catch(e){alert('Çekiliş başlatılamadı: '+e.message);wzg66$('wzg66Start').disabled=false}
