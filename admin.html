@@ -2380,7 +2380,21 @@ body:has(#adminNewMessageModal:not(.hidden)){
 .wz45-list-window.wz45-is-scrollable:focus-visible {outline:2px solid #e62828;outline-offset:2px;}
 @media(max-width:650px){.wz45-list-window.wz45-is-scrollable {max-height:min(var(--wz45-measured-height, 500px), 70vh, 700px)!important;}}
 </style>
-<style id="wzg66RosterScroll">#wzg2Entries{max-height:750px;overflow-y:auto;overscroll-behavior:contain}#wzg2Entries .wzg-item{min-height:52px}</style></head>
+<style id="wzg66RosterScroll">#wzg2Entries{max-height:750px;overflow-y:auto;overscroll-behavior:contain}#wzg2Entries .wzg-item{min-height:52px}</style><style id="wzg78PaginationStyles">
+/* V31.0.78 — Katılımcılar artık veritabanında sayfalanır. */
+.wzg78-panel{margin:15px 0 10px;border:1px solid #34343a;border-radius:13px;background:#101013;padding:15px}
+.wzg78-panel h3{margin:0 0 12px;font-size:1rem}
+.wzg78-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.wzg78-filters label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:800;color:#c8c8cc;min-width:0}
+.wzg78-filters select,.wzg78-filters input{width:100%;min-width:0;min-height:42px;padding:9px 10px}
+.wzg78-foot{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:13px;color:#ccc;font-size:13px}
+.wzg78-pager{display:flex;align-items:center;gap:8px}
+.wzg78-pager button{width:auto!important;min-width:95px;padding:9px 10px!important}
+.wzg78-pager b{white-space:nowrap;font-variant-numeric:tabular-nums}
+@media(max-width:900px){.wzg78-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.wzg78-filters{grid-template-columns:1fr}.wzg78-foot{align-items:stretch;flex-direction:column}.wzg78-pager{justify-content:space-between}}
+</style>
+</head>
 
 <body>
   
@@ -2617,6 +2631,23 @@ body:has(#adminNewMessageModal:not(.hidden)){
           <p id="wzg2EditStatus" role="status" aria-live="polite"></p>
         </div>
         <div id="wzg2Campaigns" class="wzg-list"></div>
+        <div id="wzg78ParticipantPanel" class="wzg78-panel">
+          <h3>👥 Çekiliş Katılımcıları</h3>
+          <div class="wzg78-filters">
+            <label>Çekiliş<select id="wzg78Campaign"><option value="">Tüm çekilişler</option></select></label>
+            <label>Durum<select id="wzg78Status"><option value="">Tüm durumlar</option><option value="eligible">Katıldı</option><option value="pending_review">Eski bekleyenler</option><option value="disqualified">Reddedildi</option></select></label>
+            <label>Kullanıcı ara<input id="wzg78Search" maxlength="80" placeholder="Kick kullanıcı adı..." autocomplete="off"></label>
+            <label>Sayfa başına<select id="wzg78PageSize"><option value="25">25 kişi</option><option value="50">50 kişi</option><option value="100">100 kişi</option></select></label>
+          </div>
+          <div class="wzg78-foot">
+            <span id="wzg78Count" role="status">Katılımcılar yükleniyor...</span>
+            <div class="wzg78-pager">
+              <button type="button" class="secondary" id="wzg78Prev" onclick="wzg78ChangePage(-1)" disabled>← Önceki</button>
+              <b id="wzg78PageLabel">1 / 1</b>
+              <button type="button" class="secondary" id="wzg78Next" onclick="wzg78ChangePage(1)" disabled>Sonraki →</button>
+            </div>
+          </div>
+        </div>
         <div id="wzg2Entries" class="wzg-list"></div>
       </div>
       <div class="card">
@@ -13468,12 +13499,65 @@ async function wzg69CopyCancelled(c){
  if(!confirm('Bu iptal edilmiş çekilişin bilgileriyle YENİ ve düzenlenebilir bir taslak oluşturalım mı? Yeni başlangıç/bitiş tarihlerini sen gireceksin.'))return;
  try{const r=await wzg2AdminCall('/admin/giveaway/cancel/copy',{id:c.id});await wzgLoad();wzgEdit(r.id);wzgMessage('✅ İptal edilmiş çekilişten yeni taslak oluşturuldu. Tarihleri yeniden ayarla.')}catch(e){alert('❌ '+e.message)}
 }
+// V31.0.78 — selected filters/page are retained across ordinary Admin refreshes.
+const wzg78State={page:1,pageSize:25,campaignId:'',status:'',search:''};
+let wzg78Serial=0,wzg78SearchTimer=null,wzg78Wired=false;
+function wzg78Filters(){
+ const v=id=>document.getElementById(id);
+ return {campaign:v('wzg78Campaign'),status:v('wzg78Status'),search:v('wzg78Search'),size:v('wzg78PageSize')};
+}
+function wzg78Wire(){
+ if(wzg78Wired)return;
+ const f=wzg78Filters();if(!f.campaign||!f.status||!f.search||!f.size)return;
+ wzg78Wired=true;
+ const update=()=>{wzg78State.page=1;wzg78State.campaignId=f.campaign.value;
+  wzg78State.status=f.status.value;wzg78State.search=f.search.value.trim();
+  wzg78State.pageSize=Number(f.size.value)||25;wzg2AdminRefresh();};
+ f.campaign.addEventListener('change',update);
+ f.status.addEventListener('change',update);
+ f.size.addEventListener('change',update);
+ f.search.addEventListener('input',()=>{clearTimeout(wzg78SearchTimer);wzg78SearchTimer=setTimeout(update,280)});
+}
+function wzg78ChangePage(direction){
+ const max=Math.max(1,Number(document.getElementById('wzg78PageLabel')?.dataset.totalPages||1));
+ const next=Math.min(max,Math.max(1,wzg78State.page+direction));
+ if(next===wzg78State.page)return;
+ wzg78State.page=next;wzg2AdminRefresh();
+}
+function wzg78ShowPage(info,cs){
+ wzg78State.page=Number(info?.page)||1;
+ const f=wzg78Filters();
+ if(f.campaign){
+  const previous=f.campaign.value;
+  const frag=document.createDocumentFragment();
+  const all=document.createElement('option');all.value='';all.textContent='Tüm çekilişler';frag.append(all);
+  for(const c of cs||[]){const opt=document.createElement('option');opt.value=c.id;opt.textContent=c.title+' ('+(wzg69Status[c.status]||c.status)+')';frag.append(opt)}
+  f.campaign.replaceChildren(frag);
+  f.campaign.value=wzg78State.campaignId;
+  if(!f.campaign.value&&wzg78State.campaignId){const missing=document.createElement('option');missing.value=wzg78State.campaignId;missing.textContent='Arşivlenmiş çekiliş';f.campaign.append(missing);f.campaign.value=wzg78State.campaignId}
+ }
+ const total=Number(info?.total||0),pages=Math.max(1,Number(info?.totalPages||1));
+ const label=document.getElementById('wzg78PageLabel');
+ if(label){label.textContent=wzg78State.page+' / '+pages;label.dataset.totalPages=String(pages)}
+ const count=document.getElementById('wzg78Count');
+ if(count)count.textContent=total.toLocaleString('tr-TR')+' katılımcı • Bu sayfada '+Math.min(Number(info?.pageSize||25),Math.max(0,total-(wzg78State.page-1)*Number(info?.pageSize||25)))+' kayıt';
+ const prev=document.getElementById('wzg78Prev'),next=document.getElementById('wzg78Next');
+ if(prev)prev.disabled=wzg78State.page<=1;
+ if(next)next.disabled=wzg78State.page>=pages;
+}
 async function wzg2AdminRefresh(){
  const status=document.getElementById('wzg2AdminStatus'),campaigns=document.getElementById('wzg2Campaigns'),entries=document.getElementById('wzg2Entries');
- if(!status||!campaigns||!entries)return;
+ if(!status||!campaigns||!entries)return false;
+ wzg78Wire();
+ const serial=++wzg78Serial;
  if(!campaigns.childElementCount&&!entries.childElementCount)status.textContent='Kayıtlar yükleniyor...';
+ const query=new URLSearchParams({page:String(wzg78State.page),pageSize:String(wzg78State.pageSize)});
+ if(wzg78State.campaignId)query.set('campaignId',wzg78State.campaignId);
+ if(wzg78State.status)query.set('status',wzg78State.status);
+ if(wzg78State.search)query.set('search',wzg78State.search);
  try{
-  const {r,d}=await api('/admin/giveaway-live');if(!r.ok||!d.success)throw Error(d?.error||'HTTP '+r.status);
+  const {r,d}=await api('/admin/giveaway-live?'+query.toString());if(serial!==wzg78Serial)return false;
+  if(!r.ok||!d.success)throw Error(d?.error||'HTTP '+r.status);
   const nextCampaigns=document.createDocumentFragment(),nextEntries=document.createDocumentFragment();
   const activeCount=(d.campaigns||[]).filter(c=>c.status==='active'&&Date.parse(c.start_at)<=Date.now()&&Date.parse(c.end_at)>Date.now()).length;
   status.textContent=(activeCount?'🟢 Katılıma açık çekiliş: '+activeCount+' • Admin üzerinden yönetiliyor.':'📋 Şu anda katılıma açık çekiliş yok. Taslağı Yayınla ile açabilirsin.')+(d.subscriptionCheck?.success===false?' ⚠️ MissXss abonelik kontrolü yapılamadı; son onaylı haklar korunuyor.':'');
@@ -13554,9 +13638,11 @@ async function wzg2AdminRefresh(){
     row.append(buttons);nextEntries.append(row);
   }
   if(!d.entries?.length)nextEntries.append(document.createTextNode('Henüz katılımcı yok.'));
+  if(serial!==wzg78Serial)return false;
   campaigns.replaceChildren(nextCampaigns);entries.replaceChildren(nextEntries);
+  wzg78ShowPage(d.entryPagination,d.campaigns||[]);
   return true;
- }catch(e){status.textContent='❌ Liste güncellenemedi, son bilgiler korunuyor: '+e.message;return false}
+ }catch(e){if(serial===wzg78Serial)status.textContent='❌ Liste güncellenemedi, son bilgiler korunuyor: '+e.message;return false}
 }
 async function wzg2AdminAction(path,payload){
  try{const d=await wzg2AdminCall(path,payload);alert(d.winners?.length?'Kazananlar: '+d.winners.map(w=>w.rank+'. '+w.username).join(', '):'İşlem tamamlandı.');await wzg2AdminRefresh()}
