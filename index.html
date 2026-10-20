@@ -4784,6 +4784,23 @@ body.wz-view-giveaway #wzNavMarket,body.wz-view-giveaway #wzNavTournament,body.w
  #wzGiveawayFrame{min-height:700px}
 }
 </style>
+<!-- WEIZEND V31.0.74 · Mobil ve masaüstünde ortak sabit üst başlık (deneme) -->
+<style id="wz-v3174-shared-sticky-header">
+/* overflow-x:hidden, mobilde sticky'nin doğru çalışmasını engelleyen
+   ayrı bir kaydırma kapsayıcısı oluşturabiliyordu. clip yatay taşmayı
+   görsel olarak gizler fakat dikey kaydırma kapsayıcısı oluşturmaz. */
+@supports (overflow:clip) {
+  html,body { overflow-x:clip!important; }
+}
+/* Eski mobil CSS'deki position:relative!important değerini geçersiz kıl.
+   position:sticky içerikte yer kapladığından F5 konum hafızası, sayfa akışı,
+   mobil alt navigasyon ve açık modal düzeni değişmez. */
+body > #wzAppbar {
+  position:sticky!important;
+  top:0!important;
+  z-index:850!important;
+}
+</style>
 </head>
 <body>
 <script id="wz-v58-prepaint-view">
