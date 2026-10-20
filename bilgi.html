@@ -60,12 +60,29 @@ footer{background:#111318!important;border-color:#2d303a!important}
 @media(max-width:640px){header.top .topin{min-height:64px}header.top .brand img{width:36px;height:36px}header.top .brand span{font-size:15px}header.top .brand em{font-size:9px}}
 
 </style>
+
+<style id="wz-bilgi-active-navigation">
+/* Navigation is neutral by default. Only the visible guide section is highlighted. */
+.hero > .heroBtns a.wz-active,
+.topicNav a.wz-active{
+  background:var(--red)!important;
+  border-color:var(--red)!important;
+  color:#fff!important;
+  box-shadow:0 0 0 1px rgba(251,48,58,.18)!important;
+}
+.guide-section.wz-active-section > .sectitle h2{color:var(--red)}
+@media(prefers-reduced-motion:no-preference){
+  .hero > .heroBtns a,.topicNav a,.guide-section>.sectitle h2{
+    transition:background .16s,border-color .16s,color .16s;
+  }
+}
+</style>
 </head>
 <body>
 <a href="#ana" onblur="this.style.left='-9999px'" onfocus="this.style.left='10px'" style="position:absolute;left:-9999px;top:0">İçeriğe geç</a>
 <header class="top"><div class="wrap topin"><a class="brand" href="https://www.weizend.com/"><img alt="WEİZEND logosu" src="https://i.hizliresim.com/fo5evkh4.png"/><span>WEİZEND <em>BİLGİ MERKEZİ</em></span></a><nav aria-label="Üst bağlantılar" class="topactions"><a class="btn primary" href="https://www.weizend.com/">↗ Siteye Git</a></nav></div></header>
 <main class="wrap" id="ana">
-<section aria-labelledby="hero-title" class="hero"><div class="eyebrow">WEİZEND MARKET × ÇEKİLİŞ × ARENA</div><h1 id="hero-title">Aklındaki her şeyin yanıtı <span>burada.</span></h1><p class="lead">Kick doğrulaması, Market alışverişi, Profil, Çekiliş Merkezi, Oyuncu Ara, Arena turnuvaları ve canlı yayın oyunları için bütün rehberler tek yerde.</p><div class="heroBtns"><a class="btn primary" href="#cekilis">🎉 Çekiliş Merkezi</a><a class="btn primary" href="#puan">🪙 Puan Nasıl Kazanılır?</a><a class="btn" href="#baslangic">🚀 İlk kez geliyorum</a><a class="btn" href="#oyuncu-ara">🎮 Oyuncu arkadaşı bulacağım</a><a class="btn" href="#turnuva">🏆 Turnuvaya katılacağım</a><a class="btn" href="#destek">🎁 Destek Ödülleri</a><a class="btn" href="#etkinlik">🎮 Yayın Oyunları</a></div></section>
+<section aria-labelledby="hero-title" class="hero"><div class="eyebrow">WEİZEND MARKET × ÇEKİLİŞ × ARENA</div><h1 id="hero-title">Aklındaki her şeyin yanıtı <span>burada.</span></h1><p class="lead">Kick doğrulaması, Market alışverişi, Profil, Çekiliş Merkezi, Oyuncu Ara, Arena turnuvaları ve canlı yayın oyunları için bütün rehberler tek yerde.</p><div class="heroBtns"><a class="btn" href="#cekilis">🎉 Çekiliş Merkezi</a><a class="btn" href="#puan">🪙 Puan Nasıl Kazanılır?</a><a class="btn" href="#baslangic">🚀 İlk kez geliyorum</a><a class="btn" href="#oyuncu-ara">🎮 Oyuncu arkadaşı bulacağım</a><a class="btn" href="#turnuva">🏆 Turnuvaya katılacağım</a><a class="btn" href="#destek">🎁 Destek Ödülleri</a><a class="btn" href="#etkinlik">🎮 Yayın Oyunları</a></div></section>
 <div class="notice"><b>ℹ️ Güncel bilgi:</b> Ürün fiyatları, çekiliş koşulları, abone çarpanı, turnuva saatleri ve ödüller etkinliğe göre değişebilir. <b>Güncel bilgiler Market içindeki ilgili çekiliş, ürün veya turnuva detaylarında gösterilir.</b></div>
 <div class="searchRow"><input aria-label="Rehberde ara" autocomplete="off" id="guideSearch" placeholder="Rehberde ara: çekiliş, bilet, abone, profil, lobi, turnuva..." type="search"/></div>
 <nav aria-label="Bilgi konuları" class="topicNav"><a href="#puan">🪙 Puan Nasıl Kazanılır?</a><a href="#baslangic">🔐 Kick hesabı</a><a href="#destek">🎁 Destekten puan</a><a href="#kod">🪙 Hediye kodu</a><a href="#market">🛒 Market</a><a href="#profil-rehberi">👤 Profil ve Siparişler</a><a href="#cekilis">🎉 Çekiliş Merkezi</a><a href="#turnuva">🏆 Turnuva kaydı</a><a href="#takim">👥 Takımlar</a><a href="#oyuncu-ara">🎮 Oyuncu Ara</a><a href="#oyun-hesabi">🪪 Oyun hesabı</a><a href="#arena">🎮 Arena</a><a href="#afk">⚔️ AFK maç</a><a href="#tahmin">🎯 Tahminler</a><a href="#oduller">🥇 Ödüller</a><a href="#etkinlik">🎮 Yayın Oyunları</a><a href="#sss">❓ SSS</a></nav>
@@ -111,29 +128,29 @@ footer{background:#111318!important;border-color:#2d303a!important}
 <div class="callout">🔒 <b>Güvenli işlem:</b> Puan, ürün ve çekiliş bileti alımlarında işlemin tamamlandığı bilgisini bekle. Aynı ödemeyi veya puan düşümünü art arda başlatma; sorun olursa Mesaj Kutusu ya da yönetici desteğini kullan.</div>
 </section><section aria-labelledby="cekilis-title" class="block guide-section" id="cekilis">
 <div class="sectitle"><span class="num">07</span><div class="heading"><h2 id="cekilis-title">🎉 Çekiliş Merkezi — Ücretsiz Katılım, Biletler ve Canlı Kura</h2><p>Market içindeki yeni çekiliş sistemi: katılım adımları, kura hakları, geri sayım ve kazananlar.</p></div><a class="jump" href="#ana">↑ Başa dön</a></div>
-<div class="callout green" style="margin:0 0 16px">✅ <b>Çekilişe katılmak için bilet veya abonelik satın alman gerekmez.</b> Kick hesabınla doğrulanıp etkin çekilişin ücretsiz katılım koşullarını yerine getirebilirsin. <b>18 yaş ve çekiliş koşullarını onaylama</b> şartı bulunur.</div>
+<div class="callout green" style="margin:0 0 16px">✅ <b>Çekilişe katılmak için bilet veya abonelik satın alman gerekmez.</b> Kick hesabınla doğrulanıp etkin çekilişin ücretsiz katılım koşullarını yerine getirebilirsin. <b>Yaş uygunluğu ve çekiliş koşullarını kabul etme</b> şartı devam eder; ayrı bir onay kutusu yerine katılımı sen tamamlarsın.</div>
 <h3 class="earn-heading">🚀 Ücretsiz nasıl katılırım?</h3>
 <ol class="steps">
 <li><a href="https://www.weizend.com/?wz_view=giveaway"><b>WEİZEND Market → Çekilişler</b></a> sekmesini aç ve açık bir çekiliş seç. Ödülü, başlangıç/bitiş zamanını ve kuralları incele.</li>
 <li>Kick hesabını doğrula. Çekilişte <b>Ücretsiz Katıl</b> butonuna bas.</li>
 <li>Çekiliş için istenen <b>Kick, Instagram, TikTok, YouTube veya Discord</b> görevleri açılır. Her bağlantıyı ziyaret edip sayfaya dön; ziyaret ettiğin görevi işaretle/onayla.</li>
-<li><b>18 yaş ve çekiliş koşullarını</b> kabul et. Gerekli görevler bittiğinde sistem katılımını kontrol eder ve <b>“Çekilişe katıldın!”</b> mesajını gösterir.</li>
+<li>Gerekli sosyal görevler bittiğinde <b>Katılımı Tamamla</b> butonuna bas. Böylece yaş uygunluğunu ve çekiliş koşullarını kabul ettiğini beyan edersin; sistem onaylarsa <b>“Çekilişe katıldın!”</b> mesajını gösterir.</li>
 <li>Katılımın onaylandığında <b>katılımcı listesine otomatik</b> eklenirsin. Her kullanıcı için ayrı yönetici onayı beklemen gerekmez; aynı Kick hesabıyla bir çekilişe bir kayıt açılır.</li>
 </ol>
 <div class="callout">ℹ️ <b>Sosyal medya görevi = bağlantı ziyareti ve kullanıcı beyanı.</b> Dış platformlarda gerçekten takip ettiğinin, abone olduğunun veya Discord sunucusuna katıldığının teknik kanıtı değildir. İstenen bağlantılar ve koşullar çekilişe göre değişebilir.</div>
-<h3 class="earn-heading" style="margin-top:22px">🎟️ Kura hakkı nasıl hesaplanıyor?</h3>
+<h3 class="earn-heading" style="margin-top:22px">🎟️ Ödülü kazanma şansın nasıl hesaplanıyor?</h3>
 <div class="cards triple">
 <article class="mini"><h3>🎉 Ücretsiz katılım</h3><p class="em">+1 Kura Hakkı</p><p>Koşulları tamamlayıp katılımın kabul edildiğinde otomatik kazanırsın.</p></article>
-<article class="mini"><h3>⭐ Kendi ödemeli aktif abonelik</h3><p class="em">Çekiliş ayarına göre</p><p>Aktif, kendi ödemeli Kick aboneliğin veya uygun yenilemen MissXss verisiyle eşleşirse <b>kura hakkın belirlenen çarpana yükselir</b>. Örneğin <b>×2</b> seçildiyse ücretsiz hakla birlikte <b>toplam 2</b> abonelik kaynaklı hak olur; iki ek hak anlamına gelmez. <b>Hediye abonelik</b> bu bonustan yararlanmaz.</p></article>
+<article class="mini"><h3>⭐ Kendi ödemeli aktif abonelik</h3><p class="em">Seçilen toplam hak</p><p>Aktif, kendi ödemeli Kick aboneliğin veya uygun yenilemen doğrulanırsa çekilişteki abone değeri toplam başlangıç hakkındır. Örneğin kartta <b>Abone Bonusu +3 Şans</b> yazıyorsa <b>toplam 3 başlangıç hakkın</b> olur; ücretsiz +1 ayrıca eklenmez. <b>Gift abonelik</b> bu avantajı sağlamaz.</p></article>
 <article class="mini"><h3>🎟️ Kullanılan her bilet</h3><p class="em">+1 Kura Hakkı</p><p>Market'ten puanla satın alınıp ödeme onayı kesinleşen çekiliş biletini, katıldığın açık çekilişte kullanırsan her bilet bir hak ekler.</p></article>
 </div>
-<div class="callout green"><b>Örnek:</b> Çekilişte abonelere ×2 hak tanımlanmışsa, kendi ödemeli aktif aboneliği bulunan ve <b>3 bilet kullanan</b> bir kullanıcının <b>2 + 3 = 5 kura hakkı</b> olur. Abone olmayan biri 3 bilet kullanırsa <b>1 + 3 = 4 hak</b> olur. Kesin koşullar çekiliş kartında görünür.</div>
+<div class="callout green"><b>Örnek:</b> Çekilişte aboneler için 3 başlangıç hakkı varsa ve abone <b>1 bilet kullanırsa</b> toplam <b>3 + 1 = 4 kura hakkı</b> olur. Abone olmayan ve bir bilet kullanan kişi <b>1 + 1 = 2 hak</b> elde eder. <b>Ödülü kazanma şansın</b> yüzdesi, senin toplam hakkının sıradaki tek ödül için kalan uygun kişilerin bütün haklarına oranıdır. Başkaları bilet kullandıkça ve kazananlar listeden çıktıkça bu oran değişebilir. Bilet kazanmayı garanti etmez.</div>
 <h3 class="earn-heading" style="margin-top:22px">🪙 Çekiliş biletini nasıl alır ve kullanırım?</h3>
 <ol class="steps">
 <li>Market'te <b>Çekiliş Bileti</b> ürününü bul; güncel puan fiyatını ve stok/limit bilgisini kontrol et.</li>
 <li>Satın alma isteğini onayla. BotRix / MissXss üzerinden <b>gerçek puan düşümü doğrulanana kadar</b> bilet bakiyene eklenmez. İşlem bekliyorsa tekrar satın almayı başlatma.</li>
 <li><b>Profil</b> ve <b>Çekilişler</b> sayfasından kullanılabilir bilet bakiyeni kontrol et.</li>
-<li>Önce açık çekilişe ücretsiz katıl. Ardından çekiliş sayfasındaki <b>bilet kullanma</b> işleminden kaç bilet ayıracağını seç. Bilet sadece başarılı işlemden sonra o çekilişin kura haklarına eklenir.</li>
+<li>Önce açık çekilişe ücretsiz katıl. Ardından çekiliş kartındaki <b>Bilet Ekle</b> butonundan kaç bilet ayıracağını seç. Onaylanmış her bilet hakkını 1 artırır; güncel kazanma yüzden otomatik yenilenir. <b>Kura başladığında</b> yeni katılım ve bilet ekleme kapanır.</li>
 </ol>
 <div class="callout">⚠️ <b>Çekiliş biletleri yalnızca onaylanmış Market siparişlerinden oluşur.</b> Bilet bakiyesi ve harcamaları sunucuda tutulur; iptal edilen çekilişlerin bilet hesapları da sistem tarafından yönetilir.</div>
 <h3 class="earn-heading" style="margin-top:22px">⏳ Geri sayım, canlı kura ve sonuçlar</h3>
@@ -141,7 +158,7 @@ footer{background:#111318!important;border-color:#2d303a!important}
 <article class="mini"><h3>⏱️ Katılım süresi devam ediyor</h3><p>Çekiliş kartındaki sayaç gün, saat, dakika ve saniye olarak geri sayar. Süre bitmeden katılabilir ve mevcut biletlerini kullanabilirsin; kontenjan veya kurallar ayrıca sınır koyabilir.</p></article>
 <article class="mini"><h3>⏳ Süre doldu — çekiliş yakında</h3><p>Katılım süresi dolduğunda <b>yeni katılım ve bilet ayırma kapanır</b>. “Çekiliş yakında başlayacak” bilgisi gösterilir. Sürenin dolması tek başına kurayı otomatik başlatmaz.</p></article>
 <article class="mini"><h3>🎥 Canlı kura</h3><p>Yönetici kurayı başlattığında <b>10 / 30 / 60 saniyelik</b> seçeneklerle isimlerin kaydığı kura ekranı kullanılır. Yönetici aday üzerinde <b>Tamamla</b> veya <b>Atla</b> işlemini yapar; sonuçlar sunucuya kaydedilir.</p></article>
-<article class="mini"><h3>🏆 Kazananlar ve Detaylar</h3><p>Çekiliş kartının <b>Detaylar</b> sayfasında çekilişin ödülü, katılımcı sayısı, kısmen gizlenmiş katılımcı adları ve kesinleşen kazananlar görünür. Ödül teslim şartlarını ilgili çekiliş açıklamasından takip et.</p></article>
+<article class="mini"><h3>🏆 Kazananlar ve Detaylar</h3><p>Çekiliş kartının <b>Detaylar</b> sayfasında ödül, benzersiz katılımcı sayısı, sıradaki tek ödülü kazanma yüzdeleri ve kesinleşen kazananlar görünür. Kazanan bir sonraki turdan çıkarılır; yüzdeler kalan katılımcı haklarına göre güncellenir.</p></article>
 </div>
 <div class="heroBtns" style="margin-top:18px"><a class="btn primary" href="https://www.weizend.com/?wz_view=giveaway">🎉 Çekilişler Sekmesine Git</a><a class="btn" href="#market">🛒 Market ve Puanlı Alışveriş</a><a class="btn" href="#baslangic">🔐 Kick Doğrulama</a></div>
 </section>
@@ -236,7 +253,7 @@ footer{background:#111318!important;border-color:#2d303a!important}
 <div class="callout" style="margin-top:16px">🪙 <b>Puan kazanma:</b> Yayınları izledikçe Sadakat Puanı (SP) kazanabilir, puan çarkı ve canlı yayın oyunlarıyla ödüller elde edebilirsin. Bakiyen için <span class="code">!banka</span>, Market için <span class="code">!market</span> yazabilirsin. <b>Turnuva Pick'em puanları</b> ile <b>Market'te harcanan puanlar</b> farklıdır.</div>
 </section>
 <section class="block guide-section faq" id="sss"><div class="sectitle"><span class="num">17</span><div class="heading"><h2>Sık sorulan sorular</h2><p>En çok karşılaşılan durumlar ve hızlı çözümler.</p></div><a class="jump" href="#ana">↑ Başa dön</a></div>
-<details><summary>Yeni Çekiliş Merkezi’ne nasıl ücretsiz katılırım?</summary><p>Market’te <b>Çekilişler</b> sekmesini aç, <b>Ücretsiz Katıl</b> butonuna bas. Çekilişin istediği sosyal bağlantıları ziyaret ettiğini onayla ve <b>18 yaş ile koşullar</b> kutularını işaretle. Sistem uygun katılımı otomatik listeye ekler. <a href="#cekilis">Adım adım çekiliş rehberi →</a></p></details><details><summary>Instagram veya Kick görevine tıklamak gerçekten takip ettiğimi doğrular mı?</summary><p>Hayır. Sosyal görevler bir <b>bağlantı ziyaretini ve kullanıcı beyanını</b> ifade eder. Dış platformda takip veya abonelik yapıldığının teknik doğrulaması değildir.</p></details><details><summary>Çekiliş bileti neden bakiyeme gelmedi?</summary><p>Bilet satın alma isteği tek başına yeterli değildir. BotRix üzerinden puan düşümü <b>kesinleşince</b> bilet bakiyene eklenir. Bekleyen siparişi tekrar başlatma; Satın Alınanlar / Mesaj Kutusu’ndan durumu kontrol et.</p></details><details><summary>Abone olursam kaç kura hakkım olacak? Gift abonelik geçerli mi?</summary><p>Çekilişin seçilen çarpanına bağlıdır. Örneğin <b>×2</b>, ücretsiz hakla beraber <b>toplam 2 abonelik kaynaklı kura hakkı</b> demektir; üzerine kullandığın her bilet +1 ekler. Yalnızca doğrulanan <b>kendi ödemeli aktif abonelik</b> ve uygun yenilemeler abonelik bonusuna uygundur. Gift abonelikler bu bonusa dahil değildir.</p></details><details><summary>Katılım süresi bitince kura otomatik mi başlar?</summary><p>Hayır. Süre dolunca yeni katılım ve bilet kullanımı kapanır; sayfada <b>Çekiliş yakında başlayacak</b> bilgisi gösterilir. Yönetici canlı kurayı başlatınca sonuçlar açıklanır.</p></details><details><summary>Çekiliş katılımcılarını ve kazananları nereden görürüm?</summary><p>Market → <b>Çekilişler → Detaylar</b> yolundan ilgili çekilişi aç. Ödül bilgilerini, sayfalı katılımcı listesini ve kesinleşmiş kazananları görebilirsin. Katılımcı adları kısmen gizlenmiş olabilir.</p></details><details><summary>Market’te satın aldığım ürünleri ve mesajlarımı nereden izlerim?</summary><p><b>Profil → Satın Alınanlar</b> üzerinden sipariş/teslimat bilgilerini; <b>Mesaj Kutusu</b> üzerinden ödül, kod ve sistem bildirimlerini kontrol et. <a href="#profil-rehberi">Profil rehberi →</a></p></details><details><summary>Ücretsiz puan nasıl kazanabilirim?</summary><p>Kick canlı yayınını izleyerek Sadakat Puanı (SP) toplayabilir, <span class="code">!atla</span> basketbol oyununa, matematik sorularına, yayın tahminlerine ve puan çekilişlerine katılabilirsin. Tüm yöntemler için <a href="#puan" style="font-weight:900">Puan Nasıl Kazanılır?</a> bölümüne göz at.</p></details>
+<details><summary>Yeni Çekiliş Merkezi’ne nasıl ücretsiz katılırım?</summary><p>Market’te <b>Çekilişler</b> sekmesini aç, <b>Ücretsiz Katıl</b> butonuna bas. Çekilişin istediği sosyal bağlantıları ziyaret edip görevleri onayla, ardından <b>Katılımı Tamamla</b> butonuna bas. Bu işlemle yaş uygunluğu ve katılım koşullarını kabul ettiğini beyan edersin. <a href="#cekilis">Adım adım çekiliş rehberi →</a></p></details><details><summary>Instagram veya Kick görevine tıklamak gerçekten takip ettiğimi doğrular mı?</summary><p>Hayır. Sosyal görevler bir <b>bağlantı ziyaretini ve kullanıcı beyanını</b> ifade eder. Dış platformda takip veya abonelik yapıldığının teknik doğrulaması değildir.</p></details><details><summary>Çekiliş bileti neden bakiyeme gelmedi?</summary><p>Bilet satın alma isteği tek başına yeterli değildir. BotRix üzerinden puan düşümü <b>kesinleşince</b> bilet bakiyene eklenir. Bekleyen siparişi tekrar başlatma; Satın Alınanlar / Mesaj Kutusu’ndan durumu kontrol et.</p></details><details><summary>Abone olursam kaç kura hakkım olacak? Gift abonelik geçerli mi?</summary><p>Çekilişin seçilen çarpanına bağlıdır. Örneğin <b>×2</b>, ücretsiz hakla beraber <b>toplam 2 abonelik kaynaklı kura hakkı</b> demektir; üzerine kullandığın her bilet +1 ekler. Yalnızca doğrulanan <b>kendi ödemeli aktif abonelik</b> ve uygun yenilemeler abonelik bonusuna uygundur. Gift abonelikler bu bonusa dahil değildir.</p></details><details><summary>Katılım süresi bitince kura otomatik mi başlar?</summary><p>Hayır. Süre dolunca yeni katılım ve bilet kullanımı kapanır; sayfada <b>Çekiliş yakında başlayacak</b> bilgisi gösterilir. Yönetici canlı kurayı başlatınca sonuçlar açıklanır.</p></details><details><summary>Çekiliş katılımcılarını ve kazananları nereden görürüm?</summary><p>Market → <b>Çekilişler → Detaylar</b> yolundan ilgili çekilişi aç. Ödül bilgilerini, sayfalı katılımcı listesini ve kesinleşmiş kazananları görebilirsin. Katılımcı adları kısmen gizlenmiş olabilir.</p></details><details><summary>Market’te satın aldığım ürünleri ve mesajlarımı nereden izlerim?</summary><p><b>Profil → Satın Alınanlar</b> üzerinden sipariş/teslimat bilgilerini; <b>Mesaj Kutusu</b> üzerinden ödül, kod ve sistem bildirimlerini kontrol et. <a href="#profil-rehberi">Profil rehberi →</a></p></details><details><summary>Ücretsiz puan nasıl kazanabilirim?</summary><p>Kick canlı yayınını izleyerek Sadakat Puanı (SP) toplayabilir, <span class="code">!atla</span> basketbol oyununa, matematik sorularına, yayın tahminlerine ve puan çekilişlerine katılabilirsin. Tüm yöntemler için <a href="#puan" style="font-weight:900">Puan Nasıl Kazanılır?</a> bölümüne göz at.</p></details>
 <details><summary>Destek gönderdim ama hediye kodum henüz gelmedi. Neden?</summary><p>İşlemin yayın/destek kaynağında doğrulanması, Kick hesabınla eşleşmesi ve kodun Mesaj Kutusu’na iletilmesi gerekebilir. Destek sırasında kullandığın adın doğrulanmış Kick hesabınla eşleştiğini kontrol et. İşlem hemen görünmezse tekrar ödeme gönderme; destek kaydını WEİZEND ekibine bildir.</p></details>
 <details><summary>Hediye kodu kullandım, puanım niçin değişmedi?</summary><p>Puan kodunun onaylanması kısa süre alabilir. Market’te <b>Bilgileri Yenile</b> ve <b>Mesaj Kutusu</b> üzerinden durumu kontrol et. Bekleyen işlemi iki kez başlatma.</p></details>
 <details><summary>VALORANT, CS2 veya PUBG için oyun arkadaşı nasıl bulurum?</summary><p>Kick hesabını doğrula, Profil'de oynadığın oyunun hesabını ekle ve <a href="https://www.weizend.com/?wz_view=players" style="font-weight:900">Oyuncu Ara</a> sekmesini aç. Açık lobilerden birine doğrudan katıl veya kaptana başvuru gönder. Ayrıntılar için <a href="#oyuncu-ara" style="font-weight:900">Oyuncu Ara rehberine</a> bak.</p></details>
@@ -255,6 +272,41 @@ footer{background:#111318!important;border-color:#2d303a!important}
 </main>
 <script>
 (()=>{'use strict';const input=document.getElementById('guideSearch');const sections=[...document.querySelectorAll('.guide-section')];const none=document.getElementById('noResults');const norm=s=>(s||'').toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'');function filter(){const q=norm(input.value.trim());let count=0;for(const sec of sections){const show=!q||norm(sec.textContent).includes(q);sec.classList.toggle('hide-search',!show);if(show)count++}none.style.display=count?'none':'block'}input.addEventListener('input',filter);window.addEventListener('hashchange',()=>{if(location.hash&&document.querySelector(location.hash)?.classList.contains('hide-search')){input.value='';filter()}})})();
+</script>
+
+<script id="wz-bilgi-active-navigation-script">
+(()=>{'use strict';
+  const sections=[...document.querySelectorAll('.guide-section[id]')];
+  const navLinks=[...document.querySelectorAll('.hero > .heroBtns a[href^="#"],.topicNav a[href^="#"]')];
+  const header=document.querySelector('header.top');
+  let scheduled=false;
+  function paint(){
+    scheduled=false;
+    const threshold=Math.max((header?header.getBoundingClientRect().height:72)+64, innerWidth<=760?160:110);
+    let active=null;
+    for(const section of sections){
+      if(section.classList.contains('hide-search'))continue;
+      const rect=section.getBoundingClientRect();
+      if(rect.top<=threshold && rect.bottom>threshold){active=section;break;}
+    }
+    const activeHash=active?'#'+active.id:'';
+    for(const link of navLinks){
+      const chosen=!!activeHash && link.getAttribute('href')===activeHash;
+      link.classList.toggle('wz-active',chosen);
+      if(chosen) link.setAttribute('aria-current','location');
+      else link.removeAttribute('aria-current');
+    }
+    for(const section of sections)section.classList.toggle('wz-active-section',section===active);
+  }
+  function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(paint);}
+  addEventListener('scroll',schedule,{passive:true});
+  addEventListener('resize',schedule);
+  addEventListener('hashchange',()=>{schedule();setTimeout(schedule,250);setTimeout(schedule,650);});
+  const search=document.getElementById('guideSearch');
+  if(search)search.addEventListener('input',schedule);
+  addEventListener('load',()=>{schedule();setTimeout(schedule,150);});
+  schedule();
+})();
 </script>
 </body>
 </html>
