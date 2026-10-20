@@ -422,15 +422,6 @@ main{width:min(1200px,100%)!important;max-width:1200px!important;margin-inline:a
 @media(max-width:550px){.wz30652-rules{font-size:17px!important;max-height:48dvh!important;padding:14px!important}.wz3135-saved-proofs a{font-size:14px}}
 </style>
 <style id="wz3143-score-flow-style">.wz3143-code{padding:17px!important;background:linear-gradient(145deg,#101f31,#122839)!important;border:2px solid #22a6cb!important;text-align:center;font-weight:800;letter-spacing:.05em}.wz3143-code strong{display:block;font-size:clamp(24px,5vw,38px);letter-spacing:.14em;overflow-wrap:anywhere;margin:10px 0;color:#eefbff}.wz3143-code p{font-size:14px;letter-spacing:0;font-weight:500}</style>
-<style id="wz-v3175-sticky-header">
-/* V31.0.75: Keep the Arena brand header in view while scrolling.
-   Intentional full-screen match mode continues to hide its header. */
-header.wz-market-header {
-  position: sticky;
-  top: 0;
-  z-index: 30;
-}
-</style>
 </head>
 <body>
 <header class="wz-market-header"><div class="top">
@@ -1650,3 +1641,31 @@ if(!tid||tid.length>120||!/^[a-zA-Z0-9_:-]+$/.test(tid)){
 </script>
 </body>
 </html>
+<script id="wz81BlockButtons">
+(function(){'use strict';
+const API='https://weizend-botrix.weizendtv.workers.dev';
+const KEY='weizend_market_session_secure_v2';
+let blocked=false, reason='', lastToken='', old=new WeakMap();
+const isAction=t=>/^(katıl|başvur|başvuru yap|oyuncu ara|takım ara|takım oluştur|takım kur|kayıt ol|kayıt yaptır|lobi kur|lobi oluştur|lobiye katıl|takıma katıl|katılımı tamamla|ücretsiz katıl|bilet kullan|bilet ekle|satın al|hemen al|maçı başlat|lobiyi aç|lobiye katıldım|hazır(?:ım)?|skor gönder|onayla)$/i.test(t.trim().replace(/\s+/g,' ')) || /^(katıl|başvur|lobi kur|lobi oluştur|satın al|kayıt ol|turnuvaya katıl)\b/i.test(t.trim());
+function paint(){
+ const noticeId='wz81BlockNotice'; let notice=document.getElementById(noticeId);
+ if(blocked){if(!notice){notice=document.createElement('div');notice.id=noticeId;notice.setAttribute('role','status');notice.style.cssText='position:fixed;bottom:15px;left:15px;right:15px;max-width:440px;z-index:2147483000;border:1px solid #dd4e5b;border-radius:12px;padding:12px;background:#270e15;color:#fff;box-shadow:0 0 20px #9b122655;font:600 13px system-ui';document.body.appendChild(notice);}notice.textContent='🔒 CEZALISIN — '+(reason||'Yeni işlemlere katılamazsın.');}
+ else if(notice)notice.remove();
+ for(const b of document.querySelectorAll('button')){
+  if(blocked){if(!old.has(b) && !b.disabled && isAction(b.textContent||'')){
+    old.set(b,{html:b.innerHTML});b.textContent='🔒 CEZALISIN';b.disabled=true;b.setAttribute('aria-disabled','true');
+  }}else if(old.has(b)){const x=old.get(b);b.innerHTML=x.html;b.disabled=false;b.removeAttribute('aria-disabled');old.delete(b);}
+ }
+}
+async function readStatus(){
+ let token='';try{token=localStorage.getItem(KEY)||'';}catch(_){}
+ if(!token){blocked=false;lastToken='';paint();return;}
+ try{const r=await fetch(API+'/profile',{headers:{Authorization:'Bearer '+token,Accept:'application/json'},cache:'no-store'});
+ if(!r.ok)return;const d=await r.json();if((localStorage.getItem(KEY)||'')!==token)return;
+ blocked=String(d.accountStatus||'').toLowerCase()==='blocked';reason=String(d.blockedReason||'').slice(0,160);lastToken=token;paint();
+ }catch(_){} // Worker authorization remains authoritative if network fails
+}
+function start(){readStatus();setInterval(readStatus,30000);setInterval(()=>{if(blocked)paint()},5000);}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();
+</script>
