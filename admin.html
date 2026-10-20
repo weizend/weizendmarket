@@ -2683,8 +2683,9 @@ body:has(#adminNewMessageModal:not(.hidden)){
   <div style="margin-top:14px">
     <label class="title" for="pShareSlug">🔗 Paylaşım Bağlantısı Adı (isteğe bağlı)</label>
     <input id="pShareSlug" type="text" maxlength="60" inputmode="url" autocomplete="off" spellcheck="false"
-      placeholder="Örn: valorant-375-vp">
-    <div class="muted" style="margin-top:6px">Boş bırakılırsa otomatik sistem kodu kullanılır. Bu alanı değiştirmen ürün ID'sini veya önceki siparişleri değiştirmez. Yalnızca küçük harf, sayı ve tire kullan.</div>
+      oninput="wz86PreviewProductShareUrl()" placeholder="Örn: valorant-375-vp">
+    <div class="muted" style="margin-top:6px">Mevcut paylaşım bağlantısı adı düzenleme sırasında burada gösterilir. Boş bırakırsan sistem ürün kodu kullanılır. Siparişlere bağlı değişmeyen sistem ürün kodu yukarıdadır. Küçük harf, rakam ve tire kullan.</div>
+    <div class="muted" style="margin-top:8px;overflow-wrap:anywhere">Paylaşım adresi: <strong id="wz86ShareUrl" style="color:#ffb3b3">Ürün adını girince oluşacak</strong></div>
   </div>
 </div>
 
@@ -4607,6 +4608,15 @@ function createProductId(name){
   return result;
 }
 
+function wz86PreviewProductShareUrl(){
+  const el=document.getElementById('wz86ShareUrl');
+  if(!el)return;
+  const typed=String(document.getElementById('pShareSlug')?.value||'').trim().toLowerCase();
+  const immutable=String(document.getElementById('pId')?.value||'').trim().toLowerCase();
+  const slug=typed||immutable;
+  el.textContent=slug ? 'https://www.weizend.com/urun/'+slug : 'Ürün adını girince oluşacak';
+}
+
 function previewProductCode(){
   const name =
     document.getElementById('pName').value;
@@ -4621,6 +4631,7 @@ function previewProductCode(){
     'productCodePreview'
   ).innerText =
     id || 'otomatik oluşturulacak';
+  wz86PreviewProductShareUrl();
 }
 
 function paymentStatusText(status){
@@ -5935,6 +5946,7 @@ document.getElementById(
   'productCodePreview'
 ).innerText =
   'otomatik oluşturulacak';
+  wz86PreviewProductShareUrl();
   document.getElementById('pName').value = '';
   document.getElementById('pCategory').value = '';
   document.getElementById('pPaymentType').value = 'points';
@@ -5980,11 +5992,13 @@ function editProduct(encodedId){
       'Değişiklikleri Kaydet';
 
   document.getElementById('pId').value = p.id;
-  document.getElementById('pShareSlug').value = p.metadata?.shareSlug || '';
+  // The generated product ID is also the default share slug; show it when editing.
+  document.getElementById('pShareSlug').value = p.metadata?.shareSlug || p.id;
 
 document.getElementById(
   'productCodePreview'
 ).innerText = p.id;
+  wz86PreviewProductShareUrl();
 
   document.getElementById('pName').value = p.name || '';
   document.getElementById('pCategory').value = p.category || '';
