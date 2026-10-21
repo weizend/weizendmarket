@@ -2586,6 +2586,9 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
         @media(max-width:750px){#section-giveaways .wzgc-action-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#section-giveaways .wzgc-action-grid button:last-child{grid-column:1/-1}#section-giveaways .wzgc-action-grid button{min-height:47px}}
         @media(max-width:600px){#section-giveaways .wzgc-picker label{flex:0 0 auto!important;width:100%!important}}
 
+        /* V31.1.08: Loading failures shown beside the chooser; no infinite loading placeholder. */
+        #section-giveaways #wzgcLoadFeedback:not([hidden]){display:block;background:#2a1720;border:1px solid #aa5867;border-radius:10px;color:#ffbec8;padding:10px 12px;margin:8px 0 12px;overflow-wrap:anywhere;line-height:1.5}
+        #section-giveaways #wzgcLoadFeedback[data-state="loading"]{background:#211c15;color:#fff0ba;border-color:#887344}
         /* V31.1.07: Compact, template-first, two-state draw manager. */
         #section-giveaways .wzgc-template-choose{grid-column:1/-1;display:block;background:#1b1016;border:1px solid #923443;border-radius:12px;padding:12px;min-width:0}
         #section-giveaways .wzgc-template-choose>label{display:block;font-weight:900;color:#ffdce3;margin-bottom:8px}
@@ -2612,6 +2615,7 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
           <button type="button" onclick="wzgcNewDraft()">➕ Yeni Çekiliş</button>
         </div>
         <p id="wzgcSelectedInfo" class="muted" role="status">Çekilişler ve taslaklar yükleniyor…</p>
+        <p id="wzgcLoadFeedback" class="muted" role="status" aria-live="polite" hidden></p>
         <div id="wzgcDirectActions" class="wzgc-direct-actions" hidden aria-label="Seçili çekiliş işlemleri">
           <div class="wzgc-actions-caption">⚙️ SEÇİLİ ÇEKİLİŞİN YÖNETİMİ</div>
           <div class="wzgc-action-grid" role="group" aria-label="Çekiliş işlemleri">
@@ -13837,12 +13841,14 @@ async function wzg2AdminRefresh(){
   if(!(d.entries||[]).some(e=>e.giveaway_id===selectedId))nextEntries.append(document.createTextNode('Bu çekiliş için bu filtrede katılımcı yok.'));
   if(serial!==wzg78Serial)return false;
   campaigns.replaceChildren(nextCampaigns);entries.replaceChildren(nextEntries);
+  if(typeof wzgcLoadIssue==='function')wzgcLoadIssue('campaign','');
   wzg78ShowPage(d.entryPagination,d.campaigns||[]);
   return true;
  }catch(e){
   if(serial===wzg78Serial){
    const message=String(e?.message||e||'Bilinmeyen hata');
    status.textContent='❌ Liste güncellenemedi; son bilgiler korunuyor: '+message;
+   if(typeof wzgcLoadIssue==='function')wzgcLoadIssue('campaign','Çekilişler: '+message);
    if(countLabel){countLabel.textContent='❌ Katılımcılar alınamadı: '+message+' — Yukarıdaki yenile düğmesiyle tekrar dene.';countLabel.style.color='#ff9b9b'}
    console.error('WEIZEND V31.0.79 çekiliş katılımcı listesi',e);
   }
@@ -14196,7 +14202,7 @@ wzg2OpenReel=async function(id,title){wzg66Make();wzg66$('wzg66Start').hidden=fa
 
 </script>
 
-<script id="wzgc31104-admin-center">
+<script id="wzgc31108-admin-center">
 /* V31.1.04 | Dedicated giveaway control center; all records stay server-side. */
 let wzgcTemplatesCache=[];
 let wzgcToolbarCampaign=null;
@@ -14284,21 +14290,64 @@ let wzgcSelectedDraftId='';
 let wzgcLastCampaigns=[];
 let wzgcLoadingPromise=null;
 let wzgcLoaded=false;
+// Display each failed API step at the TOP of the center, not only inside a folded legacy section.
+let wzgcLoadErrors={};
+function wzgcLoadFeedback(){
+ const el=document.getElementById('wzgcLoadFeedback');if(!el)return;
+ const errors=Object.values(wzgcLoadErrors).filter(Boolean);
+ el.hidden=!errors.length;
+ if(errors.length){el.dataset.state='error';el.textContent='⚠️ '+errors.join(' • ')+' — Oturum açıksa Yenile butonunu kullan. Sorun sürerse bu hata metnini paylaş.'}
+ else{el.removeAttribute('data-state');el.textContent=''}
+}
+function wzgcLoadIssue(key,message){
+ if(message)wzgcLoadErrors[key]=String(message).slice(0,240);
+ else delete wzgcLoadErrors[key];
+ wzgcLoadFeedback();
+}
 async function wzgcEnsureLoaded(force=false){
  if(wzgcLoadingPromise)return wzgcLoadingPromise;
  if(wzgcLoaded&&!force)return true;
  wzgcLoadingPromise=(async()=>{
-  // Drafts MUST precede campaign list so the first chooser contains both types.
-  const a=await wzgLoad();
-  const [b,c]=await Promise.all([wzg2AdminRefresh(),wzgcLoadTemplates()]);
-  wzgcLoaded=a!==false&&b!==false&&c!==false;
-  return wzgcLoaded;
+  wzgcLoadErrors={};wzgcLoadFeedback();
+  const info=document.getElementById('wzgcSelectedInfo');
+  if(info&&!document.getElementById('wzgcCampaign')?.value)info.textContent='⏳ Çekilişler, taslaklar ve şablonlar yükleniyor (sunucu yanıtı bekleniyor)…';
+  // Run independently: a slow draft/template endpoint must never block the campaign request.
+  const results=await Promise.allSettled([wzgLoad(),wzg2AdminRefresh(),wzgcLoadTemplates()]);
+  const ok=results.map(x=>x.status==='fulfilled'&&x.value===true);
+  for(let i=0;i<3;i++)if(!ok[i]){
+   const what=['Taslaklar','Çekilişler','Şablonlar'][i];
+   const reason=results[i].status==='rejected'?String(results[i].reason?.message||results[i].reason):'Sunucu yanıtı başarısız (ayrıntı aşağıdaki bölümde olabilir)';
+   if(!wzgcLoadErrors[['draft','campaign','template'][i]])wzgcLoadIssue(['draft','campaign','template'][i],what+': '+reason);
+  }
+  // Include newly fetched drafts even when the campaign request failed.
+  if(ok[0]||ok[1]){
+   const changed=wzgcSyncCampaigns(ok[1]?wzgcLastCampaigns:[]);
+   if(changed&&ok[1]&&wzg78State.campaignId){
+    // Requery only if the selection changed AFTER the live fetch (for example, new draft data arrived).
+    const refresh=await wzg2AdminRefresh();
+    if(refresh!==true)wzgcLoadIssue('campaign','Çekiliş katılımcıları seçildikten sonra yüklenemedi.');
+   }
+   const picker=document.getElementById('wzgcCampaign');
+   if(info&&(!picker||!picker.value)&&!ok[1])info.textContent='⚠️ Canlı çekilişler alınamadı; kayıtları silmeden Yenile ile tekrar dene.';
+  }else{
+   const picker=document.getElementById('wzgcCampaign');
+   if(picker){const option=document.createElement('option');option.value='';option.textContent='⚠️ Liste alınamadı — Yenile';picker.replaceChildren(option)}
+   if(info)info.textContent='⚠️ Çekilişler yüklenemedi; veriler silinmedi.';
+  }
+  // Avoid scroll-triggered request storms on unavailable APIs. Manual refresh and tab reentry retry.
+  wzgcLoaded=true;
+  return ok[0]&&ok[1]&&ok[2];
  })();
- try{return await wzgcLoadingPromise}finally{wzgcLoadingPromise=null}
+ try{return await wzgcLoadingPromise}
+ catch(error){
+   wzgcLoadIssue('unexpected','Yükleme hatası: '+String(error?.message||error));
+   const info=document.getElementById('wzgcSelectedInfo');if(info&&!document.getElementById('wzgcCampaign')?.value)info.textContent='⚠️ Yükleme başarısız; Yenile ile tekrar dene.';
+   wzgcLoaded=true;return false;
+ }finally{wzgcLoadingPromise=null}
 }
 async function wzgcRefreshAll(){
  const ok=await wzgcEnsureLoaded(true);
- if(!ok)wzgMessage('⚠️ Bazı kayıtlar alınamadı. Oturumu ve internet bağlantısını kontrol et.');
+ if(!ok)wzgMessage('⚠️ Bazı kayıtlar alınamadı. Yukarıdaki hata mesajını kontrol et.');
 }
 // First visible visit and restored admin tabs refresh themselves without a manual button.
 function wzgcAutoVisibleInit(){
