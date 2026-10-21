@@ -13379,8 +13379,18 @@ async function wz41SendReferee(){
 updatePriceFields();
 updateStockField();
 
-if(token()){
-  openAdmin();
+// V31.1.09: Saved session auto-login MUST run after the entire HTML has parsed.
+// Opening the saved Giveaways tab here used to call wzgcEnsureLoaded() before its
+// later inline script existed. The resulting ReferenceError aborted this
+// script and left wzgPending / wzg78Wired in the temporal dead zone.
+function wz31109RestoreAdminAfterLoad(){
+  if(token()) openAdmin();
+}
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', wz31109RestoreAdminAfterLoad, {once:true});
+}else{
+  // Still wait one task if this script is dynamically injected by a host.
+  window.addEventListener('load', wz31109RestoreAdminAfterLoad, {once:true});
 }
 
 window.addEventListener('beforeunload', () => {
@@ -13524,7 +13534,7 @@ async function wzgLoad(){
     const showArchived=!!document.getElementById('wzgShowArchived')?.checked;
     const visible=wzgCache.filter(b=>!Number(b.published)&&(b.status==='draft'||(showArchived&&b.status==='archived')));
     el.innerHTML='';
-    if(!visible.length){el.textContent=showArchived?'Silinebilen arşiv veya taslak yok. Yayımlanmış çekilişlere bağlı arşivler burada gizlenir.':'Aktif taslak yok. Arşivlenenleri görmek için kutuyu işaretle.';return;}
+    if(!visible.length){el.textContent=showArchived?'Silinebilen arşiv veya taslak yok. Yayımlanmış çekilişlere bağlı arşivler burada gizlenir.':'Aktif taslak yok. Arşivlenenleri görmek için kutuyu işaretle.';return true;}
     for(const b of visible){
       const row=document.createElement('div');row.className='wzg-item';
       const h=document.createElement('h3');h.textContent=b.title+' — '+b.prize_title;row.append(h);
@@ -14202,7 +14212,7 @@ wzg2OpenReel=async function(id,title){wzg66Make();wzg66$('wzg66Start').hidden=fa
 
 </script>
 
-<script id="wzgc31108-admin-center">
+<script id="wzgc31109-admin-center">
 /* V31.1.04 | Dedicated giveaway control center; all records stay server-side. */
 let wzgcTemplatesCache=[];
 let wzgcToolbarCampaign=null;
