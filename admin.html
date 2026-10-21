@@ -2573,6 +2573,19 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
         body:has(#wzg2ReelOverlay:not([hidden])){overflow:hidden!important;overscroll-behavior:none!important}
         @media(max-width:600px){#section-giveaways .wzgc-picker{flex-direction:column;align-items:stretch}#section-giveaways .wzgc-picker button{width:100%!important}#section-giveaways .wzg-row{gap:8px}}
 
+        /* V31.1.06: Turnuva merkezi gibi tek seçime bağlı açık eylem çubuğu. */
+        #section-giveaways .wzgc-direct-actions{border-top:1px solid #64313a;margin-top:15px;padding-top:15px}
+        #section-giveaways .wzgc-direct-actions[hidden]{display:none!important}
+        #section-giveaways .wzgc-actions-caption{color:#ffc0cc;font-size:13px;font-weight:900;letter-spacing:.6px;margin-bottom:10px}
+        #section-giveaways .wzgc-action-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+        #section-giveaways .wzgc-action-grid button{width:100%!important;min-width:0!important;min-height:49px;margin:0!important;padding:10px 8px!important;white-space:normal;line-height:1.25;font-size:13px;font-weight:850;overflow-wrap:anywhere;border-radius:10px}
+        #section-giveaways .wzgc-action-grid button:disabled{opacity:.43!important;cursor:not-allowed;filter:none}
+        #section-giveaways .wzgc-delete-action:not(:disabled){border-color:#9c3545!important;color:#ffb5bf!important;background:#36141b!important}
+        #section-giveaways .wzgc-action-note{font-size:12px;color:#bbaeb4;margin:10px 0 8px;line-height:1.45}
+        #section-giveaways .wzgc-library-open{width:auto!important;min-width:0!important;padding:8px 12px!important;margin:0!important;font-size:12px!important;color:#edc9d0!important}
+        @media(max-width:750px){#section-giveaways .wzgc-action-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#section-giveaways .wzgc-action-grid button:last-child{grid-column:1/-1}#section-giveaways .wzgc-action-grid button{min-height:47px}}
+        @media(max-width:600px){#section-giveaways .wzgc-picker label{flex:0 0 auto!important;width:100%!important}}
+
         @media(max-width:690px){#section-giveaways .wzg-grid,#section-giveaways .wzg-options{grid-template-columns:1fr}}
       </style>
       <div class="card wzgc-center">
@@ -2586,6 +2599,18 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
           <button type="button" onclick="wzgcNewDraft()">➕ Yeni Çekiliş</button>
         </div>
         <p id="wzgcSelectedInfo" class="muted" role="status">Yayınlanan çekilişler yükleniyor…</p>
+        <div id="wzgcDirectActions" class="wzgc-direct-actions" hidden aria-label="Seçili çekiliş işlemleri">
+          <div class="wzgc-actions-caption">⚙️ SEÇİLİ ÇEKİLİŞİN YÖNETİMİ</div>
+          <div class="wzgc-action-grid" role="group" aria-label="Çekiliş işlemleri">
+            <button type="button" id="wzgcActStart" onclick="wzgcToolbarAction('start')">🎬 Başlat / Kura</button>
+            <button type="button" id="wzgcActEdit" class="secondary" onclick="wzgcToolbarAction('edit')">✏️ Düzenle</button>
+            <button type="button" id="wzgcActRoster" class="secondary" onclick="wzgcToolbarAction('roster')">👥 Katılımcılar</button>
+            <button type="button" id="wzgcActTemplate" class="secondary" onclick="wzgcToolbarAction('template')">📋 Şablona Ekle</button>
+            <button type="button" id="wzgcActDelete" class="secondary wzgc-delete-action" onclick="wzgcToolbarAction('delete')">🗑️ Sil</button>
+          </div>
+          <p id="wzgcActionNote" class="wzgc-action-note" role="status"></p>
+          <button type="button" class="secondary wzgc-library-open" onclick="wzgcManageTemplates()">🗂️ Kayıtlı şablonları görüntüle / sil</button>
+        </div>
       </div>
       <details id="wzgcCreatePanel" class="wzgc-fold">
         <summary>➕ Yeni Çekiliş / Taslak Oluştur • Şablonlardan Başla</summary>
@@ -13723,6 +13748,7 @@ async function wzg2AdminRefresh(){
   }
   const selectedId=wzg78State.campaignId;
   const selectedCampaign=(d.campaigns||[]).find(c=>c.id===selectedId);
+  wzgcUpdateToolbar(selectedCampaign||null);
   const livePanel=document.getElementById('wzgcLivePanel');
   if(livePanel)livePanel.hidden=!selectedCampaign;
   const nextCampaigns=document.createDocumentFragment(),nextEntries=document.createDocumentFragment();
@@ -13737,8 +13763,6 @@ async function wzg2AdminRefresh(){
     const label=scheduled?'📅 YAKINDA':c.status==='active'?'🔴 KATILIMA AÇIK':c.status==='closed'?'⏱️ KAPANDI':c.status==='drawing'?'🎥 KURA DEVAM EDİYOR':c.status==='drawn'?'🏆 SONUÇLANDI':c.status==='cancelled'?'⛔ İPTAL':'—';
     p.textContent=label+' • Başlangıç: '+wzg69Date(c.start_at)+' • Bitiş: '+wzg69Date(c.end_at)+' • Kazanan: '+c.winners_count+' • Kapak: '+(c.image_url?'Var':'Yok')+' • Eski bekleyen: '+Number(c.legacy_pending_count||0)+' • Reddedilmiş: '+Number(c.disqualified_count||0);item.append(p);
     const action=document.createElement('div');action.className='wzg-row';
-    const actionHeading=document.createElement('h4');actionHeading.textContent='⚙️ Başlat / Kura Yönetimi • Düzenle • Katılımcılar • Şablon • Sil';
-    actionHeading.style.cssText='width:100%;margin:8px 0 0;color:#ffcad2;font-size:13px';action.append(actionHeading);
     if(Number(c.legacy_pending_count||0)>0&&['active','closed'].includes(c.status)){
       const legacy=document.createElement('button');legacy.type='button';legacy.className='secondary';
       legacy.textContent='✅ '+Number(c.legacy_pending_count)+' eski bekleyeni topluca kabul et';
@@ -13750,45 +13774,19 @@ async function wzg2AdminRefresh(){
         catch(e){alert('❌ '+e.message)}
       };action.append(legacy);
     }
-    if(c.status==='active'&&!scheduled&&Date.parse(c.end_at)>Date.now()){
-      const early=document.createElement('button');early.type='button';early.textContent='🎬 Kurayı Şimdi Başlat';early.title='Katılımı ve bilet kullanımlarını erken kapatır, normal güvenli kura ekranını açar.';
-      early.onclick=()=>wzg69StartDrawEarly(c);action.append(early);
-    }
-    if(scheduled){
-      const nowBtn=document.createElement('button');nowBtn.textContent='🚀 Şimdi Başlat';
-      nowBtn.onclick=()=>{if(confirm('Bu çekilişi planlanan başlangıç tarihini beklemeden hemen başlatmak istiyor musun?'))wzg2AdminAction('/admin/giveaway/start-now',{id:c.id,confirmation:'SIMDI_BASLAT'})};action.append(nowBtn);
-    }
-    if(c.status==='active'&&Date.parse(c.end_at)>Date.now()){
-      const edit=document.createElement('button');edit.type='button';edit.textContent='✏️ Düzenle';
-      edit.onclick=()=>wzg2OpenLiveEdit(c);action.append(edit);
-    }
-    if(c.status!=='cancelled'){
-      const roster=document.createElement('button');roster.className='secondary';roster.textContent='👥 Katılımcılar';
-      roster.onclick=()=>wzg66RosterPreview(c.id,c.title);action.append(roster);
-    }
-    const template=document.createElement('button');template.type='button';template.className='secondary';template.textContent='📋 Şablona Ekle';
-    template.onclick=()=>wzgcSaveTemplate('campaign',c.id,c.title);action.append(template);
-    if(['closed','drawing'].includes(c.status)){
-      const b=document.createElement('button');b.textContent='🎥 Canlı Kura · Katılımcı Listesi';
-      b.onclick=()=>wzg2OpenReel(c.id,c.title);action.append(b);
-    }
     if(['active','closed'].includes(c.status)){
       const b=document.createElement('button');b.textContent='🖼️ Kapak görselini değiştir';b.className='secondary';
       b.onclick=async()=>{const imageUrl=prompt('Yeni HTTPS kapak görseli bağlantısı (boş = kaldır):',c.image_url||'');if(imageUrl===null)return;await wzg2AdminAction('/admin/giveaway/cover',{id:c.id,imageUrl:imageUrl.trim()})};action.append(b);
     }
-    if(['active','closed'].includes(c.status)){
-      const cancel=document.createElement('button');cancel.className='secondary';cancel.textContent='🗑️ Sil / İptal et (biletleri iade et)';
-      cancel.onclick=()=>{if(confirm('Çekiliş iptal edilecek ve ayrılan biletler yeniden kullanılabilir olacak. Emin misin?'))wzg2AdminAction('/admin/giveaway/cancel',{id:c.id})};action.append(cancel);
-    }
-    if(c.status==='cancelled'){
-      const remove=document.createElement('button');remove.type='button';remove.className='secondary';remove.textContent='🗑️ Listeden Kaldır (kayıtlar saklanır)';
-      remove.onclick=()=>wzg69HideCancelled(c);action.append(remove);
-    }else if(c.status==='drawn'){
-      const winnersButton=document.createElement('button');winnersButton.type='button';winnersButton.className='secondary';winnersButton.textContent='🏆 Kazananlar / Kura Sonuçları';
-      winnersButton.onclick=()=>wzg2OpenReel(c.id,c.title);action.append(winnersButton);
+    if(c.status==='drawn'){
       const note=document.createElement('span');note.className='muted';note.textContent='🏆 Sonuçlanan çekilişin kazananları ve kayıtları güvenlik nedeniyle silinmez.';action.append(note);
     }
-    item.append(action);nextCampaigns.append(item);
+    if(action.childElementCount){
+      const more=document.createElement('details');more.className='wzgc-fold';
+      const summary=document.createElement('summary');summary.textContent='⚙️ Gelişmiş / ek işlemler';
+      more.append(summary,action);item.append(more);
+    }
+    nextCampaigns.append(item);
   }
   if(!selectedCampaign)nextCampaigns.append(document.createTextNode('Yönetmek için çekiliş seç.'));
   for(const e of (d.entries||[]).filter(e=>e.giveaway_id===selectedId)){
@@ -14181,6 +14179,67 @@ wzg2OpenReel=async function(id,title){wzg66Make();wzg66$('wzg66Start').hidden=fa
 <script id="wzgc31104-admin-center">
 /* V31.1.04 | Dedicated giveaway control center; all records stay server-side. */
 let wzgcTemplatesCache=[];
+let wzgcToolbarCampaign=null;
+function wzgcUpdateToolbar(c){
+ const bar=document.getElementById('wzgcDirectActions');if(!bar)return;
+ // Never retain a previous campaign while a different one is loading.
+ wzgcToolbarCampaign=c&&c.id===wzg78State.campaignId?{...c}:null;
+ bar.hidden=!wzgcToolbarCampaign;
+ if(!wzgcToolbarCampaign)return;
+ const selected=wzgcToolbarCampaign,now=Date.now();
+ const start=Date.parse(selected.start_at),end=Date.parse(selected.end_at);
+ const future=selected.status==='active'&&start>now;
+ const running=selected.status==='active'&&start<=now&&end>now;
+ const finished=selected.status==='drawn';
+ const startBtn=document.getElementById('wzgcActStart');
+ startBtn.textContent=future?'🚀 Şimdi Başlat':running?'🎬 Kurayı Başlat':finished?'🏆 Kura Sonuçları':'🎥 Kura Yönetimi';
+ startBtn.disabled=selected.status==='cancelled';
+ startBtn.title=future?'Planlanan tarihten önce açmak için ayrıca onay gerekir.':running?'Katılımı erken kapatır; iki kez onay ister.':finished?'Kazananları ve kura geçmişini gösterir.':'Kura ekranını açar.';
+ const edit=document.getElementById('wzgcActEdit');
+ edit.disabled=!(selected.status==='active'&&end>now);
+ edit.title=edit.disabled?'Yalnızca bitmemiş, yayımlanmış çekiliş düzenlenebilir.':'Bu çekilişin bilgilerini ve tarihlerini düzenle.';
+ const roster=document.getElementById('wzgcActRoster');
+ roster.disabled=selected.status==='cancelled';
+ roster.title=roster.disabled?'İptal edilen çekiliş için katılımcı yönetimi kapalı.':'Sadece seçilen çekilişin katılımcılarını göster.';
+ document.getElementById('wzgcActTemplate').disabled=false;
+ const del=document.getElementById('wzgcActDelete');
+ del.disabled=!['active','closed','cancelled'].includes(selected.status);
+ del.title=selected.status==='cancelled'?'İptal edilmiş çekilişi yönetim listesinden kaldır; denetim kayıtları saklanır.':del.disabled?'Kura başlamış veya sonuçlanmış çekiliş güvenlik nedeniyle silinemez.':'Çekilişi iptal ederek ayrılmış biletleri geri ver; geri alınamaz.';
+ const note=document.getElementById('wzgcActionNote');
+ note.textContent=future?'📅 Planlanan başlangıca kadar kayıtlar kapalı. “Şimdi Başlat” yalnızca onaylarsan erken açar.':running?'🟢 Katılımlar açık. Kurayı erken başlatmak katılımları kapatır.':finished?'🏆 Sonuç ve katılımcı kayıtları saklanır; silme kapalı.':selected.status==='cancelled'?'⛔ Çekiliş iptal edilmiş; sadece geçmişi listeden gizleyebilirsin.':'🔒 Katılım kapalı; kura yönetimi ve kazananlar bu çekilişe özeldir.';
+}
+function wzgcToolbarAction(action){
+ const c=wzgcToolbarCampaign;
+ if(!c||c.id!==wzg78State.campaignId)return alert('Önce yönetmek istediğin çekilişi seçip yüklenmesini bekle.');
+ const now=Date.now(),start=Date.parse(c.start_at),end=Date.parse(c.end_at);
+ if(action==='start'){
+   if(c.status==='cancelled')return;
+   if(c.status==='active'&&start>now){
+     if(confirm('“'+c.title+'” çekilişini planlanan başlangıcı beklemeden ŞİMDİ başlatmak istiyor musun?'))
+       wzg2AdminAction('/admin/giveaway/start-now',{id:c.id,confirmation:'SIMDI_BASLAT'});
+   }else if(c.status==='active'&&end>now){wzg69StartDrawEarly(c)}
+   else wzg2OpenReel(c.id,c.title);
+ }else if(action==='edit'){
+   if(c.status!=='active'||end<=now)return;
+   wzg2OpenLiveEdit(c);
+ }else if(action==='roster'){
+   if(c.status!=='cancelled')wzg66RosterPreview(c.id,c.title);
+ }else if(action==='template'){
+   wzgcSaveTemplate('campaign',c.id,c.title);
+ }else if(action==='delete'){
+   if(['active','closed'].includes(c.status)){
+     if(confirm('“'+c.title+'” çekilişi İPTAL EDİLSİN mi? Ayrılan biletler iade edilecek. Bu işlem şablonları silmez.'))
+       wzg2AdminAction('/admin/giveaway/cancel',{id:c.id});
+   }else if(c.status==='cancelled')wzg69HideCancelled(c);
+ }
+}
+function wzgcManageTemplates(){
+ const panel=document.getElementById('wzgcCreatePanel');if(!panel)return;
+ panel.open=true;
+ const box=panel.querySelector('.wzgc-template-box');
+ (box||panel).scrollIntoView({behavior:'smooth',block:'start'});
+ wzgcLoadTemplates();
+}
 function wzgcSyncCampaigns(campaigns){
  const picker=document.getElementById('wzgcCampaign');if(!picker)return false;
  const previously=wzg78State.campaignId;
@@ -14197,6 +14256,7 @@ function wzgcSyncCampaigns(campaigns){
  picker.replaceChildren(list);
  const candidate=ordered.find(c=>c.id===previously)||ordered[0];
  const nextId=candidate?.id||'';
+ if(nextId!==previously)wzgcUpdateToolbar(null);
  picker.value=nextId;
  wzg78State.campaignId=nextId;
  const info=document.getElementById('wzgcSelectedInfo');
@@ -14210,6 +14270,9 @@ function wzgcSelect(id){
  if(wzg66?.busy||wzg66?.spinning){picker.value=wzg78State.campaignId;return alert('Aktif kura işlemi bitmeden çekiliş değiştirme.');}
  if(typeof wzg2CloseLiveEdit==='function')wzg2CloseLiveEdit();
  wzg78State.campaignId=id;wzg78State.page=1;
+ wzgcUpdateToolbar(null);
+ const selectedInfo=document.getElementById('wzgcSelectedInfo');
+ if(selectedInfo)selectedInfo.textContent='⏳ Seçilen çekilişin işlemleri yükleniyor…';
  const panel=document.getElementById('wzgcLivePanel');if(panel)panel.hidden=!id;
  document.getElementById('wzg2Campaigns')?.replaceChildren();
  document.getElementById('wzg2Entries')?.replaceChildren();
