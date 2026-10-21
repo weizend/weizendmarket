@@ -2380,7 +2380,7 @@ body:has(#adminNewMessageModal:not(.hidden)){
 .wz45-list-window.wz45-is-scrollable:focus-visible {outline:2px solid #e62828;outline-offset:2px;}
 @media(max-width:650px){.wz45-list-window.wz45-is-scrollable {max-height:min(var(--wz45-measured-height, 500px), 70vh, 700px)!important;}}
 </style>
-<style id="wzg66RosterScroll">#wzg2Entries{max-height:750px;overflow-y:auto;overscroll-behavior:contain}#wzg2Entries .wzg-item{min-height:52px}</style><style id="wzg78PaginationStyles">
+<style id="wzg66RosterScroll">#wzg2Entries{max-height:none!important;overflow-y:visible!important;overscroll-behavior-y:auto!important}#wzg2Entries .wzg-item{min-height:52px}</style><style id="wzg78PaginationStyles">
 /* V31.0.78 — Katılımcılar artık veritabanında sayfalanır. */
 .wzg78-panel{margin:15px 0 10px;border:1px solid #34343a;border-radius:13px;background:#101013;padding:15px}
 .wzg78-panel h3{margin:0 0 12px;font-size:1rem}
@@ -2393,6 +2393,20 @@ body:has(#adminNewMessageModal:not(.hidden)){
 .wzg78-pager b{white-space:nowrap;font-variant-numeric:tabular-nums}
 @media(max-width:900px){.wzg78-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.wzg78-filters{grid-template-columns:1fr}.wzg78-foot{align-items:stretch;flex-direction:column}.wzg78-pager{justify-content:space-between}}
+</style>
+<style id="wz100-admin-scroll-policy">
+/* V31.1.00 Scroll rules: nonmodal lists hand scroll back to the document at their ends. */
+html,body{overscroll-behavior-y:auto}
+#section-giveaways #wzg2Entries{max-height:none!important;height:auto!important;overflow:visible!important;overscroll-behavior-y:auto!important;touch-action:pan-y!important}
+#section-giveaways #wzg2Entries.wz45-is-scrollable{max-height:none!important;overflow-y:visible!important}
+/* Existing admin scroll windows remain scrollable, but never trap the page at an edge. */
+.wz45-list-window.wz45-is-scrollable,.wzg-list,#wzg66Roster,#pastTournamentList{overscroll-behavior-y:auto!important}
+/* For actual dialogs the outer page stays fixed, the dialog itself scrolls. */
+.wz-v54-admin-overlay,#wzg66Overlay,.choiceOverlay.open{overscroll-behavior:contain!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.wz-v54-admin-modal-scroll,#wzg66Box,.choiceCard{overscroll-behavior-y:contain!important;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){overflow:hidden!important;overscroll-behavior:none!important}
+/* Scrolling regular admin lists should not stop when there are fewer than 10 records. */
+#section-giveaways .wzg78-panel{overflow:visible;touch-action:pan-y}
 </style>
 </head>
 
