@@ -2573,7 +2573,7 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
         body:has(#wzg2ReelOverlay:not([hidden])){overflow:hidden!important;overscroll-behavior:none!important}
         @media(max-width:600px){#section-giveaways .wzgc-picker{flex-direction:column;align-items:stretch}#section-giveaways .wzgc-picker button{width:100%!important}#section-giveaways .wzg-row{gap:8px}}
 
-        /* V31.1.06: Turnuva merkezi gibi tek seçime bağlı açık eylem çubuğu. */
+        /* V31.1.07: Turnuva merkezi gibi tek seçime bağlı açık eylem çubuğu. */
         #section-giveaways .wzgc-direct-actions{border-top:1px solid #64313a;margin-top:15px;padding-top:15px}
         #section-giveaways .wzgc-direct-actions[hidden]{display:none!important}
         #section-giveaways .wzgc-actions-caption{color:#ffc0cc;font-size:13px;font-weight:900;letter-spacing:.6px;margin-bottom:10px}
@@ -2586,19 +2586,32 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
         @media(max-width:750px){#section-giveaways .wzgc-action-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#section-giveaways .wzgc-action-grid button:last-child{grid-column:1/-1}#section-giveaways .wzgc-action-grid button{min-height:47px}}
         @media(max-width:600px){#section-giveaways .wzgc-picker label{flex:0 0 auto!important;width:100%!important}}
 
+        /* V31.1.07: Compact, template-first, two-state draw manager. */
+        #section-giveaways .wzgc-template-choose{grid-column:1/-1;display:block;background:#1b1016;border:1px solid #923443;border-radius:12px;padding:12px;min-width:0}
+        #section-giveaways .wzgc-template-choose>label{display:block;font-weight:900;color:#ffdce3;margin-bottom:8px}
+        #section-giveaways .wzgc-template-select-row{display:flex;align-items:stretch;gap:9px;margin-bottom:7px}
+        #section-giveaways #wzgcTemplateSelect{flex:1 1 auto;min-width:0;width:100%;background:#111014;color:#fff;border:1px solid #a53d53;border-radius:9px;min-height:48px;padding:10px}
+        #section-giveaways #wzgcTemplateDelete{flex:0 0 49px;min-width:49px!important;width:49px!important;padding:7px!important;font-size:18px!important;background:#36141b;border-color:#a53d53}
+        #section-giveaways #wzgcTemplateDelete:disabled{opacity:.4}
+        #section-giveaways #wzgcLivePanel[hidden]{display:none!important}
+        #section-giveaways #wzgcLivePanel{border-color:#753446}
+        #section-giveaways #wzgcLivePanel>h2{margin-top:0}
+        #section-giveaways #wzgcAdvancedDetails>.wzg-list{padding:10px}
+        #section-giveaways #wzgcDirectActions .wzgc-action-note{margin:7px 0 0}
+        @media(max-width:650px){#section-giveaways .wzgc-center{padding:14px!important}#section-giveaways .wzgc-picker{gap:7px}#section-giveaways .wzgc-action-grid{gap:7px}#section-giveaways .wzgc-actions-caption{font-size:12px}}
         @media(max-width:690px){#section-giveaways .wzg-grid,#section-giveaways .wzg-options{grid-template-columns:1fr}}
       </style>
       <div class="card wzgc-center">
         <h2>🎁 WEİZEND · Çekiliş Yönetim Merkezi</h2>
-        <p class="muted">Yönetmek istediğin çekilişi seç. Katılımcılar, kura, düzenleme ve silme işlemleri sadece bu seçime aittir.</p>
+        <p class="muted">Yönetmek istediğin çekilişi veya taslağı seç. Ayrıntılar yalnızca ilgili butona bastığında açılır.</p>
         <div class="wzgc-picker">
-          <label for="wzgcCampaign">🎯 Yönetilecek çekiliş
+          <label for="wzgcCampaign">🎯 Çekiliş / Taslak seç
             <select id="wzgcCampaign" onchange="wzgcSelect(this.value)"><option value="">Çekilişler yükleniyor…</option></select>
           </label>
-          <button type="button" class="secondary" onclick="wzg2AdminRefresh()">🔄 Yenile</button>
+          <button type="button" class="secondary" onclick="wzgcRefreshAll()">🔄 Yenile</button>
           <button type="button" onclick="wzgcNewDraft()">➕ Yeni Çekiliş</button>
         </div>
-        <p id="wzgcSelectedInfo" class="muted" role="status">Yayınlanan çekilişler yükleniyor…</p>
+        <p id="wzgcSelectedInfo" class="muted" role="status">Çekilişler ve taslaklar yükleniyor…</p>
         <div id="wzgcDirectActions" class="wzgc-direct-actions" hidden aria-label="Seçili çekiliş işlemleri">
           <div class="wzgc-actions-caption">⚙️ SEÇİLİ ÇEKİLİŞİN YÖNETİMİ</div>
           <div class="wzgc-action-grid" role="group" aria-label="Çekiliş işlemleri">
@@ -2609,7 +2622,6 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
             <button type="button" id="wzgcActDelete" class="secondary wzgc-delete-action" onclick="wzgcToolbarAction('delete')">🗑️ Sil</button>
           </div>
           <p id="wzgcActionNote" class="wzgc-action-note" role="status"></p>
-          <button type="button" class="secondary wzgc-library-open" onclick="wzgcManageTemplates()">🗂️ Kayıtlı şablonları görüntüle / sil</button>
         </div>
       </div>
       <details id="wzgcCreatePanel" class="wzgc-fold">
@@ -2621,13 +2633,16 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
           ⚠️ Türkiye'de şansa dayalı ödüllü çekilişler izin gerektirebilir. Resmî izin/uygun görüş netleşmeden çekilişi açma.
           Sosyal sayfa ziyaretleri kullanıcı beyanıdır, gerçek takip veya abonelik doğrulaması yapılmaz. Ücretli aboneye artırılmış şans tanımak hukuki inceleme gerektirir; canlı yayına açıldığında yalnızca doğrulanmış kendi ödemeli abonelere ağırlık uygulanır.
         </div>
-        <div class="wzgc-template-box">
-          <h3 style="margin:0 0 6px">📋 Kayıtlı Çekiliş Şablonları</h3>
-          <p class="muted">Bir şablona dokununca alanlar doldurulur. Şablon seçmek veya form doldurmak çekilişi başlatmaz; önce taslağı kaydetmen, ardından açıkça yayınlaman gerekir.</p>
-          <div id="wzgcTemplates" class="wzgc-templates" aria-live="polite">Şablonlar yükleniyor…</div>
-        </div>
         <input type="hidden" id="wzgId">
         <div class="wzg-grid">
+          <div class="wzgc-template-choose">
+            <label for="wzgcTemplateSelect">📋 Kayıtlı çekiliş şablonları</label>
+            <div class="wzgc-template-select-row">
+              <select id="wzgcTemplateSelect" onchange="wzgcApplyTemplate(this.value)" aria-label="Formu doldurmak için çekiliş şablonu seç"><option value="">— Şablon seç —</option></select>
+              <button type="button" id="wzgcTemplateDelete" class="secondary" onclick="wzgcDeleteSelectedTemplate()" disabled title="Seçilen şablonu sil; mevcut çekilişleri etkilemez" aria-label="Seçili şablonu sil">🗑️</button>
+            </div>
+            <small class="muted">Şablon seçimi yalnızca formu doldurur. Onaylamadan taslak kaydedilmez veya çekiliş başlatılmaz.</small>
+          </div>
           <label>Çekiliş adı *<input id="wzgTitle" maxlength="100" placeholder="Örn: WEİZEND Ekim VP Ödülü"></label>
           <label>Ödülün adı *<input id="wzgPrizeTitle" maxlength="150" placeholder="Örn: 1700 VP"></label>
           <label>Çekiliş açıklaması<textarea id="wzgDescription" maxlength="1200" rows="3" placeholder="Katılımcıya gösterilecek açıklama"></textarea></label>
@@ -2677,7 +2692,7 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
         <p id="wzgStatus" role="status" aria-live="polite" class="muted"></p>
       </div>
       </details>
-      <div class="card" id="wzgcLivePanel" hidden><h2>🎥 Seçilen Çekiliş / Kura ve Katılımcılar</h2>
+      <div class="card" id="wzgcLivePanel" hidden><h2>⚙️ Seçili Çekilişin Detayları</h2>
         <p class="muted">Çekiliş bitiş saatinde yeni katılım otomatik kapanır. Canlı kura açıldığında Worker süresi bitmiş çekilişi de kapalı duruma geçirir; ayrı bir kapatma butonuna gerek yoktur. Eski bekleyen kayıtları gerekiyorsa tek seferde topluca işleyebilirsin. Ardından canlı yayında kazananları seçebilirsin. Sonuç sunucu tarafından güvenli ağırlıklı kurayla belirlenir; düğmeler yalnızca seçimi başlatır ve sonucu görüntüler.</p>
         <button type="button" class="secondary" onclick="wzg2AdminRefresh()">🔄 Canlı çekilişleri ve katılımcıları yenile</button>
         <div id="wzg2AdminStatus" class="muted" role="status"></div>
@@ -2709,6 +2724,7 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
           </div>
           <p id="wzg2EditStatus" role="status" aria-live="polite"></p>
         </div>
+        <details id="wzgcAdvancedDetails" class="wzgc-fold"><summary>🔎 Gelişmiş işlemler ve katılımcı kayıtları (isteğe bağlı)</summary>
         <div id="wzg2Campaigns" class="wzg-list"></div>
         <div id="wzg78ParticipantPanel" class="wzg78-panel">
           <h3>👥 Çekiliş Katılımcıları</h3>
@@ -2728,6 +2744,7 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
           </div>
         </div>
         <div id="wzg2Entries" class="wzg-list"></div>
+        </details>
       </div>
       <details id="wzgcDraftsPanel" class="wzgc-fold"><summary>📁 Kayıtlı Taslaklar ve Arşiv</summary>
       <div class="card">
@@ -4870,7 +4887,7 @@ function openTab(name){
   }
 
   if(name === 'giveaways'){
-    Promise.all([wzgLoad(),wzg2AdminRefresh(),wzgcLoadTemplates()]).catch(console.error);
+    wzgcEnsureLoaded(true).catch(console.error);
   }
 
   if(name === 'supportrewards'){
@@ -13471,6 +13488,7 @@ function wzgInputDate(value){
   return adjusted.toISOString().slice(0,16);
 }
 function wzgEdit(id){
+  const tp=document.getElementById('wzgcTemplateSelect');if(tp)tp.value='';wzgcUpdateTemplateDelete();
   const b=wzgCache.find(item=>item.id===id);
   if(!b||b.status!=='draft')return;
   const fill={wzgId:b.id,wzgTitle:b.title,wzgDescription:b.description,
@@ -13500,7 +13518,7 @@ async function wzgLoad(){
     if(!r.ok||!d?.success)throw Error(d?.error||'HTTP '+r.status);
     wzgCache=d.drafts||[];
     const showArchived=!!document.getElementById('wzgShowArchived')?.checked;
-    const visible=wzgCache.filter(b=>!Number(b.published)&&(b.status==='draft'||b.status==='cancelled'||showArchived));
+    const visible=wzgCache.filter(b=>!Number(b.published)&&(b.status==='draft'||(showArchived&&b.status==='archived')));
     el.innerHTML='';
     if(!visible.length){el.textContent=showArchived?'Silinebilen arşiv veya taslak yok. Yayımlanmış çekilişlere bağlı arşivler burada gizlenir.':'Aktif taslak yok. Arşivlenenleri görmek için kutuyu işaretle.';return;}
     for(const b of visible){
@@ -13549,9 +13567,10 @@ async function wzgSave(){
     });
     if(!r.ok||!d?.success)throw Error(d?.error||'HTTP '+r.status);
     document.getElementById('wzgId').value=d.id;
+    wzgcSelectedDraftId=d.id;wzg78State.campaignId='';
     wzgMessage('✅ Taslak kaydedildi. Katılıma açılmadı.');
   }catch(e){wzgMessage('Kaydedilemedi: '+String(e?.message||e))}
-  finally{wzgPending=false;await wzgLoad()}
+  finally{wzgPending=false;await wzgLoad();await wzg2AdminRefresh()}
 }
 async function wzgArchive(id){
   if(wzgPending||!confirm('Bu taslağı arşivleyelim mi? Kayıt korunur ve artık düzenlenemez.'))return;
@@ -13564,7 +13583,7 @@ async function wzgArchive(id){
     if(wzgVal('wzgId')===id)wzgClear();
     wzgMessage('✅ Taslak arşivlendi.');
   }catch(e){wzgMessage('Arşivlenemedi: '+String(e?.message||e))}
-  finally{wzgPending=false;await wzgLoad()}
+  finally{wzgPending=false;await wzgLoad();await wzg2AdminRefresh()}
 }
 
 
@@ -13581,7 +13600,7 @@ async function wzgDeleteDraft(id,title){
  try{await wzg2AdminCall('/admin/giveaway-drafts/delete',{id,confirmation:'SIL'});
      if(wzgVal('wzgId')===id)wzgClear();wzgMessage('✅ Taslak kalıcı olarak silindi.');}
  catch(e){wzgMessage('❌ '+e.message)}
- finally{wzgPending=false;await wzgLoad()}
+ finally{wzgPending=false;await wzgLoad();await wzg2AdminRefresh()}
 }
 async function wzg2Publish(id){
  const draft=wzgCache.find(item=>item.id===id&&item.status==='draft');
@@ -13595,7 +13614,9 @@ async function wzg2Publish(id){
  try{
   const result=await wzg2AdminCall('/admin/giveaway/publish',{id});
   wzgMessage(Date.parse(result.startAt)>Date.now()?'✅ Çekiliş yayımlandı; kayıtlar başlangıç tarihinde otomatik açılacak.':'✅ Çekiliş yayımlandı ve katılıma açıldı.');
-  await Promise.all([wzgLoad(),wzg2AdminRefresh()]);
+  // Publish preserves the same server ID: keep this campaign selected after its draft disappears.
+  wzgcSelectedDraftId='';wzg78State.campaignId=result.id||id;
+  await wzgLoad();await wzg2AdminRefresh();
  }catch(e){wzgMessage('❌ '+e.message)}
 }
 let wzg2EditCampaign=null,wzg2EditPending=false;
@@ -13614,6 +13635,7 @@ function wzg2OpenLiveEdit(c){
   Object.entries(values).forEach(([id,value])=>{const el=document.getElementById(id);if(el)el.value=value??''});
   document.getElementById('wzg2EditContext').textContent='Yayımlanmış çekiliş: '+c.title+' • Çekiliş numarası: '+c.id;
   document.getElementById('wzg2EditStatus').textContent='';
+  const live=document.getElementById('wzgcLivePanel');if(live)live.hidden=false;
   const panel=document.getElementById('wzg2EditPanel');panel.hidden=false;
   panel.scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -13621,6 +13643,7 @@ function wzg2CloseLiveEdit(){
   if(wzg2EditPending)return;
   wzg2EditCampaign=null;
   document.getElementById('wzg2EditPanel').hidden=true;
+  const live=document.getElementById('wzgcLivePanel');if(live)live.hidden=true;
 }
 async function wzg2SaveLiveEdit(){
   if(!wzg2EditCampaign||wzg2EditPending)return;
@@ -13647,6 +13670,7 @@ async function wzg2SaveLiveEdit(){
     await wzg2AdminCall('/admin/giveaway/update',payload);
     status.textContent='✅ Çekiliş başarıyla güncellendi.';
     wzg2EditCampaign=null;document.getElementById('wzg2EditPanel').hidden=true;
+    document.getElementById('wzgcLivePanel').hidden=true;
     await Promise.all([wzg2AdminRefresh(),wzgLoad()]);
   }catch(e){status.textContent='❌ '+String(e.message||e)}
   finally{wzg2EditPending=false;save.disabled=false}
@@ -13750,7 +13774,7 @@ async function wzg2AdminRefresh(){
   const selectedCampaign=(d.campaigns||[]).find(c=>c.id===selectedId);
   wzgcUpdateToolbar(selectedCampaign||null);
   const livePanel=document.getElementById('wzgcLivePanel');
-  if(livePanel)livePanel.hidden=!selectedCampaign;
+  if(livePanel&&(!selectedCampaign||wzgcSelectedDraftId))livePanel.hidden=true;
   const nextCampaigns=document.createDocumentFragment(),nextEntries=document.createDocumentFragment();
   const activeCount=(d.campaigns||[]).filter(c=>c.status==='active'&&Date.parse(c.start_at)<=Date.now()&&Date.parse(c.end_at)>Date.now()).length;
   status.textContent=(activeCount?'🟢 Katılıma açık çekiliş: '+activeCount+' • Admin üzerinden yönetiliyor.':'📋 Şu anda katılıma açık çekiliş yok. Taslağı Yayınla ile açabilirsin.')+(d.subscriptionCheck?.success===false?' ⚠️ MissXss abonelik kontrolü yapılamadı; son onaylı haklar korunuyor.':'');
@@ -13773,10 +13797,6 @@ async function wzg2AdminRefresh(){
           alert('✅ '+Number(r.updatedCount||0)+' eski kayıt uygun katılımcıya dönüştürüldü.');await wzg2AdminRefresh();}
         catch(e){alert('❌ '+e.message)}
       };action.append(legacy);
-    }
-    if(['active','closed'].includes(c.status)){
-      const b=document.createElement('button');b.textContent='🖼️ Kapak görselini değiştir';b.className='secondary';
-      b.onclick=async()=>{const imageUrl=prompt('Yeni HTTPS kapak görseli bağlantısı (boş = kaldır):',c.image_url||'');if(imageUrl===null)return;await wzg2AdminAction('/admin/giveaway/cover',{id:c.id,imageUrl:imageUrl.trim()})};action.append(b);
     }
     if(c.status==='drawn'){
       const note=document.createElement('span');note.className='muted';note.textContent='🏆 Sonuçlanan çekilişin kazananları ve kayıtları güvenlik nedeniyle silinmez.';action.append(note);
@@ -14182,10 +14202,22 @@ let wzgcTemplatesCache=[];
 let wzgcToolbarCampaign=null;
 function wzgcUpdateToolbar(c){
  const bar=document.getElementById('wzgcDirectActions');if(!bar)return;
- // Never retain a previous campaign while a different one is loading.
- wzgcToolbarCampaign=c&&c.id===wzg78State.campaignId?{...c}:null;
+ const draft=wzgcSelectedDraftId?(wzgCache||[]).find(d=>d.id===wzgcSelectedDraftId&&d.status==='draft'&&!Number(d.published)):null;
+ // Never allow stale controls to retain the ID of the previously selected record.
+ wzgcToolbarCampaign=draft?{...draft,__draft:true}:c&&c.id===wzg78State.campaignId?{...c}:null;
  bar.hidden=!wzgcToolbarCampaign;
  if(!wzgcToolbarCampaign)return;
+ if(draft){
+   document.getElementById('wzgcActStart').textContent='📅 Yayınla / Planla';
+   document.getElementById('wzgcActStart').disabled=false;
+   document.getElementById('wzgcActEdit').disabled=false;
+   document.getElementById('wzgcActRoster').disabled=true;
+   document.getElementById('wzgcActTemplate').disabled=false;
+   document.getElementById('wzgcActDelete').disabled=false;
+   document.getElementById('wzgcActDelete').title='Yalnızca yayımlanmamış taslağı siler. Sunucudan onay gerekir.';
+   document.getElementById('wzgcActionNote').textContent='📝 Taslak: Henüz katılım yok. Düzenle veya Yayınla / Planla ile devam et.';
+   return;
+ }
  const selected=wzgcToolbarCampaign,now=Date.now();
  const start=Date.parse(selected.start_at),end=Date.parse(selected.end_at);
  const future=selected.status==='active'&&start>now;
@@ -14210,7 +14242,14 @@ function wzgcUpdateToolbar(c){
 }
 function wzgcToolbarAction(action){
  const c=wzgcToolbarCampaign;
- if(!c||c.id!==wzg78State.campaignId)return alert('Önce yönetmek istediğin çekilişi seçip yüklenmesini bekle.');
+ if(!c||((c.__draft?'draft:'+c.id:c.id)!==document.getElementById('wzgcCampaign')?.value))return alert('Önce yönetmek istediğin çekilişi seçip yüklenmesini bekle.');
+ if(c.__draft){
+   if(action==='start')wzg2Publish(c.id);
+   else if(action==='edit')wzgEdit(c.id);
+   else if(action==='template')wzgcSaveTemplate('draft',c.id,c.title);
+   else if(action==='delete')wzgDeleteDraft(c.id,c.title);
+   return;
+ }
  const now=Date.now(),start=Date.parse(c.start_at),end=Date.parse(c.end_at);
  if(action==='start'){
    if(c.status==='cancelled')return;
@@ -14240,68 +14279,123 @@ function wzgcManageTemplates(){
  (box||panel).scrollIntoView({behavior:'smooth',block:'start'});
  wzgcLoadTemplates();
 }
+// Picker displays both active/closed/drawn campaigns and unpublished drafts, never cancelled records.
+let wzgcSelectedDraftId='';
+let wzgcLastCampaigns=[];
+let wzgcLoadingPromise=null;
+let wzgcLoaded=false;
+async function wzgcEnsureLoaded(force=false){
+ if(wzgcLoadingPromise)return wzgcLoadingPromise;
+ if(wzgcLoaded&&!force)return true;
+ wzgcLoadingPromise=(async()=>{
+  // Drafts MUST precede campaign list so the first chooser contains both types.
+  const a=await wzgLoad();
+  const [b,c]=await Promise.all([wzg2AdminRefresh(),wzgcLoadTemplates()]);
+  wzgcLoaded=a!==false&&b!==false&&c!==false;
+  return wzgcLoaded;
+ })();
+ try{return await wzgcLoadingPromise}finally{wzgcLoadingPromise=null}
+}
+async function wzgcRefreshAll(){
+ const ok=await wzgcEnsureLoaded(true);
+ if(!ok)wzgMessage('⚠️ Bazı kayıtlar alınamadı. Oturumu ve internet bağlantısını kontrol et.');
+}
+// First visible visit and restored admin tabs refresh themselves without a manual button.
+function wzgcAutoVisibleInit(){
+ const sec=document.getElementById('section-giveaways');
+ if(!sec||!sec.classList.contains('active'))return;
+ const area=document.getElementById('adminArea');
+ if(area&&getComputedStyle(area).display==='none')return;
+ if(!wzgcLoaded)wzgcEnsureLoaded().catch(console.error);
+}
+window.addEventListener('pageshow',()=>setTimeout(wzgcAutoVisibleInit,100));
+window.addEventListener('scroll',()=>{if(!wzgcLoaded&&!wzgcLoadingPromise)wzgcAutoVisibleInit()},{passive:true});
 function wzgcSyncCampaigns(campaigns){
  const picker=document.getElementById('wzgcCampaign');if(!picker)return false;
- const previously=wzg78State.campaignId;
- const ordered=[...campaigns].sort((a,b)=>{
-  const rank=c=>c.status==='active'?0:c.status==='closed'||c.status==='drawing'?1:c.status==='drawn'?2:3;
-  return rank(a)-rank(b)||String(b.created_at||'').localeCompare(String(a.created_at||''));
- });
- const list=document.createDocumentFragment();
+ wzgcLastCampaigns=campaigns||[];
+ const previousId=wzg78State.campaignId,previousDraft=wzgcSelectedDraftId;
+ const eligible=(campaigns||[]).filter(c=>c.status!=='cancelled'&&c.status!=='hidden');
+ const rank=c=>c.status==='active'?0:c.status==='closed'||c.status==='drawing'?1:2;
+ const ordered=[...eligible].sort((a,b)=>rank(a)-rank(b)||String(b.created_at||'').localeCompare(String(a.created_at||'')));
+ const drafts=(wzgCache||[]).filter(b=>!Number(b.published)&&b.status==='draft');
+ const options=document.createDocumentFragment();
  for(const c of ordered){const o=document.createElement('option');o.value=c.id;
-  o.textContent=(c.status==='active'?'🟢 ':c.status==='closed'?'⏳ ':c.status==='drawing'?'🎥 ':c.status==='drawn'?'🏆 ':'⛔ ')+c.title+' — '+c.prize_title;
-  list.append(o);
+  o.textContent=(c.status==='active'?(Date.parse(c.start_at)>Date.now()?'📅 ':'🟢 '):c.status==='closed'?'⏳ ':c.status==='drawing'?'🎥 ':'🏆 ')+c.title+' — '+c.prize_title;options.append(o);
  }
- if(!ordered.length){const o=document.createElement('option');o.value='';o.textContent='Yayınlanmış çekiliş bulunamadı';list.append(o)}
- picker.replaceChildren(list);
- const candidate=ordered.find(c=>c.id===previously)||ordered[0];
- const nextId=candidate?.id||'';
- if(nextId!==previously)wzgcUpdateToolbar(null);
- picker.value=nextId;
- wzg78State.campaignId=nextId;
+ for(const b of drafts){const o=document.createElement('option');o.value='draft:'+b.id;
+  o.textContent='📝 TASLAK · '+b.title+' — '+b.prize_title;options.append(o);
+ }
+ if(!ordered.length&&!drafts.length){const o=document.createElement('option');o.value='';o.textContent='Çekiliş veya taslak bulunamadı';options.append(o)}
+ picker.replaceChildren(options);
+ const foundDraft=drafts.find(b=>b.id===previousDraft);
+ const foundCampaign=ordered.find(c=>c.id===previousId);
+ const candidate=foundDraft?{kind:'draft',value:'draft:'+foundDraft.id,record:foundDraft}:
+   foundCampaign?{kind:'campaign',value:foundCampaign.id,record:foundCampaign}:
+   ordered.length?{kind:'campaign',value:ordered[0].id,record:ordered[0]}:
+   drafts.length?{kind:'draft',value:'draft:'+drafts[0].id,record:drafts[0]}:null;
+ wzgcSelectedDraftId=candidate?.kind==='draft'?candidate.record.id:'';
+ wzg78State.campaignId=candidate?.kind==='campaign'?candidate.record.id:'';
+ picker.value=candidate?.value||'';
+ const changed=previousId!==wzg78State.campaignId||previousDraft!==wzgcSelectedDraftId;
+ if(changed)wzgcUpdateToolbar(null);
  const info=document.getElementById('wzgcSelectedInfo');
- if(info)info.textContent=candidate?'🎯 Seçili: '+candidate.title+' • '+(wzg69Status[candidate.status]||candidate.status)+' • Diğer çekilişlerin katılımcıları ve işlemleri gizli.':'Henüz yayınlanan çekiliş yok. Yeni çekiliş oluşturmak için formu aç.';
- return nextId!==previously;
+ if(info)info.textContent=candidate?'🎯 Seçili: '+candidate.record.title+' • '+(candidate.kind==='draft'?'📝 Taslak':wzg69Status[candidate.record.status]||candidate.record.status):'Henüz çekiliş veya taslak yok. Yeni çekiliş oluştur.';
+ return changed;
 }
-function wzgcSelect(id){
+function wzgcSelect(value){
  if(typeof wzg2EditPending!=='undefined'&&wzg2EditPending)return alert('Önce düzenlemenin kaydedilmesini bekle.');
  const picker=document.getElementById('wzgcCampaign');
- if(!picker||![...picker.options].some(o=>o.value===id))return;
- if(wzg66?.busy||wzg66?.spinning){picker.value=wzg78State.campaignId;return alert('Aktif kura işlemi bitmeden çekiliş değiştirme.');}
+ if(!picker||![...picker.options].some(o=>o.value===value))return;
+ if(wzg66?.busy||wzg66?.spinning){picker.value=wzgcSelectedDraftId?'draft:'+wzgcSelectedDraftId:wzg78State.campaignId;return alert('Aktif kura işlemi bitmeden çekiliş değiştirme.');}
  if(typeof wzg2CloseLiveEdit==='function')wzg2CloseLiveEdit();
- wzg78State.campaignId=id;wzg78State.page=1;
+ wzgcSelectedDraftId=value.startsWith('draft:')?value.slice(6):'';
+ wzg78State.campaignId=wzgcSelectedDraftId?'':value;
+ wzg78State.page=1;
  wzgcUpdateToolbar(null);
- const selectedInfo=document.getElementById('wzgcSelectedInfo');
- if(selectedInfo)selectedInfo.textContent='⏳ Seçilen çekilişin işlemleri yükleniyor…';
- const panel=document.getElementById('wzgcLivePanel');if(panel)panel.hidden=!id;
+ const info=document.getElementById('wzgcSelectedInfo');if(info)info.textContent='⏳ Seçilen kayıt yükleniyor…';
+ const panel=document.getElementById('wzgcLivePanel');if(panel)panel.hidden=true;
  document.getElementById('wzg2Campaigns')?.replaceChildren();
  document.getElementById('wzg2Entries')?.replaceChildren();
  document.getElementById('wzg78Count')?.removeAttribute('data-loaded');
  wzg2AdminRefresh();
 }
-function wzgcNewDraft(){wzgClear();document.getElementById('wzgcCreatePanel').open=true;document.getElementById('wzgcCreatePanel').scrollIntoView({behavior:'smooth',block:'start'});}
+function wzgcNewDraft(){wzgClear();const t=document.getElementById('wzgcTemplateSelect');if(t)t.value='';wzgcUpdateTemplateDelete();document.getElementById('wzgcCreatePanel').open=true;document.getElementById('wzgcCreatePanel').scrollIntoView({behavior:'smooth',block:'start'});}
 async function wzgcLoadTemplates(){
- const root=document.getElementById('wzgcTemplates');if(!root)return;
+ const select=document.getElementById('wzgcTemplateSelect');if(!select)return false;
+ const previous=select.value;
  try{
   const {r,d}=await api('/admin/giveaway-templates');
   if(!r.ok||!d?.success)throw Error(d?.error||'HTTP '+r.status);
-  wzgcTemplatesCache=d.templates||[];root.replaceChildren();
-  if(!wzgcTemplatesCache.length){root.textContent='Henüz kayıtlı şablon yok. Yayınlanan bir çekilişten veya taslaktan “Şablona Ekle” diyebilirsin.';return}
-  for(const t of wzgcTemplatesCache){
-   const box=document.createElement('div');box.className='wzgc-template';
-   const title=document.createElement('strong');title.textContent=t.name;box.append(title);
-   const desc=document.createElement('small');desc.className='muted';desc.textContent=(t.config?.prize_title||'')+' • '+Number(t.config?.winners_count||1)+' kazanan';box.append(desc);
-   const row=document.createElement('div');row.className='wzg-row';
-   const load=document.createElement('button');load.type='button';load.textContent='📋 Formu Doldur';load.onclick=()=>wzgcApplyTemplate(t.id);
-   const del=document.createElement('button');del.type='button';del.className='secondary';del.textContent='🗑️';del.title='Yalnızca şablonu sil; çekiliş ve katılımcılara dokunma.';del.setAttribute('aria-label',t.name+' şablonunu sil');del.onclick=()=>wzgcDeleteTemplate(t.id,t.name);
-   row.append(load,del);box.append(row);root.append(box);
-  }
- }catch(e){root.textContent='❌ Şablonlar yüklenemedi: '+String(e?.message||e)}
+  wzgcTemplatesCache=d.templates||[];
+  select.replaceChildren();
+  const intro=document.createElement('option');intro.value='';intro.textContent=wzgcTemplatesCache.length?'— Kayıtlı şablon seç —':'— Henüz şablon yok —';select.append(intro);
+  for(const t of wzgcTemplatesCache){const o=document.createElement('option');o.value=t.id;o.textContent=t.name+' • '+(t.config?.prize_title||'');select.append(o)}
+  select.value=wzgcTemplatesCache.some(t=>t.id===previous)?previous:'';
+  wzgcUpdateTemplateDelete();
+  return true;
+ }catch(e){
+  select.replaceChildren();const o=document.createElement('option');o.value='';o.textContent='Şablonlar yüklenemedi';select.append(o);
+  wzgcUpdateTemplateDelete();wzgMessage('⚠️ Şablonlar yüklenemedi: '+String(e?.message||e));return false;
+ }
+}
+function wzgcUpdateTemplateDelete(){
+ const picker=document.getElementById('wzgcTemplateSelect');
+ const del=document.getElementById('wzgcTemplateDelete');
+ if(del)del.disabled=!(picker?.value&&wzgcTemplatesCache.some(x=>x.id===picker.value));
+}
+function wzgcDeleteSelectedTemplate(){
+ const id=document.getElementById('wzgcTemplateSelect')?.value;
+ const t=wzgcTemplatesCache.find(t=>t.id===id);if(!t)return;
+ wzgcDeleteTemplate(t.id,t.name);
 }
 function wzgcApplyTemplate(id){
+ wzgcUpdateTemplateDelete();
+ if(!id)return;
  const t=wzgcTemplatesCache.find(x=>x.id===id);if(!t||!t.config)return;
  const b=t.config,c=b.conditions||{};
  wzgClear(); // Clears draft identity; never reuse a campaign or template ID.
+ document.getElementById('wzgcTemplateSelect').value=id;
+ wzgcUpdateTemplateDelete();
  const fields={wzgTitle:b.title,wzgDescription:b.description,wzgPrizeTitle:b.prize_title,wzgPrizeDetails:b.prize_details,
   wzgImage:b.image_url,wzgLegalNote:b.legal_note,wzgStart:wzgInputDate(b.start_at),wzgEnd:wzgInputDate(b.end_at),
   wzgWinners:b.winners_count,wzgMaxEntries:b.max_entries,
@@ -14327,7 +14421,9 @@ async function wzgcSaveTemplate(sourceType,sourceId,title){
 }
 async function wzgcDeleteTemplate(id,name){
  if(!confirm('“'+name+'” şablonu silinsin mi? Yayınlanan çekilişler ve katılımcıları korunacak.'))return;
- try{await wzg2AdminCall('/admin/giveaway-templates/delete',{id,confirmation:'SABLONU_SIL'});await wzgcLoadTemplates();}
+ try{await wzg2AdminCall('/admin/giveaway-templates/delete',{id,confirmation:'SABLONU_SIL'});
+  if(document.getElementById('wzgcTemplateSelect')?.value===id)document.getElementById('wzgcTemplateSelect').value='';
+  await wzgcLoadTemplates();wzgMessage('✅ Yalnızca şablon silindi; çekilişler ve katılımcıları korundu.');}
  catch(e){alert('❌ '+e.message)}
 }
 </script>
