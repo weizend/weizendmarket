@@ -2611,7 +2611,7 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
           <label for="wzgcCampaign">🎯 Çekiliş / Taslak seç
             <select id="wzgcCampaign" onchange="wzgcSelect(this.value)"><option value="">Çekilişler yükleniyor…</option></select>
           </label>
-          <button type="button" class="secondary" onclick="wzgcRefreshAll()">🔄 Yenile</button>
+          <button type="button" class="secondary" onclick="wzgcRefreshAll(this)">🔄 Yenile</button>
           <button type="button" onclick="wzgcNewDraft()">➕ Yeni Çekiliş</button>
         </div>
         <p id="wzgcSelectedInfo" class="muted" role="status">Çekilişler ve taslaklar yükleniyor…</p>
@@ -2698,7 +2698,7 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
       </details>
       <div class="card" id="wzgcLivePanel" hidden><h2>⚙️ Seçili Çekilişin Detayları</h2>
         <p class="muted">Çekiliş bitiş saatinde yeni katılım otomatik kapanır. Canlı kura açıldığında Worker süresi bitmiş çekilişi de kapalı duruma geçirir; ayrı bir kapatma butonuna gerek yoktur. Eski bekleyen kayıtları gerekiyorsa tek seferde topluca işleyebilirsin. Ardından canlı yayında kazananları seçebilirsin. Sonuç sunucu tarafından güvenli ağırlıklı kurayla belirlenir; düğmeler yalnızca seçimi başlatır ve sonucu görüntüler.</p>
-        <button type="button" class="secondary" onclick="wzg2AdminRefresh()">🔄 Canlı çekilişleri ve katılımcıları yenile</button>
+        
         <div id="wzg2AdminStatus" class="muted" role="status"></div>
         <div id="wzg2EditPanel" class="wzg-item" hidden style="margin:15px 0;border:1px solid #92505b;background:#18151b;border-radius:13px;padding:16px">
           <h3 style="margin-top:0">✏️ Yayımlanmış çekilişi düzenle</h3>
@@ -14276,6 +14276,8 @@ function wzgcToolbarAction(action){
    else wzg2OpenReel(c.id,c.title);
  }else if(action==='edit'){
    if(c.status!=='active'||end<=now)return;
+   const editPanel=document.getElementById('wzg2EditPanel');
+   if(editPanel&&!editPanel.hidden&&wzg2EditCampaign?.id===c.id){wzg2CloseLiveEdit();return;}
    wzg2OpenLiveEdit(c);
  }else if(action==='roster'){
    if(c.status!=='cancelled')wzg66RosterPreview(c.id,c.title);
@@ -14355,9 +14357,22 @@ async function wzgcEnsureLoaded(force=false){
    wzgcLoaded=true;return false;
  }finally{wzgcLoadingPromise=null}
 }
-async function wzgcRefreshAll(){
- const ok=await wzgcEnsureLoaded(true);
- if(!ok)wzgMessage('⚠️ Bazı kayıtlar alınamadı. Yukarıdaki hata mesajını kontrol et.');
+async function wzgcRefreshAll(button){
+ if(button?.disabled)return;
+ const original=button?.dataset?.originalLabel||button?.textContent||'🔄 Yenile';
+ if(button){button.dataset.originalLabel=original;button.disabled=true;button.setAttribute('aria-busy','true');button.textContent='⏳ Yenileniyor...';}
+ let error=false;
+ try{
+   const ok=await wzgcEnsureLoaded(true);
+   error=!ok||Object.values(wzgcLoadErrors).some(Boolean);
+   if(error)wzgMessage('⚠️ Bazı kayıtlar alınamadı. Yukarıdaki hata mesajını kontrol et.');
+ }catch(e){error=true;wzgMessage('❌ Yenileme hatası: '+String(e?.message||e));}
+ finally{
+   if(button){
+     button.textContent=error?'⚠️ Tekrar dene':'✅ Yenilendi';
+     setTimeout(()=>{if(button.isConnected){button.disabled=false;button.removeAttribute('aria-busy');button.textContent=original;}},950);
+   }
+ }
 }
 // First visible visit and restored admin tabs refresh themselves without a manual button.
 function wzgcAutoVisibleInit(){
