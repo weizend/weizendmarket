@@ -2586,6 +2586,11 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
         @media(max-width:750px){#section-giveaways .wzgc-action-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#section-giveaways .wzgc-action-grid button:last-child{grid-column:1/-1}#section-giveaways .wzgc-action-grid button{min-height:47px}}
         @media(max-width:600px){#section-giveaways .wzgc-picker label{flex:0 0 auto!important;width:100%!important}}
 
+        /* V31.1.11: New raffle form is independent from any selected existing raffle. */
+        #section-giveaways.wzgc-creating #wzgcDirectActions,
+        #section-giveaways.wzgc-creating #wzgcLivePanel,
+        #section-giveaways.wzgc-creating #wzgcDraftsPanel{display:none!important}
+        #section-giveaways.wzgc-creating #wzgcSelectedInfo{color:#ffc5cb}
         /* V31.1.08: Loading failures shown beside the chooser; no infinite loading placeholder. */
         #section-giveaways #wzgcLoadFeedback:not([hidden]){display:block;background:#2a1720;border:1px solid #aa5867;border-radius:10px;color:#ffbec8;padding:10px 12px;margin:8px 0 12px;overflow-wrap:anywhere;line-height:1.5}
         #section-giveaways #wzgcLoadFeedback[data-state="loading"]{background:#211c15;color:#fff0ba;border-color:#887344}
@@ -2628,7 +2633,7 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
           <p id="wzgcActionNote" class="wzgc-action-note" role="status"></p>
         </div>
       </div>
-      <details id="wzgcCreatePanel" class="wzgc-fold">
+      <details id="wzgcCreatePanel" class="wzgc-fold" ontoggle="wzgcCreationPanelToggled()">
         <summary>➕ Yeni Çekiliş / Taslak Oluştur • Şablonlardan Başla</summary>
       <div class="card">
         <h2>📝 Yeni Çekiliş ve Taslak Formu</h2>
@@ -2690,8 +2695,6 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
         <div class="callout" style="margin:10px 0 15px">ℹ️ Abonelik katılım şartı değildir. Ekranda gösterilen yüzdeler <b>sıradaki tek ödül için</b> kullanıcının kura ağırlığının kalan toplam ağırlığa oranıdır. Ödül kazanan kişi sonraki turlardan çıkar. Ücretli avantaj ve çekilişin izin durumunu ayrıca değerlendir.</div>
         <div class="wzg-row">
           <button type="button" onclick="wzgSave()">💾 Taslağı Kaydet</button>
-          <button type="button" class="secondary" onclick="wzgClear()">➕ Yeni Taslak</button>
-          <button type="button" class="secondary" onclick="wzg69RefreshAll(this)">🔄 Listeleri Yenile</button>
         </div>
         <p id="wzgStatus" role="status" aria-live="polite" class="muted"></p>
       </div>
@@ -13502,6 +13505,7 @@ function wzgInputDate(value){
   return adjusted.toISOString().slice(0,16);
 }
 function wzgEdit(id){
+  wzgcExitCreationMode();
   const tp=document.getElementById('wzgcTemplateSelect');if(tp)tp.value='';wzgcUpdateTemplateDelete();
   const b=wzgCache.find(item=>item.id===id);
   if(!b||b.status!=='draft')return;
@@ -13581,8 +13585,10 @@ async function wzgSave(){
     });
     if(!r.ok||!d?.success)throw Error(d?.error||'HTTP '+r.status);
     document.getElementById('wzgId').value=d.id;
+    wzgcExitCreationMode();
     wzgcSelectedDraftId=d.id;wzg78State.campaignId='';
-    wzgMessage('✅ Taslak kaydedildi. Katılıma açılmadı.');
+    const panel=document.getElementById('wzgcCreatePanel');if(panel)panel.open=false;
+    wzgMessage('✅ Taslak kaydedildi. Katılıma açılmadı. Artık üstteki seçimden yönetebilirsin.');
   }catch(e){wzgMessage('Kaydedilemedi: '+String(e?.message||e))}
   finally{wzgPending=false;await wzgLoad();await wzg2AdminRefresh()}
 }
@@ -14218,6 +14224,7 @@ let wzgcTemplatesCache=[];
 let wzgcToolbarCampaign=null;
 function wzgcUpdateToolbar(c){
  const bar=document.getElementById('wzgcDirectActions');if(!bar)return;
+ if(wzgcCreating){wzgcToolbarCampaign=null;bar.hidden=true;return;}
  const draft=wzgcSelectedDraftId?(wzgCache||[]).find(d=>d.id===wzgcSelectedDraftId&&d.status==='draft'&&!Number(d.published)):null;
  // Never allow stale controls to retain the ID of the previously selected record.
  wzgcToolbarCampaign=draft?{...draft,__draft:true}:c&&c.id===wzg78State.campaignId?{...c}:null;
@@ -14299,7 +14306,43 @@ function wzgcManageTemplates(){
 }
 // Picker displays both active/closed/drawn campaigns and unpublished drafts, never cancelled records.
 let wzgcSelectedDraftId='';
+let wzgcCreating=false;
 let wzgcLastCampaigns=[];
+function wzgcEnterCreationMode(){
+ // Only changes the admin view. No delete/cancel/publish request is made.
+ wzgcCreating=true;
+ wzgcSelectedDraftId='';
+ wzg78State.campaignId='';
+ wzg78State.page=1;
+ const picker=document.getElementById('wzgcCampaign');
+ if(picker){
+   if(![...picker.options].some(o=>o.value==='')){
+     const option=document.createElement('option');option.value='';option.textContent='— Yeni çekiliş oluşturuluyor —';
+     picker.prepend(option);
+   }
+   picker.value='';
+ }
+ const info=document.getElementById('wzgcSelectedInfo');
+ if(info)info.textContent='➕ Yeni çekiliş hazırlanıyor. Henüz mevcut bir çekiliş seçilmedi.';
+ const live=document.getElementById('wzgcLivePanel');if(live)live.hidden=true;
+ const edit=document.getElementById('wzg2EditPanel');if(edit)edit.hidden=true;
+ const advanced=document.getElementById('wzgcAdvancedDetails');if(advanced)advanced.open=false;
+ const section=document.getElementById('section-giveaways');if(section)section.classList.add('wzgc-creating');
+ wzgcUpdateToolbar(null);
+}
+function wzgcExitCreationMode(){
+ wzgcCreating=false;
+ const section=document.getElementById('section-giveaways');if(section)section.classList.remove('wzgc-creating');
+}
+// Opening the new-form accordion by its summary has the same isolation as the New button.
+function wzgcCreationPanelToggled(){
+ const panel=document.getElementById('wzgcCreatePanel');
+ if(!panel?.open)return;
+ // Editing a selected saved draft is not creating another raffle.
+ if(wzgVal('wzgId') && wzgcSelectedDraftId===wzgVal('wzgId'))return;
+ if(!wzgcCreating)wzgcEnterCreationMode();
+}
+
 let wzgcLoadingPromise=null;
 let wzgcLoaded=false;
 // Display each failed API step at the TOP of the center, not only inside a folded legacy section.
@@ -14393,6 +14436,9 @@ function wzgcSyncCampaigns(campaigns){
  const ordered=[...eligible].sort((a,b)=>rank(a)-rank(b)||String(b.created_at||'').localeCompare(String(a.created_at||'')));
  const drafts=(wzgCache||[]).filter(b=>!Number(b.published)&&b.status==='draft');
  const options=document.createDocumentFragment();
+ const placeholder=document.createElement('option');placeholder.value='';
+ placeholder.textContent=wzgcCreating?'— Yeni çekiliş oluşturuluyor —':'— Çekiliş / taslak seç —';
+ options.append(placeholder);
  for(const c of ordered){const o=document.createElement('option');o.value=c.id;
   o.textContent=(c.status==='active'?(Date.parse(c.start_at)>Date.now()?'📅 ':'🟢 '):c.status==='closed'?'⏳ ':c.status==='drawing'?'🎥 ':'🏆 ')+c.title+' — '+c.prize_title;options.append(o);
  }
@@ -14403,7 +14449,7 @@ function wzgcSyncCampaigns(campaigns){
  picker.replaceChildren(options);
  const foundDraft=drafts.find(b=>b.id===previousDraft);
  const foundCampaign=ordered.find(c=>c.id===previousId);
- const candidate=foundDraft?{kind:'draft',value:'draft:'+foundDraft.id,record:foundDraft}:
+ const candidate=wzgcCreating?null:foundDraft?{kind:'draft',value:'draft:'+foundDraft.id,record:foundDraft}:
    foundCampaign?{kind:'campaign',value:foundCampaign.id,record:foundCampaign}:
    ordered.length?{kind:'campaign',value:ordered[0].id,record:ordered[0]}:
    drafts.length?{kind:'draft',value:'draft:'+drafts[0].id,record:drafts[0]}:null;
@@ -14413,7 +14459,7 @@ function wzgcSyncCampaigns(campaigns){
  const changed=previousId!==wzg78State.campaignId||previousDraft!==wzgcSelectedDraftId;
  if(changed)wzgcUpdateToolbar(null);
  const info=document.getElementById('wzgcSelectedInfo');
- if(info)info.textContent=candidate?'🎯 Seçili: '+candidate.record.title+' • '+(candidate.kind==='draft'?'📝 Taslak':wzg69Status[candidate.record.status]||candidate.record.status):'Henüz çekiliş veya taslak yok. Yeni çekiliş oluştur.';
+ if(info)info.textContent=candidate?'🎯 Seçili: '+candidate.record.title+' • '+(candidate.kind==='draft'?'📝 Taslak':wzg69Status[candidate.record.status]||candidate.record.status):wzgcCreating?'➕ Yeni çekiliş hazırlanıyor. Henüz mevcut bir çekiliş seçilmedi.':'Yönetmek için çekiliş veya taslak seç.';
  return changed;
 }
 function wzgcSelect(value){
@@ -14422,6 +14468,8 @@ function wzgcSelect(value){
  if(!picker||![...picker.options].some(o=>o.value===value))return;
  if(wzg66?.busy||wzg66?.spinning){picker.value=wzgcSelectedDraftId?'draft:'+wzgcSelectedDraftId:wzg78State.campaignId;return alert('Aktif kura işlemi bitmeden çekiliş değiştirme.');}
  if(typeof wzg2CloseLiveEdit==='function')wzg2CloseLiveEdit();
+ wzgcExitCreationMode();
+ const create=document.getElementById('wzgcCreatePanel');if(create)create.open=false;
  wzgcSelectedDraftId=value.startsWith('draft:')?value.slice(6):'';
  wzg78State.campaignId=wzgcSelectedDraftId?'':value;
  wzg78State.page=1;
@@ -14433,7 +14481,13 @@ function wzgcSelect(value){
  document.getElementById('wzg78Count')?.removeAttribute('data-loaded');
  wzg2AdminRefresh();
 }
-function wzgcNewDraft(){wzgClear();const t=document.getElementById('wzgcTemplateSelect');if(t)t.value='';wzgcUpdateTemplateDelete();document.getElementById('wzgcCreatePanel').open=true;document.getElementById('wzgcCreatePanel').scrollIntoView({behavior:'smooth',block:'start'});}
+function wzgcNewDraft(){
+ wzgcEnterCreationMode();
+ wzgClear();
+ const t=document.getElementById('wzgcTemplateSelect');if(t)t.value='';wzgcUpdateTemplateDelete();
+ const panel=document.getElementById('wzgcCreatePanel');panel.open=true;
+ panel.scrollIntoView({behavior:'smooth',block:'start'});
+}
 async function wzgcLoadTemplates(){
  const select=document.getElementById('wzgcTemplateSelect');if(!select)return false;
  const previous=select.value;
@@ -14466,6 +14520,7 @@ function wzgcApplyTemplate(id){
  wzgcUpdateTemplateDelete();
  if(!id)return;
  const t=wzgcTemplatesCache.find(x=>x.id===id);if(!t||!t.config)return;
+ wzgcEnterCreationMode();
  const b=t.config,c=b.conditions||{};
  wzgClear(); // Clears draft identity; never reuse a campaign or template ID.
  document.getElementById('wzgcTemplateSelect').value=id;
