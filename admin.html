@@ -1167,6 +1167,15 @@ body.dmModalOpen{overflow:hidden}
 @media(max-width:720px){.wz41-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.wz41-filterbar{grid-template-columns:1fr}.wz41-filterbar button{width:100%!important}.wz41-list{grid-template-columns:1fr;max-height:62vh}.wz41-menu .wz41-tabs button{flex:1 1 43%}.wz41-dialog{padding:14px}}
 
 
+/* V31.1.24 — seçilen turnuvanın ayar yüklenmesi açık ve üstte görünür. */
+#wz41SettingsLoadState{display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap;
+ border:1px solid #45404a;background:#19191d;color:#e4e2e9;border-radius:11px;padding:11px 13px;margin:14px 0 10px;font-size:13px}
+#wz41SettingsLoadState[data-state="ok"]{border-color:#335f42;color:#adf0c5}
+#wz41SettingsLoadState[data-state="error"]{border-color:#a44848;color:#ffb5b5;background:#281619}
+#wz41SettingsLoadState[data-state="loading"]{border-color:#5a4c39;color:#f5d5a0}
+#wz41SettingsRetry{margin:0!important;min-width:160px;width:auto!important;padding:8px 10px!important}
+#tournamentManagerCard.wz41-config-loading #tournamentQuickInfo{opacity:.55}
+
 /* WEİZEND V30.4.8: Mesaj akışında gerçek kaydırma alanı ve görünür gönderim sonucu */
 #section-messages .dmShell{min-height:0;align-items:stretch}
 #section-messages .dmChat,#section-messages .dmChatPanel{
@@ -2664,9 +2673,16 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
           <label>Katılım limiti (0 = limitsiz)<input id="wzgMaxEntries" type="number" min="0" max="1000000" value="0"></label>
         </div>
         <h3 style="margin-bottom:3px">🔐 Bu çekilişe özel katılım şartları</h3>
-        <p class="muted">Katılımcının Kick hesabını doğrulaması ve en az 18 yaşında olması temel kuraldır. Sosyal görevleri bağlantılarını yazarak otomatik etkinleştirebilirsin. <b>Kick takip, ücretli abonelik, Gift ve bağış katılım şartı değildir.</b></p>
+        <p class="muted">Katılımcının Kick hesabını doğrulaması ve en az 18 yaşında olması temel kuraldır. Sosyal görevleri seçip ilgili adresleri bu çekilişe özel yazabilirsin. <b>Kick takip, ücretli abonelik, Gift ve bağış katılım şartı değildir.</b></p>
+        <div class="wzg-options">
+          <label><input id="wzgKickVisit" type="checkbox"> Kick kanalını ziyaret etmeli <small>(bağlantı açma)</small></label>
+          <label><input id="wzgInstagram" type="checkbox"> Instagram hesabını ziyaret etmeli <small>(ziyaret onayı)</small></label>
+          <label><input id="wzgDiscord" type="checkbox"> Discord davetini açmalı <small>(ziyaret onayı)</small></label>
+          <label><input id="wzgYouTube" type="checkbox"> YouTube kanalını ziyaret etmeli <small>(ziyaret onayı)</small></label>
+          <label><input id="wzgTikTok" type="checkbox"> TikTok hesabını ziyaret etmeli <small>(ziyaret onayı)</small></label>
+        </div>
         <h3 style="margin:17px 0 4px">🔗 Katılım görevlerinin yönlendirme adresleri</h3>
-        <p class="muted">Bağlantı girersen o platformun ziyaret görevi otomatik eklenir; alan boşsa görev görünmez. Bağlantı ziyaret onayı, gerçek takip veya abonelik doğrulaması değildir.</p>
+        <p class="muted">Yalnızca işaretlediğin görevlerin bağlantısı zorunlu. Ziyaret tiki, takip veya abonelik yapıldığının doğrulaması değildir.</p>
         <div class="wzg-grid">
           <label>Kick kanal bağlantısı<input id="wzgLinkKick" type="url" maxlength="700" placeholder="https://kick.com/weizendtv"></label>
           <label>Instagram bağlantısı<input id="wzgLinkInstagram" type="url" maxlength="700" placeholder="https://www.instagram.com/weizendtv/"></label>
@@ -2708,11 +2724,8 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
             <label>Bitiş tarihi ve saati<input id="wzg2EditEnd" type="datetime-local"></label>
             <label style="grid-column:1/-1">Kapak görseli (HTTPS)<input id="wzg2EditImage" type="url" maxlength="700" placeholder="https://..."></label>
           </div>
-          <label for="wzg2EditSubscriberWeight">⭐ Kendi ödemeli abone başlangıç hakkı (yalnızca katılım açılmadan önce)
-            <select id="wzg2EditSubscriberWeight"><option value="1">×1 — 1 hak</option><option value="2">×2 — 2 hak</option><option value="3">×3 — 3 hak</option><option value="5">×5 — 5 hak</option><option value="10">×10 — 10 hak</option></select>
-          </label>
           <h4>🔗 Mevcut çekilişin görev bağlantıları</h4>
-          <p class="muted">Kayıtlar açılmadan önce bağlantı ekleyerek görevi açabilir veya alanı boşaltarak kaldırabilirsin. Kayıt açıldıktan sonra bütün ayarlar kilitlenir.</p>
+          <p class="muted">Görev şartlarını değiştirmeden yalnızca hedef adresleri düzenleyebilirsin. Kaydın yayına yansıması anlıktır. Seçili görevlerin bağlantısını boş bırakma.</p>
           <div class="wzg-grid">
             <label>Kick URL<input id="wzg2EditKickLink" type="url" maxlength="700" placeholder="https://kick.com/..."></label>
             <label>Instagram URL<input id="wzg2EditInstagramLink" type="url" maxlength="700" placeholder="https://instagram.com/..."></label>
@@ -2720,7 +2733,7 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
             <label>YouTube URL<input id="wzg2EditYoutubeLink" type="url" maxlength="700" placeholder="https://youtube.com/..."></label>
             <label>TikTok URL<input id="wzg2EditTiktokLink" type="url" maxlength="700" placeholder="https://tiktok.com/..."></label>
           </div>
-          <p class="muted">Yalnızca katılım başlamadan önce tarih, bağlantı ve abone başlangıç hakkı güncellenebilir. Katılım açıldığı anda düzenleme kilitlenir. Kura başlarken katılımcı listesi, bilet ve haklar korunur.</p>
+          <p class="muted">Katılımcı varsa bitiş süresini kısaltamazsın veya başlangıcı geleceğe alamazsın. Katılım kuralları, biletler, abone çarpanı ve kazanan sayısı bu ekranda değiştirilmez. Ödülü değiştirmen mevcut katılımcılara karşı yükümlülüklerini ortadan kaldırmaz; değişiklikleri ayrıca duyur.</p>
           <div class="wzg-row">
             <button type="button" id="wzg2EditSave" onclick="wzg2SaveLiveEdit()">💾 Değişiklikleri Kaydet</button>
             <button type="button" class="secondary" onclick="wzg2CloseLiveEdit()">Vazgeç</button>
@@ -4024,6 +4037,10 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
           <option value="">Turnuvalar yükleniyor...</option>
         </select>
 
+        <div id="wz41SettingsLoadState" class="wz41-config-state" role="status" aria-live="polite">
+          <span id="wz41SettingsLoadMessage">Turnuva ayarları henüz yüklenmedi.</span>
+          <button id="wz41SettingsRetry" type="button" class="secondary smallButton" onclick="loadTournamentConfig()">↻ Bilgileri Yeniden Yükle</button>
+        </div>
         <div id="tournamentQuickInfo" class="tournamentQuickInfo"></div>
 
         <h3 class="subTitle">Temel Bilgiler</h3>
@@ -9900,6 +9917,9 @@ async function loadTournamentList(force=false){
       currentTournamentEntryModeLock = null;
       currentTournamentEntries = null;
       currentTournamentBracket = null;
+      wz41ConfigLoadedId='';
+      wz41ConfigNotice('error','Yönetilecek turnuva bulunamadı.');
+      const save=document.getElementById('saveTournamentButton');if(save)save.disabled=true;
       document.getElementById('tournamentQuickInfo').innerHTML = '';
       document.getElementById('tournamentEntrySummary').innerHTML = 'Yönetilecek mevcut turnuva bulunmuyor.';
       document.getElementById('tournamentEntriesView').innerHTML = '';
@@ -10301,10 +10321,34 @@ async function deleteCurrentTournamentTemplate(){
   }
 }
 
+// V31.1.24 — Config state is per tournament. Old requests cannot paint the
+// settings of a newly selected tournament; server errors are visible at the top.
+let wz41ConfigLoadedId = '';
+let wz41ConfigLoadSequence = 0;
+let wz41ConfigPendingId = '';
+function wz41ConfigNotice(state,message){
+  const box=document.getElementById('wz41SettingsLoadState');
+  const label=document.getElementById('wz41SettingsLoadMessage');
+  const retry=document.getElementById('wz41SettingsRetry');
+  if(box) box.dataset.state=state;
+  if(label) label.textContent=String(message||'');
+  if(retry){retry.disabled=state==='loading';retry.textContent=state==='loading'?'⏳ Yükleniyor...':'↻ Yeniden Dene';}
+  document.getElementById('tournamentManagerCard')?.classList.toggle('wz41-config-loading',state==='loading');
+}
 async function loadTournamentConfig(){
   const id = document.getElementById('tournamentSelect')?.value || '';
-  if(!id) return;
-
+  if(id && wz41ConfigPendingId===id)return false; // Aynı GET'i üst üste yollama.
+  const seq=++wz41ConfigLoadSequence;
+  wz41ConfigPendingId=id;
+  const save=document.getElementById('saveTournamentButton');
+  if(!id){
+    wz41ConfigLoadedId='';
+    if(save) save.disabled=true;
+    wz41ConfigNotice('error','Önce yukarıdaki listeden bir turnuva seç.');
+    return false;
+  }
+  wz41ConfigNotice('loading','⏳ Seçilen turnuvanın temel bilgileri ve katılım ayarları yükleniyor...');
+  if(save) save.disabled=true;
   try{
     const [baseRes,v2Res] = await Promise.all([
       api(`/admin/tournament/config?id=${encodeURIComponent(id)}&_=${Date.now()}`),
@@ -10318,6 +10362,9 @@ async function loadTournamentConfig(){
     if(!v2Res.r.ok || !v2Res.d?.success){
       throw new Error(v2Res.d?.error || `HTTP ${v2Res.r.status}`);
     }
+
+    // A rapid tournament change must never fill a different tournament's form.
+    if(seq!==wz41ConfigLoadSequence || document.getElementById('tournamentSelect')?.value!==id)return false;
 
     const t = baseRes.d.tournament;
     const rule = v2Res.d.rule || {};
@@ -10446,18 +10493,29 @@ async function loadTournamentConfig(){
     if(wz41Installed) wz411ApplyPanelVisibility();
     updateTournamentEntryFields();
 
-    await Promise.all([
-      loadTournamentEntries(true),
-      loadTournamentBracket(true),
-      loadTournamentPredictions(true)
-    ]);
-
+    wz41ConfigLoadedId=String(id);
+    wz41ConfigNotice('ok','✅ '+String(t.name||'Turnuva')+' ayarları yüklendi. Bilgileri düzenleyip kaydedebilirsin.');
+    if(save)save.disabled=false;
     hideStatus('tournamentStatus');
+    // Secondary views must not delay the settings form. Load these only when
+    // requested; the selected tournament settings remain independently usable.
+    if(wz41Panel==='teams') void loadTournamentEntries(true);
+    if(wz41Panel==='bracket') void loadTournamentBracket(true);
+    if(wz41Panel==='predictions') void loadTournamentPredictions(true);
+    return true;
 
   }catch(error){
+    if(seq!==wz41ConfigLoadSequence || document.getElementById('tournamentSelect')?.value!==id)return false;
+    wz41ConfigLoadedId='';
+    if(save) save.disabled=true;
+    const message=String(error?.message||error);
     const state = document.getElementById('tLifecycleStateText');
     if(state) state.textContent = '⚠️ Ayrıntılar yüklenemedi';
-    showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
+    wz41ConfigNotice('error','❌ Turnuva bilgileri alınamadı: '+message+'. Yeniden Dene butonuna bas.');
+    showStatus('tournamentStatus','❌ ' + esc(message),false);
+    return false;
+  }finally{
+    if(seq===wz41ConfigLoadSequence)wz41ConfigPendingId='';
   }
 }
 
@@ -10566,7 +10624,11 @@ async function repairTournamentEntryLock(){
 async function saveTournamentConfig(){
   const tournamentId = document.getElementById('tournamentSelect')?.value || '';
   if(!tournamentId) return;
-
+  // Never save blank/stale fields when a config read failed or belongs to another tournament.
+  if(wz41ConfigLoadedId!==String(tournamentId)){
+    wz41ConfigNotice('error','⚠️ Bu turnuvanın ayarları henüz yüklenmedi. Kaydetmeden önce Yeniden Dene.');
+    return;
+  }
 
   const button = document.getElementById('saveTournamentButton');
 
@@ -13132,12 +13194,24 @@ function wz41OpenPanel(key,scroll=true){
  const tid=document.getElementById('tournamentSelect')?.value||'';
  if(tid && key==='payments')refreshTournamentParticipationTransactions().catch(()=>{});
  if(tid && key==='predictions')loadTournamentPredictions(true).catch(()=>{});
+ if(tid && key==='teams')loadTournamentEntries(true).catch(()=>{});
+ if(tid && key==='bracket')loadTournamentBracket(true).catch(()=>{});
+ if(key==='settings'){
+   if(!tid)wz41ConfigNotice('error','Önce listeden bir turnuva seç.');
+   else if(wz41ConfigLoadedId!==String(tid))void loadTournamentConfig();
+ }
  if(tid && key==='lobbies'){
   const cache=wz41CacheV30.get(String(tid));
   if(cache?.data)v30AdminRender(cache.data,tid);
   else loadArenaLobbiesAdmin(tid).catch(()=>{});
  }
- if(scroll)document.getElementById('wz41Menu')?.scrollIntoView({behavior:'smooth',block:'start'});
+ if(scroll){
+   const panelId=wz41PanelIds[key]?.[0];
+   requestAnimationFrame(()=>{
+     const target=document.getElementById(panelId)||document.getElementById('wz41Menu');
+     target?.scrollIntoView({behavior:'smooth',block:'start'});
+   });
+ }
 }
 function wz41ActiveList(){
  return tournamentCatalogCache.filter(t=>{
@@ -13212,8 +13286,10 @@ async function wz41SelectTournament(encodedId){
  if(select.value!==tid){
    select.value=tid;
    v30AdminOpenMatch='';
-   await loadTournamentConfig();
  }
+ // The initial option may have been auto-selected while its detail GET failed.
+ // Selecting that same card must always be allowed to recover the settings.
+ if(wz41ConfigLoadedId!==String(tid))await loadTournamentConfig();
  wz41RenderDashboard();
  wz41OpenPanel('lobbies');
 }
@@ -13478,7 +13554,7 @@ function wzgCheck(id){return !!document.getElementById(id)?.checked}
 function wzgMessage(msg){const el=document.getElementById('wzgStatus');if(el)el.textContent=String(msg)}
 function wzgDateValue(value){return value?new Date(value).toISOString():null}
 function wzgCollect(){
-  const subscriberWeight=Number(wzgVal('wzgSubscriberWeight'));
+  const subscriberWeight=3;
   if(![1,2,3,5,10].includes(subscriberWeight))throw Error('Geçersiz abone şans çarpanı.');
   return {
     id:wzgVal('wzgId'), title:wzgVal('wzgTitle'),description:wzgVal('wzgDescription'),
@@ -13486,9 +13562,9 @@ function wzgCollect(){
     image_url:wzgVal('wzgImage'),legal_note:wzgVal('wzgLegalNote'),
     start_at:wzgDateValue(wzgVal('wzgStart')),end_at:wzgDateValue(wzgVal('wzgEnd')),
     winners_count:Number(wzgVal('wzgWinners')),max_entries:Number(wzgVal('wzgMaxEntries')),
-    conditions:{kickVerified:true,kickVisit:!!wzgVal('wzgLinkKick'),socialLinks:{kick:wzgVal('wzgLinkKick'),instagram:wzgVal('wzgLinkInstagram'),discord:wzgVal('wzgLinkDiscord'),youtube:wzgVal('wzgLinkYoutube'),tiktok:wzgVal('wzgLinkTiktok')},discordMember:!!wzgVal('wzgLinkDiscord'),
-      instagramFollow:!!wzgVal('wzgLinkInstagram'),youtubeSubscribe:!!wzgVal('wzgLinkYoutube'),
-      tiktokFollow:!!wzgVal('wzgLinkTiktok'),subscriberWeight,
+    conditions:{kickVerified:true,kickVisit:wzgCheck('wzgKickVisit'),socialLinks:{kick:wzgVal('wzgLinkKick'),instagram:wzgVal('wzgLinkInstagram'),discord:wzgVal('wzgLinkDiscord'),youtube:wzgVal('wzgLinkYoutube'),tiktok:wzgVal('wzgLinkTiktok')},discordMember:wzgCheck('wzgDiscord'),
+      instagramFollow:wzgCheck('wzgInstagram'),youtubeSubscribe:wzgCheck('wzgYouTube'),
+      tiktokFollow:wzgCheck('wzgTikTok'),subscriberWeight,
       subscriberBonusX5DraftOnly:subscriberWeight===5,
       subscriberEligibility:'direct_paid_or_renewal_only',giftRecipientsWeight:1,
       manualReview:false,minimumAge18:true,
@@ -13498,6 +13574,7 @@ function wzgCollect(){
 function wzgClear(){
   for(const id of ['wzgId','wzgTitle','wzgDescription','wzgPrizeTitle','wzgPrizeDetails','wzgImage','wzgLegalNote','wzgStart','wzgEnd','wzgLinkKick','wzgLinkInstagram','wzgLinkDiscord','wzgLinkYoutube','wzgLinkTiktok'])
     document.getElementById(id).value='';
+  for(const id of ['wzgKickVisit','wzgDiscord','wzgInstagram','wzgYouTube','wzgTikTok'])document.getElementById(id).checked=false;
   document.getElementById('wzgSubscriberWeight').value='3';
   document.getElementById('wzgWinners').value='1';
   document.getElementById('wzgMaxEntries').value='0';
@@ -13523,9 +13600,12 @@ function wzgEdit(id){
     wzgLinkKick:b.conditions?.socialLinks?.kick,wzgLinkInstagram:b.conditions?.socialLinks?.instagram,wzgLinkDiscord:b.conditions?.socialLinks?.discord,wzgLinkYoutube:b.conditions?.socialLinks?.youtube,wzgLinkTiktok:b.conditions?.socialLinks?.tiktok};
   Object.entries(fill).forEach(([key,v])=>{const el=document.getElementById(key);if(el)el.value=v??''});
   const c=b.conditions||{};
+  [['wzgKickVisit','kickVisit'],['wzgDiscord','discordMember'],['wzgInstagram','instagramFollow'],
+    ['wzgYouTube','youtubeSubscribe'],['wzgTikTok','tiktokFollow']]
+    .forEach(([key,rule])=>document.getElementById(key).checked=c[rule]===true);
   const oldWeight=c.subscriberBonusX5DraftOnly===true?5:1;
   const chosenWeight=Number(c.subscriberWeight??oldWeight);
-  document.getElementById('wzgSubscriberWeight').value=[1,2,3,5,10].includes(chosenWeight)?String(chosenWeight):'3';
+  document.getElementById('wzgSubscriberWeight').value='3';
   document.getElementById('wzgcCreatePanel').open=true;
   document.getElementById('wzgcCreatePanel').scrollIntoView({block:'start',behavior:'smooth'});
   wzgMessage('Taslak düzenlemeye açıldı: '+b.title);
@@ -13550,7 +13630,7 @@ async function wzgLoad(){
       inf.textContent=(b.status==='draft'?'📝 TASLAK':b.status==='cancelled'?'⛔ İPTAL EDİLEN ÇEKİLİŞ':'📁 ARŞİV')+' • '+b.winners_count+' kazanan • '+
         [c.discordMember?'Discord katılım':'',c.instagramFollow?'Instagram takip':'',
         c.youtubeSubscribe?'YouTube abonelik':'',c.tiktokFollow?'TikTok takip':'',
-        (()=>{const w=Number(c.subscriberWeight??(c.subscriberBonusX5DraftOnly?5:1));return w>1?'Kendi ödemeli abonelere toplam ×'+w+' hak':'Ek abone avantajı yok';})()].filter(Boolean).join(', ').concat(' • Kick doğrulama ve 18+ • Henüz yayınlanmadı');
+        (()=>{const w=Number(c.subscriberWeight??(c.subscriberBonusX5DraftOnly?5:1));return w>1?'Kendi ödemeli abonelere +3 bonus':'Abone bonusu +3';})()].filter(Boolean).join(', ').concat(' • Kick doğrulama ve 18+ • Henüz yayınlanmadı');
       row.append(inf);
       if(b.status==='draft'){
         const actions=document.createElement('div');actions.className='wzg-row';
@@ -13679,7 +13759,7 @@ async function wzg2Publish(id){
 
 let wzg2EditCampaign=null,wzg2EditPending=false;
 function wzg2OpenLiveEdit(c){
-  if(!c||c.status!=='active'||!wzg140Editable(c))return;
+  if(!c||c.status!=='active')return;
   wzg2EditCampaign={...c};
   let storedLinks={};try{storedLinks=JSON.parse(c.conditions_json||'{}').socialLinks||{}}catch(_){}
   const values={wzg2EditTitle:c.title,wzg2EditPrizeTitle:c.prize_title,
@@ -13691,10 +13771,7 @@ function wzg2OpenLiveEdit(c){
     wzg2EditYoutubeLink:storedLinks?.youtube||'',
     wzg2EditTiktokLink:storedLinks?.tiktok||''};
   Object.entries(values).forEach(([id,value])=>{const el=document.getElementById(id);if(el)el.value=value??''});
-  let selected={};try{selected=JSON.parse(c.conditions_json||'{}')}catch(_){}
-  const weight=Number(selected.subscriberWeight??3);
-  document.getElementById('wzg2EditSubscriberWeight').value=[1,2,3,5,10].includes(weight)?String(weight):'3';
-  document.getElementById('wzg2EditContext').textContent='Katılım başlamadan önce düzenleme: '+c.title+' • Çekiliş numarası: '+c.id;
+  document.getElementById('wzg2EditContext').textContent='Yayımlanmış çekiliş: '+c.title+' • Çekiliş numarası: '+c.id;
   document.getElementById('wzg2EditStatus').textContent='';
   const live=document.getElementById('wzgcLivePanel');if(live)live.hidden=false;
   const panel=document.getElementById('wzg2EditPanel');panel.hidden=false;
@@ -13716,7 +13793,7 @@ async function wzg2SaveLiveEdit(){
       title:val('wzg2EditTitle'),description:val('wzg2EditDescription'),
       prize_title:val('wzg2EditPrizeTitle'),prize_details:val('wzg2EditPrizeDetails'),
       image_url:val('wzg2EditImage'),socialLinks:{kick:val('wzg2EditKickLink'),instagram:val('wzg2EditInstagramLink'),discord:val('wzg2EditDiscordLink'),youtube:val('wzg2EditYoutubeLink'),tiktok:val('wzg2EditTiktokLink')},start_at:wzgDateValue(val('wzg2EditStart')),
-      end_at:wzgDateValue(val('wzg2EditEnd')),subscriberWeight:Number(val('wzg2EditSubscriberWeight'))};
+      end_at:wzgDateValue(val('wzg2EditEnd'))};
   }catch(e){status.textContent='❌ Tarih/saat biçimi geçersiz.';return}
   if(!payload.title||!payload.prize_title){status.textContent='❌ Başlık ve ödül zorunlu.';return}
   const s=payload.start_at?Date.parse(payload.start_at):NaN,e=payload.end_at?Date.parse(payload.end_at):NaN;
@@ -14211,7 +14288,7 @@ function wzg66ShowCandidate(p,resumed){
  wzg66SetMessage('🎉 '+p.username+' · Sıradaki ödül: '+(wzg66.currentAward||wzg66.session?.currentAward||'?')+' · '+p.weight+' toplam hak');
  const box=wzg66$('wzg66After');box.replaceChildren();
  const approve=document.createElement('button');approve.className='primary';approve.textContent='✅ Tamamla';approve.onclick=()=>wzg66Confirm();
- box.append(approve); // V31.1.40: no arbitrary redraw/skip after secure random selection.
+ const skip=document.createElement('button');skip.textContent='⏭️ Atla / Yeniden Döndür';skip.onclick=()=>wzg66Skip();box.append(approve,skip);
 }
 async function wzg66Confirm(){
  if(wzg66.busy||!wzg66.candidate)return;wzg66.busy=true;
@@ -14266,12 +14343,6 @@ wzg2OpenReel=async function(id,title){wzg66Make();wzg66$('wzg66Start').hidden=fa
 /* V31.1.04 | Dedicated giveaway control center; all records stay server-side. */
 let wzgcTemplatesCache=[];
 let wzgcToolbarCampaign=null;
-// V31.1.40 — No published-setting edits once registration has actually opened.
-function wzg140Editable(c){
- if(!c||c.status!=='active')return false;
- const d=wzg136AdminDates(c),now=Date.now();
- return !d.startAt || (Number.isFinite(Date.parse(d.startAt))&&Date.parse(d.startAt)>now);
-}
 function wzgcUpdateToolbar(c){
  const bar=document.getElementById('wzgcDirectActions');if(!bar)return;
  if(wzgcCreating){wzgcToolbarCampaign=null;bar.hidden=true;return;}
@@ -14301,8 +14372,8 @@ function wzgcUpdateToolbar(c){
  startBtn.disabled=pending||selected.status==='cancelled';
  startBtn.title=future?'Planlanan tarihten önce açmak için ayrıca onay gerekir.':running?'Katılımı erken kapatır; iki kez onay ister.':finished?'Kazananları ve kura geçmişini gösterir.':'Kura ekranını açar.';
  const edit=document.getElementById('wzgcActEdit');
- edit.disabled=!(selected.status==='active'&&wzg140Editable(selected));
- edit.title=edit.disabled?'Katılım açıldıktan sonra çekiliş ayarları kilitli.':'Kayıt açılmadan tarih, bağlantı ve abone hakkını düzenle.';
+ edit.disabled=!(selected.status==='active'&&(pending||end>now));
+ edit.title=edit.disabled?'Yalnızca bitmemiş, yayımlanmış çekiliş düzenlenebilir.':'Bu çekilişin bilgilerini ve tarihlerini düzenle.';
  const roster=document.getElementById('wzgcActRoster');
  roster.disabled=selected.status==='cancelled';
  roster.title=roster.disabled?'İptal edilen çekiliş için katılımcı yönetimi kapalı.':'Sadece seçilen çekilişin katılımcılarını göster.';
@@ -14333,7 +14404,7 @@ function wzgcToolbarAction(action){
    }else if(c.status==='active'&&end>now){wzg69StartDrawEarly(c)}
    else wzg2OpenReel(c.id,c.title);
  }else if(action==='edit'){
-   if(c.status!=='active'||!wzg140Editable(c))return;
+   if(c.status!=='active'||(!dateInfo.pending&&end<=now))return;
    const editPanel=document.getElementById('wzg2EditPanel');
    if(editPanel&&!editPanel.hidden&&wzg2EditCampaign?.id===c.id){wzg2CloseLiveEdit();return;}
    wzg2OpenLiveEdit(c);
@@ -14582,7 +14653,10 @@ function wzgcApplyTemplate(id){
   wzgLinkKick:c.socialLinks?.kick,wzgLinkInstagram:c.socialLinks?.instagram,wzgLinkDiscord:c.socialLinks?.discord,
   wzgLinkYoutube:c.socialLinks?.youtube,wzgLinkTiktok:c.socialLinks?.tiktok};
  for(const [key,value] of Object.entries(fields)){const el=document.getElementById(key);if(el)el.value=value??''}
- document.getElementById('wzgSubscriberWeight').value=[1,2,3,5,10].includes(Number(c.subscriberWeight))?String(c.subscriberWeight):'3';
+ for(const [id,key] of [['wzgKickVisit','kickVisit'],['wzgDiscord','discordMember'],['wzgInstagram','instagramFollow'],['wzgYouTube','youtubeSubscribe'],['wzgTikTok','tiktokFollow']]){
+  const el=document.getElementById(id);if(el)el.checked=c[key]===true;
+ }
+ document.getElementById('wzgSubscriberWeight').value='3'; // Matches the current V31.1.03 fixed confirmed subscriber policy.
  document.getElementById('wzgcCreatePanel').open=true;
  document.getElementById('wzgcCreatePanel').scrollIntoView({block:'start',behavior:'smooth'});
  wzgMessage('✅ “'+t.name+'” şablonu forma yüklendi. Henüz hiçbir kayıt oluşturulmadı veya başlatılmadı. Tarihleri kontrol edip taslağı kaydet.');
