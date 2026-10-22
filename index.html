@@ -4832,6 +4832,55 @@ body > #wzAppbar {
 body.wz-raffle-modal-open::after{content:'';position:fixed;inset:0;background:#000;z-index:2147482000;pointer-events:auto}
 body.wz-raffle-modal-open #wzGiveawayView{position:relative;z-index:2147482001}
 </style>
+<style id="wz-v31124-first-visit-guide">
+/* V31.1.24 | Yeni ziyaretçiler için kısa, isteğe bağlı yönlendirme.
+   Yalnızca Market görünümü; eski işlemler, formlar ve diğer sekmeler değişmez. */
+#wzNewcomerGuide[hidden]{display:none!important}
+html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!important}
+#wzNewcomerGuide{position:relative;width:100%;margin:15px auto 20px;padding:21px 22px 18px;
+ border:1px solid #692631;border-radius:18px;
+ background:radial-gradient(circle at 97% 0%,rgba(227,27,27,.17),transparent 45%),linear-gradient(135deg,#161217,#0c0d12 65%);
+ color:#f8f8fa;box-shadow:0 14px 36px rgba(0,0,0,.23);font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
+#wzNewcomerGuide *{box-sizing:border-box}
+.wz-qs-header{display:flex;align-items:start;justify-content:space-between;gap:15px;margin-bottom:15px}
+.wz-qs-kicker{display:inline-block;color:#ff9aa4;font-size:11px;letter-spacing:1.2px;font-weight:900;margin-bottom:5px}
+#wzNewcomerGuide h2{color:#fff;font-size:clamp(20px,2.5vw,27px);line-height:1.2;margin:0 0 6px;font-weight:950}
+#wzNewcomerGuide .wz-qs-subtitle{color:#bfc0ca;font-size:13px;line-height:1.5;margin:0}
+#wzNewcomerGuide .wz-qs-close{flex:0 0 auto;cursor:pointer;border:1px solid #45404a;border-radius:10px;background:#1a1a21;color:#ddd;
+ padding:8px 10px;font-size:12px;font-weight:850;min-height:38px;transition:background .17s}
+#wzNewcomerGuide .wz-qs-close:hover{background:#29232b}
+.wz-qs-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+#wzNewcomerGuide .wz-qs-link{appearance:none;cursor:pointer;text-align:left;min-width:0;min-height:134px;padding:15px;
+ border:1px solid #34313b;border-radius:13px;background:#17171e;color:#fff;
+ display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:8px;
+ transition:border-color .16s,background .16s,transform .16s}
+#wzNewcomerGuide .wz-qs-link:hover{border-color:#e3464f;background:#211a21;transform:translateY(-2px)}
+#wzNewcomerGuide .wz-qs-link:focus-visible,#wzNewcomerGuide .wz-qs-close:focus-visible{
+ outline:2px solid #ff777b;outline-offset:3px}
+.wz-qs-name{display:block;font-size:16px;line-height:1.2;font-weight:950;color:#fff}
+.wz-qs-explain{display:block;font-size:12px;line-height:1.45;color:#c6c5cf;flex:1}
+.wz-qs-cta{display:block;font-size:12px;font-weight:900;color:#ff8d97}
+.wz-qs-foot{display:flex;justify-content:space-between;gap:11px;align-items:center;flex-wrap:wrap;
+ margin-top:13px;padding-top:13px;border-top:1px solid #342930;color:#bcbec9;font-size:12px;line-height:1.55}
+.wz-qs-foot a{color:#ffb7be;text-decoration:none;font-weight:900}
+.wz-qs-foot a:hover{text-decoration:underline}
+#wzQuickGuideReopen{border:1px solid #3b343b!important;background:#19191e!important;color:#f2dde0!important;
+ text-decoration:none!important;border-radius:10px!important;padding:8px 12px!important;font-weight:850!important;
+ display:inline-flex!important;align-items:center!important;justify-content:center!important;min-height:38px!important;
+ font-family:inherit!important;font-size:13px!important;cursor:pointer!important}
+#wzQuickGuideReopen:hover{border-color:#bb4b56!important;background:#261b20!important}
+@media(max-width:900px){.wz-qs-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){#wzNewcomerGuide{margin:12px 0 17px;padding:14px 12px 13px;border-radius:14px}
+ .wz-qs-header{margin-bottom:11px;gap:8px}
+ #wzNewcomerGuide h2{font-size:21px}
+ .wz-qs-grid{gap:8px}
+ #wzNewcomerGuide .wz-qs-link{min-height:123px;padding:11px;gap:6px}
+ .wz-qs-name{font-size:14px}.wz-qs-explain{font-size:11.5px}.wz-qs-cta{font-size:11px}
+ #wzNewcomerGuide .wz-qs-close{padding:7px 9px;min-height:34px}
+ .wz-qs-foot{font-size:11.5px}
+ #wzQuickGuideReopen{font-size:12px!important}}
+@media(prefers-reduced-motion:reduce){#wzNewcomerGuide .wz-qs-link{transition:none}}
+</style>
 </head>
 <body>
 <script id="wz-v58-prepaint-view">
@@ -5344,6 +5393,76 @@ body.wz-raffle-modal-open #wzGiveawayView{position:relative;z-index:2147482001}
     </script>
 
     <div class="container">
+        <!-- V31.1.24: İlk kez gelenlere kısa, kapatılabilir 4 bölüm tanıtımı. -->
+        <section id="wzNewcomerGuide" aria-label="WEİZEND hızlı başlangıç rehberi" hidden>
+          <div class="wz-qs-header">
+            <div>
+              <span class="wz-qs-kicker">👋 YENİ GELENLER İÇİN</span>
+              <h2>WEİZEND'de ne yapmak istersin?</h2>
+              <p class="wz-qs-subtitle">Bir bölüme dokun, hemen başla. Karmaşık bir şey öğrenmene gerek yok.</p>
+            </div>
+            <button type="button" class="wz-qs-close" onclick="wzNewcomerGuideClose()" aria-label="Tanıtımı kapat">✕ Kapat</button>
+          </div>
+          <div class="wz-qs-grid">
+            <button type="button" class="wz-qs-link" onclick="wzNewcomerGuideGo('market')">
+              <strong class="wz-qs-name">🛒 Market</strong>
+              <span class="wz-qs-explain">Yayında kazandığın puanlarla ödüllere göz at.</span>
+              <span class="wz-qs-cta">Ürünleri gör →</span>
+            </button>
+            <button type="button" class="wz-qs-link" onclick="wzNewcomerGuideGo('players')">
+              <strong class="wz-qs-name">🎮 Oyuncu Ara</strong>
+              <span class="wz-qs-explain">Beraber oynayacak arkadaş bul veya lobi kur.</span>
+              <span class="wz-qs-cta">Oyuncu bul →</span>
+            </button>
+            <button type="button" class="wz-qs-link" onclick="wzNewcomerGuideGo('tournament')">
+              <strong class="wz-qs-name">🏆 Turnuvalar</strong>
+              <span class="wz-qs-explain">Turnuvaları, ödülleri ve katılım şartlarını incele.</span>
+              <span class="wz-qs-cta">Turnuvalara bak →</span>
+            </button>
+            <button type="button" class="wz-qs-link" onclick="wzNewcomerGuideGo('giveaway')">
+              <strong class="wz-qs-name">🎁 Çekilişler</strong>
+              <span class="wz-qs-explain">Ücretsiz katılımı ve biletli şanslarını keşfet.</span>
+              <span class="wz-qs-cta">Çekilişlere git →</span>
+            </button>
+          </div>
+          <div class="wz-qs-foot">
+            <span>🔐 İşlem yapmak için Kick hesabını bir kez doğrulaman gerekebilir.</span>
+            <a href="https://www.weizend.com/bilgi.html#baslangic" target="_blank" rel="noopener noreferrer">Doğrulama nasıl yapılır? ↗</a>
+          </div>
+        </section>
+        <script id="wz-v31124-newcomer-guide">
+        (function(){
+          'use strict';
+          const guide=document.getElementById('wzNewcomerGuide');
+          if(!guide)return;
+          const key='wz_first_visit_guide_done_v31124';
+          const markDone=()=>{try{localStorage.setItem(key,'1')}catch(_){}};
+          const close=(remember=true)=>{guide.hidden=true;if(remember)markDone();};
+          window.wzNewcomerGuideClose=()=>close(true);
+          window.wzNewcomerGuideOpen=()=>{
+            // Manuel yeniden açma: geri dönen üye dilerse rehberi tekrar görebilir.
+            if(document.documentElement.dataset.wzCurrentView!=='market')window.wzSetView?.('market');
+            guide.hidden=false;
+            guide.scrollIntoView({behavior:'smooth',block:'start'});
+          };
+          window.wzNewcomerGuideGo=(view)=>{
+            if(!['market','players','tournament','giveaway'].includes(view))return;
+            close(true);
+            if(view==='market'){
+              const products=document.getElementById('marketContent');
+              products?.scrollIntoView({behavior:'smooth',block:'start'});
+            } else window.wzSetView?.(view);
+          };
+          try{
+            const q=new URLSearchParams(location.search);
+            const deeplink=['product','tournament','g','wz_auth','wz_join','wz_view','wz_profile_accounts'].some(k=>q.has(k))||!!window.__WZ_SHARED_PRODUCT_ID__;
+            const reload=performance.getEntriesByType('navigation')[0]?.type==='reload';
+            const market=window.__WZ_INITIAL_VIEW__==='market';
+            // Deep link, yeniden yükleme ve farklı sekmelerdeki okuma konumlarını bozma.
+            if(!localStorage.getItem(key)&&market&&!deeplink&&!reload)guide.hidden=false;
+          }catch(_){/* localStorage kapalıysa uygulamayı etkileme */}
+        })();
+        </script>
         <header>
             <img src="https://i.hizliresim.com/fo5evkh4.png" alt="WEİZEND Logo" class="logo-img">
             <h1>WEİZEND MARKET</h1>
@@ -5351,6 +5470,7 @@ body.wz-raffle-modal-open #wzGiveawayView{position:relative;z-index:2147482001}
             
             <!-- Butonlar -->
             <div class="header-buttons">
+                <button id="wzQuickGuideReopen" type="button" onclick="wzNewcomerGuideOpen()">👋 Yeni misin?</button>
                 <a href="https://www.weizend.com/bilgi.html" target="_blank" rel="noopener noreferrer" class="ig-contact">❓ Bilgi Merkezi</a>
                 <a href="https://instagram.com/weizendtv" target="_blank" rel="noopener noreferrer" class="ig-contact">📸 İletişim: @weizendtv</a>
             </div>
@@ -10312,6 +10432,7 @@ return;
                 '⚠️ İşlem beklenenden uzun sürdü.<br><b>Puanın düşmüşse tekrar satın alma yapma.</b> Sipariş kaydı sistemde duruyor; birkaç saniye sonra tekrar kontrol edilebilir.';
         }
 
+        const wzV31123RefreshedOrders = new Set();
         async function checkPurchaseStatusOnce() {
             const orderId = currentPurchaseOrderId;
             const token = localStorage.getItem(SESSION_STORAGE_KEY) || '';
@@ -10379,6 +10500,13 @@ return;
                         `Harcanan: <b>${formatPoints(order.totalPoints)}</b><br>` +
                         `Kalan bakiye: <b>${formatPoints(order.pointsAfter)}</b>`;
                     document.getElementById('walletPoints').innerText = formatPoints(currentMarketPoints);
+                    // V31.1.23: Bilet dahil tum puanli urunlerde BotRix
+                    // onayindan sonra kanonik cüzdani bir kez tekrar oku.
+                    // Yeni bir !banka/!puansil komutu gondermez.
+                    if(!wzV31123RefreshedOrders.has(String(orderId))){
+                        wzV31123RefreshedOrders.add(String(orderId));
+                        checkSession({silent:true,retries:0}).catch(()=>false);
+                    }
                 } else if (paymentType === 'tl') {
                     document.getElementById('purchaseStatusText').innerHTML =
                         `✅ <b>BynoGame ödemen doğrulandı, siparişin onaylandı!</b><br>` +
