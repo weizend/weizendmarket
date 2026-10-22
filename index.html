@@ -5058,7 +5058,21 @@ html:not([data-wz-current-view="market"]) #wzV31126GiftShortcut{display:none!imp
     <span>Çekilişler</span>
   </button>
 </nav>
-
+<script id="wz-v31131-prepaint-mobile-nav">
+(function(){'use strict';
+  // Initial mobile nav state must be coherent BEFORE the long page parses.
+  // This is visual-only: it does not navigate, fetch, set sessions or scroll.
+  try{
+    const selected=window.__WZ_INITIAL_VIEW__||'market';
+    const tabs={market:'wzNavMarket',players:'wzNavPlayers',
+      tournament:'wzNavTournament',giveaway:'wzNavGiveaway'};
+    for(const [view,id] of Object.entries(tabs)){
+      document.getElementById(id)?.classList.toggle('active',selected===view);
+    }
+    document.getElementById('wzProfileTopBtn')?.classList.toggle('active',selected==='profile');
+  }catch(_){/* main tab controller remains the safe fallback */}
+})();
+</script>
 
 
     <div class="container">
