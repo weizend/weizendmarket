@@ -10326,42 +10326,78 @@ async function deleteCurrentTournamentTemplate(){
 let wz41ConfigLoadedId = '';
 let wz41ConfigLoadSequence = 0;
 let wz41ConfigPendingId = '';
+// V31.1.25: A stalled Worker response must never leave settings in an endless
+// loading state. The limit covers BOTH response headers and JSON body parsing.
+const WZ41_CONFIG_DEADLINE_MS = 15000;
+let wz41ConfigActiveRequests = [];
+function wz41StopConfigRequests(){
+  for(const c of wz41ConfigActiveRequests){try{c.abort()}catch(_){}}
+  wz41ConfigActiveRequests=[];
+}
+async function wz41ReadConfig(path,which,onReady){
+  const controller=new AbortController();
+  wz41ConfigActiveRequests.push(controller);
+  let timer;
+  const deadline=new Promise((_,reject)=>{
+    timer=setTimeout(()=>{
+      controller.abort();
+      reject(new Error(which+' isteği 15 saniyede tamamlanmadı. Worker veya D1 yavaş yanıtlıyor.'));
+    },WZ41_CONFIG_DEADLINE_MS);
+  });
+  try{
+    const result=await Promise.race([api(path,{signal:controller.signal}),deadline]);
+    if(!result.r.ok||!result.d?.success){
+      throw new Error(String(result.d?.error||('HTTP '+result.r.status)));
+    }
+    if(typeof onReady==='function')onReady();
+    return result;
+  }catch(error){
+    if(controller.signal.aborted){
+      throw new Error(which+' isteği zaman aşımına uğradı veya iptal edildi.');
+    }
+    throw new Error(which+': '+String(error?.message||error));
+  }finally{
+    clearTimeout(timer);
+    wz41ConfigActiveRequests=wz41ConfigActiveRequests.filter(x=>x!==controller);
+  }
+}
 function wz41ConfigNotice(state,message){
   const box=document.getElementById('wz41SettingsLoadState');
   const label=document.getElementById('wz41SettingsLoadMessage');
   const retry=document.getElementById('wz41SettingsRetry');
   if(box) box.dataset.state=state;
   if(label) label.textContent=String(message||'');
-  if(retry){retry.disabled=state==='loading';retry.textContent=state==='loading'?'⏳ Yükleniyor...':'↻ Yeniden Dene';}
+  if(retry){retry.disabled=false;retry.textContent=state==='loading'?'↻ İsteği Yeniden Başlat':'↻ Yeniden Dene';}
   document.getElementById('tournamentManagerCard')?.classList.toggle('wz41-config-loading',state==='loading');
 }
 async function loadTournamentConfig(){
   const id = document.getElementById('tournamentSelect')?.value || '';
-  if(id && wz41ConfigPendingId===id)return false; // Aynı GET'i üst üste yollama.
   const seq=++wz41ConfigLoadSequence;
+  // A second click on Retry or a tournament change cancels outdated GETs.
+  wz41StopConfigRequests();
   wz41ConfigPendingId=id;
+  wz41ConfigLoadedId='';
   const save=document.getElementById('saveTournamentButton');
   if(!id){
-    wz41ConfigLoadedId='';
     if(save) save.disabled=true;
     wz41ConfigNotice('error','Önce yukarıdaki listeden bir turnuva seç.');
+    wz41ConfigPendingId='';
     return false;
   }
-  wz41ConfigNotice('loading','⏳ Seçilen turnuvanın temel bilgileri ve katılım ayarları yükleniyor...');
+  wz41ConfigNotice('loading','⏳ Temel bilgiler ve katılım kuralları Worker’dan isteniyor (en fazla 15 sn)...');
   if(save) save.disabled=true;
   try{
+    let baseReady=false,ruleReady=false;
+    const updateProgress=()=>{
+      if(seq!==wz41ConfigLoadSequence || document.getElementById('tournamentSelect')?.value!==id)return;
+      if(baseReady&&!ruleReady)wz41ConfigNotice('loading','✅ Temel bilgiler alındı · ⏳ Katılım kuralları bekleniyor...');
+      if(ruleReady&&!baseReady)wz41ConfigNotice('loading','✅ Katılım kuralları alındı · ⏳ Temel bilgiler bekleniyor...');
+    };
     const [baseRes,v2Res] = await Promise.all([
-      api(`/admin/tournament/config?id=${encodeURIComponent(id)}&_=${Date.now()}`),
-      api(`/admin/tournament/v2/config?id=${encodeURIComponent(id)}&_=${Date.now()}`)
+      wz41ReadConfig(`/admin/tournament/config?id=${encodeURIComponent(id)}&_=${Date.now()}`,'Temel bilgiler',()=>{baseReady=true;updateProgress()}),
+      wz41ReadConfig(`/admin/tournament/v2/config?id=${encodeURIComponent(id)}&_=${Date.now()}`,'Katılım kuralları',()=>{ruleReady=true;updateProgress()})
     ]);
-
-    if(!baseRes.r.ok || !baseRes.d?.success || !baseRes.d?.tournament){
-      throw new Error(baseRes.d?.error || `HTTP ${baseRes.r.status}`);
-    }
-
-    if(!v2Res.r.ok || !v2Res.d?.success){
-      throw new Error(v2Res.d?.error || `HTTP ${v2Res.r.status}`);
-    }
+    if(!baseRes.d?.tournament)throw new Error('Temel bilgiler yanıtında turnuva kaydı yok.');
 
     // A rapid tournament change must never fill a different tournament's form.
     if(seq!==wz41ConfigLoadSequence || document.getElementById('tournamentSelect')?.value!==id)return false;
@@ -10511,11 +10547,15 @@ async function loadTournamentConfig(){
     const message=String(error?.message||error);
     const state = document.getElementById('tLifecycleStateText');
     if(state) state.textContent = '⚠️ Ayrıntılar yüklenemedi';
-    wz41ConfigNotice('error','❌ Turnuva bilgileri alınamadı: '+message+'. Yeniden Dene butonuna bas.');
+    wz41ConfigNotice('error','❌ Turnuva bilgileri alınamadı: '+message+(message.endsWith('.')?'':'.')+' Yeniden Dene butonuna bas.');
     showStatus('tournamentStatus','❌ ' + esc(message),false);
     return false;
   }finally{
-    if(seq===wz41ConfigLoadSequence)wz41ConfigPendingId='';
+    if(seq===wz41ConfigLoadSequence){
+      wz41ConfigPendingId='';
+      // If one of the two requests failed, do not leave the other active.
+      wz41StopConfigRequests();
+    }
   }
 }
 
