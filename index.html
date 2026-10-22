@@ -4881,6 +4881,53 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
  #wzQuickGuideReopen{font-size:12px!important}}
 @media(prefers-reduced-motion:reduce){#wzNewcomerGuide .wz-qs-link{transition:none}}
 </style>
+<style id="wz-v31126-onboarding-visibility">
+/* Profil: mobile explicitly labels the existing authenticated account icon. */
+.wz-v31126-profile-label{display:none}
+#wzV31126GuestProfileBtn{display:inline-flex;justify-self:end;align-items:center;justify-content:center;gap:7px;
+ min-height:44px;padding:8px 13px;border:1px solid #4b3540;border-radius:13px;
+ color:#fff;background:#17171d;font-weight:850;font-size:13px;white-space:nowrap;cursor:pointer}
+#wzV31126GuestProfileBtn:hover{border-color:#d33b49;background:#241a20}
+@media(max-width:780px){
+ #wzProfileTopBtn:not([style*="display:none"]){min-width:107px!important;max-width:120px!important;width:107px!important;
+  padding:4px 8px!important;grid-template-columns:32px auto!important;gap:7px!important}
+ #wzProfileTopBtn .wz-profile-top-avatar-icon{width:31px;height:31px;font-size:1.08rem}
+ .wz-v31126-profile-label{display:block;font-size:12px;font-weight:900;white-space:nowrap}
+ #wzV31126GuestProfileBtn{min-height:44px;padding:6px 10px;font-size:12px}
+}
+/* Market shortcut requires the existing validated gift-redeem flow. */
+#wzV31126GiftShortcut{display:flex;align-items:center;justify-content:space-between;gap:15px;
+ background:linear-gradient(115deg,#1b151c,#100f14);border:1px solid #60414b;
+ border-radius:16px;padding:14px 16px;margin:13px 0 16px;color:#fff}
+html:not([data-wz-current-view="market"]) #wzV31126GiftShortcut{display:none!important}
+#wzV31126GiftShortcut .wz-v31126-gift-title{font-size:15px;font-weight:950;line-height:1.4}
+#wzV31126GiftShortcut p{font-size:12px;color:#c5c3cb;margin:4px 0 0;line-height:1.5}
+#wzV31126GiftShortcut button{min-height:43px;flex:0 0 auto;border:1px solid #d23844;
+ border-radius:11px;background:linear-gradient(145deg,#e72d37,#a91b29);color:#fff;
+ padding:9px 15px;font-size:13px;font-weight:900;cursor:pointer}
+#wzV31126GiftShortcut .wz-v31126-shortcut-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+#wzV31126GiftShortcut button:hover{filter:brightness(1.13)}
+@media(max-width:600px){#wzV31126GiftShortcut{flex-direction:column;align-items:stretch;padding:14px}
+ #wzV31126GiftShortcut .wz-v31126-shortcut-actions{width:100%;flex-direction:column;align-items:stretch}
+ #wzV31126GiftShortcut button{width:100%}}
+/* Closing tutorial requires an affirmative click; section links never hide it. */
+#wzNewcomerGuide .wz-qs-confirm[hidden]{display:none!important}
+#wzNewcomerGuide .wz-qs-confirm{position:absolute;inset:0;z-index:4;
+ display:flex;align-items:center;justify-content:center;padding:14px;border-radius:inherit;
+ background:rgba(0,0,0,.86);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+#wzNewcomerGuide .wz-qs-confirm-card{max-width:440px;width:100%;border-radius:14px;
+ border:1px solid #994550;background:#18151b;padding:21px;text-align:center;
+ box-shadow:0 16px 44px #000b}
+#wzNewcomerGuide .wz-qs-confirm-card h3{margin:0 0 9px;font-size:18px;color:#fff}
+#wzNewcomerGuide .wz-qs-confirm-card p{color:#d8cdd2;font-size:13px;line-height:1.6;margin:0 0 16px}
+#wzNewcomerGuide .wz-qs-confirm-actions{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}
+#wzNewcomerGuide .wz-qs-confirm-actions button{border:1px solid #4d4149;border-radius:10px;
+ background:#28252b;color:#fff;padding:10px 16px;font-size:13px;font-weight:900;min-height:42px;cursor:pointer}
+#wzNewcomerGuide .wz-qs-confirm-actions .wz-qs-confirm-yes{border-color:#ff4b5b;background:#cc1d31}
+#wzNewcomerGuide .wz-qs-close:focus-visible,#wzNewcomerGuide .wz-qs-confirm-actions button:focus-visible,
+#wzV31126GiftShortcut button:focus-visible,#wzV31126GuestProfileBtn:focus-visible{
+ outline:2px solid #ffa0a0;outline-offset:3px}
+</style>
 </head>
 <body>
 <script id="wz-v58-prepaint-view">
@@ -4923,8 +4970,11 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
       <button id="wzDesktopGiveaway" class="wz-desktop-nav-btn" type="button" onclick="wzSetView('giveaway')" aria-label="Çekilişler"><span>Çekilişler</span></button>
     </nav>
 
+    <button id="wzV31126GuestProfileBtn" type="button" onclick="wzGoToLogin()" aria-label="Profil — Kick hesabını doğrula">👤 Profil</button>
+
     <button class="wz-profile-top-btn" id="wzProfileTopBtn" type="button" style="display:none" onclick="wzSetView('profile')" aria-label="Profil">
       <span id="wzTopProfileAvatar" class="wz-profile-top-avatar-icon wz-kick-profile-icon" aria-hidden="true"></span>
+      <span class="wz-v31126-profile-label" aria-hidden="true">Profil</span>
       <span id="wzTopInboxNotice" class="wz-top-inbox-notice" style="display:none" aria-hidden="true">!</span>
       <span class="wz-profile-top-copy">
         <strong id="wzTopProfileName">Profil</strong>
@@ -5035,8 +5085,10 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
   function hydrate(){
     const token=sessionToken();
     const button=document.getElementById('wzProfileTopBtn');
+    const guestEntry=document.getElementById('wzV31126GuestProfileBtn');
+    if(guestEntry) guestEntry.style.display=token?'none':'inline-flex';
 
-    // Visitor: no profile/logo button at all.
+    // Visitor: show the new Profil text button instead of a blank corner.
     if(!token){
       if(button) button.style.display='none';
       return;
@@ -5393,7 +5445,7 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
     </script>
 
     <div class="container">
-        <!-- V31.1.24: İlk kez gelenlere kısa, kapatılabilir 4 bölüm tanıtımı. -->
+        <!-- V31.1.26: Açık kalan başlangıç rehberi; yalnızca onaylı kapatma. -->
         <section id="wzNewcomerGuide" aria-label="WEİZEND hızlı başlangıç rehberi" hidden>
           <div class="wz-qs-header">
             <div>
@@ -5429,40 +5481,74 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
             <span>🔐 İşlem yapmak için Kick hesabını bir kez doğrulaman gerekebilir.</span>
             <a href="https://www.weizend.com/bilgi.html#baslangic" target="_blank" rel="noopener noreferrer">Doğrulama nasıl yapılır? ↗</a>
           </div>
+          <div class="wz-qs-confirm" id="wzV31126GuideConfirm" role="alertdialog" aria-modal="true"
+               aria-labelledby="wzV31126GuideConfirmTitle" hidden>
+            <div class="wz-qs-confirm-card">
+              <h3 id="wzV31126GuideConfirmTitle">Tanıtımı kapatmak istiyor musun?</h3>
+              <p><b>Tamam</b> dersen bu tanıtım aynı tarayıcıdan yeniden girdiğinde otomatik görünmeyecek.
+                 İstersen daha sonra <b>👋 Yeni misin?</b> butonuyla tekrar açabilirsin.</p>
+              <div class="wz-qs-confirm-actions">
+                <button type="button" id="wzV31126GuideCancel" onclick="wzNewcomerGuideCancelClose()">Vazgeç</button>
+                <button type="button" class="wz-qs-confirm-yes" id="wzV31126GuideConfirmYes"
+                        onclick="wzNewcomerGuideConfirmClose()">Tamam, kapat</button>
+              </div>
+            </div>
+          </div>
         </section>
-        <script id="wz-v31124-newcomer-guide">
+        <script id="wz-v31126-newcomer-guide">
         (function(){
           'use strict';
           const guide=document.getElementById('wzNewcomerGuide');
-          if(!guide)return;
+          const confirmBox=document.getElementById('wzV31126GuideConfirm');
+          if(!guide||!confirmBox)return;
+          // Reuse V31.1.24 key so a user who previously consented to hide it stays opted out.
           const key='wz_first_visit_guide_done_v31124';
-          const markDone=()=>{try{localStorage.setItem(key,'1')}catch(_){}};
-          const close=(remember=true)=>{guide.hidden=true;if(remember)markDone();};
-          window.wzNewcomerGuideClose=()=>close(true);
+          let previousFocus=null;
+          window.wzNewcomerGuideClose=()=>{
+            previousFocus=document.activeElement;
+            confirmBox.hidden=false;
+            document.getElementById('wzV31126GuideCancel')?.focus();
+          };
+          window.wzNewcomerGuideCancelClose=()=>{
+            confirmBox.hidden=true;
+            if(previousFocus&&typeof previousFocus.focus==='function')previousFocus.focus();
+          };
+          window.wzNewcomerGuideConfirmClose=()=>{
+            // Do not promise permanent hiding if browser storage is unavailable.
+            try{localStorage.setItem(key,'1');}
+            catch(_){alert('Tarayıcı site tercihlerini saklayamıyor. Tanıtımı kalıcı kapatmak için site verilerine izin ver.');return;}
+            confirmBox.hidden=true;
+            guide.hidden=true;
+          };
           window.wzNewcomerGuideOpen=()=>{
-            // Manuel yeniden açma: geri dönen üye dilerse rehberi tekrar görebilir.
             if(document.documentElement.dataset.wzCurrentView!=='market')window.wzSetView?.('market');
+            confirmBox.hidden=true;
             guide.hidden=false;
             guide.scrollIntoView({behavior:'smooth',block:'start'});
           };
-          window.wzNewcomerGuideGo=(view)=>{
+          window.wzNewcomerGuideGo=view=>{
             if(!['market','players','tournament','giveaway'].includes(view))return;
-            close(true);
-            if(view==='market'){
-              const products=document.getElementById('marketContent');
-              products?.scrollIntoView({behavior:'smooth',block:'start'});
-            } else window.wzSetView?.(view);
+            // DO NOT dismiss or store consent when visiting a section.
+            if(view==='market') document.getElementById('marketContent')?.scrollIntoView({behavior:'smooth',block:'start'});
+            else window.wzSetView?.(view);
           };
           try{
-            const q=new URLSearchParams(location.search);
-            const deeplink=['product','tournament','g','wz_auth','wz_join','wz_view','wz_profile_accounts'].some(k=>q.has(k))||!!window.__WZ_SHARED_PRODUCT_ID__;
-            const reload=performance.getEntriesByType('navigation')[0]?.type==='reload';
-            const market=window.__WZ_INITIAL_VIEW__==='market';
-            // Deep link, yeniden yükleme ve farklı sekmelerdeki okuma konumlarını bozma.
-            if(!localStorage.getItem(key)&&market&&!deeplink&&!reload)guide.hidden=false;
-          }catch(_){/* localStorage kapalıysa uygulamayı etkileme */}
+            // Reopen automatically on every Market visit/reload until explicit confirmed dismissal.
+            if(localStorage.getItem(key)!=='1')guide.hidden=false;
+          }catch(_){guide.hidden=false;}
         })();
         </script>
+        <!-- V31.1.26: Visible shortcut instead of hiding gift codes behind Profile. -->
+        <section id="wzV31126GiftShortcut" aria-label="Hediye kodu kullan">
+          <div>
+            <div class="wz-v31126-gift-title">🎁 Hediye kodun mu var?</div>
+            <p>Sana gönderilen kodu hemen kullan. Giriş yapmadıysan önce Kick hesabını doğrulaman istenir.</p>
+          </div>
+          <div class="wz-v31126-shortcut-actions">
+            <button type="button" onclick="openGiftRedeem()">🎁 Hediye Kodu Kullan</button>
+            <button id="wzQuickGuideReopen" type="button" onclick="wzNewcomerGuideOpen()">👋 Yeni misin?</button>
+          </div>
+        </section>
         <header>
             <img src="https://i.hizliresim.com/fo5evkh4.png" alt="WEİZEND Logo" class="logo-img">
             <h1>WEİZEND MARKET</h1>
@@ -5470,7 +5556,6 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
             
             <!-- Butonlar -->
             <div class="header-buttons">
-                <button id="wzQuickGuideReopen" type="button" onclick="wzNewcomerGuideOpen()">👋 Yeni misin?</button>
                 <a href="https://www.weizend.com/bilgi.html" target="_blank" rel="noopener noreferrer" class="ig-contact">❓ Bilgi Merkezi</a>
                 <a href="https://instagram.com/weizendtv" target="_blank" rel="noopener noreferrer" class="ig-contact">📸 İletişim: @weizendtv</a>
             </div>
@@ -14472,6 +14557,8 @@ return;
     const auth=document.getElementById('wzProfileAuthenticated');
     const guest=document.getElementById('wzProfileGuest');
     const topButton=document.getElementById('wzProfileTopBtn');
+    const guestTop=document.getElementById('wzV31126GuestProfileBtn');
+    if(guestTop) guestTop.style.display=authed?'none':'inline-flex';
     if(auth) auth.style.display=authed?'block':'none';
     if(guest) guest.style.display=authed?'none':'block';
     if(topButton) topButton.style.display=authed?'grid':'none';
