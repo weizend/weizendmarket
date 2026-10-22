@@ -4970,7 +4970,7 @@ html:not([data-wz-current-view="market"]) #wzV31126GiftShortcut{display:none!imp
       <button id="wzDesktopGiveaway" class="wz-desktop-nav-btn" type="button" onclick="wzSetView('giveaway')" aria-label="Çekilişler"><span>Çekilişler</span></button>
     </nav>
 
-    <button id="wzV31126GuestProfileBtn" type="button" onclick="wzGoToLogin()" aria-label="Profil — Kick hesabını doğrula">👤 Profil</button>
+    <button id="wzV31126GuestProfileBtn" type="button" style="display:none" onclick="wzGoToLogin()" aria-label="Profil — Kick hesabını doğrula">👤 Profil</button>
 
     <button class="wz-profile-top-btn" id="wzProfileTopBtn" type="button" style="display:none" onclick="wzSetView('profile')" aria-label="Profil">
       <span id="wzTopProfileAvatar" class="wz-profile-top-avatar-icon wz-kick-profile-icon" aria-hidden="true"></span>
@@ -4984,6 +4984,47 @@ html:not([data-wz-current-view="market"]) #wzV31126GiftShortcut{display:none!imp
     </button>
   </div>
 </div>
+<script id="wz-v12-early-profile">
+(function(){
+  function sessionToken(){
+    try{
+      return localStorage.getItem('weizend_market_session_secure_v2') || '';
+    }catch(_){ return ''; }
+  }
+
+  function hydrate(){
+    const token=sessionToken();
+    const button=document.getElementById('wzProfileTopBtn');
+    const guestEntry=document.getElementById('wzV31126GuestProfileBtn');
+    if(guestEntry) guestEntry.style.display=token?'none':'inline-flex';
+
+    // Visitor: show the new Profil text button instead of a blank corner.
+    if(!token){
+      if(button) button.style.display='none';
+      return;
+    }
+
+    if(button) button.style.display='grid';
+
+    try{
+      const raw=localStorage.getItem('weizend_market_profile_secure_v2');
+      const cache=raw?JSON.parse(raw):null;
+      if(!cache) return;
+
+      const name=String(cache.username || 'Profil').trim();
+      const icon=document.getElementById('wzTopProfileAvatar');
+      const label=document.getElementById('wzTopProfileName');
+      if(icon) icon.textContent='';
+      if(label) label.textContent=name;
+    }catch(_){}
+  }
+
+  // Appbar elemanları bu script'ten önce parse edildi.
+  // DOMContentLoaded beklemek profil ikonunun refresh sırasında kaybolup
+  // tekrar gelmesine neden oluyordu. Şimdi senkron hydrate edilir.
+  hydrate();
+})();
+</script>
 <script id="wz-final-v66-early-appbar">
 (function(){
   try{
@@ -5018,6 +5059,357 @@ html:not([data-wz-current-view="market"]) #wzV31126GiftShortcut{display:none!imp
   </button>
 </nav>
 
+
+
+    <div class="container">
+        <!-- V31.1.26: Açık kalan başlangıç rehberi; yalnızca onaylı kapatma. -->
+        <section id="wzNewcomerGuide" aria-label="WEİZEND hızlı başlangıç rehberi" hidden>
+          <div class="wz-qs-header">
+            <div>
+              <span class="wz-qs-kicker">👋 YENİ GELENLER İÇİN</span>
+              <h2>WEİZEND'de ne yapmak istersin?</h2>
+              <p class="wz-qs-subtitle">Bir bölüme dokun, hemen başla. Karmaşık bir şey öğrenmene gerek yok.</p>
+            </div>
+            <button type="button" class="wz-qs-close" onclick="wzNewcomerGuideClose()" aria-label="Tanıtımı kapat">✕ Kapat</button>
+          </div>
+          <div class="wz-qs-grid">
+            <button type="button" class="wz-qs-link" onclick="wzNewcomerGuideGo('market')">
+              <strong class="wz-qs-name">🛒 Market</strong>
+              <span class="wz-qs-explain">Yayında kazandığın puanlarla ödüllere göz at.</span>
+              <span class="wz-qs-cta">Ürünleri gör →</span>
+            </button>
+            <button type="button" class="wz-qs-link" onclick="wzNewcomerGuideGo('players')">
+              <strong class="wz-qs-name">🎮 Oyuncu Ara</strong>
+              <span class="wz-qs-explain">Beraber oynayacak arkadaş bul veya lobi kur.</span>
+              <span class="wz-qs-cta">Oyuncu bul →</span>
+            </button>
+            <button type="button" class="wz-qs-link" onclick="wzNewcomerGuideGo('tournament')">
+              <strong class="wz-qs-name">🏆 Turnuvalar</strong>
+              <span class="wz-qs-explain">Turnuvaları, ödülleri ve katılım şartlarını incele.</span>
+              <span class="wz-qs-cta">Turnuvalara bak →</span>
+            </button>
+            <button type="button" class="wz-qs-link" onclick="wzNewcomerGuideGo('giveaway')">
+              <strong class="wz-qs-name">🎁 Çekilişler</strong>
+              <span class="wz-qs-explain">Ücretsiz katılımı ve biletli şanslarını keşfet.</span>
+              <span class="wz-qs-cta">Çekilişlere git →</span>
+            </button>
+          </div>
+          <div class="wz-qs-foot">
+            <span>🔐 İşlem yapmak için Kick hesabını bir kez doğrulaman gerekebilir.</span>
+            <a href="https://www.weizend.com/bilgi.html#baslangic" target="_blank" rel="noopener noreferrer">Doğrulama nasıl yapılır? ↗</a>
+          </div>
+          <div class="wz-qs-confirm" id="wzV31126GuideConfirm" role="alertdialog" aria-modal="true"
+               aria-labelledby="wzV31126GuideConfirmTitle" hidden>
+            <div class="wz-qs-confirm-card">
+              <h3 id="wzV31126GuideConfirmTitle">Tanıtımı kapatmak istiyor musun?</h3>
+              <p><b>Tamam</b> dersen bu tanıtım aynı tarayıcıdan yeniden girdiğinde otomatik görünmeyecek.
+                 İstersen daha sonra <b>👋 Yeni misin?</b> butonuyla tekrar açabilirsin.</p>
+              <div class="wz-qs-confirm-actions">
+                <button type="button" id="wzV31126GuideCancel" onclick="wzNewcomerGuideCancelClose()">Vazgeç</button>
+                <button type="button" class="wz-qs-confirm-yes" id="wzV31126GuideConfirmYes"
+                        onclick="wzNewcomerGuideConfirmClose()">Tamam, kapat</button>
+              </div>
+            </div>
+          </div>
+        </section>
+        <script id="wz-v31126-newcomer-guide">
+        (function(){
+          'use strict';
+          const guide=document.getElementById('wzNewcomerGuide');
+          const confirmBox=document.getElementById('wzV31126GuideConfirm');
+          if(!guide||!confirmBox)return;
+          // Reuse V31.1.24 key so a user who previously consented to hide it stays opted out.
+          const key='wz_first_visit_guide_done_v31124';
+          let previousFocus=null;
+          window.wzNewcomerGuideClose=()=>{
+            previousFocus=document.activeElement;
+            confirmBox.hidden=false;
+            document.getElementById('wzV31126GuideCancel')?.focus();
+          };
+          window.wzNewcomerGuideCancelClose=()=>{
+            confirmBox.hidden=true;
+            if(previousFocus&&typeof previousFocus.focus==='function')previousFocus.focus();
+          };
+          window.wzNewcomerGuideConfirmClose=()=>{
+            // Do not promise permanent hiding if browser storage is unavailable.
+            try{localStorage.setItem(key,'1');}
+            catch(_){alert('Tarayıcı site tercihlerini saklayamıyor. Tanıtımı kalıcı kapatmak için site verilerine izin ver.');return;}
+            confirmBox.hidden=true;
+            guide.hidden=true;
+          };
+          window.wzNewcomerGuideOpen=()=>{
+            if(document.documentElement.dataset.wzCurrentView!=='market')window.wzSetView?.('market');
+            confirmBox.hidden=true;
+            guide.hidden=false;
+            guide.scrollIntoView({behavior:'smooth',block:'start'});
+          };
+          window.wzNewcomerGuideGo=view=>{
+            if(!['market','players','tournament','giveaway'].includes(view))return;
+            // DO NOT dismiss or store consent when visiting a section.
+            if(view==='market') document.getElementById('marketContent')?.scrollIntoView({behavior:'smooth',block:'start'});
+            else window.wzSetView?.(view);
+          };
+          try{
+            // Reopen automatically on every Market visit/reload until explicit confirmed dismissal.
+            if(localStorage.getItem(key)!=='1')guide.hidden=false;
+          }catch(_){guide.hidden=false;}
+        })();
+        </script>
+        <!-- V31.1.26: Visible shortcut instead of hiding gift codes behind Profile. -->
+        <section id="wzV31126GiftShortcut" aria-label="Hediye kodu kullan">
+          <div>
+            <div class="wz-v31126-gift-title">🎁 Hediye kodun mu var?</div>
+            <p>Sana gönderilen kodu hemen kullan. Giriş yapmadıysan önce Kick hesabını doğrulaman istenir.</p>
+          </div>
+          <div class="wz-v31126-shortcut-actions">
+            <button type="button" onclick="openGiftRedeem()">🎁 Hediye Kodu Kullan</button>
+            <button id="wzQuickGuideReopen" type="button" onclick="wzNewcomerGuideOpen()">👋 Yeni misin?</button>
+          </div>
+        </section>
+        <header>
+            <img src="https://i.hizliresim.com/fo5evkh4.png" alt="WEİZEND Logo" class="logo-img">
+            <h1>WEİZEND MARKET</h1>
+            <p style="color: var(--text-muted);">Yayını izleyerek kazandığın puanlarla ödülleri kap!</p>
+            
+            <!-- Butonlar -->
+            <div class="header-buttons">
+                <a href="https://www.weizend.com/bilgi.html" target="_blank" rel="noopener noreferrer" class="ig-contact">❓ Bilgi Merkezi</a>
+                <a href="https://instagram.com/weizendtv" target="_blank" rel="noopener noreferrer" class="ig-contact">📸 İletişim: @weizendtv</a>
+            </div>
+
+            <!-- GÜVENLİ KICK DOĞRULAMASI İLE AÇILAN KULLANICI KARTI -->
+            <div class="user-wallet-wrapper">
+                <div id="walletCard" class="wallet-card">
+                    <div class="wallet-left">
+                        <img src="" id="walletAvatar" class="wallet-avatar" alt="Kullanıcı Avatarı">
+                        <div class="wallet-info">
+                            <h3 class="w-username" id="walletUsername">Kullanıcı</h3>
+                            <div class="w-balance">
+                                🪙 Bakiye: <span class="w-balance-amount" id="walletPoints">-</span>
+                            </div>
+                            <div class="wallet-stats">
+                                <div class="wallet-stat">
+                                    <span class="wallet-stat-label">⭐ Level</span>
+                                    <span class="wallet-stat-value level" id="walletLevel">-</span>
+                                </div>
+                            </div>
+                            <div class="wallet-source-note">BotRix hesabından alınan bilgiler · Puan ve level sayfa yenilendiğinde güncellenir</div>
+                        </div>
+                    </div>
+                    <div class="wallet-actions">
+                        <button class="gift-btn" onclick="location.reload()" title="Sunucudaki güncel puan, level ve stok bilgilerini yeniden al">🔄 Bilgileri Yenile</button>
+                        <button class="inbox-btn" onclick="event.stopPropagation();openInbox(event)" title="Mesaj kutunu aç">
+                            ✉️ Mesaj Kutusu
+                            <span id="inboxBadge" class="inbox-badge">0</span>
+                        </button>
+                        <button class="gift-btn" onclick="openGiftRedeem()" title="Hediye kodunu kullan">🎁 Hediye Kodu Kullan</button>
+                        <button class="logout-btn" onclick="logoutAccount()" title="Güvenli oturumu kapat">🚪 Çıkış Yap</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="accountRestrictionBanner" class="account-restriction-banner">
+                <strong>⛔ HESABIN KISITLANDI</strong>
+                <div id="accountRestrictionReason" class="reason">Bu hesap yönetici tarafından kısıtlandı.</div>
+            </div>
+
+            <div id="accessCard" class="access-card">
+                <h3 id="accessTitle">🔒 WEİZEND MARKET</h3>
+                <p id="accessText">🔐 Market, turnuva ve hesap işlemlerini güvenle kullanabilmek için Kick hesabını doğrulaman gerekir. Kullanıcı adını yaz ve sana özel <b>!doğrula KOD</b> komutunu Kick sohbetine gönder.</p>
+
+                <div id="usernameForm" class="access-form">
+                    <input id="kickUsernameInput" class="access-input" type="text" autocomplete="off" maxlength="40" placeholder="Kick kullanıcı adın">
+                    <button class="access-btn" onclick="saveAndCheckUsername()">Doğrulama Kodu Oluştur</button>
+                </div>
+
+                <div id="verificationActivation" style="display:none;">
+                    <div id="accountNameHint" class="account-name-hint"></div>
+                    <button id="verifyCommandButton" type="button" class="access-command" onclick="copyVerifyAndRedirect()" title="!doğrula komutunu kopyala">📋 !doğrula KOD</button>
+                    <p class="access-help" id="verifyFlowHelp"><b>1.</b> <b>!doğrula KOD</b> alanına dokunarak komutun tamamını kopyala. <b>2.</b> <b>Kick Sohbete Git</b> butonuna bas, komutu sohbet alanına yapıştırıp gönder. <b>3.</b> Bu sayfaya geri dön ve <b>Doğrulamayı Kontrol Et</b> butonuna bas. Kontrol ancak sen başlattığında çalışır.</p>
+                    <div class="access-form"><a id="verifyKickChatLink" class="access-btn" href="https://kick.com/weizend/chat" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;">💬 Kick Sohbete Git <span aria-hidden="true">↗</span></a></div>
+                    <div class="access-form">
+                        <button class="access-btn secondary" onclick="checkSavedAccount()">🔄 Doğrulamayı Kontrol Et</button>
+                        <button class="access-btn secondary" onclick="changeUsername()">Kullanıcı Adını Değiştir</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div id="marketContent" style="display:block;">
+            <!-- ÜRÜN ARAMA -->
+            <div class="market-search-wrap">
+                <div class="market-search-box">
+                    <span class="market-search-icon">🔎</span>
+                    <input
+                        id="productSearchInput"
+                        class="market-search-input"
+                        type="text"
+                        inputmode="search"
+                        enterkeyhint="search"
+                        autocomplete="off"
+                        placeholder="Ürün adı, kategori veya komut ara..."
+                        oninput="setProductSearch(this.value)">
+                    <button id="productSearchClear" class="market-search-clear" onclick="clearProductSearch()" title="Aramayı temizle" style="display:none;">✕</button>
+                </div>
+                <div id="productSearchInfo" class="market-search-info"></div>
+            </div>
+
+            <!-- KATEGORİ BUTONLARI -->
+            <div class="category-filters" id="filters"></div>
+
+            <section id="tournamentMarketSection" class="tv2-market-section" style="display:none;">
+                <div class="tv2-section-heading">
+                    <div>
+                        <div class="tv2-section-kicker">🏆 WEİZEND TURNUVALARI</div>
+                        <h2>Aktif Turnuvalar</h2>
+                        <p>Takımını oluştur, kadronu yaz, katılım şartını tamamla ve turnuvaya hazırlan.</p>
+                    </div>
+                    <button class="tv2-refresh-btn" type="button" onclick="tv2LoadCatalog(true)">🔄 Yenile</button>
+                </div>
+                <div id="tournamentMarketGrid" class="tv2-market-grid"></div>
+            </section>
+
+            <div class="grid" id="urunGrid"></div>
+<script id="wz-final-v66-market-shell-hydrate">
+(function(){
+  try{
+    if((window.__WZ_INITIAL_VIEW__||'market')!=='market' || window.__WZ_SHARED_PRODUCT_ID__) return;
+
+    const key='weizend_market_shell_refreshfix_v20';
+    const raw=sessionStorage.getItem(key);
+    if(!raw) return;
+
+    const cached=JSON.parse(raw);
+    const tokenNow=!!localStorage.getItem('weizend_market_session_secure_v2');
+
+    // Eski giriş/çıkış durumuna ait butonları bir an bile göstermeyelim.
+    if(!!cached.authenticated !== tokenNow) return;
+    // Eski bir misafir HTML'si yanlış etiketlenmişse KESİNLİKLE geri çizme.
+    // Aksi durumda F5'te önce 'Doğrulama Gerekiyor' görünüp sonra kaybolur.
+    if(tokenNow && /auth-required|Doğrulama Gerekiyor/i.test(cached.gridHtml || '')) return;
+    if(!tokenNow && /class="action-btn"[^>]*onclick="(?:islemYapBaslat|startSitePurchase)/i.test(cached.gridHtml || '')) return;
+
+    const grid=document.getElementById('urunGrid');
+    const filters=document.getElementById('filters');
+    const info=document.getElementById('productSearchInfo');
+    const search=document.getElementById('productSearchInput');
+
+    if(grid && typeof cached.gridHtml==='string') grid.innerHTML=cached.gridHtml;
+    if(filters && typeof cached.filtersHtml==='string') filters.innerHTML=cached.filtersHtml;
+    if(info && typeof cached.searchInfoHtml==='string') info.innerHTML=cached.searchInfoHtml;
+    if(search && typeof cached.searchValue==='string') search.value=cached.searchValue;
+
+    // DOMContentLoaded'da aynı grid bir daha kurulmasın.
+    window.__WZ_MARKET_SHELL_HYDRATED__ = !!(grid && grid.children.length);
+
+    if(window.__WZ_MARKET_SHELL_HYDRATED__){
+      window.__WZ_EARLY_RESTORE_SCROLL__?.('market');
+    }
+  }catch(_){}
+})();
+</script>
+        </div>
+                <div id="wzEsportsHub" class="wz-esports-hub"></div>
+<script id="wz-v31130-detail-scroll-persist">
+(function(){'use strict';
+  // Visual state only. Never changes authentication, registrations or server data.
+  const KEY='wz_v31130_t_detail_scroll';
+  try{
+    if(performance.getEntriesByType('navigation')[0]?.type==='reload' &&
+       sessionStorage.getItem('wz_t_screen')==='detail'){
+      const saved=JSON.parse(sessionStorage.getItem(KEY)||'null');
+      const selected=sessionStorage.getItem('wz_t_selected')||'';
+      const urlId=window.__WZ_TOURNAMENT_DEEP_LINK__||'';
+      const y=Number(saved?.y);
+      if(selected && (!urlId||urlId===selected) && saved?.id===selected &&
+         Number.isFinite(y) && y>=0 && y<100000){
+        window.__WZ_TURN_DETAIL_RELOAD_SCROLL__={id:selected,y,pending:true};
+      }
+    }
+  }catch(_){}
+  document.addEventListener('scroll',function(ev){
+    const el=ev.target;
+    if(!el?.classList?.contains('wz-turn-detail-window'))return;
+    if(!document.body.classList.contains('wz-view-tournament'))return;
+    // Ignore interim layout scroll while restoring a cached inner window.
+    if(window.__WZ_TURN_DETAIL_RELOAD_SCROLL__?.pending)return;
+    try{
+      if(sessionStorage.getItem('wz_t_screen')!=='detail')return;
+      const id=sessionStorage.getItem('wz_t_selected')||'';
+      if(!id)return;
+      sessionStorage.setItem(KEY,JSON.stringify({id,y:Math.max(0,Math.round(el.scrollTop||0))}));
+    }catch(_){}
+  },true);
+})();
+</script>
+<script id="wz-final-v66-tournament-shell-hydrate">
+(function(){
+  try{
+    if((window.__WZ_INITIAL_VIEW__||'market')!=='tournament') return;
+    // V31.1.30: On a reload of the SAME saved detail, reuse its real cached DOM.
+    // A fresh/shared link for another tournament must never show the old detail.
+    if(window.__WZ_TOURNAMENT_DEEP_LINK__){
+      const reload=performance.getEntriesByType('navigation')[0]?.type==='reload';
+      const sameSavedDetail=reload &&
+        sessionStorage.getItem('wz_t_screen')==='detail' &&
+        sessionStorage.getItem('wz_t_selected')===window.__WZ_TOURNAMENT_DEEP_LINK__;
+      if(!sameSavedDetail)return;
+    }
+
+    const host=document.getElementById('wzEsportsHub');
+    if(!host) return;
+
+    const raw=sessionStorage.getItem('weizend_tournament_shell_refreshfix_v30619');
+    if(!raw) return;
+
+    const cached=JSON.parse(raw);
+    const currentFilter=sessionStorage.getItem('wz_t_filter')||'all';
+    const currentSearch=sessionStorage.getItem('wz_t_search')||'';
+    const currentScreen=sessionStorage.getItem('wz_t_screen')||'list';
+    const selectedId=sessionStorage.getItem('wz_t_selected')||'';
+    // Never paint another tournament's cache, even if its filter/URL matches.
+    // Caches from V31.1.29 do not include selectedId; keep them usable on F5.
+    const selectionMatches=!cached.selectedId || currentScreen!=='detail' ||
+      String(cached.selectedId)===selectedId;
+    const coherent=cached.shellVersion==='v30.4.0.2' &&
+      cached.filter===currentFilter && cached.search===currentSearch &&
+      cached.screen===currentScreen && selectionMatches;
+    if(coherent && typeof cached.html==='string' && cached.html.trim()){
+      host.innerHTML=cached.html;
+      const strip=host.querySelector('.wz-turn-strip');
+      if(strip){
+        const savedX=Number(sessionStorage.getItem('wz_t_strip_scroll_v30402')||0);
+        if(Number.isFinite(savedX))strip.scrollLeft=Math.max(0,savedX);
+        const active=strip.querySelector('[data-wz-turn-filter].active');
+        if(active){
+          const left=active.offsetLeft-strip.offsetLeft;
+          if(left<strip.scrollLeft)strip.scrollLeft=Math.max(0,left-12);
+          else if(left+active.offsetWidth>strip.scrollLeft+strip.clientWidth)
+            strip.scrollLeft=Math.max(0,left+active.offsetWidth-strip.clientWidth+12);
+        }
+      }
+      window.__WZ_RESTORE_LOGOS__?.(host);
+      window.__WZ_TOURNAMENT_SHELL_HYDRATED__=true;
+
+      const savedScreen=sessionStorage.getItem('wz_t_screen') || 'list';
+      const savedSelected=sessionStorage.getItem('wz_t_selected') || '';
+      if(savedScreen==='detail' && savedSelected){
+        document.body.classList.add('wz-turn-modal-open');
+        // The details have an OWN scroll container; window.scrollY cannot restore it.
+        const snapshot=window.__WZ_TURN_DETAIL_RELOAD_SCROLL__;
+        const detailWindow=host.querySelector('.wz-turn-detail-window');
+        if(snapshot?.id===savedSelected && detailWindow){
+          detailWindow.scrollTop=snapshot.y;
+          snapshot.pending=false;
+        }
+      }
+
+      window.__WZ_EARLY_RESTORE_SCROLL__?.('tournament');
+    }
+  }catch(_){}
+})();
+</script>
+    </div>
 
 
 <section id="wzGiveawayView" aria-label="Çekilişler">
@@ -5074,47 +5466,7 @@ html:not([data-wz-current-view="market"]) #wzV31126GiftShortcut{display:none!imp
 </section>
 
 
-<script id="wz-v12-early-profile">
-(function(){
-  function sessionToken(){
-    try{
-      return localStorage.getItem('weizend_market_session_secure_v2') || '';
-    }catch(_){ return ''; }
-  }
 
-  function hydrate(){
-    const token=sessionToken();
-    const button=document.getElementById('wzProfileTopBtn');
-    const guestEntry=document.getElementById('wzV31126GuestProfileBtn');
-    if(guestEntry) guestEntry.style.display=token?'none':'inline-flex';
-
-    // Visitor: show the new Profil text button instead of a blank corner.
-    if(!token){
-      if(button) button.style.display='none';
-      return;
-    }
-
-    if(button) button.style.display='grid';
-
-    try{
-      const raw=localStorage.getItem('weizend_market_profile_secure_v2');
-      const cache=raw?JSON.parse(raw):null;
-      if(!cache) return;
-
-      const name=String(cache.username || 'Profil').trim();
-      const icon=document.getElementById('wzTopProfileAvatar');
-      const label=document.getElementById('wzTopProfileName');
-      if(icon) icon.textContent='';
-      if(label) label.textContent=name;
-    }catch(_){}
-  }
-
-  // Appbar elemanları bu script'ten önce parse edildi.
-  // DOMContentLoaded beklemek profil ikonunun refresh sırasında kaybolup
-  // tekrar gelmesine neden oluyordu. Şimdi senkron hydrate edilir.
-  hydrate();
-})();
-</script>
 
 <script>
         // TÜM ÜRÜN TASLAKLARI
@@ -5443,305 +5795,6 @@ html:not([data-wz-current-view="market"]) #wzV31126GiftShortcut{display:none!imp
             }
         });
     </script>
-
-    <div class="container">
-        <!-- V31.1.26: Açık kalan başlangıç rehberi; yalnızca onaylı kapatma. -->
-        <section id="wzNewcomerGuide" aria-label="WEİZEND hızlı başlangıç rehberi" hidden>
-          <div class="wz-qs-header">
-            <div>
-              <span class="wz-qs-kicker">👋 YENİ GELENLER İÇİN</span>
-              <h2>WEİZEND'de ne yapmak istersin?</h2>
-              <p class="wz-qs-subtitle">Bir bölüme dokun, hemen başla. Karmaşık bir şey öğrenmene gerek yok.</p>
-            </div>
-            <button type="button" class="wz-qs-close" onclick="wzNewcomerGuideClose()" aria-label="Tanıtımı kapat">✕ Kapat</button>
-          </div>
-          <div class="wz-qs-grid">
-            <button type="button" class="wz-qs-link" onclick="wzNewcomerGuideGo('market')">
-              <strong class="wz-qs-name">🛒 Market</strong>
-              <span class="wz-qs-explain">Yayında kazandığın puanlarla ödüllere göz at.</span>
-              <span class="wz-qs-cta">Ürünleri gör →</span>
-            </button>
-            <button type="button" class="wz-qs-link" onclick="wzNewcomerGuideGo('players')">
-              <strong class="wz-qs-name">🎮 Oyuncu Ara</strong>
-              <span class="wz-qs-explain">Beraber oynayacak arkadaş bul veya lobi kur.</span>
-              <span class="wz-qs-cta">Oyuncu bul →</span>
-            </button>
-            <button type="button" class="wz-qs-link" onclick="wzNewcomerGuideGo('tournament')">
-              <strong class="wz-qs-name">🏆 Turnuvalar</strong>
-              <span class="wz-qs-explain">Turnuvaları, ödülleri ve katılım şartlarını incele.</span>
-              <span class="wz-qs-cta">Turnuvalara bak →</span>
-            </button>
-            <button type="button" class="wz-qs-link" onclick="wzNewcomerGuideGo('giveaway')">
-              <strong class="wz-qs-name">🎁 Çekilişler</strong>
-              <span class="wz-qs-explain">Ücretsiz katılımı ve biletli şanslarını keşfet.</span>
-              <span class="wz-qs-cta">Çekilişlere git →</span>
-            </button>
-          </div>
-          <div class="wz-qs-foot">
-            <span>🔐 İşlem yapmak için Kick hesabını bir kez doğrulaman gerekebilir.</span>
-            <a href="https://www.weizend.com/bilgi.html#baslangic" target="_blank" rel="noopener noreferrer">Doğrulama nasıl yapılır? ↗</a>
-          </div>
-          <div class="wz-qs-confirm" id="wzV31126GuideConfirm" role="alertdialog" aria-modal="true"
-               aria-labelledby="wzV31126GuideConfirmTitle" hidden>
-            <div class="wz-qs-confirm-card">
-              <h3 id="wzV31126GuideConfirmTitle">Tanıtımı kapatmak istiyor musun?</h3>
-              <p><b>Tamam</b> dersen bu tanıtım aynı tarayıcıdan yeniden girdiğinde otomatik görünmeyecek.
-                 İstersen daha sonra <b>👋 Yeni misin?</b> butonuyla tekrar açabilirsin.</p>
-              <div class="wz-qs-confirm-actions">
-                <button type="button" id="wzV31126GuideCancel" onclick="wzNewcomerGuideCancelClose()">Vazgeç</button>
-                <button type="button" class="wz-qs-confirm-yes" id="wzV31126GuideConfirmYes"
-                        onclick="wzNewcomerGuideConfirmClose()">Tamam, kapat</button>
-              </div>
-            </div>
-          </div>
-        </section>
-        <script id="wz-v31126-newcomer-guide">
-        (function(){
-          'use strict';
-          const guide=document.getElementById('wzNewcomerGuide');
-          const confirmBox=document.getElementById('wzV31126GuideConfirm');
-          if(!guide||!confirmBox)return;
-          // Reuse V31.1.24 key so a user who previously consented to hide it stays opted out.
-          const key='wz_first_visit_guide_done_v31124';
-          let previousFocus=null;
-          window.wzNewcomerGuideClose=()=>{
-            previousFocus=document.activeElement;
-            confirmBox.hidden=false;
-            document.getElementById('wzV31126GuideCancel')?.focus();
-          };
-          window.wzNewcomerGuideCancelClose=()=>{
-            confirmBox.hidden=true;
-            if(previousFocus&&typeof previousFocus.focus==='function')previousFocus.focus();
-          };
-          window.wzNewcomerGuideConfirmClose=()=>{
-            // Do not promise permanent hiding if browser storage is unavailable.
-            try{localStorage.setItem(key,'1');}
-            catch(_){alert('Tarayıcı site tercihlerini saklayamıyor. Tanıtımı kalıcı kapatmak için site verilerine izin ver.');return;}
-            confirmBox.hidden=true;
-            guide.hidden=true;
-          };
-          window.wzNewcomerGuideOpen=()=>{
-            if(document.documentElement.dataset.wzCurrentView!=='market')window.wzSetView?.('market');
-            confirmBox.hidden=true;
-            guide.hidden=false;
-            guide.scrollIntoView({behavior:'smooth',block:'start'});
-          };
-          window.wzNewcomerGuideGo=view=>{
-            if(!['market','players','tournament','giveaway'].includes(view))return;
-            // DO NOT dismiss or store consent when visiting a section.
-            if(view==='market') document.getElementById('marketContent')?.scrollIntoView({behavior:'smooth',block:'start'});
-            else window.wzSetView?.(view);
-          };
-          try{
-            // Reopen automatically on every Market visit/reload until explicit confirmed dismissal.
-            if(localStorage.getItem(key)!=='1')guide.hidden=false;
-          }catch(_){guide.hidden=false;}
-        })();
-        </script>
-        <!-- V31.1.26: Visible shortcut instead of hiding gift codes behind Profile. -->
-        <section id="wzV31126GiftShortcut" aria-label="Hediye kodu kullan">
-          <div>
-            <div class="wz-v31126-gift-title">🎁 Hediye kodun mu var?</div>
-            <p>Sana gönderilen kodu hemen kullan. Giriş yapmadıysan önce Kick hesabını doğrulaman istenir.</p>
-          </div>
-          <div class="wz-v31126-shortcut-actions">
-            <button type="button" onclick="openGiftRedeem()">🎁 Hediye Kodu Kullan</button>
-            <button id="wzQuickGuideReopen" type="button" onclick="wzNewcomerGuideOpen()">👋 Yeni misin?</button>
-          </div>
-        </section>
-        <header>
-            <img src="https://i.hizliresim.com/fo5evkh4.png" alt="WEİZEND Logo" class="logo-img">
-            <h1>WEİZEND MARKET</h1>
-            <p style="color: var(--text-muted);">Yayını izleyerek kazandığın puanlarla ödülleri kap!</p>
-            
-            <!-- Butonlar -->
-            <div class="header-buttons">
-                <a href="https://www.weizend.com/bilgi.html" target="_blank" rel="noopener noreferrer" class="ig-contact">❓ Bilgi Merkezi</a>
-                <a href="https://instagram.com/weizendtv" target="_blank" rel="noopener noreferrer" class="ig-contact">📸 İletişim: @weizendtv</a>
-            </div>
-
-            <!-- GÜVENLİ KICK DOĞRULAMASI İLE AÇILAN KULLANICI KARTI -->
-            <div class="user-wallet-wrapper">
-                <div id="walletCard" class="wallet-card">
-                    <div class="wallet-left">
-                        <img src="" id="walletAvatar" class="wallet-avatar" alt="Kullanıcı Avatarı">
-                        <div class="wallet-info">
-                            <h3 class="w-username" id="walletUsername">Kullanıcı</h3>
-                            <div class="w-balance">
-                                🪙 Bakiye: <span class="w-balance-amount" id="walletPoints">-</span>
-                            </div>
-                            <div class="wallet-stats">
-                                <div class="wallet-stat">
-                                    <span class="wallet-stat-label">⭐ Level</span>
-                                    <span class="wallet-stat-value level" id="walletLevel">-</span>
-                                </div>
-                            </div>
-                            <div class="wallet-source-note">BotRix hesabından alınan bilgiler · Puan ve level sayfa yenilendiğinde güncellenir</div>
-                        </div>
-                    </div>
-                    <div class="wallet-actions">
-                        <button class="gift-btn" onclick="location.reload()" title="Sunucudaki güncel puan, level ve stok bilgilerini yeniden al">🔄 Bilgileri Yenile</button>
-                        <button class="inbox-btn" onclick="event.stopPropagation();openInbox(event)" title="Mesaj kutunu aç">
-                            ✉️ Mesaj Kutusu
-                            <span id="inboxBadge" class="inbox-badge">0</span>
-                        </button>
-                        <button class="gift-btn" onclick="openGiftRedeem()" title="Hediye kodunu kullan">🎁 Hediye Kodu Kullan</button>
-                        <button class="logout-btn" onclick="logoutAccount()" title="Güvenli oturumu kapat">🚪 Çıkış Yap</button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="accountRestrictionBanner" class="account-restriction-banner">
-                <strong>⛔ HESABIN KISITLANDI</strong>
-                <div id="accountRestrictionReason" class="reason">Bu hesap yönetici tarafından kısıtlandı.</div>
-            </div>
-
-            <div id="accessCard" class="access-card">
-                <h3 id="accessTitle">🔒 WEİZEND MARKET</h3>
-                <p id="accessText">🔐 Market, turnuva ve hesap işlemlerini güvenle kullanabilmek için Kick hesabını doğrulaman gerekir. Kullanıcı adını yaz ve sana özel <b>!doğrula KOD</b> komutunu Kick sohbetine gönder.</p>
-
-                <div id="usernameForm" class="access-form">
-                    <input id="kickUsernameInput" class="access-input" type="text" autocomplete="off" maxlength="40" placeholder="Kick kullanıcı adın">
-                    <button class="access-btn" onclick="saveAndCheckUsername()">Doğrulama Kodu Oluştur</button>
-                </div>
-
-                <div id="verificationActivation" style="display:none;">
-                    <div id="accountNameHint" class="account-name-hint"></div>
-                    <button id="verifyCommandButton" type="button" class="access-command" onclick="copyVerifyAndRedirect()" title="!doğrula komutunu kopyala">📋 !doğrula KOD</button>
-                    <p class="access-help" id="verifyFlowHelp"><b>1.</b> <b>!doğrula KOD</b> alanına dokunarak komutun tamamını kopyala. <b>2.</b> <b>Kick Sohbete Git</b> butonuna bas, komutu sohbet alanına yapıştırıp gönder. <b>3.</b> Bu sayfaya geri dön ve <b>Doğrulamayı Kontrol Et</b> butonuna bas. Kontrol ancak sen başlattığında çalışır.</p>
-                    <div class="access-form"><a id="verifyKickChatLink" class="access-btn" href="https://kick.com/weizend/chat" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;">💬 Kick Sohbete Git <span aria-hidden="true">↗</span></a></div>
-                    <div class="access-form">
-                        <button class="access-btn secondary" onclick="checkSavedAccount()">🔄 Doğrulamayı Kontrol Et</button>
-                        <button class="access-btn secondary" onclick="changeUsername()">Kullanıcı Adını Değiştir</button>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <div id="marketContent" style="display:block;">
-            <!-- ÜRÜN ARAMA -->
-            <div class="market-search-wrap">
-                <div class="market-search-box">
-                    <span class="market-search-icon">🔎</span>
-                    <input
-                        id="productSearchInput"
-                        class="market-search-input"
-                        type="text"
-                        inputmode="search"
-                        enterkeyhint="search"
-                        autocomplete="off"
-                        placeholder="Ürün adı, kategori veya komut ara..."
-                        oninput="setProductSearch(this.value)">
-                    <button id="productSearchClear" class="market-search-clear" onclick="clearProductSearch()" title="Aramayı temizle" style="display:none;">✕</button>
-                </div>
-                <div id="productSearchInfo" class="market-search-info"></div>
-            </div>
-
-            <!-- KATEGORİ BUTONLARI -->
-            <div class="category-filters" id="filters"></div>
-
-            <section id="tournamentMarketSection" class="tv2-market-section" style="display:none;">
-                <div class="tv2-section-heading">
-                    <div>
-                        <div class="tv2-section-kicker">🏆 WEİZEND TURNUVALARI</div>
-                        <h2>Aktif Turnuvalar</h2>
-                        <p>Takımını oluştur, kadronu yaz, katılım şartını tamamla ve turnuvaya hazırlan.</p>
-                    </div>
-                    <button class="tv2-refresh-btn" type="button" onclick="tv2LoadCatalog(true)">🔄 Yenile</button>
-                </div>
-                <div id="tournamentMarketGrid" class="tv2-market-grid"></div>
-            </section>
-
-            <div class="grid" id="urunGrid"></div>
-<script id="wz-final-v66-market-shell-hydrate">
-(function(){
-  try{
-    if((window.__WZ_INITIAL_VIEW__||'market')!=='market' || window.__WZ_SHARED_PRODUCT_ID__) return;
-
-    const key='weizend_market_shell_refreshfix_v20';
-    const raw=sessionStorage.getItem(key);
-    if(!raw) return;
-
-    const cached=JSON.parse(raw);
-    const tokenNow=!!localStorage.getItem('weizend_market_session_secure_v2');
-
-    // Eski giriş/çıkış durumuna ait butonları bir an bile göstermeyelim.
-    if(!!cached.authenticated !== tokenNow) return;
-    // Eski bir misafir HTML'si yanlış etiketlenmişse KESİNLİKLE geri çizme.
-    // Aksi durumda F5'te önce 'Doğrulama Gerekiyor' görünüp sonra kaybolur.
-    if(tokenNow && /auth-required|Doğrulama Gerekiyor/i.test(cached.gridHtml || '')) return;
-    if(!tokenNow && /class="action-btn"[^>]*onclick="(?:islemYapBaslat|startSitePurchase)/i.test(cached.gridHtml || '')) return;
-
-    const grid=document.getElementById('urunGrid');
-    const filters=document.getElementById('filters');
-    const info=document.getElementById('productSearchInfo');
-    const search=document.getElementById('productSearchInput');
-
-    if(grid && typeof cached.gridHtml==='string') grid.innerHTML=cached.gridHtml;
-    if(filters && typeof cached.filtersHtml==='string') filters.innerHTML=cached.filtersHtml;
-    if(info && typeof cached.searchInfoHtml==='string') info.innerHTML=cached.searchInfoHtml;
-    if(search && typeof cached.searchValue==='string') search.value=cached.searchValue;
-
-    // DOMContentLoaded'da aynı grid bir daha kurulmasın.
-    window.__WZ_MARKET_SHELL_HYDRATED__ = !!(grid && grid.children.length);
-
-    if(window.__WZ_MARKET_SHELL_HYDRATED__){
-      window.__WZ_EARLY_RESTORE_SCROLL__?.('market');
-    }
-  }catch(_){}
-})();
-</script>
-        </div>
-                <div id="wzEsportsHub" class="wz-esports-hub"></div>
-<script id="wz-final-v66-tournament-shell-hydrate">
-(function(){
-  try{
-    if((window.__WZ_INITIAL_VIEW__||'market')!=='tournament') return;
-    if(window.__WZ_TOURNAMENT_DEEP_LINK__) return; // başka turnuvanın cache'ini gösterme
-
-    const host=document.getElementById('wzEsportsHub');
-    if(!host) return;
-
-    const raw=sessionStorage.getItem('weizend_tournament_shell_refreshfix_v30619');
-    if(!raw) return;
-
-    const cached=JSON.parse(raw);
-    const currentFilter=sessionStorage.getItem('wz_t_filter')||'all';
-    const currentSearch=sessionStorage.getItem('wz_t_search')||'';
-    const currentScreen=sessionStorage.getItem('wz_t_screen')||'list';
-    // An old/incompatible cache could paint Tamamlanan with Tumu active.
-    const coherent=cached.shellVersion==='v30.4.0.2' &&
-      cached.filter===currentFilter && cached.search===currentSearch &&
-      cached.screen===currentScreen;
-    if(coherent && typeof cached.html==='string' && cached.html.trim()){
-      host.innerHTML=cached.html;
-      const strip=host.querySelector('.wz-turn-strip');
-      if(strip){
-        const savedX=Number(sessionStorage.getItem('wz_t_strip_scroll_v30402')||0);
-        if(Number.isFinite(savedX))strip.scrollLeft=Math.max(0,savedX);
-        const active=strip.querySelector('[data-wz-turn-filter].active');
-        if(active){
-          const left=active.offsetLeft-strip.offsetLeft;
-          if(left<strip.scrollLeft)strip.scrollLeft=Math.max(0,left-12);
-          else if(left+active.offsetWidth>strip.scrollLeft+strip.clientWidth)
-            strip.scrollLeft=Math.max(0,left+active.offsetWidth-strip.clientWidth+12);
-        }
-      }
-      window.__WZ_RESTORE_LOGOS__?.(host);
-      window.__WZ_TOURNAMENT_SHELL_HYDRATED__=true;
-
-      const savedScreen=sessionStorage.getItem('wz_t_screen') || 'list';
-      const savedSelected=sessionStorage.getItem('wz_t_selected') || '';
-      if(savedScreen==='detail' && savedSelected){
-        document.body.classList.add('wz-turn-modal-open');
-      }
-
-      window.__WZ_EARLY_RESTORE_SCROLL__?.('tournament');
-    }
-  }catch(_){}
-})();
-</script>
-    </div>
 
     <div class="container">
         <section id="wzMobileProfileView" aria-label="Profil">
@@ -17065,6 +17118,7 @@ return;
         WZ_T_SHELL_CACHE_KEY,
         JSON.stringify({
           shellVersion:'v30.4.0.2',
+          selectedId:state.screen==='detail' ? state.selectedId : '',
           filter:state.filter,
           search:state.search,
           screen:state.screen,
@@ -17145,8 +17199,11 @@ return;
       ? (window.scrollY || document.documentElement.scrollTop || 0)
       : null;
 
+    const detailRestore=window.__WZ_TURN_DETAIL_RELOAD_SCROLL__;
+    const initialDetailY=detailOpen && detailRestore?.pending &&
+      detailRestore.id===state.selectedId ? detailRestore.y : null;
     const previousDetailScroll = detailOpen
-      ? (host.querySelector('.wz-turn-detail-window')?.scrollTop ?? null)
+      ? (host.querySelector('.wz-turn-detail-window')?.scrollTop ?? initialDetailY)
       : null;
 
     // Katalog degistiginde tam cizim gerekebilir; yatay kategori konumunu koru.
@@ -17175,7 +17232,10 @@ return;
 
     if(previousDetailScroll !== null){
       const nextDetailWindow=host.querySelector('.wz-turn-detail-window');
-      if(nextDetailWindow) nextDetailWindow.scrollTop=previousDetailScroll;
+      if(nextDetailWindow){
+        nextDetailWindow.scrollTop=previousDetailScroll;
+        if(initialDetailY!==null)detailRestore.pending=false;
+      }
     }
 
     cacheTournamentShell(host);
