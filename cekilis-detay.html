@@ -61,12 +61,13 @@ function refreshJoinButton(){
  if(!last?.campaign)return;
  const c=last.campaign,el=$('wzgDetailActions'),btn=$('wzgDetailJoin');
  const now=Date.now(),starts=Date.parse(c.startAt),ends=Date.parse(c.endAt);
- const active=['scheduled','active'].includes(c.status)&&now>=starts&&now<ends;
- const scheduled=['scheduled','active'].includes(c.status)&&now<starts&&now<ends;
- if(!active&&!scheduled){el.hidden=true;btn.hidden=true;return}
+ const active=Boolean(c.startAt&&c.endAt)&&['scheduled','active'].includes(c.status)&&now>=starts&&now<ends;
+ const scheduled=['scheduled','active'].includes(c.status)&&now<starts&&(!Number.isFinite(ends)||now<ends);
+ if(!active&&!scheduled&&!(!c.startAt||!c.endAt)){el.hidden=true;btn.hidden=true;return}
  el.hidden=false;btn.hidden=false;
  let icon='🎉',label='Çekilişe Katıl',mode='join';
  if(!entryCheckDone){icon='⏳';label='Hesap Kontrol Ediliyor';mode='waiting'}
+ else if(!c.startAt||!c.endAt){icon='🔒';label='Tarihler Kesin Değil';mode='scheduled'}
  else if(!sessionVerified){icon='🔐';label='Doğrulama Gerekiyor';mode='auth'}
  else if(scheduled){icon='🔒';label='Kayıtlar Açılmadı';mode='scheduled'}
  else if(entryState?.status==='eligible'){icon='✅';label='Katıldın';mode='joined'}
@@ -80,7 +81,7 @@ function refreshJoinButton(){
  }:null;
 }
 
-function date(s){if(typeof s==='string'&&/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(s))s=s.replace(' ','T')+'Z';const d=new Date(s);return Number.isNaN(d.getTime())?'—':d.toLocaleString('tr-TR',{timeZone:'Europe/Istanbul',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false})}
+function date(s){if(!s)return 'Kesin değil';if(typeof s==='string'&&/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(s))s=s.replace(' ','T')+'Z';const d=new Date(s);return Number.isNaN(d.getTime())?'—':d.toLocaleString('tr-TR',{timeZone:'Europe/Istanbul',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false})}
 function status(s){return {scheduled:'📅 Yakında',active:'🔴 Katılıma açık',closed:'⏱️ Katılım kapandı',drawing:'🎥 Kura devam ediyor',drawn:'🏆 Sonuçlandı'}[s]||'Çekiliş'}
 function text(tag,cl,value){const e=document.createElement(tag);if(cl)e.className=cl;e.textContent=value;return e}
 function wzgTimerParts(ms){let sec=Math.floor(Math.max(0,ms)/1000);const days=Math.floor(sec/86400);sec%=86400;const hours=Math.floor(sec/3600);sec%=3600;const minutes=Math.floor(sec/60);sec%=60;return [days,hours,minutes,sec].map(n=>String(n).padStart(2,'0'))}
@@ -88,16 +89,16 @@ function wzgDetailCountdown(){
  if(!last?.campaign)return;
  const c=last.campaign,now=Date.now(),starts=Date.parse(c.startAt),ends=Date.parse(c.endAt);
  const planned=c.status==='active'||c.status==='scheduled';
- const beforeStart=planned&&Number.isFinite(starts)&&Number.isFinite(ends)&&now<starts&&now<ends;
+ const beforeStart=planned&&Number.isFinite(starts)&&now<starts&&(!Number.isFinite(ends)||now<ends);
  const inProgress=planned&&Number.isFinite(starts)&&Number.isFinite(ends)&&now>=starts&&now<ends;
  const target=beforeStart?starts:inProgress?ends:null,el=$('wzgDetailTimer');
  el.hidden=target===null;
  if(target!==null){
-  $('wzgDetailTimerTitle').textContent=beforeStart?'📅 KAYITLARIN AÇILMASINA KALAN SÜRE':'⏳ KATILIMIN BİTMESİNE KALAN SÜRE';
+  $('wzgDetailTimerTitle').textContent=beforeStart?(c.endAt?'📅 KATILIMIN AÇILMASINA KALAN SÜRE':'📅 DUYURULAN BAŞLANGICA KALAN SÜRE'):'⏳ KATILIMIN BİTMESİNE KALAN SÜRE';
   const values=wzgTimerParts(target-now);
   el.querySelectorAll('[data-wzg-unit]').forEach((cell,i)=>{cell.textContent=values[i]});
  }
- $('state').textContent=beforeStart?'📅 Yakında':inProgress?'🔴 Katılıma açık':planned&&Number.isFinite(ends)&&now>=ends?'⏱️ Katılım kapandı':status(c.status);
+ $('state').textContent=(!c.startAt&&!c.endAt)?'📢 Tarihler kesin değil':!c.startAt?'📢 Başlangıç tarihi kesin değil':!c.endAt?'📢 Bitiş tarihi kesin değil':beforeStart?'📅 Yakında':inProgress?'🔴 Katılıma açık':planned&&Number.isFinite(ends)&&now>=ends?'⏱️ Katılım kapandı':status(c.status);
  $('remaining').hidden=true;
  refreshJoinButton();
 }
