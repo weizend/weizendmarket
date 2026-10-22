@@ -4928,6 +4928,180 @@ html:not([data-wz-current-view="market"]) #wzV31126GiftShortcut{display:none!imp
 #wzV31126GiftShortcut button:focus-visible,#wzV31126GuestProfileBtn:focus-visible{
  outline:2px solid #ffa0a0;outline-offset:3px}
 </style>
+<style id="wz-v31133-first-paint-late-css">
+/* Source: wz-v85-tournament-modal-stability; identical to original later CSS to prevent initial paint style delay. */
+
+/* Turnuva V3: içerik kendi içinde kayar; arka sayfa kapalı kalır. */
+#tv2Modal {
+  position:fixed!important;
+  inset:0!important;
+  width:100%!important;
+  height:100dvh!important;
+  max-height:100dvh!important;
+  padding:clamp(8px,2vw,20px)!important;
+  padding-top:max(8px,env(safe-area-inset-top))!important;
+  padding-bottom:max(8px,env(safe-area-inset-bottom))!important;
+  overflow:hidden!important;
+  align-items:center!important;
+  justify-content:center!important;
+  touch-action:pan-y pinch-zoom!important;
+}
+#tv2Modal > .tv2-modal-content {
+  display:flex!important;
+  flex-direction:column!important;
+  flex:0 1 auto!important;
+  width:min(980px,100%)!important;
+  max-width:100%!important;
+  min-width:0!important;
+  height:auto!important;
+  max-height:100%!important;
+  min-height:0!important;
+  margin:0 auto!important;
+  overflow:hidden!important;
+  touch-action:pan-y pinch-zoom!important;
+}
+#tv2Modal .modal-header {
+  flex:0 0 auto!important;
+  min-height:0!important;
+  padding:14px 16px!important;
+}
+#tv2ModalBody {
+  flex:1 1 auto!important;
+  min-height:0!important;
+  max-height:calc(100dvh - 110px)!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior-y:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+  touch-action:pan-y pinch-zoom!important;
+  scroll-behavior:auto!important;
+  overflow-wrap:anywhere;
+}
+#tv2ModalBody .tv2-panel,
+#tv2ModalBody .tv3-flow-card,
+#tv2ModalBody .tv2-field,
+#tv2ModalBody .tv2-hero {min-width:0;max-width:100%;}
+#tv2ModalBody .tv2-actions {display:flex!important;flex-wrap:wrap!important;gap:8px!important;}
+#tv2ModalBody .tv2-actions > button {
+  flex:1 1 170px;min-width:0;white-space:normal;overflow-wrap:anywhere;
+  min-height:42px;line-height:1.3;
+}
+#tv2ModalBody button,
+#tv2ModalBody input,
+#tv2ModalBody select {touch-action:manipulation!important;}
+@media(max-width:640px){
+  #tv2Modal {padding:8px!important;padding-top:max(8px,env(safe-area-inset-top))!important;padding-bottom:max(8px,env(safe-area-inset-bottom))!important;}
+  #tv2Modal > .tv2-modal-content {width:100%!important;max-height:100%!important;border-radius:14px!important;}
+  #tv2ModalBody {max-height:calc(100dvh - 95px)!important;padding:12px!important;}
+  #tv2ModalBody .tv2-hero {grid-template-columns:minmax(0,1fr)!important;}
+  #tv2ModalBody .tv2-actions > button {flex-basis:100%;}
+  #tv2ModalBody .tv2-panel {padding:12px!important;}
+}
+
+/* Source: wz-v87-tournament-payment-guide; identical to original later CSS to prevent initial paint style delay. */
+
+/* V87: payment confirmation MUST appear above the already open tournament form. */
+#redirectModal.wz-payment-guide {
+  z-index:95000!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding: max(10px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom))!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+  touch-action:pan-y pinch-zoom!important;
+}
+#redirectModal.wz-payment-guide .modal-content {
+  width:min(460px,100%)!important;
+  max-width:460px!important;
+  max-height:calc(100dvh - 28px)!important;
+  min-height:0!important;
+  margin:auto!important;
+  display:flex!important;
+  flex-direction:column!important;
+  overflow:hidden!important;
+  flex:0 1 auto!important;
+  touch-action:pan-y pinch-zoom!important;
+}
+#redirectModal.wz-payment-guide .modal-header {
+  flex:0 0 auto!important;
+  padding:16px!important;
+}
+#redirectModal.wz-payment-guide .redirect-modal-body {
+  flex:1 1 auto!important;
+  min-height:0!important;
+  padding:20px!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  -webkit-overflow-scrolling:touch!important;
+  overscroll-behavior:contain!important;
+  touch-action:pan-y pinch-zoom!important;
+  text-align:left!important;
+}
+#redirectModal.wz-payment-guide #redirectStatusText {
+  font-size:.97rem!important;
+  line-height:1.55!important;
+  color:#e8e8e8!important;
+  text-align:left!important;
+}
+#redirectModal.wz-payment-guide #modalCommandText {
+  display:block;
+  margin:12px 0 10px;
+  padding:13px 10px;
+  font-size:clamp(1rem,4.9vw,1.35rem);
+  text-align:center;
+  overflow-wrap:anywhere;
+  touch-action:pan-y pinch-zoom!important;
+}
+#redirectModal.wz-payment-guide:not([data-wz-payment-kind="tl"]) #modalCommandText {display:none!important}
+#redirectModal.wz-payment-guide #timerText {display:none!important}
+#redirectModal.wz-payment-guide #redirectExternalOpenButton {
+  display:block!important;
+  width:100%!important;
+  min-height:48px!important;
+  margin-top:17px!important;
+  padding:11px!important;
+  font-size:.94rem!important;
+  white-space:normal!important;
+}
+#redirectModal.wz-payment-guide #redirectCancelButton {margin-top:10px!important}
+#redirectModal.wz-payment-guide .wz-payment-policy {
+  display:block;
+  margin:0;
+  font-size:.87rem;
+  line-height:1.55;
+  color:#aaa;
+  white-space:pre-line;
+}
+#redirectModal.wz-payment-guide .wz-payment-policy[hidden] {display:none!important}
+@media(max-width:640px) {
+  #redirectModal.wz-payment-guide {align-items:center!important;}
+  #redirectModal.wz-payment-guide .modal-content {
+    max-height:calc(100dvh - max(24px, env(safe-area-inset-top) + env(safe-area-inset-bottom) + 12px))!important;
+    margin:auto!important;
+    flex:0 1 auto!important;
+  }
+  #redirectModal.wz-payment-guide .redirect-modal-body {padding:16px!important;}
+}
+
+/* Source: wz-v3040-entry-explanation; identical to original later CSS to prevent initial paint style delay. */
+
+  #tv2ModalBody .wz-v3040-entry-badge {display:inline-block;margin-top:7px;font-size:12px;font-weight:900;letter-spacing:.045em;color:#fff;background:#7f1d1d;border:1px solid rgba(239,68,68,.45);border-radius:8px;padding:5px 8px;}
+  #tv2ModalBody .wz-v3037-register-hint > b {display:block;margin-bottom:5px;}
+
+/* Source: wz-v3039-single-choice; identical to original later CSS to prevent initial paint style delay. */
+
+  #tv2ModalBody .wz-v3039-choice-back {margin:0 0 8px;}
+  #tv2ModalBody .wz-v3039-choice-back .tv2-btn {min-height:36px;font-size:.78rem;opacity:.88;}
+
+/* Source: wzsp103-style; identical to original later CSS to prevent initial paint style delay. */
+
+#wzSp103Card{border:1px solid #332d39;background:linear-gradient(150deg,#14151a,#101116)}
+#wzSp103Countdown{margin-top:13px;padding:14px;border:1px solid #3a3642;border-radius:12px;background:#16171d}
+#wzSp103Countdown small{display:block;color:#bdb4c9;margin-bottom:7px;font-size:.73rem}
+.wzsp103-timer{color:#f3e1a6;font-size:1.22rem;font-weight:900;letter-spacing:.5px;font-variant-numeric:tabular-nums}
+.wzsp103-note{font-size:.72rem;color:#95929d;margin:12px 0 0;line-height:1.55}
+
+</style>
 <style id="wz-v3132-critical-share-style">.wz82-product-share{margin:7px 0 8px;padding:9px 10px;border-radius:9px;background:#1b1e27;border:1px solid #474857;color:#fff;font-size:.82rem;font-weight:700;width:100%;cursor:pointer;-webkit-appearance:none;appearance:none}.wz82-product-share:hover{border-color:#ec525c}</style>
 </head>
 <body>
@@ -5030,13 +5204,14 @@ html:not([data-wz-current-view="market"]) #wzV31126GiftShortcut{display:none!imp
 (function(){
   try{
     const view=window.__WZ_INITIAL_VIEW__ || 'market';
-    const names={market:'MARKET',tournament:'TURNUVA',profile:'PROFİL',players:'OYUNCU ARA'};
+    const names={market:'MARKET',tournament:'TURNUVA',profile:'PROFİL',players:'OYUNCU ARA',giveaway:'ÇEKİLİŞLER'};
     const label=document.getElementById('wzViewName');
     if(label) label.textContent=names[view] || 'WEİZEND';
 
     document.getElementById('wzDesktopMarket')?.classList.toggle('active',view==='market');
     document.getElementById('wzDesktopTournament')?.classList.toggle('active',view==='tournament');
     document.getElementById('wzDesktopPlayers')?.classList.toggle('active',view==='players');
+    document.getElementById('wzDesktopGiveaway')?.classList.toggle('active',view==='giveaway');
   }catch(_){}
 })();
 </script>
@@ -14225,7 +14400,7 @@ return;
     return ['market','tournament','profile','players'].includes(view)?view:'market';
   }
   function updateTopbar(view){
-    const names={market:'MARKET',tournament:'TURNUVA',profile:'PROFİL',players:'OYUNCU ARA'};
+    const names={market:'MARKET',tournament:'TURNUVA',profile:'PROFİL',players:'OYUNCU ARA',giveaway:'ÇEKİLİŞLER'};
     setText('wzViewName',names[view]||'WEİZEND');
     document.getElementById('wzDesktopMarket')?.classList.toggle('active',view==='market');
     document.getElementById('wzDesktopTournament')?.classList.toggle('active',view==='tournament');
@@ -14235,6 +14410,7 @@ return;
     document.getElementById('wzProfileTopBtn')?.classList.toggle('active',view==='profile');
     document.getElementById('wzNavMarket')?.classList.toggle('active',view==='market');
     document.getElementById('wzNavTournament')?.classList.toggle('active',view==='tournament');
+    document.getElementById('wzDesktopGiveaway')?.classList.toggle('active',view==='giveaway');
   }
 
   const WZ_SCROLL_KEY_PREFIX='wz_v23_scroll_';
