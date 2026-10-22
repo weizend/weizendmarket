@@ -11376,7 +11376,7 @@ return;
         return map[status] || '🔴 KAYITLAR KAPALI';
     }
 
-    function tv2TeamStatusLabel(status) {
+    function tv2TeamStatusLabelLegacy(status) {
         const map = {
             forming:'Kadro Oluşturuluyor',
             waiting_players:'Oyuncular Bekleniyor',
@@ -11785,7 +11785,7 @@ return;
         if (event.target?.id === 'tv2Modal') tv2Close();
     }
 
-    async function tv2Open(tournamentId) {
+    async function tv2OpenLegacy(tournamentId) {
         if (currentAccountStatus === 'blocked') {
             showStatusToast(`⛔ HESABIN KISITLANDI${currentBlockedReason ? ': ' + currentBlockedReason : ''}`, 5000);
             return;
@@ -12159,7 +12159,7 @@ return;
         return data;
     }
 
-    async function tv2ReloadMe(showToast=false) {
+    async function tv2ReloadMeLegacy(showToast=false) {
         const id = tv2State.tournamentId;
         try {
             const [pub, me, detail] = await Promise.all([
@@ -12200,7 +12200,7 @@ return;
         `;
     }
 
-    function tv2RenderModal() {
+    function tv2RenderModalLegacy() {
         const item = tv2State.publicData;
         const me = tv2State.me || {};
         if (!item) return;
