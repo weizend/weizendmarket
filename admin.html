@@ -4033,7 +4033,7 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
             oninput="filterTournamentOptions()">
         </div>
 
-        <select id="tournamentSelect" onchange="loadTournamentConfig()">
+        <select id="tournamentSelect" onchange="wz41ConfirmTournamentSwitch()">
           <option value="">Turnuvalar yükleniyor...</option>
         </select>
 
@@ -5078,26 +5078,31 @@ async function api(path,options={}){
 
   const controller = new AbortController();
   const maxWait = options.method === 'POST' ? 30000 : 18000;
-  const timer = setTimeout(() => controller.abort(), maxWait);
-  let r;
+  // Keep the deadline until the response BODY has been read as well.
+  // A caller's AbortSignal also cancels this request without losing the deadline.
+  const externalSignal=options.signal;
+  const abortExternal=()=>controller.abort();
+  if(externalSignal?.aborted)controller.abort();
+  else externalSignal?.addEventListener('abort',abortExternal,{once:true});
+  const timer=setTimeout(()=>controller.abort(),maxWait);
+  let r,d=null;
   try {
-    r = await fetch(`${MARKET_WORKER}${path}`, {
-      ...options,
-      headers,
-      signal: options.signal || controller.signal,
-      cache:'no-store'
+    r=await fetch(`${MARKET_WORKER}${path}`,{
+      ...options,headers,signal:controller.signal,cache:'no-store'
     });
-  } catch (error) {
-    throw new Error(error?.name === 'AbortError'
-      ? `Worker ${maxWait / 1000} saniyede yanıt vermedi. Sunucu/D1 durumunu kontrol et ve yeniden dene.`
-      : `Worker bağlantı hatası: ${error?.message || error}`);
-  } finally { clearTimeout(timer); }
-
-  let d = null;
-
-  try{
-    d = await r.json();
-  }catch(_){}
+    try{d=await r.json();}catch(parseError){
+      if(controller.signal.aborted)throw parseError;
+      // Preserve normal HTTP errors and report malformed successful replies.
+      if(r.ok)throw new Error('Worker geçerli JSON yanıtı göndermedi.');
+    }
+  } catch(error){
+    throw new Error(controller.signal.aborted
+      ? `Worker ${maxWait/1000} saniyede tamamlanmadı veya istek iptal edildi.`
+      : `Worker bağlantı/yanıt hatası: ${error?.message||error}`);
+  } finally {
+    clearTimeout(timer);
+    externalSignal?.removeEventListener('abort',abortExternal);
+  }
 
   if(r.status === 401){
 
@@ -9905,6 +9910,15 @@ async function loadTournamentList(force=false){
 
     tournamentCatalogCache = d.tournaments;
     renderTournamentOptions();
+    const selectedNow=String(document.getElementById('tournamentSelect')?.value||'');
+    const latest=wz41CatalogConfig(selectedNow);
+    if(latest && selectedNow===wz41ConfigLoadedId){
+      const revision=String(latest.tournament.configVersion??latest.tournament.updatedAt??'');
+      if(revision!==wz41ConfigVersion){
+        if(wz41ConfigDirty)wz41ConfigNotice('error','⚠️ Sunucudaki ayarlar değişti. Taslağın korundu; kaydetmeden önce yeni sürümle karşılaştır.');
+        else wz41PaintTournamentConfig(selectedNow,latest.tournament,latest.rule,wz41ConfigLockCache.get(selectedNow)||null);
+      }
+    }
 
     const select = document.getElementById('tournamentSelect');
 
@@ -10327,6 +10341,44 @@ async function deleteCurrentTournamentTemplate(){
 let wz41ConfigLoadedId = '';
 let wz41ConfigLoadSequence = 0;
 let wz41ConfigPendingId = '';
+let wz41ConfigPendingPromise=null;
+let wz41ConfigVersion='';
+let wz41ConfigDirty=false;
+let wz41ConfigWriting=false;
+function wz41FormInputs(){
+  const ids=['tName','tTeamSize','tRegistrationOpen','tFee','tCapacity','tComingSoon','tEventDate','tEntryMode',
+    'tRegistrationOpensAt','tRegistrationClosesAt','tGameName','tGameIdLabel','tAboutText',
+    'tCardImageUrl','tHeroImageUrl','tLogoImageUrl','tStreamUrl','tBroadcastEnabled','tBestOf',
+    'tMapName','tMapImageUrl','tRulesText','tPrizeFirst','tPrizeSecond','tPrizeThird',
+    'tPredictionPrize','tThirdPlaceEnabled'];
+  return ids.map(id=>document.getElementById(id)).filter(Boolean);
+}
+// Only actual user input marks the form dirty; programmatic form painting does not.
+function wz41TrackConfigChanges(){
+  for(const input of wz41FormInputs()){
+    const mark=()=>{if(wz41ConfigLoadedId)wz41ConfigDirty=true};
+    input.addEventListener('input',mark);input.addEventListener('change',mark);
+  }
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',wz41TrackConfigChanges,{once:true});
+else wz41TrackConfigChanges();
+function wz41ConfirmTournamentSwitch(){
+  const selected=document.getElementById('tournamentSelect');
+  if(!selected)return;
+  if(wz41ConfigWriting){
+    selected.value=wz41ConfigLoadedId;
+    wz41ConfigNotice('loading','⏳ Kayıt tamamlanmadan turnuva değiştirilemez.');
+    return;
+  }
+  if(wz41ConfigDirty && wz41ConfigLoadedId && selected.value!==wz41ConfigLoadedId){
+    if(!confirm('Bu turnuvadaki kaydedilmemiş ayar değişikliklerin kaybolacak. Devam edilsin mi?')){
+      selected.value=wz41ConfigLoadedId;return;
+    }
+    wz41ConfigDirty=false;
+  }
+  void loadTournamentConfig();
+}
+
 const wz41ConfigLockCache = new Map();
 const wz41ConfigLockPending = new Map();
 function wz41ConfigNotice(state,message){
@@ -10479,6 +10531,8 @@ function wz41PaintTournamentConfig(id,t,rule,entryModeLock){
     updateTournamentEntryFields();
 
     wz41ConfigLoadedId=String(id);
+    wz41ConfigVersion=String(t.configVersion ?? t.updatedAt ?? catalogItem.configVersion ?? catalogItem.updatedAt ?? '');
+    wz41ConfigDirty=false;
     wz41ConfigNotice('ok','✅ '+String(t.name||'Turnuva')+' ayarları yüklendi. Bilgileri düzenleyip kaydedebilirsin.');
     if(save)save.disabled=false;
     hideStatus('tournamentStatus');
@@ -10528,6 +10582,7 @@ async function loadTournamentConfig(forceDetail=false){
   // Same tournament: preserve any edits made in the form. Retry forces
   // authoritative reloading; normal settings navigation never resets inputs.
   if(!forceDetail && wz41ConfigLoadedId===id)return true;
+  if(wz41ConfigPendingId===id && wz41ConfigPendingPromise)return wz41ConfigPendingPromise;
   const seq=++wz41ConfigLoadSequence;
   const catalog=!forceDetail ? wz41CatalogConfig(id) : null;
   if(catalog){
@@ -10538,28 +10593,31 @@ async function loadTournamentConfig(forceDetail=false){
   }
   // Fallback: only ONE endpoint is necessary. The v2 response also includes
   // `tournament`, so there's no need for Promise.all(two GETs).
-  if(wz41ConfigPendingId===id)return false;
   wz41ConfigPendingId=id;
   wz41ConfigNotice('loading','⏳ Turnuva ayrıntıları sunucudan doğrulanıyor...');
   if(save)save.disabled=true;
-  try{
-    const {r,d}=await api(`/admin/tournament/v2/config?id=${encodeURIComponent(id)}&_=${Date.now()}`);
-    if(!r.ok||!d?.success||!d.tournament)throw Error(d?.error||`HTTP ${r.status}`);
-    if(seq!==wz41ConfigLoadSequence||document.getElementById('tournamentSelect')?.value!==id)return false;
-    wz41ConfigLockCache.set(id,d.entryModeLock||null);
-    wz41PaintTournamentConfig(id,d.tournament,d.rule||{},d.entryModeLock||null);
-    return true;
-  }catch(error){
-    if(seq!==wz41ConfigLoadSequence||document.getElementById('tournamentSelect')?.value!==id)return false;
-    wz41ConfigLoadedId='';
-    if(save)save.disabled=true;
-    const message=String(error?.message||error);
-    wz41ConfigNotice('error','❌ Ayarlar alınamadı: '+message+'. Yeniden Dene.');
-    showStatus('tournamentStatus','❌ '+esc(message),false);
-    return false;
-  }finally{
-    if(seq===wz41ConfigLoadSequence)wz41ConfigPendingId='';
-  }
+  const pending=(async()=>{
+    try{
+      const {r,d}=await api(`/admin/tournament/v2/config?id=${encodeURIComponent(id)}&_=${Date.now()}`);
+      if(!r.ok||!d?.success||!d.tournament)throw Error(d?.error||`HTTP ${r.status}`);
+      if(seq!==wz41ConfigLoadSequence||document.getElementById('tournamentSelect')?.value!==id)return false;
+      wz41ConfigLockCache.set(id,d.entryModeLock||null);
+      wz41PaintTournamentConfig(id,{...d.tournament,configVersion:d.configVersion??d.tournament.configVersion},d.rule||{},d.entryModeLock||null);
+      return true;
+    }catch(error){
+      if(seq!==wz41ConfigLoadSequence||document.getElementById('tournamentSelect')?.value!==id)return false;
+      wz41ConfigLoadedId='';
+      if(save)save.disabled=true;
+      const message=String(error?.message||error);
+      wz41ConfigNotice('error','❌ Ayarlar alınamadı: '+message+'. Yeniden Dene.');
+      showStatus('tournamentStatus','❌ '+esc(message),false);
+      return false;
+    }finally{
+      if(seq===wz41ConfigLoadSequence && wz41ConfigPendingId===id){wz41ConfigPendingId='';wz41ConfigPendingPromise=null;}
+    }
+  })();
+  wz41ConfigPendingPromise=pending;
+  return pending;
 }
 
 function updateTournamentEntryFields(){
@@ -10673,7 +10731,12 @@ async function saveTournamentConfig(){
     return;
   }
 
+  if(wz41ConfigWriting)return;
   const button = document.getElementById('saveTournamentButton');
+  if(!wz41ConfigVersion){
+    showStatus('tournamentStatus','❌ Güvenli kayıt sürümü alınamadı. Turnuva listesini yenile.',false);
+    return;
+  }
 
   const name = document.getElementById('tName')?.value.trim() || '';
   const teamSize = Number(document.getElementById('tTeamSize')?.value || 1);
@@ -10736,6 +10799,7 @@ async function saveTournamentConfig(){
   return;
 }
 
+  wz41ConfigWriting=true;
   try{
     if(button){
       button.disabled = true;
@@ -10749,6 +10813,7 @@ async function saveTournamentConfig(){
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         tournamentId,
+        expectedConfigVersion:wz41ConfigVersion,
         name,
         teamSize,
         registrationOpen,
@@ -10800,20 +10865,14 @@ async function saveTournamentConfig(){
     );
 
   }catch(error){
-    showStatus('tournamentStatus','❌ ' + esc(error.message || error),false);
-    // Başka kullanıcı o sırada kayıt yaptıysa kilit durumunu sunucudan yeniden al.
-    try{
-      const info=await api(`/admin/tournament/v2/config?id=${encodeURIComponent(tournamentId)}&_=${Date.now()}`);
-      if(info.r.ok && info.d?.success){
-        currentTournamentEntryModeLock=info.d.entryModeLock||null;
-        if(info.d.rule?.entryMode) document.getElementById('tEntryMode').value=info.d.rule.entryMode;
-        updateTournamentEntryFields();
-      }
-    }catch(_){}
+    // Never mutate the user's draft on a failed save or a 409 conflict.
+    wz41ConfigNotice('error','⚠️ Kayıt tamamlanmadı. '+String(error?.message||error)+' Taslağını korudum; kontrol ederek yeniden yükle.');
+    showStatus('tournamentStatus','❌ '+esc(error.message||error),false);
   }finally{
+    wz41ConfigWriting=false;
     if(button){
-      button.disabled = false;
-      button.innerText = '💾 Ayarları Kaydet';
+      button.disabled=wz41ConfigLoadedId!==String(document.getElementById('tournamentSelect')?.value||'');
+      button.innerText='💾 Ayarları Kaydet';
     }
   }
 }
@@ -13325,6 +13384,14 @@ async function wz41SelectTournament(encodedId){
  const tid=decodeURIComponent(String(encodedId||''));
  const select=document.getElementById('tournamentSelect');
  if(!select || !Array.from(select.options).some(x=>x.value===tid))return;
+ if(wz41ConfigWriting){
+   wz41ConfigNotice('loading','⏳ Kayıt tamamlanmadan turnuva değiştiremezsin.');
+   return;
+ }
+ if(wz41ConfigDirty && wz41ConfigLoadedId && tid!==wz41ConfigLoadedId){
+   if(!confirm('Kaydedilmemiş turnuva ayarlarını bırakıp başka turnuvaya geçmek istiyor musun?'))return;
+   wz41ConfigDirty=false;
+ }
  if(select.value!==tid){
    select.value=tid;
    v30AdminOpenMatch='';
@@ -13361,6 +13428,16 @@ async function wz41RefreshCatalog(){
   tournamentCatalogCache=d.tournaments;
   renderTournamentOptions(true);
   wz411ApplyPanelVisibility();
+  const selectedId=String(document.getElementById('tournamentSelect')?.value||'');
+  const freshSelected=selectedId?wz41CatalogConfig(selectedId):null;
+  if(freshSelected && wz41ConfigLoadedId===selectedId){
+    const newRevision=String(freshSelected.tournament.configVersion??freshSelected.tournament.updatedAt??'');
+    if(newRevision!==wz41ConfigVersion){
+      if(wz41ConfigDirty){
+        wz41ConfigNotice('error','⚠️ Bu turnuva sunucuda değişmiş. Kaydedilmemiş taslağın korundu. Eski sürümle Kaydet işlemi reddedilir; bilgileri karşılaştırıp yenile.');
+      }else wz41PaintTournamentConfig(selectedId,freshSelected.tournament,freshSelected.rule,wz41ConfigLockCache.get(selectedId)||null);
+    }
+  }
   const after=wz413CatalogSnapshot(tournamentCatalogCache);
   let added=0,removed=0,changed=0;
   for(const [id,signature] of after){
@@ -14082,7 +14159,7 @@ function wzg2CloseReel(){
  clearInterval(wzg2ReelTimer);wzg2ReelTimer=null;
  const el=wzg2ReelEl('wzg2ReelOverlay');if(el)el.hidden=true;
 }
-async function wzg2OpenReel(id,title){
+async function wzg2LegacyOpenReel(id,title){
  if(wzg2ReelPending)return;
  const root=wzg2ReelUI();root.hidden=false;wzg2ReelId=id;wzg2ReelNames=[];wzg2ReelWinners=[];wzg2ReelPosition=0;
  wzg2ReelEl('wzg2ReelTitle').textContent=title||'Kazanan Seçimi';
