@@ -15725,8 +15725,26 @@ return;
     return ia-ib;
   }
   function allTournamentSort(a,b,sourceIndex){
-    // V30.3: Newest tournament first, even when an older tournament is nearly full.
-    // Catalog is already ordered by t.created_at DESC on the Worker.
+    // V31.1.26: "Tümü" listesinde tamamlananlar HER ZAMAN en sonda.
+    // "Tamamlanan" filtresinde ve Tümü'nün tamamlananlar grubunda son
+    // biten maçın tarihine göre yeni -> eski sıralaması korunur.
+    const aDone=tournamentCategory(a)==='done';
+    const bDone=tournamentCategory(b)==='done';
+    if(aDone!==bDone) return aDone?1:-1;
+
+    if(aDone && bDone){
+      // Worker bitmiş fikstürdeki son tamamlanan maç tarihini hazır döndürür.
+      // Eski katalog cache'lerinde completedAt yoksa turnuva günüyle sıralar.
+      const finishedTime=item=>
+        tournamentDateTs(item?.tournament?.completedAt) ??
+        tournamentDateTs(item?.tournament?.eventDate) ??
+        tournamentDateTs(item?.tournament?.updatedAt) ??
+        tournamentDateTs(item?.tournament?.createdAt) ?? 0;
+      const ta=finishedTime(a),tb=finishedTime(b);
+      if(ta!==tb) return tb-ta;
+    }
+
+    // Diğer turnuvaların mevcut yeni -> eski oluşturulma sırası değişmez.
     const ia=sourceIndex.get(String(a?.tournament?.id||'')) ?? Number.MAX_SAFE_INTEGER;
     const ib=sourceIndex.get(String(b?.tournament?.id||'')) ?? Number.MAX_SAFE_INTEGER;
     const ta=tournamentDateTs(a?.tournament?.createdAt),tb=tournamentDateTs(b?.tournament?.createdAt);
