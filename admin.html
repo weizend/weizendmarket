@@ -7939,6 +7939,13 @@ async function deleteAllAdminMessages(){
    SATIN ALINANLAR
 ========================================================= */
 
+function wzIsDeliveredTicket(o){
+  return Boolean(o && (String(o.productId||'')==='wz_giveaway_ticket_v1' ||
+    String(o.deliveryType||'')==='giveaway_ticket') &&
+    o.paidAt && ['paid','delivery_pending','delivered'].includes(String(o.status||'')) &&
+    !['pending','completed'].includes(String(o.refund?.status||'')));
+}
+
 function orderStatusText(status){
 
   const map = {
@@ -8164,7 +8171,7 @@ function renderAdminOrders(){
 
       <td>
         <span class="badge ${orderStatusBadge(o.status)}">
-          ${esc(o.refund?.status==='completed' ? 'İade Edildi' : o.refund?.status==='pending' ? 'Puan İadesi – Yönetici Onayı Bekliyor' : orderStatusText(o.status))}${o.manualReviewReason ? '<br><small>'+esc(o.manualReviewReason === 'ADMIN_POINTS_REFUND' ? 'Yönetici tarafından puan iadesi' : o.manualReviewReason === 'REFUND_PENDING' ? 'Kick/BotRix kontrolü gerekiyor' : o.manualReviewReason)+'</small>' : ''}
+          ${esc(o.refund?.status==='completed' ? 'İade Edildi' : o.refund?.status==='pending' ? 'BotRix İade Doğrulaması Bekleniyor' : wzIsDeliveredTicket(o) ? 'Teslim Edildi' : orderStatusText(o.status))}${o.manualReviewReason ? '<br><small>'+esc(o.manualReviewReason === 'ADMIN_POINTS_REFUND' ? 'Yönetici tarafından puan iadesi' : o.manualReviewReason === 'REFUND_PENDING' ? 'Kick/BotRix kontrolü gerekiyor' : o.manualReviewReason)+'</small>' : ''}
         </span>
       </td>
 
@@ -8174,8 +8181,6 @@ function renderAdminOrders(){
 
       <td>
         <div class="orderActions">
-          ${o.paymentType==='points' && o.refund?.status==='pending' ? `
-            <button class="smallBtn secondary" onclick="confirmRefundReceived('${encodeURIComponent(o.id)}')">✅ İadeyi Onayla (Stok)</button>` : ''}
           ${o.paymentType === 'points' && ['pending','expired','failed'].includes(o.status) ? `
             <button class="smallBtn secondary" onclick="resolvePointReview('${encodeURIComponent(o.id)}','debited')">Puan silindi: onayla</button>
             <button class="smallBtn secondary" onclick="resolvePointReview('${encodeURIComponent(o.id)}','not_debited')">Puan silinmedi: iptal</button>` : ''}
@@ -8288,8 +8293,9 @@ async function hideAdminPurchase(encodedId,sourceType='order'){
 
   const paymentType = String(item?.paymentType || '').toLowerCase();
   const status = String(item?.status || '').toLowerCase();
+  const ticketDelivered = wzIsDeliveredTicket(item);
 
-  if(type==='order' && paymentType==='points' &&
+  if(type==='order' && paymentType==='points' && !ticketDelivered &&
       (['pending','expired','failed'].includes(status) ||
        (status==='cancelled' && ['ADMIN_CANCELLED_PENDING_POINTS_AWAITING_DEBIT','ADMIN_CANCELLED_POINTS_REFUND_PENDING'].includes(item?.manualReviewReason)))){
     alert('Önce puan incelemesini ilgili düğmelerden tamamla. Çöp kutusu sonuçlanmamış puan işlemini kapatmaz.');
@@ -8313,7 +8319,7 @@ async function hideAdminPurchase(encodedId,sourceType='order'){
 
   try{
     // 1) Aktif işlemi önce güvenli şekilde iptal / iade et.
-    if(type === 'order' && paymentType === 'points' && status === 'pending'){
+    if(type === 'order' && paymentType === 'points' && status === 'pending' && !ticketDelivered){
       const {r,d} = await api('/admin/order/cancel-pending',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
@@ -8323,7 +8329,7 @@ async function hideAdminPurchase(encodedId,sourceType='order'){
       if(!r.ok || !d?.success){
         throw new Error(d?.error || `HTTP ${r.status}`);
       }
-    }else if(type === 'order' && paymentType === 'points' && ['paid','delivery_pending'].includes(status)){
+    }else if(type === 'order' && paymentType === 'points' && ['paid','delivery_pending'].includes(status) && !ticketDelivered){
       const {r,d} = await api('/admin/order/refund',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
@@ -8333,7 +8339,7 @@ async function hideAdminPurchase(encodedId,sourceType='order'){
       if(!r.ok || !d?.success){
         if(d?.code==='REFUND_COMMAND_UNCONFIRMED'){
           await loadAdminOrders();
-          alert('⚠️ İade kaydı beklemede. !puanver komutunun gönderimi belirsiz; yeniden iade başlatma. BotRix geçmişini kontrol et ve İadeyi Onayla ile tamamla.');
+          alert('⚠️ İade kaydı beklemede. !puanver komutunun gönderimi belirsiz; yeniden iade başlatma. BotRix geçmişini kontrol et.');
           return;
         }
         throw new Error(d?.error || `HTTP ${r.status}`);
@@ -8350,9 +8356,9 @@ async function hideAdminPurchase(encodedId,sourceType='order'){
       }
     }
 
-    if(type==='order' && paymentType==='points' && ['paid','delivery_pending'].includes(status)){
+    if(type==='order' && paymentType==='points' && ['paid','delivery_pending'].includes(status) && !ticketDelivered){
       await loadAdminOrders();
-      alert('İade talebi bekliyor. !puanver gönderimi kesinleşmese de otomatik tekrar deneme; Kick/BotRix üzerinden kontrol edip İadeyi Onayla.');
+      alert('İade işlemi BotRix doğrulamasını bekliyor. Aynı !puanver komutunu tekrar gönderme.');
       return;
     }
 
@@ -8736,8 +8742,8 @@ function renderOrder(o){
   const effectiveStatus = refundStatus === 'completed'
     ? 'İade Edildi'
     : refundStatus === 'pending'
-      ? 'Puan İadesi – Yönetici Onayı Bekliyor'
-      : orderStatusText(o.status);
+      ? 'BotRix İade Doğrulaması Bekleniyor'
+      : wzIsDeliveredTicket(o) ? 'Teslim Edildi' : orderStatusText(o.status);
   document.getElementById('oStatus').innerHTML =
     `<span class="badge ${refundStatus === 'completed' ? 'bad' : o.status === 'delivered' ? 'ok' : 'warn'}">${esc(effectiveStatus)}</span>`;
 
@@ -8766,11 +8772,14 @@ function renderOrder(o){
   const manualConfirm = document.getElementById('wz49ConfirmRefundDetail');
   const manualHelp = document.getElementById('wz49RefundHelp');
   const pendingManualRefund = o.paymentType === 'points' && o.refund?.status === 'pending';
-  if (manualConfirm) manualConfirm.style.display = pendingManualRefund ? 'block' : 'none';
-  if (manualHelp) manualHelp.style.display = pendingManualRefund ? 'block' : 'none';
+  // Normal iade BotRix onayiyla otomatik sonuclanir.
+  if (manualConfirm) manualConfirm.style.display = 'none';
+  if (manualHelp) manualHelp.style.display = 'none';
 
 const refundable =
-  o.paymentType === 'points' &&
+  o.paymentType === 'points' && !wzIsDeliveredTicket(o) &&
+  !['wz_giveaway_ticket_v1'].includes(String(o.productId||'')) &&
+  String(o.deliveryType||'')!=='giveaway_ticket' &&
   ['paid','delivery_pending'].includes(o.status);
 
 if(
@@ -8781,7 +8790,7 @@ if(
   refundButton.disabled = true;
 
   refundButton.innerText =
-    `⏳ ${points(o.refund.amountPoints)} İADE ONAYI BEKLİYOR`;
+    `⏳ ${points(o.refund.amountPoints)} BOTRIX DOĞRULAMASI BEKLENİYOR`;
 
 }else if(
   o.refund?.status === 'completed'
@@ -8809,11 +8818,13 @@ if(
 }
 
   button.disabled =
+  wzIsDeliveredTicket(o) ||
   !['paid','delivery_pending'].includes(o.status) ||
   o.refund?.status === 'pending' ||
   o.refund?.status === 'completed';
 
   button.innerText =
+  wzIsDeliveredTicket(o) ? '✅ TESLİM EDİLDİ' :
   o.refund?.status === 'pending'
     ? '⏳ PUAN İADESİ BEKLENİYOR'
     : o.refund?.status === 'completed'
@@ -8986,8 +8997,8 @@ async function watchRefundCompletion(orderId, attempt = 0){
     showStatus(
       'lookupStatus',
       d.alreadyPending
-        ? '⏳ Bu siparişin puan iadesi yönetici onayını bekliyor.'
-        : `✅ ${points(amount)} iade komutu başlatıldı. Kick/BotRix üzerinden puanın geri verildiğini doğrula, ardından İadeyi Onayla butonuna bas. Stok onayda güncellenir.`,
+        ? '⏳ Bu siparişin puan iadesi BotRix onayını bekliyor.'
+        : `⏳ ${points(amount)} puan iadesi başlatıldı. BotRix gerçek puan eklemesini doğruladıktan sonra işlem otomatik tamamlanacak.`,
       true
     );
 
