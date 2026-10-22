@@ -4039,7 +4039,7 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
 
         <div id="wz41SettingsLoadState" class="wz41-config-state" role="status" aria-live="polite">
           <span id="wz41SettingsLoadMessage">Turnuva ayarları henüz yüklenmedi.</span>
-          <button id="wz41SettingsRetry" type="button" class="secondary smallButton" onclick="loadTournamentConfig()">↻ Bilgileri Yeniden Yükle</button>
+          <button id="wz41SettingsRetry" type="button" class="secondary smallButton" onclick="loadTournamentConfig(true)">↻ Bilgileri Yeniden Yükle</button>
         </div>
         <div id="tournamentQuickInfo" class="tournamentQuickInfo"></div>
 
@@ -10321,53 +10321,38 @@ async function deleteCurrentTournamentTemplate(){
   }
 }
 
-// V31.1.24 — Config state is per tournament. Old requests cannot paint the
-// settings of a newly selected tournament; server errors are visible at the top.
+// V31.1.25 — Ayarlar sekmesi liste zaten geldiyse hiçbir GET beklemeden açılır.
+// /admin/tournaments, katılım kuralları ve tüm düzenlenebilir alanları taşır.
+// Tekil v2/config yalnızca katılım-kilit kontrolü / elle zorunlu yenileme içindir.
 let wz41ConfigLoadedId = '';
 let wz41ConfigLoadSequence = 0;
 let wz41ConfigPendingId = '';
+const wz41ConfigLockCache = new Map();
+const wz41ConfigLockPending = new Map();
 function wz41ConfigNotice(state,message){
   const box=document.getElementById('wz41SettingsLoadState');
   const label=document.getElementById('wz41SettingsLoadMessage');
   const retry=document.getElementById('wz41SettingsRetry');
-  if(box) box.dataset.state=state;
-  if(label) label.textContent=String(message||'');
+  if(box){box.dataset.state=state;box.style.display=state==='ok'?'none':'flex';}
+  if(label)label.textContent=String(message||'');
   if(retry){retry.disabled=state==='loading';retry.textContent=state==='loading'?'⏳ Yükleniyor...':'↻ Yeniden Dene';}
   document.getElementById('tournamentManagerCard')?.classList.toggle('wz41-config-loading',state==='loading');
 }
-async function loadTournamentConfig(){
-  const id = document.getElementById('tournamentSelect')?.value || '';
-  if(id && wz41ConfigPendingId===id)return false; // Aynı GET'i üst üste yollama.
-  const seq=++wz41ConfigLoadSequence;
-  wz41ConfigPendingId=id;
-  const save=document.getElementById('saveTournamentButton');
-  if(!id){
-    wz41ConfigLoadedId='';
-    if(save) save.disabled=true;
-    wz41ConfigNotice('error','Önce yukarıdaki listeden bir turnuva seç.');
-    return false;
-  }
-  wz41ConfigNotice('loading','⏳ Seçilen turnuvanın temel bilgileri ve katılım ayarları yükleniyor...');
-  if(save) save.disabled=true;
-  try{
-    const [baseRes,v2Res] = await Promise.all([
-      api(`/admin/tournament/config?id=${encodeURIComponent(id)}&_=${Date.now()}`),
-      api(`/admin/tournament/v2/config?id=${encodeURIComponent(id)}&_=${Date.now()}`)
-    ]);
-
-    if(!baseRes.r.ok || !baseRes.d?.success || !baseRes.d?.tournament){
-      throw new Error(baseRes.d?.error || `HTTP ${baseRes.r.status}`);
-    }
-
-    if(!v2Res.r.ok || !v2Res.d?.success){
-      throw new Error(v2Res.d?.error || `HTTP ${v2Res.r.status}`);
-    }
-
-    // A rapid tournament change must never fill a different tournament's form.
-    if(seq!==wz41ConfigLoadSequence || document.getElementById('tournamentSelect')?.value!==id)return false;
-
-    const t = baseRes.d.tournament;
-    const rule = v2Res.d.rule || {};
+// Admin listesindeki özet tam alan setini barındırır. Eksik alanı keyfî
+// değerle doldurup kaydetmeye açmamak için zorunlu alanları kontrol et.
+function wz41CatalogConfig(id){
+  const x=tournamentCatalogCache.find(x=>String(x?.id)===String(id));
+  if(!x || !Object.prototype.hasOwnProperty.call(x,'entryMode') ||
+     !Object.prototype.hasOwnProperty.call(x,'feePerPlayerCents') ||
+     !Object.prototype.hasOwnProperty.call(x,'registrationOpen') ||
+     !Object.prototype.hasOwnProperty.call(x,'rulesText'))return null;
+  return {
+    tournament:{...x,feePerPlayerTl:Number(x.feePerPlayerCents||0)/100},
+    rule:{...x}
+  };
+}
+function wz41PaintTournamentConfig(id,t,rule,entryModeLock){
+    const save=document.getElementById('saveTournamentButton');
     const catalogItem =
       tournamentCatalogCache.find(x => String(x.id) === String(id)) || {};
 
@@ -10379,7 +10364,7 @@ async function loadTournamentConfig(){
       adminTemplate:catalogItem.adminTemplate === true || String(catalogItem.lifecycleStatus || '').toLowerCase() === 'template'
     };
     currentTournamentRule = rule;
-    currentTournamentEntryModeLock = v2Res.d.entryModeLock || null;
+    currentTournamentEntryModeLock = entryModeLock || null;
 
     document.getElementById('tName').value = t.name || '';
     document.getElementById('tTeamSize').value = String(Number(t.teamSize || 1));
@@ -10497,22 +10482,80 @@ async function loadTournamentConfig(){
     wz41ConfigNotice('ok','✅ '+String(t.name||'Turnuva')+' ayarları yüklendi. Bilgileri düzenleyip kaydedebilirsin.');
     if(save)save.disabled=false;
     hideStatus('tournamentStatus');
-    // Secondary views must not delay the settings form. Load these only when
-    // requested; the selected tournament settings remain independently usable.
+    // Never begin a second fetch to make the form visible; fields above
+    // are immediately editable from the already-fetched catalog snapshot.
     if(wz41Panel==='teams') void loadTournamentEntries(true);
     if(wz41Panel==='bracket') void loadTournamentBracket(true);
     if(wz41Panel==='predictions') void loadTournamentPredictions(true);
-    return true;
-
-  }catch(error){
-    if(seq!==wz41ConfigLoadSequence || document.getElementById('tournamentSelect')?.value!==id)return false;
+}
+// The participation lock isn't part of the public catalog. Fetch it without
+// blocking/rendering over any already edited form; protect against stale IDs.
+function wz41CheckEntryModeLock(id,force=false){
+  if(!force && wz41ConfigLockCache.has(id))return Promise.resolve(true);
+  if(wz41ConfigLockPending.has(id))return wz41ConfigLockPending.get(id);
+  const job=(async()=>{
+    try{
+      const {r,d}=await api(`/admin/tournament/v2/config?id=${encodeURIComponent(id)}`);
+      if(!r.ok || !d?.success)throw Error(d?.error||`HTTP ${r.status}`);
+      const lock=d.entryModeLock||null;
+      wz41ConfigLockCache.set(id,lock);
+      if(document.getElementById('tournamentSelect')?.value===id && wz41ConfigLoadedId===id){
+        currentTournamentEntryModeLock=lock;
+        updateTournamentEntryFields();
+      }
+      return true;
+    }catch(e){
+      // Form remains usable; the Worker independently validates writes.
+      if(document.getElementById('tournamentSelect')?.value===id && wz41ConfigLoadedId===id){
+        const note=document.getElementById('tEntryModeLockNote');
+        if(note){note.style.display='block';note.textContent='⚠️ Katılım türü kilidi kontrol edilemedi. Katılım türünü değiştireceksen önce “Bilgileri Yeniden Yükle” ile doğrula.';}
+      }
+      return false;
+    }finally{wz41ConfigLockPending.delete(id);}
+  })();
+  wz41ConfigLockPending.set(id,job);
+  return job;
+}
+async function loadTournamentConfig(forceDetail=false){
+  const id=String(document.getElementById('tournamentSelect')?.value||'');
+  const save=document.getElementById('saveTournamentButton');
+  if(!id){
     wz41ConfigLoadedId='';
-    if(save) save.disabled=true;
+    if(save)save.disabled=true;
+    wz41ConfigNotice('error','Önce yukarıdaki listeden bir turnuva seç.');
+    return false;
+  }
+  // Same tournament: preserve any edits made in the form. Retry forces
+  // authoritative reloading; normal settings navigation never resets inputs.
+  if(!forceDetail && wz41ConfigLoadedId===id)return true;
+  const seq=++wz41ConfigLoadSequence;
+  const catalog=!forceDetail ? wz41CatalogConfig(id) : null;
+  if(catalog){
+    wz41ConfigPendingId='';
+    wz41PaintTournamentConfig(id,catalog.tournament,catalog.rule,wz41ConfigLockCache.get(id)||null);
+    void wz41CheckEntryModeLock(id);
+    return true;
+  }
+  // Fallback: only ONE endpoint is necessary. The v2 response also includes
+  // `tournament`, so there's no need for Promise.all(two GETs).
+  if(wz41ConfigPendingId===id)return false;
+  wz41ConfigPendingId=id;
+  wz41ConfigNotice('loading','⏳ Turnuva ayrıntıları sunucudan doğrulanıyor...');
+  if(save)save.disabled=true;
+  try{
+    const {r,d}=await api(`/admin/tournament/v2/config?id=${encodeURIComponent(id)}&_=${Date.now()}`);
+    if(!r.ok||!d?.success||!d.tournament)throw Error(d?.error||`HTTP ${r.status}`);
+    if(seq!==wz41ConfigLoadSequence||document.getElementById('tournamentSelect')?.value!==id)return false;
+    wz41ConfigLockCache.set(id,d.entryModeLock||null);
+    wz41PaintTournamentConfig(id,d.tournament,d.rule||{},d.entryModeLock||null);
+    return true;
+  }catch(error){
+    if(seq!==wz41ConfigLoadSequence||document.getElementById('tournamentSelect')?.value!==id)return false;
+    wz41ConfigLoadedId='';
+    if(save)save.disabled=true;
     const message=String(error?.message||error);
-    const state = document.getElementById('tLifecycleStateText');
-    if(state) state.textContent = '⚠️ Ayrıntılar yüklenemedi';
-    wz41ConfigNotice('error','❌ Turnuva bilgileri alınamadı: '+message+'. Yeniden Dene butonuna bas.');
-    showStatus('tournamentStatus','❌ ' + esc(message),false);
+    wz41ConfigNotice('error','❌ Ayarlar alınamadı: '+message+'. Yeniden Dene.');
+    showStatus('tournamentStatus','❌ '+esc(message),false);
     return false;
   }finally{
     if(seq===wz41ConfigLoadSequence)wz41ConfigPendingId='';
@@ -10742,14 +10785,13 @@ async function saveTournamentConfig(){
     }
 
     tournamentCatalogCache = [];
+    wz41ConfigLoadedId='';  // A confirmed save invalidates the previous form snapshot.
+    wz41ConfigLockCache.delete(String(tournamentId));
     await loadTournamentList(true);
 
     const select = document.getElementById('tournamentSelect');
-    if(select){
-      select.value = tournamentId;
-    }
-
-    // Kayıtlı turnuvalarda katılım türü kilidini tazele.
+    if(select){select.value = tournamentId;}
+    // Reload the single cached catalog snapshot, do not repeat config requests.
     await loadTournamentConfig();
     showStatus(
       'tournamentStatus',
@@ -11446,7 +11488,7 @@ async function deleteTournamentTeam(encodedTeamId){
     });
     if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
     await loadTournamentEntries(true);
-    await loadTournamentConfig();
+    await loadTournamentConfig(true);
     showStatus('tournamentEntriesStatus','✅ Takım turnuvadan silindi.',true);
   }catch(error){
     showStatus('tournamentEntriesStatus','❌ ' + esc(error.message || error),false);
@@ -11543,7 +11585,7 @@ async function deleteTournamentSlot(encodedSlotId){
     });
     if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
     await loadTournamentEntries(true);
-    await loadTournamentConfig();
+    await loadTournamentConfig(true);
     showStatus('tournamentEntriesStatus','✅ Oyuncu çıkarıldı. Yeni tek kullanımlık davet kodu oluşturuldu.',true);
     wzV3047TeamNotice('✅ Oyuncu çıkarıldı. Yeni davet kodu oluşturuldu.',true);
   }catch(error){
@@ -11581,7 +11623,7 @@ async function deleteSoloTournamentPlayer(encodedMembershipId){
     });
     if(!r.ok || !d?.success) throw new Error(d?.error || `HTTP ${r.status}`);
     await loadTournamentEntries(true);
-    await loadTournamentConfig();
+    await loadTournamentConfig(true);
     showStatus('tournamentEntriesStatus','✅ Oyuncu turnuvadan silindi.',true);
   }catch(error){
     showStatus('tournamentEntriesStatus','❌ ' + esc(error.message || error),false);
