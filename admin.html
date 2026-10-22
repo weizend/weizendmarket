@@ -2672,17 +2672,8 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
           <label>Kazanan adedi<input id="wzgWinners" type="number" min="1" max="50" value="1"></label>
           <label>Katılım limiti (0 = limitsiz)<input id="wzgMaxEntries" type="number" min="0" max="1000000" value="0"></label>
         </div>
-        <h3 style="margin-bottom:3px">🔐 Bu çekilişe özel katılım şartları</h3>
-        <p class="muted">Katılımcının Kick hesabını doğrulaması ve en az 18 yaşında olması temel kuraldır. Sosyal görevleri seçip ilgili adresleri bu çekilişe özel yazabilirsin. <b>Kick takip, ücretli abonelik, Gift ve bağış katılım şartı değildir.</b></p>
-        <div class="wzg-options">
-          <label><input id="wzgKickVisit" type="checkbox"> Kick kanalını ziyaret etmeli <small>(bağlantı açma)</small></label>
-          <label><input id="wzgInstagram" type="checkbox"> Instagram hesabını ziyaret etmeli <small>(ziyaret onayı)</small></label>
-          <label><input id="wzgDiscord" type="checkbox"> Discord davetini açmalı <small>(ziyaret onayı)</small></label>
-          <label><input id="wzgYouTube" type="checkbox"> YouTube kanalını ziyaret etmeli <small>(ziyaret onayı)</small></label>
-          <label><input id="wzgTikTok" type="checkbox"> TikTok hesabını ziyaret etmeli <small>(ziyaret onayı)</small></label>
-        </div>
         <h3 style="margin:17px 0 4px">🔗 Katılım görevlerinin yönlendirme adresleri</h3>
-        <p class="muted">Yalnızca işaretlediğin görevlerin bağlantısı zorunlu. Ziyaret tiki, takip veya abonelik yapıldığının doğrulaması değildir.</p>
+        <p class="muted">Bağlantı girdiğin platform otomatik ziyaret görevi olur. Kutuyu boş bırakırsan o platform bu çekilişin katılım şartlarına eklenmez. Ziyaret onayı, takip veya abonelik doğrulaması değildir.</p>
         <div class="wzg-grid">
           <label>Kick kanal bağlantısı<input id="wzgLinkKick" type="url" maxlength="700" placeholder="https://kick.com/weizendtv"></label>
           <label>Instagram bağlantısı<input id="wzgLinkInstagram" type="url" maxlength="700" placeholder="https://www.instagram.com/weizendtv/"></label>
@@ -2691,7 +2682,7 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
           <label>TikTok profil bağlantısı<input id="wzgLinkTiktok" type="url" maxlength="700" placeholder="https://www.tiktok.com/@weizend"></label>
         </div>
         <h3 style="margin:17px 0 4px">⭐ Kendi ödemeli aboneler için başlangıç kura hakkı</h3>
-        <p class="muted">Normal kullanıcı <b>1 başlangıç hakkıyla</b> katılır. Doğrulanmış kendi ödemeli Kick abonesi aşağıda seçtiğin <b>toplam başlangıç hakkını</b> alır: ×3 seçildiyse toplam 3, ücretsiz +1 ayrıca eklenmez. Her kullanılan bilet +1 hak ekler. Gift aboneliklerde bu avantaj yoktur.</p>
+        <p class="muted">Normal kullanıcı <b>1 başlangıç hakkıyla</b> katılır. Doğrulanmış kendi ödemeli Kick abonesi aşağıda seçtiğin <b>toplam başlangıç hakkını</b> alır (örneğin ×5 = toplam 5 hak; ücretsiz +1 ayrıca eklenmez). Her kullanılan bilet +1 hak ekler. Gift aboneliklerde bu avantaj yoktur.</p>
         <label for="wzgSubscriberWeight">Abone başlangıç hakkı
          <select id="wzgSubscriberWeight">
           <option value="1">×1 — Ek avantaj yok</option>
@@ -2725,7 +2716,7 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
             <label style="grid-column:1/-1">Kapak görseli (HTTPS)<input id="wzg2EditImage" type="url" maxlength="700" placeholder="https://..."></label>
           </div>
           <h4>🔗 Mevcut çekilişin görev bağlantıları</h4>
-          <p class="muted">Görev şartlarını değiştirmeden yalnızca hedef adresleri düzenleyebilirsin. Kaydın yayına yansıması anlıktır. Seçili görevlerin bağlantısını boş bırakma.</p>
+          <p class="muted">Katılım başlamadan önce eklediğin bağlantı otomatik ziyaret şartı olur; sildiğin bağlantının şartı kaldırılır. Katılım başladıktan sonra kurallar değiştirilemez.</p>
           <div class="wzg-grid">
             <label>Kick URL<input id="wzg2EditKickLink" type="url" maxlength="700" placeholder="https://kick.com/..."></label>
             <label>Instagram URL<input id="wzg2EditInstagramLink" type="url" maxlength="700" placeholder="https://instagram.com/..."></label>
@@ -2733,7 +2724,16 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
             <label>YouTube URL<input id="wzg2EditYoutubeLink" type="url" maxlength="700" placeholder="https://youtube.com/..."></label>
             <label>TikTok URL<input id="wzg2EditTiktokLink" type="url" maxlength="700" placeholder="https://tiktok.com/..."></label>
           </div>
-          <p class="muted">Katılımcı varsa bitiş süresini kısaltamazsın veya başlangıcı geleceğe alamazsın. Katılım kuralları, biletler, abone çarpanı ve kazanan sayısı bu ekranda değiştirilmez. Ödülü değiştirmen mevcut katılımcılara karşı yükümlülüklerini ortadan kaldırmaz; değişiklikleri ayrıca duyur.</p>
+          <label for="wzg2EditSubscriberWeight" style="display:block;margin-top:12px">⭐ Kendi ödemeli abonenin toplam başlangıç hakkı (yalnızca katılım başlamadan önce)
+            <select id="wzg2EditSubscriberWeight">
+              <option value="1">×1 — Ek avantaj yok</option>
+              <option value="2">×2 — Toplam 2 hak</option>
+              <option value="3">×3 — Toplam 3 hak</option>
+              <option value="5">×5 — Toplam 5 hak</option>
+              <option value="10">×10 — Toplam 10 hak</option>
+            </select>
+          </label>
+          <p class="muted">Başlamamış çekilişin bağlantılarını ve abone hakkını değiştirebilirsin. Katılım başladıktan sonra çekilişin ayarları kilitlenir. Gift abonelikler bonus almaz.</p>
           <div class="wzg-row">
             <button type="button" id="wzg2EditSave" onclick="wzg2SaveLiveEdit()">💾 Değişiklikleri Kaydet</button>
             <button type="button" class="secondary" onclick="wzg2CloseLiveEdit()">Vazgeç</button>
@@ -13673,17 +13673,18 @@ function wzgCheck(id){return !!document.getElementById(id)?.checked}
 function wzgMessage(msg){const el=document.getElementById('wzgStatus');if(el)el.textContent=String(msg)}
 function wzgDateValue(value){return value?new Date(value).toISOString():null}
 function wzgCollect(){
-  const subscriberWeight=3;
+  const subscriberWeight=Number(wzgVal('wzgSubscriberWeight'));
   if(![1,2,3,5,10].includes(subscriberWeight))throw Error('Geçersiz abone şans çarpanı.');
+  const socialLinks={kick:wzgVal('wzgLinkKick'),instagram:wzgVal('wzgLinkInstagram'),discord:wzgVal('wzgLinkDiscord'),youtube:wzgVal('wzgLinkYoutube'),tiktok:wzgVal('wzgLinkTiktok')};
   return {
     id:wzgVal('wzgId'), title:wzgVal('wzgTitle'),description:wzgVal('wzgDescription'),
     prize_title:wzgVal('wzgPrizeTitle'),prize_details:wzgVal('wzgPrizeDetails'),
     image_url:wzgVal('wzgImage'),legal_note:wzgVal('wzgLegalNote'),
     start_at:wzgDateValue(wzgVal('wzgStart')),end_at:wzgDateValue(wzgVal('wzgEnd')),
     winners_count:Number(wzgVal('wzgWinners')),max_entries:Number(wzgVal('wzgMaxEntries')),
-    conditions:{kickVerified:true,kickVisit:wzgCheck('wzgKickVisit'),socialLinks:{kick:wzgVal('wzgLinkKick'),instagram:wzgVal('wzgLinkInstagram'),discord:wzgVal('wzgLinkDiscord'),youtube:wzgVal('wzgLinkYoutube'),tiktok:wzgVal('wzgLinkTiktok')},discordMember:wzgCheck('wzgDiscord'),
-      instagramFollow:wzgCheck('wzgInstagram'),youtubeSubscribe:wzgCheck('wzgYouTube'),
-      tiktokFollow:wzgCheck('wzgTikTok'),subscriberWeight,
+    conditions:{kickVerified:true,kickVisit:!!socialLinks.kick,socialLinks,discordMember:!!socialLinks.discord,
+      instagramFollow:!!socialLinks.instagram,youtubeSubscribe:!!socialLinks.youtube,
+      tiktokFollow:!!socialLinks.tiktok,subscriberWeight,
       subscriberBonusX5DraftOnly:subscriberWeight===5,
       subscriberEligibility:'direct_paid_or_renewal_only',giftRecipientsWeight:1,
       manualReview:false,minimumAge18:true,
@@ -13693,7 +13694,6 @@ function wzgCollect(){
 function wzgClear(){
   for(const id of ['wzgId','wzgTitle','wzgDescription','wzgPrizeTitle','wzgPrizeDetails','wzgImage','wzgLegalNote','wzgStart','wzgEnd','wzgLinkKick','wzgLinkInstagram','wzgLinkDiscord','wzgLinkYoutube','wzgLinkTiktok'])
     document.getElementById(id).value='';
-  for(const id of ['wzgKickVisit','wzgDiscord','wzgInstagram','wzgYouTube','wzgTikTok'])document.getElementById(id).checked=false;
   document.getElementById('wzgSubscriberWeight').value='3';
   document.getElementById('wzgWinners').value='1';
   document.getElementById('wzgMaxEntries').value='0';
@@ -13719,12 +13719,9 @@ function wzgEdit(id){
     wzgLinkKick:b.conditions?.socialLinks?.kick,wzgLinkInstagram:b.conditions?.socialLinks?.instagram,wzgLinkDiscord:b.conditions?.socialLinks?.discord,wzgLinkYoutube:b.conditions?.socialLinks?.youtube,wzgLinkTiktok:b.conditions?.socialLinks?.tiktok};
   Object.entries(fill).forEach(([key,v])=>{const el=document.getElementById(key);if(el)el.value=v??''});
   const c=b.conditions||{};
-  [['wzgKickVisit','kickVisit'],['wzgDiscord','discordMember'],['wzgInstagram','instagramFollow'],
-    ['wzgYouTube','youtubeSubscribe'],['wzgTikTok','tiktokFollow']]
-    .forEach(([key,rule])=>document.getElementById(key).checked=c[rule]===true);
   const oldWeight=c.subscriberBonusX5DraftOnly===true?5:1;
   const chosenWeight=Number(c.subscriberWeight??oldWeight);
-  document.getElementById('wzgSubscriberWeight').value='3';
+  document.getElementById('wzgSubscriberWeight').value=[1,2,3,5,10].includes(chosenWeight)?String(chosenWeight):'1';
   document.getElementById('wzgcCreatePanel').open=true;
   document.getElementById('wzgcCreatePanel').scrollIntoView({block:'start',behavior:'smooth'});
   wzgMessage('Taslak düzenlemeye açıldı: '+b.title);
@@ -13746,10 +13743,12 @@ async function wzgLoad(){
       const h=document.createElement('h3');h.textContent=b.title+' — '+b.prize_title;row.append(h);
       const inf=document.createElement('div');inf.className='wzg-small';
       const c=b.conditions||{};
+      const ruleLinks=c.socialLinks||{};
+      const weight=Number(c.subscriberWeight??(c.subscriberBonusX5DraftOnly?5:1));
       inf.textContent=(b.status==='draft'?'📝 TASLAK':b.status==='cancelled'?'⛔ İPTAL EDİLEN ÇEKİLİŞ':'📁 ARŞİV')+' • '+b.winners_count+' kazanan • '+
-        [c.discordMember?'Discord katılım':'',c.instagramFollow?'Instagram takip':'',
-        c.youtubeSubscribe?'YouTube abonelik':'',c.tiktokFollow?'TikTok takip':'',
-        (()=>{const w=Number(c.subscriberWeight??(c.subscriberBonusX5DraftOnly?5:1));return w>1?'Kendi ödemeli abonelere +3 bonus':'Abone bonusu +3';})()].filter(Boolean).join(', ').concat(' • Kick doğrulama ve 18+ • Henüz yayınlanmadı');
+        [ruleLinks.kick?'Kick ziyareti':'',ruleLinks.discord?'Discord daveti':'',ruleLinks.instagram?'Instagram ziyareti':'',
+        ruleLinks.youtube?'YouTube ziyareti':'',ruleLinks.tiktok?'TikTok ziyareti':'',
+        'Kendi ödemeli abone başlangıcı ×'+([1,2,3,5,10].includes(weight)?weight:1)].filter(Boolean).join(', ').concat(' • Kick doğrulama ve 18+ • Henüz yayınlanmadı');
       row.append(inf);
       if(b.status==='draft'){
         const actions=document.createElement('div');actions.className='wzg-row';
@@ -13878,9 +13877,12 @@ async function wzg2Publish(id){
 
 let wzg2EditCampaign=null,wzg2EditPending=false;
 function wzg2OpenLiveEdit(c){
-  if(!c||c.status!=='active')return;
+  const dates=wzg136AdminDates(c);
+  if(!c||c.status!=='active'||(!dates.pending&&Date.parse(dates.startAt)<=Date.now()))return;
   wzg2EditCampaign={...c};
   let storedLinks={};try{storedLinks=JSON.parse(c.conditions_json||'{}').socialLinks||{}}catch(_){}
+  let storedConditions={};try{storedConditions=JSON.parse(c.conditions_json||'{}')}catch(_){}
+  const liveWeight=Number(storedConditions.subscriberWeight??(storedConditions.subscriberBonusX5DraftOnly?5:1));
   const values={wzg2EditTitle:c.title,wzg2EditPrizeTitle:c.prize_title,
     wzg2EditDescription:c.description,wzg2EditPrizeDetails:c.prize_details,
     wzg2EditImage:c.image_url,wzg2EditStart:wzgInputDate(wzg136AdminDates(c).startAt),wzg2EditEnd:wzgInputDate(wzg136AdminDates(c).endAt),
@@ -13890,6 +13892,7 @@ function wzg2OpenLiveEdit(c){
     wzg2EditYoutubeLink:storedLinks?.youtube||'',
     wzg2EditTiktokLink:storedLinks?.tiktok||''};
   Object.entries(values).forEach(([id,value])=>{const el=document.getElementById(id);if(el)el.value=value??''});
+  document.getElementById('wzg2EditSubscriberWeight').value=[1,2,3,5,10].includes(liveWeight)?String(liveWeight):'1';
   document.getElementById('wzg2EditContext').textContent='Yayımlanmış çekiliş: '+c.title+' • Çekiliş numarası: '+c.id;
   document.getElementById('wzg2EditStatus').textContent='';
   const live=document.getElementById('wzgcLivePanel');if(live)live.hidden=false;
@@ -13911,10 +13914,12 @@ async function wzg2SaveLiveEdit(){
     payload={id:wzg2EditCampaign.id,expectedUpdatedAt:wzg2EditCampaign.updated_at,
       title:val('wzg2EditTitle'),description:val('wzg2EditDescription'),
       prize_title:val('wzg2EditPrizeTitle'),prize_details:val('wzg2EditPrizeDetails'),
-      image_url:val('wzg2EditImage'),socialLinks:{kick:val('wzg2EditKickLink'),instagram:val('wzg2EditInstagramLink'),discord:val('wzg2EditDiscordLink'),youtube:val('wzg2EditYoutubeLink'),tiktok:val('wzg2EditTiktokLink')},start_at:wzgDateValue(val('wzg2EditStart')),
+      image_url:val('wzg2EditImage'),subscriberWeight:Number(val('wzg2EditSubscriberWeight')),
+      socialLinks:{kick:val('wzg2EditKickLink'),instagram:val('wzg2EditInstagramLink'),discord:val('wzg2EditDiscordLink'),youtube:val('wzg2EditYoutubeLink'),tiktok:val('wzg2EditTiktokLink')},start_at:wzgDateValue(val('wzg2EditStart')),
       end_at:wzgDateValue(val('wzg2EditEnd'))};
   }catch(e){status.textContent='❌ Tarih/saat biçimi geçersiz.';return}
   if(!payload.title||!payload.prize_title){status.textContent='❌ Başlık ve ödül zorunlu.';return}
+  if(![1,2,3,5,10].includes(payload.subscriberWeight)){status.textContent='❌ Abone başlangıç hakkı geçersiz.';return}
   const s=payload.start_at?Date.parse(payload.start_at):NaN,e=payload.end_at?Date.parse(payload.end_at):NaN;
   if((Number.isFinite(s)&&Number.isFinite(e)&&e<=s)||(Number.isFinite(e)&&e<=Date.now())){status.textContent='❌ Bitiş tarihi gelecekte ve başlangıçtan sonra olmalı.';return}
   const termsChanged=payload.title!==String(wzg2EditCampaign.title||'')||
@@ -14259,7 +14264,7 @@ function wzg66Make(){
  <section id="wzg66Stage" hidden><div id="wzg66Countdown">Hazır</div><div id="wzg66Five">
  <div class="wzg66-name">· · ·</div><div class="wzg66-name">· · ·</div><div class="wzg66-name center">HAZIR</div><div class="wzg66-name">· · ·</div><div class="wzg66-name">· · ·</div></div>
  <div id="wzg66Result" role="status"></div><div id="wzg66After" hidden></div></section>
- <div id="wzg66Hint">Yalnızca Admin erişebilir. Kura hakları: ücretsiz +1; doğrulanmış kendi ödemeli abonelik için toplam başlangıç hakkı ×3; her bilet +1. İsim akışı sonuç seçmez, sunucu güvenli ağırlıklı kura yapar. Atlanan aday bu çekilişin sonraki seçimlerine girmez.</div></section>`;
+ <div id="wzg66Hint">Yalnızca Admin erişebilir. Kura hakları: normal kullanıcı 1 başlangıç hakkı, doğrulanmış kendi ödemeli abone için seçilen toplam başlangıç hakkı; her bilet +1. İsim akışı sonuç seçmez, sunucu güvenli ağırlıklı kura yapar. Atlanan aday bu çekilişin sonraki seçimlerine girmez.</div></section>`;
  document.body.append(root);
  wzg66$('wzg66Close').onclick=()=>{if(wzg66.busy)return alert('İşlem tamamlanana kadar bekle.');wzg66StopTimer();root.hidden=true;document.body.style.overflow=''};
  wzg66$('wzg66Start').onclick=()=>wzg66Start();
@@ -14300,6 +14305,7 @@ async function wzg2OpenReel(id,title){
   const [roster,session]=await Promise.all([
    wzg66Get('/admin/giveaway/participants?id='+encodeURIComponent(id)),wzg66Get('/admin/giveaway/draw/session?id='+encodeURIComponent(id))]);
   wzg66.roster=roster;wzg66.session=session;wzg66.currentAward=session.currentAward||'';wzg66FillRoster();
+  wzg66$('wzg66Hint').textContent='Kura hakları: normal kullanıcı 1, kendi ödemeli doğrulanmış abone '+(1+Number(roster.subscriberBonus||0))+' başlangıç hakkı, her bilet +1. Kazananı sunucu belirler; atlanan aday sonraki seçimlere girmez.';
   wzg66$('wzg93Award').value=session.currentAward||'';wzg66$('wzg93PrizeRow').hidden=!!session.currentAward&&session.stage==='candidate';
   if(session.stage==='candidate'&&session.candidate){wzg66.candidate=session.candidate;wzg66ShowCandidate(session.candidate,true)}
   else if(roster.status==='drawn'||session.stage==='finished')wzg66Finished();
@@ -14491,8 +14497,8 @@ function wzgcUpdateToolbar(c){
  startBtn.disabled=pending||selected.status==='cancelled';
  startBtn.title=future?'Planlanan tarihten önce açmak için ayrıca onay gerekir.':running?'Katılımı erken kapatır; iki kez onay ister.':finished?'Kazananları ve kura geçmişini gösterir.':'Kura ekranını açar.';
  const edit=document.getElementById('wzgcActEdit');
- edit.disabled=!(selected.status==='active'&&(pending||end>now));
- edit.title=edit.disabled?'Yalnızca bitmemiş, yayımlanmış çekiliş düzenlenebilir.':'Bu çekilişin bilgilerini ve tarihlerini düzenle.';
+ edit.disabled=!(selected.status==='active'&&(pending||start>now));
+ edit.title=edit.disabled?'Katılım başladıysa ayarlar kilitlidir.':'Katılım başlamadan önce bağlantıları ve abone hakkını düzenle.';
  const roster=document.getElementById('wzgcActRoster');
  roster.disabled=selected.status==='cancelled';
  roster.title=roster.disabled?'İptal edilen çekiliş için katılımcı yönetimi kapalı.':'Sadece seçilen çekilişin katılımcılarını göster.';
@@ -14523,7 +14529,7 @@ function wzgcToolbarAction(action){
    }else if(c.status==='active'&&end>now){wzg69StartDrawEarly(c)}
    else wzg2OpenReel(c.id,c.title);
  }else if(action==='edit'){
-   if(c.status!=='active'||(!dateInfo.pending&&end<=now))return;
+   if(c.status!=='active'||(!dateInfo.pending&&start<=now))return;
    const editPanel=document.getElementById('wzg2EditPanel');
    if(editPanel&&!editPanel.hidden&&wzg2EditCampaign?.id===c.id){wzg2CloseLiveEdit();return;}
    wzg2OpenLiveEdit(c);
@@ -14772,10 +14778,8 @@ function wzgcApplyTemplate(id){
   wzgLinkKick:c.socialLinks?.kick,wzgLinkInstagram:c.socialLinks?.instagram,wzgLinkDiscord:c.socialLinks?.discord,
   wzgLinkYoutube:c.socialLinks?.youtube,wzgLinkTiktok:c.socialLinks?.tiktok};
  for(const [key,value] of Object.entries(fields)){const el=document.getElementById(key);if(el)el.value=value??''}
- for(const [id,key] of [['wzgKickVisit','kickVisit'],['wzgDiscord','discordMember'],['wzgInstagram','instagramFollow'],['wzgYouTube','youtubeSubscribe'],['wzgTikTok','tiktokFollow']]){
-  const el=document.getElementById(id);if(el)el.checked=c[key]===true;
- }
- document.getElementById('wzgSubscriberWeight').value='3'; // Matches the current V31.1.03 fixed confirmed subscriber policy.
+ const templWeight=Number(c.subscriberWeight??(c.subscriberBonusX5DraftOnly?5:1));
+ document.getElementById('wzgSubscriberWeight').value=[1,2,3,5,10].includes(templWeight)?String(templWeight):'1';
  document.getElementById('wzgcCreatePanel').open=true;
  document.getElementById('wzgcCreatePanel').scrollIntoView({block:'start',behavior:'smooth'});
  wzgMessage('✅ “'+t.name+'” şablonu forma yüklendi. Henüz hiçbir kayıt oluşturulmadı veya başlatılmadı. Tarihleri kontrol edip taslağı kaydet.');
