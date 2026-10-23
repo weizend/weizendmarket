@@ -15,7 +15,7 @@
 <meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="WEİZEND ARENA turnuva paylaşım görseli">
+<meta property="og:image:alt" content="WEİZEND ARENA Fikstür ve Tahminler paylaşım kapağı">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="WEİZEND ARENA | Turnuva Fikstürü ve Tahminler">
 <meta name="twitter:description" content="VALORANT fikstürü, eşleşmeler ve tahminler WEİZEND ARENA'da!">
@@ -1133,7 +1133,7 @@ function v30RoomHtml(s,m){
   const doubleNoShow=blocked&&['captains','code','ready'].includes(s.blockedFromPhase);
   const waitLine='<p class="hint">Diğer oyuncuların/kaptanın işlemi bekleniyor. Aşamalar sunucuda saklanır; sayfayı yenilemen gerekmez.</p>';
   const codeCard=s.lobbyCode?`<div class="lobby-note wz3143-code">🔑 VALORANT ÖZEL LOBİ KODU<strong>${esc(s.lobbyCode)}</strong><p>🎮 VALORANT oyununu aç, Özel Oyun'a katıl ve yukarıdaki kodu yaz. Maça henüz başlama.</p></div>`:'';
-  const codeEdit=cap&&s.lobbyCode&&['proof','review','start','game_join'].includes(s.phase)?`<div class="v42-code-edit"><p class="v42-locked-caption">⚠️ Kod yanlışsa maç başlamadan kaptan kodu düzeltebilir. Yeni kod kaydedildiğinde eski lobi kanıtları ve tüm oyuncuların maç başlatma onayları sıfırlanır; ${expectedTotal} oyuncunun Hazırım bilgisi korunur.</p><button class="btn secondary" id="v42CodeEditShow" type="button">✏️ VALORANT Kodunu Düzenle</button><div id="v42CodeEditForm" hidden><label for="v42NewCode">Doğru yeni VALORANT kodu</label><input id="v42NewCode" maxlength="64" autocomplete="off" placeholder="Yeni kod (4-64 karakter)"><button class="btn" id="v42CodeEditSend" type="button">🔄 Yeni Kodu Kaydet</button></div></div>`:'';
+  const codeEdit=cap&&s.lobbyCode&&['proof','review','start','game_join'].includes(s.phase)?`<div class="v42-code-edit"><p class="v42-locked-caption">⚠️ Kod yanlışsa maç başlamadan kaptan kodu düzeltebilir. Yeni kod kaydedildiğinde eski VALORANT katılım ve maç başlatma onayları sıfırlanır; ${expectedTotal} oyuncunun Hazırım bilgisi korunur.</p><button class="btn secondary" id="v42CodeEditShow" type="button">✏️ VALORANT Kodunu Düzenle</button><div id="v42CodeEditForm" hidden><label for="v42NewCode">Doğru yeni VALORANT kodu</label><input id="v42NewCode" maxlength="64" autocomplete="off" placeholder="Yeni kod (4-64 karakter)"><button class="btn" id="v42CodeEditSend" type="button">🔄 Yeni Kodu Kaydet</button></div></div>`:'';
   let controls='';
   if(s.phase==='captains')controls=`<div class="room-step"><h3>1. Maç odasına katılın</h3><div class="v42-info">📣 Maç çağrısı geldi! <strong>İki kaptan da Arena odasına katıldığında</strong> tüm oyuncuların Hazırım aşaması açılacak. <strong>VALORANT kodunu veya oyunu henüz başlatmayın.</strong></div><p>${s.captainAJoined?'✅':'⏳'} A kaptanı · ${s.captainBJoined?'✅':'⏳'} B kaptanı</p>${cap&&!myJoin?'<button class="btn" id="v30Join">🎮 Lobiye Katıl</button>':waitLine}</div>`;
   if(s.phase==='ready')controls=`<div class="room-step"><h3>2. Tüm oyuncular Arena'da Hazırım desin</h3><div class="v42-info">✅ <strong>${readyTotal}/${expectedTotal} oyuncu hazır.</strong> Her oyuncu kendi Kick hesabıyla Hazırım demeli. Sonrasında kaptanlardan biri VALORANT özel lobisini kurup tek davet kodunu paylaşacak.</div><div class="lobby-grid">${players}</div><button class="btn ${s.myReady?'secondary':''}" id="v30Ready" type="button">${s.myReady?'↩ Hazır Değilim':'✅ Hazırım'}</button>${cap&&!myJoin?'<button class="btn secondary" id="v30Join">🎮 Kaptan Lobiye Katıl</button>':''}<p class="hint">Hazır vererek henüz VALORANT oyununu başlatmıyorsun. Maç daha sonra iki kaptanın onayıyla başlayacak.</p>${codeCard}</div>`;
@@ -1145,14 +1145,14 @@ function v30RoomHtml(s,m){
       ${verifying?'<div class="lobby-actions"><button class="btn v42-action" id="v30662CodeVerify" type="button">✅ Kod Doğru — Lobiye Katıldım</button><button class="btn secondary" id="v30662CodeReject" type="button">❌ Lobi Kodu Yanlış</button></div>':`<p class="room-progress">⏳ ${cap?'Kodu paylaştın. Rakip kaptanın VALORANT kodunu kontrol etmesi bekleniyor.':'Rakip kaptanın VALORANT lobisini doğrulaması bekleniyor.'}</p>`}</div>`;
   }
   if(s.phase==='code_fix'){
-    const fixer=cap&&side!==s.hostSide;
+    const fixer=cap&&side===s.hostSide;
     controls=`<div class="room-step"><h3>⚠️ Kod yanlış bildirildi — yeni lobi kurulacak</h3>${codeCard}
-      <div class="lobby-warning">🚨 Rakip kaptan kodun çalışmadığını bildirdi. <strong>${fixer?'Yeni VALORANT özel lobisini kurup doğru kodu aşağıya gir.':'Rakip kaptanın yeni VALORANT lobisi kurup kodu paylaşması bekleniyor.'}</strong> Eski kodu kullanmayın, maçı başlatmayın.</div>
+      <div class="lobby-warning">🚨 Rakip kaptan kodun çalışmadığını bildirdi. <strong>${fixer?'VALORANT lobini kontrol et, yeni doğru kodu aşağıya gir.':'Lobiyi kuran kaptanın doğru yeni kodu paylaşması bekleniyor.'}</strong> Eski kodu kullanmayın, maçı başlatmayın. Yeni kod da rakip kaptan tarafından doğrulanacak.</div>
       ${fixer?`<label for="v30662FixCode">Yeni VALORANT lobi kodu</label><input id="v30662FixCode" maxlength="64" autocomplete="off" placeholder="Yeni doğru kod"><button class="btn v42-action" id="v30662FixSend" type="button">🔄 Yeni Lobi Kodunu Kaydet</button>`:waitLine}</div>`;
   }
   if(s.phase==='game_join'){
     controls=`<div class="room-step"><h3>5. Her oyuncu VALORANT Lobisine Katıldım desin</h3>${codeCard}
-      <div class="v42-info">🎮 <strong>${Number(s.valorantJoinCount||0)}/${Number(s.valorantJoinExpected||expectedTotal)} oyuncu gerçek VALORANT lobisine katıldığını onayladı.</strong> İki kaptan da Devam Et dedi. Şimdi her oyuncu, VALORANT'ta bu özel lobiye <strong>gerçekten girdikten sonra</strong> aşağıdaki düğmeye bassın. <strong>Herkes onaylayana kadar lobi kanıtı istenmeyecek.</strong></div>
+      <div class="v42-info">🎮 <strong>${Number(s.valorantJoinCount||0)}/${Number(s.valorantJoinExpected||expectedTotal)} oyuncu gerçek VALORANT lobisine katıldığını onayladı.</strong> İki kaptan da Devam Et dedi. Şimdi her oyuncu, VALORANT'ta bu özel lobiye <strong>gerçekten girdikten sonra</strong> aşağıdaki düğmeye bassın. <strong>Tüm oyuncular onayladığında kurallar aşamasına geçilecek; lobi ekran görüntüsü istenmez.</strong></div>
       <div class="lobby-grid">${valorantJoinRoster}</div>
       ${s.myValorantJoined?'<p class="v42-progress">✅ VALORANT lobisine katılımın kaydedildi. Diğer oyuncular bekleniyor.</p>':'<button class="btn v42-action" id="v30662GameJoin" type="button">🎮 VALORANT Lobisine Katıldım</button>'}
       <p class="hint">Bu onay Arena Hazırım onayından ayrıdır. Oyundaki gerçek katılımın kendi beyanındır; sistem VALORANT istemcisini otomatik doğrulamaz.</p>${codeEdit}</div>`;
@@ -1224,7 +1224,7 @@ function v30RenderLobby(s,m){
   on('v3143EndMatch',()=>{if(confirm('Maçın gerçekten bitti mi? Diğer kaptan da onay verince 10 dakikalık API beklemesi başlayacak.'))lobbyAction('end_match');});
   on('v30CodeSave',()=>lobbyAction('code',{code:$('v30Code')?.value||''}));
   on('v30662CodeVerify',()=>lobbyAction('code_verify'));
-  on('v30662CodeReject',()=>{if(confirm('VALORANT kodunun geçersiz olduğunu onaylıyor musun? Yeni kodu bu kez sen paylaşacaksın.'))lobbyAction('code_reject');});
+  on('v30662CodeReject',()=>{if(confirm('VALORANT kodunun geçersiz olduğunu onaylıyor musun? Kodu paylaşan kaptan yeni kodu girecek, sen de yeniden doğrulayacaksın.'))lobbyAction('code_reject');});
   on('v30662FixSend',()=>{
     const code=String($('v30662FixCode')?.value||'').trim();
     if(!/^[A-Za-z0-9_-]{4,64}$/.test(code)){lobbyToast('Geçerli bir VALORANT kodu gir (4-64 karakter).','error');return;}
@@ -1247,7 +1247,7 @@ function v30RenderLobby(s,m){
     const newCode=String($('v42NewCode')?.value||'').trim();
     if(!/^[A-Za-z0-9_-]{4,64}$/.test(newCode)){lobbyToast('Geçerli yeni kod 4-64 harf/rakam/alt çizgi/tire içermeli.','error');return;}
     if(newCode===s.lobbyCode){lobbyToast('Yeni kod eskisinden farklı olmalı.','error');return;}
-    if(!confirm('VALORANT kodu değişecek. Eski lobi kanıtları, kadro ve TÜM OYUNCULARIN maç başlatma onayları sıfırlanacak; Hazırım bilgisi korunacak. Onaylıyor musun?'))return;
+    if(!confirm('VALORANT kodu değişecek. Eski VALORANT katılım ve TÜM OYUNCULARIN maç başlatma onayları sıfırlanacak; Hazırım bilgisi korunacak. Onaylıyor musun?'))return;
     lobbyAction('code_edit',{code:newCode,previousCode:s.lobbyCode});
   });
   on('v30DisputeShow',()=>{const form=$('v30DisputeForm');form.hidden=!form.hidden;if(!form.hidden)form.scrollIntoView({block:'nearest'});});
@@ -1644,8 +1644,6 @@ if(!tid||tid.length>120||!/^[a-zA-Z0-9_:-]+$/.test(tid)){
  for(const ms of [140,340,650,1000,1450,2100,3000,4200,5800,7600,9600])setTimeout(restore,ms);
 })();
 </script>
-</body>
-</html>
 <script id="wz81BlockButtons">
 (function(){'use strict';
 const API='https://weizend-botrix.weizendtv.workers.dev';
@@ -1674,3 +1672,5 @@ function start(){readStatus();setInterval(readStatus,30000);setInterval(()=>{if(
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
 </script>
+</body>
+</html>
