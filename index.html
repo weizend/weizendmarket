@@ -497,6 +497,49 @@ body.wz-initializing *{
             50% { transform: scale(1.04); box-shadow: 0 0 0 7px rgba(227,27,27,.18); }
         }
         .access-help { margin-top: 12px !important; font-size: .85rem; }
+        /* V31.1.43: Single-action, arrow-guided Kick onboarding; no second verify button. */
+        .wz3143-auth-flow { max-width: 480px; width:100%; margin: 10px auto 0; text-align:center; }
+        .wz3143-flow-label { font-weight:850; font-size:clamp(.8rem,2.2vw,.98rem); line-height:1.5; color:var(--text-main,#fff); letter-spacing:.02em; }
+        .wz3143-down-arrow { font-size:1.9rem; line-height:1.35; font-weight:900; color:var(--weizend-red,#e31b1b); margin:3px 0; }
+        .wz3143-main-action { width:100%; min-height:60px; margin:0 auto; padding:14px 12px; font-size:clamp(.95rem,3vw,1.16rem); overflow-wrap:anywhere; }
+        .wz3143-main-action:disabled { opacity:.6; cursor:wait; }
+        .wz3143-kick-chat { display:flex!important; align-items:center; justify-content:center; text-decoration:none!important; margin:10px auto 0; width:100%; min-height:48px; box-sizing:border-box; }
+        .wz3143-next-hint { font-size:.88rem; line-height:1.6; margin:4px 0 0!important; color:var(--text-muted,#ccc); }
+        .wz3143-status { min-height:1.25em; font-size:.86rem; line-height:1.5; margin:6px 0!important; color:var(--text-muted,#ccc); }
+        .wz3143-change-account { margin-top:8px; }
+
+        /* V31.1.44: Three-step onboarding for first-time Kick verification. */
+        .wz3144-auth-flow {width:100%;max-width:500px;margin:16px auto 0;text-align:left;}
+        .wz3144-progress {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:14px 0 17px;}
+        .wz3144-progress-piece {height:5px;border-radius:999px;background:#343434;transition:background .2s;}
+        .wz3144-progress-piece.is-done {background:#27b969;}
+        .wz3144-progress-piece.is-active {background:var(--weizend-red,#e31b1b);}
+        .wz3144-step {border:1px solid #303030;background:linear-gradient(145deg,#141414,#0a0a0a);border-radius:14px;padding:14px;margin:0;transition:border-color .2s,opacity .2s;}
+        .wz3144-step.is-active {border-color:var(--weizend-red,#e31b1b);box-shadow:0 0 0 1px rgba(227,27,27,.09) inset;}
+        .wz3144-step.is-done {border-color:rgba(39,185,105,.55);}
+        .wz3144-step.is-locked {opacity:.58;}
+        .wz3144-step-title {display:flex;align-items:center;gap:10px;font-size:.92rem;line-height:1.35;font-weight:850;color:#fff;}
+        .wz3144-step-num {flex:0 0 auto;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#2e2e2e;color:#fff;font-weight:900;}
+        .wz3144-step.is-active .wz3144-step-num {background:var(--weizend-red,#e31b1b);}
+        .wz3144-step.is-done .wz3144-step-num {background:#147c47;}
+        .wz3144-step-desc {font-size:.85rem!important;line-height:1.5!important;color:#c4c4c4!important;margin:10px 0!important;}
+        .wz3144-command {display:block;width:100%;margin:10px 0 4px;min-height:56px;border:1px dashed #e31b1b;border-radius:10px;background:#080808;color:#fff;padding:12px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:clamp(.95rem,3.2vw,1.15rem);font-weight:850;cursor:pointer;overflow-wrap:anywhere;user-select:text;-webkit-user-select:text;}
+        .wz3144-command:disabled {cursor:default;opacity:.6;}
+        .wz3144-action {display:flex!important;align-items:center;justify-content:center;gap:9px;width:100%;min-height:48px;box-sizing:border-box;margin-top:10px;text-decoration:none!important;text-align:center;}
+        .wz3144-action:disabled,.wz3144-action.is-locked {opacity:.45;cursor:not-allowed;pointer-events:none;transform:none!important;}
+        .wz3144-caption {font-size:.78rem!important;color:#bcbcbc!important;margin-top:6px!important;line-height:1.45!important;}
+        .wz3144-arrow {display:flex;justify-content:center;font-size:1.45rem;font-weight:900;color:#e31b1b;margin:4px 0;line-height:1.1;}
+        .wz3144-notice {font-size:.86rem!important;line-height:1.55!important;min-height:1.3em;margin:12px 0!important;color:#cfcfcf!important;text-align:center;}
+        .wz3144-notice[data-tone='success'] {color:#5ee7a0!important;}
+        .wz3144-notice[data-tone='error'] {color:#ffba74!important;}
+        .wz3144-renew {display:none!important;}
+        .wz3144-renew.is-visible {display:flex!important;}
+        .wz3144-remaining {display:block;font-size:.76rem;line-height:1.4;margin-top:6px;color:#aaa;text-align:center;}
+        .wz3144-user {margin:0 0 5px!important;text-align:center;color:#ddd;font-size:.89rem;}
+        .wz3144-success-toast {position:fixed;top:20px;left:50%;transform:translate(-50%,-15px);z-index:22000;background:#122a1f;border:1px solid #36b875;color:#fff;border-radius:12px;padding:14px 18px;font-size:.96rem;font-weight:850;box-shadow:0 12px 32px rgba(0,0,0,.45);max-width:calc(100vw - 32px);text-align:center;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;}
+        .wz3144-success-toast.show {opacity:1;transform:translate(-50%,0);}
+        @media (max-width:480px) {.wz3144-step{padding:12px}.wz3144-step-title{font-size:.85rem}.wz3144-command{font-size:.95rem;}}
+
         .account-name-hint { margin-top: 10px; color: #ddd; font-size: .88rem; }
         .copy-toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(25px); background: #111; border: 1px solid var(--weizend-red); color: #fff; padding: 12px 18px; border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,.45); opacity: 0; pointer-events: none; transition: .25s; z-index: 1200; font-weight: 700; text-align: center; }
         .copy-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -5377,6 +5420,7 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
                 <div id="accountRestrictionReason" class="reason">Bu hesap yönetici tarafından kısıtlandı.</div>
             </div>
 
+            <div id="wz3144SuccessToast" class="wz3144-success-toast" role="status" aria-live="polite">🎉 Hesabın doğrulandı! WEİZEND'e hoş geldin.</div>
             <div id="accessCard" class="access-card">
                 <h3 id="accessTitle">🔒 WEİZEND MARKET</h3>
                 <p id="accessText">🔐 Market, turnuva ve hesap işlemlerini güvenle kullanabilmek için Kick hesabını doğrulaman gerekir. Kullanıcı adını yaz ve sana özel <b>!doğrula KOD</b> komutunu Kick sohbetine gönder.</p>
@@ -5386,15 +5430,35 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
                     <button class="access-btn" onclick="saveAndCheckUsername()">Doğrulama Kodu Oluştur</button>
                 </div>
 
-                <div id="verificationActivation" style="display:none;">
-                    <div id="accountNameHint" class="account-name-hint"></div>
-                    <button id="verifyCommandButton" type="button" class="access-command" onclick="copyVerifyAndRedirect()" title="!doğrula komutunu kopyala">📋 !doğrula KOD</button>
-                    <p class="access-help" id="verifyFlowHelp"><b>1.</b> <b>!doğrula KOD</b> alanına dokunarak komutun tamamını kopyala. <b>2.</b> <b>Kick Sohbete Git</b> butonuna bas, komutu sohbet alanına yapıştırıp gönder. <b>3.</b> Bu sayfaya geri dön ve <b>Doğrulamayı Kontrol Et</b> butonuna bas. Kontrol ancak sen başlattığında çalışır.</p>
-                    <div class="access-form"><a id="verifyKickChatLink" class="access-btn" href="https://kick.com/weizend/chat" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;">💬 Kick Sohbete Git <span aria-hidden="true">↗</span></a></div>
-                    <div class="access-form">
-                        <button class="access-btn secondary" onclick="checkSavedAccount()">🔄 Doğrulamayı Kontrol Et</button>
-                        <button class="access-btn secondary" onclick="changeUsername()">Kullanıcı Adını Değiştir</button>
+                <div id="verificationActivation" class="wz3144-auth-flow" style="display:none;">
+                    <p id="accountNameHint" class="wz3144-user"></p>
+                    <div class="wz3144-progress" aria-label="Doğrulama adımları">
+                        <span id="wz3144Progress1" class="wz3144-progress-piece is-active"></span>
+                        <span id="wz3144Progress2" class="wz3144-progress-piece"></span>
+                        <span id="wz3144Progress3" class="wz3144-progress-piece"></span>
                     </div>
+                    <section class="wz3144-step is-active" id="wz3144Step1" aria-labelledby="wz3144Step1Title">
+                        <div class="wz3144-step-title" id="wz3144Step1Title"><span class="wz3144-step-num">1</span>DOĞRULAMA KODUNU KOPYALA</div>
+                        <p class="wz3144-step-desc">Aşağıdaki komuta bir kez dokun, tamamı otomatik kopyalansın.</p>
+                        <button id="verifyCommandButton" class="wz3144-command" type="button" onclick="wz3144CopyCommand()" aria-label="Doğrulama komutunu kopyala">📋 !doğrula KOD</button>
+                        <p id="wz3144CopyHint" class="wz3144-caption">👆 TIKLA VE KOPYALA</p>
+                        <span id="wz3144Remaining" class="wz3144-remaining"></span>
+                        <button id="wz3144RenewButton" class="access-btn wz3144-action wz3144-renew" type="button" onclick="wz3144RenewCode()">🔄 YENİ KOD AL</button>
+                    </section>
+                    <div class="wz3144-arrow" aria-hidden="true">↓</div>
+                    <section class="wz3144-step is-locked" id="wz3144Step2" aria-labelledby="wz3144Step2Title">
+                        <div class="wz3144-step-title" id="wz3144Step2Title"><span class="wz3144-step-num">2</span>KICK SOHBETİNE GÖNDER</div>
+                        <p class="wz3144-step-desc">Kick sohbetine git, kopyaladığın komutu mesaj kutusuna yapıştır ve gönder. Sonra WEİZEND'e geri dön.</p>
+                        <a id="verifyKickChatLink" class="access-btn wz3144-action is-locked" href="https://kick.com/weizend/chat" target="_blank" rel="noopener noreferrer" tabindex="-1" aria-disabled="true" onclick="return wz3144KickChatClicked(event)">💬 KICK SOHBETİNE GİT ↗</a>
+                    </section>
+                    <div class="wz3144-arrow" aria-hidden="true">↓</div>
+                    <section class="wz3144-step is-locked" id="wz3144Step3" aria-labelledby="wz3144Step3Title">
+                        <div class="wz3144-step-title" id="wz3144Step3Title"><span class="wz3144-step-num">3</span>HESABINI DOĞRULA</div>
+                        <p class="wz3144-step-desc">Kick sohbetinde mesajını gönderdin mi? WEİZEND'e geri dönüp aşağıya dokun.</p>
+                        <button id="wz3144VerifyButton" class="access-btn wz3144-action" type="button" onclick="wz3144CheckVerification()" disabled>✅ DOĞRULAMAYI KONTROL ET</button>
+                    </section>
+                    <p class="wz3144-notice" id="wz3144AuthStatus" role="status" aria-live="polite"></p>
+                    <div class="access-form wz3143-change-account"><button class="access-btn secondary" type="button" onclick="changeUsername()">Kullanıcı Adını Değiştir</button></div>
                 </div>
             </div>
         </header>
@@ -6880,7 +6944,7 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
             syncCatalogStock().catch(error => console.warn('CATALOG SYNC ERROR:', error));
 
             setupMarketModalScrollLock();
-            restoreVerificationWaitModal();
+            closeVerificationWaitModal(true);
             initializeMarketAccount();
         });
 
@@ -7306,21 +7370,165 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
             document.getElementById('kickUsernameInput').value = saved;
         }
 
+        // V31.1.44: three explicit user actions; never rotate a valid code on a pending check.
+        const WZ3144_CHAT_KEY = 'wz3144:chat-opened-for';
+        let wz3144Busy = false;
+        function wz3144ChatVisited(state = getAuthState()) {
+            return !!state?.challengeId && localStorage.getItem(WZ3144_CHAT_KEY) === String(state.challengeId);
+        }
+        function wz3144Expired(state) {
+            return !!state && Number(state.expiresAt || 0) > 0 && Date.now() >= Number(state.expiresAt);
+        }
+        function wz3144Notice(message, tone = '') {
+            const el = document.getElementById('wz3144AuthStatus');
+            if (el) { el.textContent = message; el.dataset.tone = tone; }
+        }
+        function wz3144Render(state = getAuthState()) {
+            if (!state) return;
+            const expired = wz3144Expired(state), copied = hasVerifyCommandBeenClicked(state);
+            const visited = copied && wz3144ChatVisited(state);
+            const btn = document.getElementById('verifyCommandButton');
+            const hint = document.getElementById('wz3144CopyHint');
+            const chat = document.getElementById('verifyKickChatLink');
+            const verify = document.getElementById('wz3144VerifyButton');
+            const renew = document.getElementById('wz3144RenewButton');
+            const remaining = document.getElementById('wz3144Remaining');
+            if (btn) {
+                btn.textContent = expired ? '⏱️ KODUN SÜRESİ DOLDU' : '📋 !doğrula ' + state.code;
+                btn.disabled = expired || wz3144Busy;
+                btn.setAttribute('aria-label', copied ? 'Doğrulama komutunu yeniden kopyala' : 'Doğrulama komutunu kopyala');
+            }
+            if (hint) hint.textContent = expired ? 'Yeni doğrulama kodu almak için aşağıya dokun.' : copied ? '✅ Kopyalandı! Gerekirse komuta yeniden dokunabilirsin.' : '👆 TIKLA VE KOPYALA';
+            if (chat) {
+                chat.classList.toggle('is-locked', !copied || expired || wz3144Busy);
+                chat.setAttribute('aria-disabled', String(!copied || expired || wz3144Busy));
+                chat.tabIndex = copied && !expired && !wz3144Busy ? 0 : -1;
+            }
+            if (verify) {
+                verify.disabled = !visited || expired || wz3144Busy;
+                verify.textContent = wz3144Busy ? '⏳ KONTROL EDİLİYOR…' : '✅ DOĞRULAMAYI KONTROL ET';
+            }
+            if (renew) {
+                renew.classList.toggle('is-visible', expired);
+                renew.disabled = wz3144Busy;
+            }
+            if (remaining) {
+                const seconds = Math.max(0, Math.ceil((Number(state.expiresAt || Date.now()) - Date.now()) / 1000));
+                remaining.textContent = expired ? 'Bu kod artık geçerli değil.' : 'Kodun geçerlilik süresi: ' + Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2,'0');
+            }
+            const states = [copied && !expired, visited && !expired, false];
+            for (let i = 1; i <= 3; i++) {
+                const step = document.getElementById('wz3144Step' + i);
+                const progress = document.getElementById('wz3144Progress' + i);
+                const done = states[i - 1];
+                const active = !expired && (i === 1 || (i === 2 && copied) || (i === 3 && visited)) && !done;
+                if (step) {
+                    step.classList.toggle('is-done', done);
+                    step.classList.toggle('is-active', active);
+                    step.classList.toggle('is-locked', !done && !active);
+                }
+                if (progress) {
+                    progress.classList.toggle('is-done', done);
+                    progress.classList.toggle('is-active', active);
+                }
+            }
+        }
         function showVerificationActivation(username, code) {
             showAccessBase();
-            const command = `!doğrula ${code}`;
-            document.getElementById('accessTitle').innerText = '🔐 Kick Hesabını Doğrula';
-            document.getElementById('accessText').innerHTML = `Aşağıdaki <b>${escapeHtml(command)}</b> komutuna dokunup kopyala. Ardından <b>Kick Sohbete Git</b> butonuyla sohbeti aç, komutu <b>${escapeHtml(username)}</b> hesabından gönder. Geri döndüğünde <b>Doğrulamayı Kontrol Et</b> butonuna bas.`;
+            document.getElementById('accessTitle').innerText = '🔐 WEİZEND Hesap Doğrulama';
+            document.getElementById('accessText').innerHTML = 'Kick hesabını <b>3 kolay adımda</b> doğrula ve WEİZEND’e katıl!';
             document.getElementById('usernameForm').style.display = 'none';
             document.getElementById('verificationActivation').style.display = 'block';
-            document.getElementById('accountNameHint').innerHTML = `Doğrulanacak Kick hesabı: <b>${escapeHtml(username)}</b>`;
-            const verifyButton = document.getElementById('verifyCommandButton');
-            verifyButton.innerText = `📋 ${command}`;
-            verifyButton.classList.remove('needs-action');
-
-            // WebSocket yalnızca doğrulama işlemi sırasında geçici olarak kullanılacak.
+            document.getElementById('accountNameHint').innerHTML = 'Doğrulanacak Kick hesabı: <b>' + escapeHtml(username) + '</b>';
+            wz3144Render();
             connectRealtime(username);
         }
+        async function wz3144CopyCommand() {
+            const state = getAuthState();
+            if (!state || wz3144Busy || wz3144Expired(state)) { wz3144Render(state); return; }
+            try {
+                await copyTextReliable('!doğrula ' + state.code);
+                if (getAuthState()?.challengeId !== state.challengeId) return;
+                markVerifyCommandClicked(state);
+                wz3144Notice('✅ Kod kopyalandı! Şimdi Kick Sohbete Git butonuna dokun.', 'success');
+            } catch (_) {
+                wz3144Notice('⚠️ Kopyalama yapılamadı. Tarayıcının kopyalama iznini kontrol edip tekrar dene.', 'error');
+            } finally { wz3144Render(); }
+        }
+        function wz3144KickChatClicked(event) {
+            const state = getAuthState();
+            if (!state || wz3144Expired(state) || !hasVerifyCommandBeenClicked(state) || wz3144Busy) {
+                event?.preventDefault();
+                return false;
+            }
+            localStorage.setItem(WZ3144_CHAT_KEY, String(state.challengeId));
+            wz3144Notice('💬 Kick sohbetine komutu yapıştırıp gönder. Ardından buraya dönüp 3. adıma bas.');
+            wz3144Render(state);
+            return true;
+        }
+        async function wz3144CheckVerification() {
+            const state = getAuthState();
+            if (!state || wz3144Busy) return;
+            if (wz3144Expired(state)) { wz3144Notice('⏱️ Kodun süresi doldu. Yeni Kod Al butonuna dokun.', 'error'); wz3144Render(state); return; }
+            if (!hasVerifyCommandBeenClicked(state) || !wz3144ChatVisited(state)) {
+                wz3144Notice('Önce kodu kopyala ve Kick sohbetine gönder.', 'error');
+                return;
+            }
+            wz3144Busy = true;
+            wz3144Render(state);
+            wz3144Notice('⏳ Kick doğrulaman kontrol ediliyor…');
+            let result = 'pending';
+            try {
+                const verified = await checkAuthStatus({
+                    manual:false, silent:true, preserveExpiredState:true,
+                    onResult: status => { result = status; }
+                });
+                if (verified || localStorage.getItem(SESSION_STORAGE_KEY)) return;
+                if (result === 'expired') wz3144Notice('⏱️ Doğrulama kodunun süresi doldu. Yeni Kod Al butonunu kullan.', 'error');
+                else if (result === 'error') wz3144Notice('⚠️ Bağlantı kurulamadı. Aynı kodla biraz sonra tekrar kontrol edebilirsin.', 'error');
+                else if (result === 'busy') wz3144Notice('⏳ Önceki kontrol devam ediyor. Birkaç saniye sonra tekrar dene.');
+                else wz3144Notice('⚠️ Henüz doğrulama onayı gelmedi. Kick sohbetine komutu gönderdiğinden emin ol ve aynı kodla tekrar kontrol et.', 'error');
+            } finally { wz3144Busy = false; wz3144Render(); }
+        }
+        async function wz3144RenewCode() {
+            const state = getAuthState();
+            if (!state || wz3144Busy || !wz3144Expired(state)) return;
+            wz3144Busy = true;
+            wz3144Render(state);
+            wz3144Notice('⏳ Yeni kod hazırlanıyor…');
+            try {
+                // Keep the old challenge unless the backend has successfully supplied a replacement.
+                const response = await fetch(MARKET_WORKER + '/auth/start?user=' + encodeURIComponent(state.username) + '&_=' + Date.now(), {
+                    method:'GET', headers:{Accept:'application/json'},cache:'no-store'
+                });
+                const data = await response.json();
+                if (!response.ok || !data?.success || !data?.challengeId || !data?.code)
+                    throw new Error(data?.error || 'Yeni kod oluşturulamadı.');
+                closeVerificationWaitModal(true);
+                localStorage.removeItem(WZ3144_CHAT_KEY);
+                localStorage.removeItem(VERIFY_COMMAND_CLICKED_KEY);
+                localStorage.setItem(AUTH_STATE_KEY, JSON.stringify({
+                    challengeId:data.challengeId,code:data.code,username:data.username||state.username,
+                    expiresAt:Date.now()+(Number(data.expiresIn)||300)*1000
+                }));
+                showVerificationActivation(data.username||state.username,data.code);
+                wz3144Notice('✅ Yeni kod hazır. İlk adımdan başlayıp kodu kopyala.', 'success');
+            } catch (error) {
+                console.warn('WEIZEND AUTH NEW CODE:',error);
+                wz3144Notice('⚠️ Yeni kod alınamadı. Bağlantıyı kontrol et ve tekrar dene.', 'error');
+            } finally { wz3144Busy = false; wz3144Render(); }
+        }
+        function wz3144ShowVerifiedToast() {
+            const toast = document.getElementById('wz3144SuccessToast');
+            if (!toast) return;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3200);
+        }
+        // Cheap expiry display update only while the verification card is visible.
+        setInterval(() => {
+            if (document.getElementById('verificationActivation')?.style.display === 'block')
+                wz3144Render();
+        }, 5000);
 
         function showAccount(profile) {
             document.documentElement.removeAttribute('data-wz-auth-hydrating');
@@ -7392,7 +7600,7 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
             }
 
             const authState = getAuthState();
-            if (authState && (!authState.expiresAt || authState.expiresAt > Date.now())) {
+            if (authState) {
                 localStorage.setItem(USER_STORAGE_KEY, authState.username);
                 showVerificationActivation(authState.username, authState.code);
 
@@ -7437,6 +7645,7 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
             localStorage.removeItem(AUTH_STATE_KEY);
             localStorage.removeItem(VERIFY_WAIT_STATE_KEY);
             localStorage.removeItem(VERIFY_COMMAND_CLICKED_KEY);
+            localStorage.removeItem(WZ3144_CHAT_KEY);
 
             showAccessBase();
             document.getElementById('accessTitle').innerText = '🔐 Doğrulama Kodu Hazırlanıyor';
@@ -7481,30 +7690,8 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
 
             const authState = getAuthState();
             if (authState) {
-                if (!hasVerifyCommandBeenClicked(authState)) {
-                    closeVerificationWaitModal(true);
-                    showVerificationActivation(authState.username, authState.code);
-
-                    const command = `!doğrula ${authState.code}`;
-                    document.getElementById('accessTitle').innerText = '👆 Önce Doğrulama Kodunu Kick Sohbetine Gönder';
-                    document.getElementById('accessText').innerHTML = `Önce <b>${escapeHtml(command)}</b> alanına dokunup komutu kopyala. Ardından <b>Kick Sohbete Git</b> butonuna bas, <b>${escapeHtml(authState.username)}</b> hesabından komutu gönder. Bu sayfaya dönüp <b>Doğrulamayı Kontrol Et</b> butonuna bas.`;
-
-                    const verifyButton = document.getElementById('verifyCommandButton');
-                    verifyButton.classList.remove('needs-action');
-                    void verifyButton.offsetWidth;
-                    verifyButton.classList.add('needs-action');
-                    verifyButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-                    showStatusToast('👆 Önce !doğrula KOD alanına dokunup komutu Kick sohbetine gönder', 5000);
-                    return;
-                }
-
-                openVerificationWaitModal();
-                connectRealtime(authState.username);
-
-                // Butona basıldığı anda bir kez kontrol et. Henüz doğrulanmadıysa
-                // bundan sonraki kontrol auth_verified realtime bildirimi geldiğinde yapılır.
-                await checkAuthStatus({ manual: true, silent: true });
+                closeVerificationWaitModal(true);
+                showVerificationActivation(authState.username, authState.code);
                 return;
             }
 
@@ -7528,8 +7715,10 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
 
         async function checkAuthStatus(options = {}) {
             const manual = options.manual === true;
+            const reportResult = typeof options.onResult === 'function' ? options.onResult : () => {};
 
             if (authCheckInFlight) {
+                reportResult('busy');
                 if (manual) {
                     document.getElementById('accessTitle').innerText = '⏳ Doğrulama İşlemi Bekleniyor';
                     document.getElementById('accessText').innerHTML = `BotRix'ten yanıt bekleniyor. Doğrulama işlemini yaptıysan lütfen birkaç saniye bekle; sistem otomatik olarak tekrar kontrol ediyor.`;
@@ -7538,7 +7727,7 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
             }
 
             const authState = getAuthState();
-            if (!authState) return false;
+            if (!authState) { reportResult('missing'); return false; }
 
             authCheckInFlight = true;
             const silent = options.silent === true;
@@ -7554,8 +7743,16 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
                 try { data = await response.json(); } catch (_) {}
 
                 if (response.status === 410 || data?.status === 'expired') {
-                    localStorage.removeItem(AUTH_STATE_KEY);
-                    localStorage.removeItem(VERIFY_COMMAND_CLICKED_KEY);
+                    reportResult('expired');
+                    if (options.preserveExpiredState === true) {
+                        // Preserve the username so the new flow can request a new code without a new form.
+                        localStorage.setItem(AUTH_STATE_KEY, JSON.stringify({
+                            ...authState, expiresAt: Math.min(Date.now() - 1, Number(authState.expiresAt) || Date.now() - 1)
+                        }));
+                    } else {
+                        localStorage.removeItem(AUTH_STATE_KEY);
+                        localStorage.removeItem(VERIFY_COMMAND_CLICKED_KEY);
+                    }
                     closeVerificationWaitModal(true);
                     if (!silent) showUsernameForm('⏳ Doğrulama kodunun süresi doldu. Yeni kod oluşturmak için kullanıcı adını tekrar gönder.');
                     return false;
@@ -7566,6 +7763,7 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
                 }
 
                 if (data.status !== 'verified' || !data.sessionToken) {
+                    reportResult('pending');
                     if (manual) {
                         document.getElementById('accessTitle').innerText = '⏳ Doğrulama İşlemi Bekleniyor';
                         document.getElementById('accessText').innerHTML = 'Henüz doğrulama yanıtı gelmedi. Kick sohbetinde <b>!doğrula KOD</b> komutunu gönderdiysen bekleyebilirsin; sistem 60 saniye boyunca otomatik olarak tekrar kontrol ediyor.';
@@ -7574,6 +7772,7 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
                 }
 
                 // Artık kullanıcı adı değil, bu gizli oturum anahtarı hesabı açar.
+                reportResult('verified');
                 localStorage.setItem(SESSION_STORAGE_KEY, data.sessionToken);
                 localStorage.setItem(USER_STORAGE_KEY, data.username || authState.username);
                 localStorage.removeItem(AUTH_STATE_KEY);
@@ -7583,7 +7782,8 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
                 sessionGraceUntil = Date.now() + 30000;
 
                 document.getElementById('accessTitle').innerText = '✅ Doğrulama Başarılı';
-                document.getElementById('accessText').innerHTML = 'Doğrulama işlemi başarılı. Hesap bilgileriniz yükleniyor...';
+                document.getElementById('accessText').innerHTML = '🎉 Hesabın doğrulandı! WEİZEND’e hoş geldin. Hesap bilgilerin yükleniyor...';
+                wz3144ShowVerifiedToast();
                 showStatusToast('✅ Doğrulama başarılı · Hesap bilgileriniz yükleniyor...', 3200);
 
                 if (isVerificationWaitModalActive()) {
@@ -7609,6 +7809,7 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
                 if (opened) wzOpenProfileAfterVerification();
                 return opened;
             } catch (error) {
+                reportResult('error');
                 console.error('AUTH STATUS ERROR:', error);
                 if (!silent && document.getElementById('marketContent').style.display !== 'block') {
                     document.getElementById('accessText').innerHTML = '⚠️ Doğrulama durumu alınamadı. Kodun varsa tekrar deneyebilirsin.';
@@ -8849,6 +9050,7 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
             localStorage.removeItem(PROFILE_CACHE_KEY);
             localStorage.removeItem(VERIFY_WAIT_STATE_KEY);
             localStorage.removeItem(VERIFY_COMMAND_CLICKED_KEY);
+            localStorage.removeItem(WZ3144_CHAT_KEY);
 
             marketAuthenticated = false;
             marketGridNeedsRender = true;
@@ -8904,6 +9106,7 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
             localStorage.removeItem(PROFILE_CACHE_KEY);
             localStorage.removeItem(VERIFY_WAIT_STATE_KEY);
             localStorage.removeItem(VERIFY_COMMAND_CLICKED_KEY);
+            localStorage.removeItem(WZ3144_CHAT_KEY);
             disconnectRealtime();
             currentUsername = '';
             sessionGraceUntil = 0;
@@ -9093,28 +9296,7 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
         // V31.0.73: Kick doğrulama yalnızca kullanıcının seçtiği adımlarla yapılır.
         // Eski işlev adı diğer kodlarla uyumluluk için korunur; otomatik yönlendirme yoktur.
         async function copyVerifyAndRedirect() {
-            const authState = getAuthState();
-            if (!authState) {
-                showUsernameForm('Doğrulama kodu bulunamadı. Kullanıcı adını tekrar gönder.');
-                return;
-            }
-            const command = `!doğrula ${authState.code}`;
-            markVerifyCommandClicked(authState);
-            const verifyButton = document.getElementById('verifyCommandButton');
-            verifyButton?.classList.remove('needs-action');
-            const help = document.getElementById('verifyFlowHelp');
-            try {
-                await copyTextReliable(command);
-                if (getAuthState()?.challengeId !== authState.challengeId) return;
-                if (verifyButton) verifyButton.innerText = `✅ Kopyalandı: ${command}`;
-                document.getElementById('accessTitle').innerText = '📨 Şimdi Kodu Kick Sohbetine Gönder';
-                document.getElementById('accessText').innerHTML = `✅ <b>${escapeHtml(command)}</b> kopyalandı. <b>Kick Sohbete Git</b> butonunu kullan, komutu <b>${escapeHtml(authState.username)}</b> hesabından sohbete yapıştırıp gönder. Sonra buraya dönüp <b>Doğrulamayı Kontrol Et</b> butonuna bas.`;
-                if (help) help.innerHTML = '<b>1.</b> ✅ Komut kopyalandı. <b>2.</b> 💬 Kick Sohbete Git → Yapıştır → Gönder. <b>3.</b> ↩️ Bu sayfaya dön → <b>Doğrulamayı Kontrol Et</b>.';
-            } catch (_) {
-                if (verifyButton) verifyButton.innerText = `📋 ${command}`;
-                document.getElementById('accessText').innerHTML = `Kopyalama otomatik yapılamadı. <b>${escapeHtml(command)}</b> metnini seçip kopyala; <b>Kick Sohbete Git</b> butonuyla sohbeti aç. Komutu gönderdikten sonra <b>Doğrulamayı Kontrol Et</b> butonuna bas.`;
-                if (help) help.innerHTML = '<b>1.</b> Komuta basılı tutup kopyala. <b>2.</b> Kick Sohbete Git → Yapıştır → Gönder. <b>3.</b> Geri dön → Doğrulamayı Kontrol Et.';
-            }
+            return wz3144CopyCommand();
         }
 
         // Alt tarafta çıkan toast bildirimleri kaldırıldı.
