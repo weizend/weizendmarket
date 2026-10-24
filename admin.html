@@ -14932,7 +14932,7 @@ function wz3103PilotButtons(m){
   const detail=result?`<pre style="white-space:pre-wrap;overflow-wrap:anywhere;background:#101014;padding:10px;border-radius:8px;max-height:270px;overflow:auto">${esc(result)}</pre>`:'';
   return `<div style="border:1px solid #353e51;padding:10px;border-radius:10px;margin:10px 0">
     <strong>🎮 Lobi Sahibi API Destekli Hakem Kontrolü (Pilot)</strong>
-    <p class="muted">Yalnızca geçerli VALORANT kodunu paylaşan kaptanın en son 5 maçı incelenir. Kod sahibi değiştiyse yeni kaptan sorgulanır. Sadece son 48 saatte başlamış, skor bildirimi gelmiş maçlarda çalışır. Görsel zorunlu değildir. API verisi özel maçlar için eksik olabilir; sonuç otomatik kesinleşmez.</p>
+    <p class="muted">Yalnızca geçerli VALORANT kodunu paylaşan kaptanın en son 1 maçı incelenir. Kod sahibi değiştiyse yeni kaptan sorgulanır. Sadece son 48 saatte başlamış, skor bildirimi gelmiş maçlarda çalışır. Görsel zorunlu değildir. API verisi özel maçlar için eksik olabilir; sonuç otomatik kesinleşmez.</p>
     <div class="inlineActions">
       <button type="button" class="smallBtn secondary" ${busy?'disabled':''} onclick="wz3103Check('${encodeURIComponent(id)}')">🎮 Lobi Sahibini Sorgula</button>
     </div>${detail}</div>`;
