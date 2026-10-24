@@ -5448,13 +5448,13 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
                     <div class="wz3144-arrow" aria-hidden="true">↓</div>
                     <section class="wz3144-step is-locked" id="wz3144Step2" aria-labelledby="wz3144Step2Title">
                         <div class="wz3144-step-title" id="wz3144Step2Title"><span class="wz3144-step-num">2</span>KICK SOHBETİNE GÖNDER</div>
-                        <p class="wz3144-step-desc">Kick sohbetine git, kopyaladığın komutu mesaj kutusuna yapıştır ve gönder. Sonra WEİZEND'e geri dön.</p>
+                        <p class="wz3144-step-desc">Kopyaladığın komutu Kick sohbetine yapıştırıp gönder. Kick sohbetin zaten başka sekmede açıksa aşağıdaki bağlantıya tıklaman gerekmiyor.</p>
                         <a id="verifyKickChatLink" class="access-btn wz3144-action is-locked" href="https://kick.com/weizend/chat" target="_blank" rel="noopener noreferrer" tabindex="-1" aria-disabled="true" onclick="return wz3144KickChatClicked(event)">💬 KICK SOHBETİNE GİT ↗</a>
                     </section>
                     <div class="wz3144-arrow" aria-hidden="true">↓</div>
                     <section class="wz3144-step is-locked" id="wz3144Step3" aria-labelledby="wz3144Step3Title">
                         <div class="wz3144-step-title" id="wz3144Step3Title"><span class="wz3144-step-num">3</span>HESABINI DOĞRULA</div>
-                        <p class="wz3144-step-desc">Kick sohbetinde mesajını gönderdin mi? WEİZEND'e geri dönüp aşağıya dokun.</p>
+                        <p class="wz3144-step-desc">Komutu Kick sohbetinde gönderdikten sonra aşağıya dokun. "Kick Sohbetine Git" butonuna basmış olman şart değil.</p>
                         <button id="wz3144VerifyButton" class="access-btn wz3144-action" type="button" onclick="wz3144CheckVerification()" disabled>✅ DOĞRULAMAYI KONTROL ET</button>
                     </section>
                     <p class="wz3144-notice" id="wz3144AuthStatus" role="status" aria-live="polite"></p>
@@ -7414,7 +7414,9 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
                 chat.tabIndex = copied && !expired && !wz3144Busy ? 0 : -1;
             }
             if (verify) {
-                verify.disabled = !visited || expired || wz3144Busy;
+                // V31.1.51: Kullanici Kick sohbetini zaten acmis olabilir. Kodu
+                // kopyaladiysa denetim serbest; gercek onay yine sunucudan gelir.
+                verify.disabled = !copied || expired || wz3144Busy;
                 verify.textContent = wz3144Busy ? '⏳ KONTROL EDİLİYOR…' : '✅ DOĞRULAMAYI KONTROL ET';
             }
             if (renew) {
@@ -7427,11 +7429,12 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
                 const step = document.getElementById('wz3144Step' + i);
                 const progress = document.getElementById('wz3144Progress' + i);
                 const done = states[i - 1];
-                const active = !expired && (i === 1 || (i === 2 && copied) || (i === 3 && visited)) && !done;
+                const active = !expired && !done && (i === 1 && !copied || i === 2 && copied && !visited || i === 3 && copied && visited);
+                const unlocked = !expired && (i === 1 || copied);
                 if (step) {
                     step.classList.toggle('is-done', done);
                     step.classList.toggle('is-active', active);
-                    step.classList.toggle('is-locked', !done && !active);
+                    step.classList.toggle('is-locked', !done && !unlocked);
                 }
                 if (progress) {
                     progress.classList.toggle('is-done', done);
@@ -7456,7 +7459,7 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
                 await copyTextReliable('!doğrula ' + state.code);
                 if (getAuthState()?.challengeId !== state.challengeId) return;
                 markVerifyCommandClicked(state);
-                wz3144Notice('✅ Kod kopyalandı! Şimdi Kick Sohbete Git butonuna dokun.', 'success');
+                wz3144Notice('✅ Kod kopyalandı! Kick sohbetin açıksa doğrudan yapıştırıp gönder, sonra "Doğrulamayı Kontrol Et"e bas.', 'success');
             } catch (_) {
                 wz3144Notice('⚠️ Kopyalama yapılamadı. Tarayıcının kopyalama iznini kontrol edip tekrar dene.', 'error');
             } finally { wz3144Render(); }
@@ -7476,8 +7479,8 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
             const state = getAuthState();
             if (!state || wz3144Busy) return;
             if (wz3144Expired(state)) { wz3144Notice('⏱️ Kodun süresi doldu. Yeni Kod Al butonuna dokun.', 'error'); wz3144Render(state); return; }
-            if (!hasVerifyCommandBeenClicked(state) || !wz3144ChatVisited(state)) {
-                wz3144Notice('Önce kodu kopyala ve Kick sohbetine gönder.', 'error');
+            if (!hasVerifyCommandBeenClicked(state)) {
+                wz3144Notice('Önce doğrulama kodunu kopyala ve Kick sohbetine gönder.', 'error');
                 return;
             }
             wz3144Busy = true;
