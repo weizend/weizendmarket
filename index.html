@@ -7383,6 +7383,15 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
             const el = document.getElementById('wz3144AuthStatus');
             if (el) { el.textContent = message; el.dataset.tone = tone; }
         }
+        // V31.1.48: sadece geri sayim metnini guncelle; UI adimlarini her saniye yeniden cizme.
+        function wz3148RefreshAuthTimer(state = getAuthState()) {
+            const remaining = document.getElementById('wz3144Remaining');
+            if (!remaining || !state) return false;
+            const expired = wz3144Expired(state);
+            const seconds = Math.max(0, Math.ceil((Number(state.expiresAt || Date.now()) - Date.now()) / 1000));
+            remaining.textContent = expired ? 'Bu kod artık geçerli değil.' : 'Kodun geçerlilik süresi: ' + Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
+            return expired;
+        }
         function wz3144Render(state = getAuthState()) {
             if (!state) return;
             const expired = wz3144Expired(state), copied = hasVerifyCommandBeenClicked(state);
@@ -7412,10 +7421,7 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
                 renew.classList.toggle('is-visible', expired);
                 renew.disabled = wz3144Busy;
             }
-            if (remaining) {
-                const seconds = Math.max(0, Math.ceil((Number(state.expiresAt || Date.now()) - Date.now()) / 1000));
-                remaining.textContent = expired ? 'Bu kod artık geçerli değil.' : 'Kodun geçerlilik süresi: ' + Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2,'0');
-            }
+            wz3148RefreshAuthTimer(state);
             const states = [copied && !expired, visited && !expired, false];
             for (let i = 1; i <= 3; i++) {
                 const step = document.getElementById('wz3144Step' + i);
@@ -7524,11 +7530,15 @@ html:not([data-wz-current-view="market"]) #wzNewcomerGuide{display:none!importan
             toast.classList.add('show');
             setTimeout(() => toast.classList.remove('show'), 3200);
         }
-        // Cheap expiry display update only while the verification card is visible.
+        // V31.1.48: dogrulama sayaci her saniye; tam arayuz yalnizca sure doldugunda yenilenir.
         setInterval(() => {
-            if (document.getElementById('verificationActivation')?.style.display === 'block')
-                wz3144Render();
-        }, 5000);
+            if (document.getElementById('verificationActivation')?.style.display !== 'block') return;
+            const state = getAuthState();
+            if (!state) return;
+            const expired = wz3148RefreshAuthTimer(state);
+            if (expired && !document.getElementById('wz3144RenewButton')?.classList.contains('is-visible'))
+                wz3144Render(state);
+        }, 1000);
 
         function showAccount(profile) {
             document.documentElement.removeAttribute('data-wz-auth-hydrating');
