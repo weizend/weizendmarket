@@ -3218,6 +3218,7 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
                 <th>Kaynak</th>
                 <th>Kullanıcı</th>
                 <th>Destek</th>
+                <th>Kime Gönderildi? (Gift)</th>
                 <th>Ödül Puanı</th>
                 <th>Durum</th>
                 <th>Hediye Kodu</th>
@@ -3227,7 +3228,7 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
               </tr>
             </thead>
             <tbody id="supportRewardEventsBody">
-              <tr><td colspan="9" class="muted">Destek kayıtları henüz yüklenmedi.</td></tr>
+              <tr><td colspan="10" class="muted">Destek kayıtları henüz yüklenmedi.</td></tr>
             </tbody>
           </table>
         </div>
@@ -3487,6 +3488,20 @@ html:has(#wzg66Overlay:not([hidden])),body:has(#wzg66Overlay:not([hidden])){over
         </div>
 
         <div id="userSummary" class="userSummaryGrid"></div>
+
+
+        <!-- V31.1.54 — Admin tarafından kullanıcıya başlangıç tarihinden itibaren üyelik tanımlama. -->
+        <div class="card" style="margin-top:16px;margin-bottom:16px;border:1px solid #725065" id="wz154ManualCard">
+          <h3 style="margin-top:0">⭐ Abonelik İşlemleri</h3>
+          <p class="muted">Kullanıcıya WEİZEND içinde abonelik tanımla. Tarih ve saat Türkiye saatidir. Mevcut gift ve gerçek abonelik kayıtlarını silmez.</p>
+          <div class="grid2">
+            <div class="field"><label class="title" for="wz154Start">Başlangıç tarihi ve saati (TSİ)</label><input id="wz154Start" type="datetime-local" step="60"></div>
+            <div class="field"><label class="title" for="wz154Months">Abonelik süresi (ay)</label><input id="wz154Months" type="number" min="1" max="120" step="1" value="1"></div>
+          </div>
+          <div id="wz154Current" class="muted" role="status">Abonelik bilgisi yükleniyor...</div>
+          <div class="btnRow"><button type="button" onclick="wz154SaveManual()">💾 Abonelik Tanımla / Güncelle</button><button type="button" class="secondary" onclick="wz154RemoveManual()">🗑️ Manuel Aboneliği Kaldır</button></div>
+          <p class="muted" style="font-size:12px">Abonelik sona erdiğinde daha önce kazanılmış çekiliş hakkı silinmez.</p>
+        </div>
 
         <div id="userRestrictionBanner" class="userRestrictionBanner"></div>
 
@@ -5605,7 +5620,7 @@ function renderSupportRewardEvents(){
 
   body.innerHTML='';
   if(!items.length){
-    body.innerHTML='<tr><td colspan="9" class="muted">Bu filtrede destek kaydı bulunamadı.</td></tr>';
+    body.innerHTML='<tr><td colspan="10" class="muted">Bu filtrede destek kaydı bulunamadı.</td></tr>';
     return;
   }
 
@@ -5630,11 +5645,21 @@ function renderSupportRewardEvents(){
     const userName=String(item.username||item.username_norm||'-');
     const uid=String(item.kick_uid||'');
 
+    const recipients=Array.isArray(item.gift_recipients)?item.gift_recipients:[];
+    const giftQty=Math.max(1,Math.trunc(Number(item.quantity||1)));
+    const remaining=Math.max(0,giftQty-recipients.length);
+    const giftEligible=['pending_identity','code_issued','ignored_disabled'].includes(eventStatus);
+    const giftRecipientHtml=String(item.source_type)==='gift_subscription'
+      ? `<div class="muted">${recipients.length}/${giftQty} atandı</div>`+
+        (recipients.length?`<div style="margin:5px 0">${recipients.map(a=>`<div><strong>@${esc(a.recipient_username)}</strong> <small class="muted">${a.recipient_kick_uid?'✅ Doğrulandı':'⏳ Doğrulama bekleniyor'} • ${esc(dateText(a.gifted_at))}</small></div>`).join('')}</div>`:'')+
+        (remaining && giftEligible?`<button class="smallBtn" type="button" onclick="assignGiftRecipientAdmin('${encodeURIComponent(item.id)}')">👤 Kime Gönderildi? (+${remaining})</button>`:'')
+      : '<span class="muted">-</span>';
     const tr=document.createElement('tr');
     tr.innerHTML=`
       <td><span class="supportRewardSource">${esc(supportRewardSourceText(item.source_type))}</span></td>
       <td class="supportRewardUser"><strong>${esc(userName)}</strong>${uid?`<div class="muted">UID: ${esc(uid)}</div>`:''}</td>
       <td>${esc(supportRewardSupportText(item))}</td>
+      <td>${giftRecipientHtml}</td>
       <td><span class="supportRewardPoints">${Number(item.points_awarded||0).toLocaleString('tr-TR')} Puan</span></td>
       <td><span class="badge ${statusBadge}">${esc(statusText)}</span></td>
       <td><span class="supportRewardCode">${esc(codeText)}</span></td>
@@ -5649,10 +5674,33 @@ function renderSupportRewardEvents(){
   }
 }
 
+async function assignGiftRecipientAdmin(encodedId){
+ const id=decodeURIComponent(encodedId||'');
+ const event=supportRewardEventsCache.find(e=>String(e.id)===id);
+ if(!event||String(event.source_type)!=='gift_subscription')return;
+ const who=prompt('Bu Gift kime gönderildi? Alıcının Kick kullanıcı adını yaz (WEİZEND doğrulaması şart değil):');
+ if(who===null)return;
+ const username=String(who||'').trim().replace(/^@/,'');
+ if(!/^[a-zA-Z0-9_]{2,40}$/.test(username)){
+   showStatus('supportRewardEventsStatus','❌ Geçerli bir Kick kullanıcı adı gir.',false);return;
+ }
+ const qty=Math.max(1,Math.trunc(Number(event.quantity||1)));
+ const used=(event.gift_recipients||[]).length;
+ if(!confirm(`🎁 ${String(event.username||'Gönderen')} tarafından gönderilen Gift ${used+1}/${qty} için @${username} alıcı olarak atanacak.\n\nAbonelik tarihi, Gift gönderim tarihi olacaktır. Aktif çekiliş kayıtları varsa abone hakkı eklenebilir. Bu atama geri alınamaz. Onaylıyor musun?`))return;
+ try{
+  const {r,d}=await api('/admin/support-rewards/gift/assign',{
+    method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,username})
+  });
+  if(!r.ok||!d?.success)throw Error(d?.error||`HTTP ${r.status}`);
+  showStatus('supportRewardEventsStatus',`✅ @${d.recipient} için ${d.slot}/${d.quantity} Gift eşleştirildi. ${d.awaitingVerification?'Kullanıcı hesabını doğrulayınca kalan süreyle başlayacak.':'Kick hesabı doğrulanmış.'} Çekilişte ${Number(d.upgradedGiveaways||0)} kayıt güncellendi.${d.active?'':' (Gift süresi sona ermiş olabilir.)'}`,true);
+  await loadSupportRewardEvents();
+ }catch(error){showStatus('supportRewardEventsStatus','❌ '+esc(error.message||error),false)}
+}
+
 async function loadSupportRewardEvents(){
   const body=document.getElementById('supportRewardEventsBody');
   const status=String(document.getElementById('supportRewardStatusFilter')?.value||'').trim();
-  if(body) body.innerHTML='<tr><td colspan="9" class="muted">⏳ Destek kayıtları yükleniyor...</td></tr>';
+  if(body) body.innerHTML='<tr><td colspan="10" class="muted">⏳ Destek kayıtları yükleniyor...</td></tr>';
 
   try{
     const qs=status?`?status=${encodeURIComponent(status)}&_=${Date.now()}`:`?_=${Date.now()}`;
@@ -5661,7 +5709,7 @@ async function loadSupportRewardEvents(){
     supportRewardEventsCache=Array.isArray(d.events)?d.events:[];
     renderSupportRewardEvents();
   }catch(error){
-    if(body) body.innerHTML=`<tr><td colspan="9" class="muted">❌ ${esc(error.message || error)}</td></tr>`;
+    if(body) body.innerHTML=`<tr><td colspan="10" class="muted">❌ ${esc(error.message || error)}</td></tr>`;
     showStatus('supportRewardEventsStatus','❌ '+esc(error.message || error),false);
   }
 }
@@ -6934,7 +6982,62 @@ function renderUserDetail(){
   renderUserNotes();
   // V31.0.81: Read-only ticket balance, asynchronous and bound to the current Kick UID.
   wz81ShowUserTicketBalance(u.kick_uid);
+  wz154LoadManualSubscription(u.kick_uid);
   document.getElementById('userDetailCard')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+
+// V31.1.54 — User > İşlem Yap > Abonelik İşlemleri.
+function wz154AdminDate(value){
+ const d=new Date(value);if(!Number.isFinite(d.getTime()))return '—';
+ return d.toLocaleString('tr-TR',{timeZone:'Europe/Istanbul',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+function wz154LocalInputFromIso(iso){
+ const d=new Date(iso);if(!Number.isFinite(d.getTime()))return '';
+ const parts=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Istanbul',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d);
+ return parts.replace(' ','T');
+}
+async function wz154LoadManualSubscription(uid){
+ const current=document.getElementById('wz154Current');if(!current)return;
+ current.textContent='⏳ Abonelik bilgileri yükleniyor...';
+ document.getElementById('wz154Start').value=wz154LocalInputFromIso(new Date().toISOString());
+ document.getElementById('wz154Months').value='1';
+ try{
+  const {r,d}=await api('/admin/manual-subscription?uid='+encodeURIComponent(uid));
+  if(currentAdminUser?.kick_uid!==uid)return;
+  if(!r.ok||!d?.success)throw Error(d?.error||'HTTP '+r.status);
+  const s=d.subscription;
+  if(!s){current.textContent='Bu kullanıcıya manuel abonelik tanımlanmamış.';return}
+  document.getElementById('wz154Start').value=wz154LocalInputFromIso(s.startsAt);
+  document.getElementById('wz154Months').value=s.months;
+  current.textContent=(s.active?'✅ Aktif':s.scheduled?'📅 Henüz başlamadı':'⏱️ Süresi doldu')+
+   ' · Başlangıç: '+wz154AdminDate(s.startsAt)+' · Bitiş: '+wz154AdminDate(s.expiresAt)+' · '+s.months+' ay';
+ }catch(e){if(currentAdminUser?.kick_uid===uid)current.textContent='❌ '+String(e?.message||e)}
+}
+async function wz154SaveManual(){
+ const u=currentAdminUser;if(!u?.kick_uid)return alert('Önce kullanıcı seç.');
+ const startLocal=String(document.getElementById('wz154Start')?.value||'');
+ const months=Number(document.getElementById('wz154Months')?.value);
+ if(!/^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(startLocal)||!Number.isInteger(months)||months<1||months>120)
+  return alert('Başlangıç tarihini, saati ve 1–120 arası abonelik ayını gir.');
+ if(!confirm('@'+u.username+' için '+startLocal.replace('T',' ')+' (Türkiye saati) başlangıçlı '+months+' AY abonelik tanımlansın mı?'))return;
+ const info=document.getElementById('wz154Current');info.textContent='⏳ Kaydediliyor...';
+ try{
+  const {r,d}=await api('/admin/manual-subscription',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'set',uid:u.kick_uid,startLocal,months})});
+  if(!r.ok||!d?.success)throw Error(d?.error||'HTTP '+r.status);
+  info.textContent='✅ Kaydedildi. Bitiş: '+wz154AdminDate(d.expiresAt)+(d.upgradedGiveaways?' · '+d.upgradedGiveaways+' çekilişte abone hakkı eklendi.':'');
+  await wz154LoadManualSubscription(u.kick_uid);
+ }catch(e){info.textContent='❌ '+String(e?.message||e)}
+}
+async function wz154RemoveManual(){
+ const u=currentAdminUser;if(!u?.kick_uid)return;
+ if(!confirm('@'+u.username+' için yalnızca YÖNETİCİ tarafından tanımlanmış abonelik kaydı kaldırılsın mı? Gerçek abonelik/gift ve kazanılmış çekiliş hakları korunacak.'))return;
+ const info=document.getElementById('wz154Current');
+ try{
+  const {r,d}=await api('/admin/manual-subscription',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'remove',uid:u.kick_uid})});
+  if(!r.ok||!d?.success)throw Error(d?.error||'HTTP '+r.status);
+  await wz154LoadManualSubscription(u.kick_uid);
+ }catch(e){info.textContent='❌ '+String(e?.message||e)}
 }
 
 async function wz81ShowUserTicketBalance(uid){
@@ -14096,6 +14199,28 @@ async function wzg2AdminRefresh(){
     if(e.status==='eligible'){
       const b=document.createElement('button');b.className='secondary';b.textContent=e.paid_verified?'👑 Abone avantajını kaldır':'👑 Kendi ödemeli Kick abonesi olduğunu onayla';
       b.onclick=async()=>{const proof=e.paid_verified?'':prompt('MissXss otomatik tespit edemiyorsa, kendi ödemeli aboneliği hangi resmi kaynaktan ve ne zaman kontrol ettin? (Gift için kullanma.)');if(proof===null)return;await wzg2AdminAction('/admin/giveaway/entry',{id:e.giveaway_id,uid:e.kick_uid,action:'subscriber',verified:!e.paid_verified,proof})};buttons.append(b);
+    }
+
+    // V31.1.54: only an active, not-yet-ended campaign supports safe removal.
+    if(['eligible','pending_review'].includes(e.status)){
+      const camp=selectedCampaign;
+      if(camp?.status==='active'&&Date.parse(camp.end_at)>Date.now()){
+       const trash=document.createElement('button');trash.type='button';trash.className='danger';
+       trash.textContent='🗑️';trash.title='Bu kullanıcıyı yalnızca bu çekilişten çıkar';
+       trash.setAttribute('aria-label',e.username+' kullanıcısını çekilişten çıkar');
+       trash.onclick=async()=>{
+        const released=Number(e.tickets||0);
+        if(!confirm('@'+e.username+' kişisini BU çekilişten çıkaralım mı?'+
+          (released?' Ayrılan '+released+' bilet tekrar kullanılabilir olacak.':'')+
+          ' Kura hakkı iptal edilir, işlem geçmişi korunur.'))return;
+        trash.disabled=true;
+        try{
+         const out=await wzg2AdminCall('/admin/giveaway/entry',{
+          id:e.giveaway_id,uid:e.kick_uid,action:'remove_entry',confirmation:'CEKILISTEN_CIKAR'});
+         alert('✅ '+out.message);await wzg2AdminRefresh();
+        }catch(error){alert('❌ '+error.message);trash.disabled=false}
+       };buttons.append(trash);
+      }
     }
     row.append(buttons);nextEntries.append(row);
   }
